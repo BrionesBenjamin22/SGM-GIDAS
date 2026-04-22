@@ -1,0 +1,181 @@
+import { useState, useMemo } from "react";
+import Button from "@/components/Button";
+import { useAdoptantes, useCreateAdoptante } from "@/hooks/useAdoptantes";
+import type { Adoptante, AdoptantePayload } from "@/services/adoptantesServices";
+
+type Props = {
+    selected: Adoptante[];
+    onChange: (adoptantes: Adoptante[]) => void;
+};
+
+/**
+ * Selector múltiple de adoptantes con búsqueda, chips de seleccionados,
+ * y formulario inline para crear un adoptante nuevo.
+ */
+export default function AdoptanteSelector({ selected, onChange }: Props) {
+    const { list: allAdoptantes } = useAdoptantes();
+    const createMut = useCreateAdoptante();
+
+    const [search, setSearch] = useState("");
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [showForm, setShowForm] = useState(false);
+
+    // Adoptantes no seleccionados aún, filtrados por búsqueda
+    const options = useMemo(() => {
+        const selectedIds = new Set(selected.map((a) => a.id));
+        return allAdoptantes
+            .filter((a) => !selectedIds.has(a.id))
+            .filter(
+                (a) =>
+                    !search ||
+                    a.nombre.toLowerCase().includes(search.toLowerCase())
+            );
+    }, [allAdoptantes, selected, search]);
+
+    const add = (adoptante: Adoptante) => {
+        onChange([...selected, adoptante]);
+        setSearch("");
+        setDropdownOpen(false);
+    };
+
+    const remove = (id: number) => {
+        onChange(selected.filter((a) => a.id !== id));
+    };
+
+    // ── Form inline state ──
+    const [formNombre, setFormNombre] = useState("");
+
+    const submitNew = async () => {
+        if (!formNombre.trim()) return;
+        const payload: AdoptantePayload = { nombre: formNombre.trim() };
+        try {
+            const created = await createMut.mutateAsync(payload);
+            add(created);
+            setFormNombre("");
+            setShowForm(false);
+        } catch (err: any) {
+            const msg = err?.body?.error ?? err?.message ?? "Error al crear el adoptante";
+            alert(msg);
+        }
+    };
+
+    return (
+        <div className="space-y-3">
+            <label className="block text-sm font-medium">Adoptantes</label>
+
+            {/* Chips seleccionados */}
+            {selected.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                    {selected.map((a) => (
+                        <span
+                            key={a.id}
+                            className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-300 px-3 py-1 text-xs"
+                        >
+                            {a.nombre}
+                            <button
+                                type="button"
+                                onClick={() => remove(a.id)}
+                                className="ml-0.5 text-slate-500 hover:text-red-600"
+                            >
+                                ✕
+                            </button>
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            {/* Búsqueda + dropdown */}
+            <div className="relative">
+                <input
+                    className="input text-sm"
+                    placeholder="Buscar adoptante…"
+                    value={search}
+                    onChange={(e) => {
+                        setSearch(e.target.value);
+                        setDropdownOpen(true);
+                    }}
+                    onFocus={() => setDropdownOpen(true)}
+                />
+
+                {dropdownOpen && (search || options.length > 0) && (
+                    <ul className="absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg text-sm">
+                        {options.length === 0 ? (
+                            <li className="px-3 py-2 text-slate-400">Sin resultados</li>
+                        ) : (
+                            options.map((a) => (
+                                <li key={a.id}>
+                                    <button
+                                        type="button"
+                                        className="w-full text-left px-3 py-2 hover:bg-slate-50"
+                                        onClick={() => add(a)}
+                                    >
+                                        {a.nombre}
+                                    </button>
+                                </li>
+                            ))
+                        )}
+                    </ul>
+                )}
+            </div>
+
+            {/* Cerrar dropdown al hacer click fuera */}
+            {dropdownOpen && (
+                <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setDropdownOpen(false)}
+                />
+            )}
+
+            {/* Botón crear nuevo */}
+            {!showForm && (
+                <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="px-3 py-1 text-xs"
+                    onClick={() => setShowForm(true)}
+                >
+                    + Crear nuevo adoptante
+                </Button>
+            )}
+
+            {/* Formulario inline — solo nombre (lo que soporta el backend) */}
+            {showForm && (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
+                    <p className="text-sm font-medium">Nuevo adoptante</p>
+
+                    <input
+                        className="input text-sm"
+                        placeholder="Nombre del adoptante *"
+                        value={formNombre}
+                        onChange={(e) => setFormNombre(e.target.value)}
+                    />
+
+                    <div className="flex gap-2 justify-end">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            className="px-3 py-1 text-xs"
+                            onClick={() => {
+                                setShowForm(false);
+                                setFormNombre("");
+                            }}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            className="px-3 py-1 text-xs"
+                            disabled={createMut.isPending || !formNombre.trim()}
+                            onClick={submitNew}
+                        >
+                            {createMut.isPending ? "Creando…" : "Crear y agregar"}
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
