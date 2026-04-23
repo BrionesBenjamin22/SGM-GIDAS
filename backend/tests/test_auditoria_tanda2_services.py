@@ -41,7 +41,6 @@ class AuditoriaTanda2ServicesTestCase(unittest.TestCase):
             tipo_proyecto_id=1,
             grupo_utn_id=2,
             fuente_financiamiento_id=3,
-            planificacion_id=4,
             created_by=1
         )
         proyecto.deleted_at = None
@@ -63,9 +62,6 @@ class AuditoriaTanda2ServicesTestCase(unittest.TestCase):
             new=SimpleNamespace(query=SimpleNamespace(get=lambda _: object()))
         ), patch(
             "core.services.proyecto_investigacion_service.FuenteFinanciamiento",
-            new=SimpleNamespace(query=SimpleNamespace(get=lambda _: object()))
-        ), patch(
-            "core.services.proyecto_investigacion_service.PlanificacionGrupo",
             new=SimpleNamespace(query=SimpleNamespace(get=lambda _: object()))
         ), patch(
             "core.services.proyecto_investigacion_service.AuditoriaService.registrar_cambios"

@@ -12,7 +12,6 @@ from core.models.proyecto_investigacion import (
 )
 from core.models.grupo import GrupoInvestigacionUtn
 from core.models.fuente_financiamiento import FuenteFinanciamiento
-from core.models.programa_actividades import PlanificacionGrupo
 from core.models.personal import Becario, Investigador
 from core.services.auditoria_service import AuditoriaService
 
@@ -236,11 +235,6 @@ class ProyectoInvestigacionService:
         if not TipoProyecto.query.get(data.get("tipo_proyecto_id")):
             raise Exception("Tipo de proyecto invÃ¡lido")
         
-        if data.get("planificacion_id"):
-            planificacion = PlanificacionGrupo.query.get(data["planificacion_id"])
-            if not planificacion:
-                raise ValueError("PlanificaciÃ³n invÃ¡lida")
-            
         if data.get("fuente_financiamiento_id"):
             fuente = FuenteFinanciamiento.query.get(data["fuente_financiamiento_id"])
             if not fuente:
@@ -267,7 +261,6 @@ class ProyectoInvestigacionService:
             tipo_proyecto_id=data["tipo_proyecto_id"],
             grupo_utn_id=data.get("grupo_utn_id"),
             fuente_financiamiento_id=data.get("fuente_financiamiento_id"),
-            planificacion_id=data.get("planificacion_id"),
             created_by=user_id
         )
 
@@ -384,31 +377,6 @@ class ProyectoInvestigacionService:
                 if cambio:
                     cambios["fuente_financiamiento_id"] = cambio
                     proyecto.fuente_financiamiento_id = fuente_financiamiento_id
-
-        if "planificacion_id" in data:
-            planificacion_id = data["planificacion_id"]
-            if planificacion_id in (None, ""):
-                cambio = AuditoriaService.construir_cambio(
-                    proyecto.planificacion_id,
-                    None
-                )
-                if cambio:
-                    cambios["planificacion_id"] = cambio
-                    proyecto.planificacion_id = None
-            else:
-                if not isinstance(planificacion_id, int) or planificacion_id <= 0:
-                    raise ValueError("Planificación inválida")
-
-                if not PlanificacionGrupo.query.get(planificacion_id):
-                    raise ValueError("Planificación inválida")
-
-                cambio = AuditoriaService.construir_cambio(
-                    proyecto.planificacion_id,
-                    planificacion_id
-                )
-                if cambio:
-                    cambios["planificacion_id"] = cambio
-                    proyecto.planificacion_id = planificacion_id
 
         if "fecha_inicio" in data:
             nueva_fecha = datetime.strptime(
@@ -702,11 +670,6 @@ class ProyectoInvestigacionService:
                 fuente_financiamiento_nombre=(
                     proyecto.fuente_financiamiento.nombre
                     if proyecto.fuente_financiamiento else None
-                ),
-                planificacion_id=proyecto.planificacion_id,
-                planificacion_descripcion=(
-                    proyecto.planificacion.descripcion
-                    if proyecto.planificacion else None
                 ),
                 created_by=user_id
             )

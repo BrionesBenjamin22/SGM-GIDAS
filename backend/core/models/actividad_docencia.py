@@ -1,3 +1,5 @@
+from datetime import date
+
 from extension import db
 from core.models.audit_mixin import AuditMixin
 
@@ -39,25 +41,53 @@ class ActividadDocencia(db.Model, AuditMixin):
         back_populates='actividades_docencia'
     )
 
+    @staticmethod
+    def _serializar_grado_historial(historial):
+        data = historial.to_dict()
+        data["grado_academico"] = (
+            {
+                "id": historial.grado_academico.id,
+                "nombre": historial.grado_academico.nombre
+            }
+            if historial.grado_academico else None
+        )
+        data["activo"] = historial.fecha_fin is None
+        return data
+
     def serialize(self):
         data = self.to_dict()
 
-        grado_activo = next(
-            (
-                h.grado_academico
-                for h in self.investigadores_grado
-                if h.fecha_fin is None
+        historial_ordenado = sorted(
+            self.investigadores_grado,
+            key=lambda h: (
+                h.fecha_inicio or date.min,
+                h.id or 0
             ),
+            reverse=True
+        )
+        historial_activo = next(
+            (h for h in historial_ordenado if h.fecha_fin is None),
             None
         )
+        grado_activo = historial_activo.grado_academico if historial_activo else None
 
         data.update({
             "investigador": (
-                self.investigador.nombre_apellido
+                {
+                    "id": self.investigador.id,
+                    "nombre_apellido": self.investigador.nombre_apellido
+                }
                 if self.investigador and self.investigador.deleted_at is None
                 else None
             ),
             "grado_academico": (
+                {
+                    "id": grado_activo.id,
+                    "nombre": grado_activo.nombre
+                }
+                if grado_activo else None
+            ),
+            "grado_academico_actual": (
                 {
                     "id": grado_activo.id,
                     "nombre": grado_activo.nombre
@@ -71,18 +101,9 @@ class ActividadDocencia(db.Model, AuditMixin):
                 }
                 if self.rol_actividad else None
             ),
-            
             "historial_grados": [
-                {
-                    "id": h.id,
-                    "grado": {
-                        "id": h.grado_academico.id,
-                        "nombre": h.grado_academico.nombre
-                    },
-                    "fecha_inicio": str(h.fecha_inicio),
-                    "fecha_fin": str(h.fecha_fin) if h.fecha_fin else None
-                }
-                for h in self.investigadores_grado
+                ActividadDocencia._serializar_grado_historial(h)
+                for h in historial_ordenado
             ]
         })
 
@@ -176,3 +197,15 @@ class InvestigadorActividadGrado(db.Model, AuditMixin):
             name="uq_hist_grado_actividad"
         ),
     )
+
+    def serialize(self):
+        data = self.to_dict()
+        data["grado_academico"] = (
+            {
+                "id": self.grado_academico.id,
+                "nombre": self.grado_academico.nombre
+            }
+            if self.grado_academico else None
+        )
+        data["activo"] = self.fecha_fin is None
+        return data

@@ -212,6 +212,91 @@ class ActividadDocenciaService:
         ).serialize()
 
     @staticmethod
+    def get_historial(actividad_id: int):
+        actividad = ActividadDocenciaService._obtener_actividad(
+            actividad_id,
+            permitir_eliminado=True
+        )
+        historial = AuditoriaService.obtener_historial_entidad(
+            entidad="actividad_y_catedra_posgrado",
+            registro_id=actividad.id
+        )
+        historial_filtrado = [
+            item for item in historial
+            if item.get("campo") != "grado_academico_id"
+        ]
+        historial_filtrado.extend(
+            ActividadDocenciaService._construir_historial_grados(actividad)
+        )
+        historial_filtrado.sort(
+            key=lambda item: (
+                item.get("fecha_cambio") or "",
+                item.get("orden_historial") or 0
+            ),
+            reverse=True
+        )
+
+        for item in historial_filtrado:
+            item.pop("orden_historial", None)
+
+        return historial_filtrado
+
+    @staticmethod
+    def _serializar_grado(grado):
+        if not grado:
+            return None
+
+        return {
+            "id": grado.id,
+            "nombre": grado.nombre
+        }
+
+    @staticmethod
+    def _construir_historial_grados(actividad):
+        historial = sorted(
+            getattr(actividad, "investigadores_grado", []),
+            key=lambda item: (
+                item.fecha_inicio or date.min,
+                item.id or 0
+            )
+        )
+
+        eventos = []
+        grado_anterior = None
+
+        for orden, item in enumerate(historial, start=1):
+            eventos.append({
+                "id": f"historial-grado-{item.id}",
+                "tipo": "historial_grado",
+                "entidad": "actividad_y_catedra_posgrado",
+                "registro_id": getattr(actividad, "id", None),
+                "campo": "grado_academico_id",
+                "valor_anterior": grado_anterior,
+                "valor_nuevo": ActividadDocenciaService._serializar_grado(
+                    item.grado_academico
+                ),
+                "fecha_cambio": item.fecha_inicio.isoformat(),
+                "usuario_id": item.created_by,
+                "usuario_nombre": (
+                    item.created_by_user.nombre_usuario
+                    if item.created_by_user else None
+                ),
+                "activo": item.fecha_fin is None,
+                "fecha_fin": (
+                    item.fecha_fin.isoformat()
+                    if item.fecha_fin else None
+                ),
+                # Se usa solo para ordenar eventos de igual fecha y luego se oculta.
+                "orden_historial": orden,
+                "detalle": item.serialize()
+            })
+            grado_anterior = ActividadDocenciaService._serializar_grado(
+                item.grado_academico
+            )
+
+        return eventos
+
+    @staticmethod
     def create(data: dict, user_id: int):
         ActividadDocenciaService._validar_payload(data)
         ActividadDocenciaService._validar_user_id(user_id)

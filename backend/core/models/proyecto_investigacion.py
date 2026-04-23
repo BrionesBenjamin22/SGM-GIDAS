@@ -106,9 +106,6 @@ class ProyectoInvestigacion(db.Model, AuditMixin):
     fuente_financiamiento_id = db.Column(db.Integer, db.ForeignKey('fuente_financiamiento.id'))
     fuente_financiamiento = db.relationship('FuenteFinanciamiento', back_populates='proyectos_investigacion')
 
-    planificacion_id = db.Column(db.Integer, db.ForeignKey('planificacion_grupo.id'), nullable=True)
-    planificacion = db.relationship('PlanificacionGrupo', back_populates='proyectos_investigacion')
-
     # --- Relaciones (Uno-a-Muchos) ---
     distinciones = db.relationship('DistincionRecibida', back_populates='proyecto_investigacion', cascade="all, delete-orphan")
 
@@ -146,15 +143,6 @@ class ProyectoInvestigacion(db.Model, AuditMixin):
             }
         else:
             data["fuente_financiamiento"] = None
-
-        # Planificación
-        if self.planificacion:
-            data["planificacion"] = {
-                "id": self.planificacion.id,
-                "descripcion": self.planificacion.descripcion
-            }
-        else:
-            data["planificacion"] = None
 
         # Tipo
         if self.tipo_proyecto:
@@ -244,19 +232,11 @@ class ProyectoInvestigacionMemoriaVersion(db.Model, AuditMixin):
     )
     fuente_financiamiento_nombre = db.Column(db.String(255), nullable=True)
 
-    planificacion_id = db.Column(
-        db.Integer,
-        db.ForeignKey("planificacion_grupo.id"),
-        nullable=True
-    )
-    planificacion_descripcion = db.Column(db.Text, nullable=True)
-
     memoria_version = db.relationship("MemoriaVersion", lazy="joined")
     proyecto_investigacion = db.relationship("ProyectoInvestigacion", lazy="joined")
     tipo_proyecto = db.relationship("TipoProyecto", lazy="joined")
     grupo_utn = db.relationship("GrupoInvestigacionUtn", lazy="joined")
     fuente_financiamiento = db.relationship("FuenteFinanciamiento", lazy="joined")
-    planificacion = db.relationship("PlanificacionGrupo", lazy="joined")
 
     __table_args__ = (
         db.UniqueConstraint(

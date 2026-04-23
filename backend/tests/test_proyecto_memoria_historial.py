@@ -47,11 +47,9 @@ class ProyectoMemoriaHistorialTestCase(unittest.TestCase):
             tipo_proyecto_id=2,
             grupo_utn_id=3,
             fuente_financiamiento_id=4,
-            planificacion_id=5,
             tipo_proyecto=SimpleNamespace(nombre="PID"),
             grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS"),
-            fuente_financiamiento=SimpleNamespace(nombre="UTN"),
-            planificacion=SimpleNamespace(descripcion="Plan A")
+            fuente_financiamiento=SimpleNamespace(nombre="UTN")
         )
 
         fake_query = SimpleNamespace(
