@@ -38,6 +38,7 @@ from core.routes.directivo_rutas import directivo_bp
 from core.routes.becas_rutas import beca_bp
 from core.routes.cargos_rutas import cargo_bp
 from core.routes.dashboard_rutas import dashboard_bp
+from core.routes.memorias_rutas import memoria_bp
 from core.routes.status import health_bp
 
 blueprints = [
@@ -81,5 +82,6 @@ blueprints = [
     trabajos_revistas_referato_bp,
     transferencia_socio_productiva_bp,
     visita_academica_bp,
-    tipo_reunion_bp
+    tipo_reunion_bp,
+    memoria_bp
 ]

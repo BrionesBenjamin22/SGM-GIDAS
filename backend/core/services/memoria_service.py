@@ -86,6 +86,52 @@ class MemoriaService:
         )
 
     @staticmethod
+    def _resolver_fecha_evento(fecha_evento, campo: str):
+        # Unifica el parseo de fechas datetime que marcan transiciones para que
+        # cerrar y reabrir mantengan el mismo criterio de entrada.
+        if fecha_evento in (None, ""):
+            return datetime.utcnow()
+
+        if isinstance(fecha_evento, datetime):
+            return fecha_evento
+
+        if isinstance(fecha_evento, str):
+            valor = fecha_evento.strip()
+
+            for formato in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
+                try:
+                    return datetime.strptime(valor, formato)
+                except ValueError:
+                    pass
+
+            try:
+                return datetime.combine(
+                    datetime.strptime(valor, "%Y-%m-%d").date(),
+                    datetime.min.time()
+                )
+            except ValueError:
+                pass
+
+        raise ValueError(
+            f"El campo '{campo}' debe tener formato YYYY-MM-DD o YYYY-MM-DD HH:MM:SS"
+        )
+
+    @staticmethod
+    def _validar_estado(estado):
+        if isinstance(estado, EstadoMemoria):
+            return estado
+
+        if isinstance(estado, str):
+            valor = estado.strip().lower()
+            for estado_enum in EstadoMemoria:
+                if estado_enum.value == valor:
+                    return estado_enum
+
+        raise ValueError(
+            "El estado debe ser 'abierta', 'en revision' o 'cerrada'"
+        )
+
+    @staticmethod
     def _get_memoria_or_404(memoria_id: int):
         memoria = db.session.get(
             Memoria,
@@ -94,6 +140,40 @@ class MemoriaService:
         if not memoria or memoria.deleted_at is not None:
             raise Exception("Memoria no encontrada")
         return memoria
+
+    @staticmethod
+    def _get_version_actual_or_404(memoria: Memoria):
+        if not memoria.version_actual or memoria.version_actual.deleted_at is not None:
+            raise ValueError("La memoria no tiene una version actual valida")
+        return memoria.version_actual
+
+    @staticmethod
+    def _validar_transicion_estado(estado_actual: EstadoMemoria, nuevo_estado: EstadoMemoria):
+        transiciones_validas = {
+            EstadoMemoria.ABIERTA: {
+                EstadoMemoria.EN_REVISION,
+                EstadoMemoria.CERRADA
+            },
+            EstadoMemoria.EN_REVISION: {
+                EstadoMemoria.ABIERTA,
+                EstadoMemoria.CERRADA
+            },
+            EstadoMemoria.CERRADA: set()
+        }
+
+        if nuevo_estado == estado_actual:
+            raise ValueError("La memoria ya se encuentra en ese estado")
+
+        if nuevo_estado not in transiciones_validas[estado_actual]:
+            raise ValueError(
+                f"No se puede cambiar el estado de '{estado_actual.value}' a '{nuevo_estado.value}'"
+            )
+
+    @staticmethod
+    def _obtener_siguiente_numero_version(memoria: Memoria):
+        if not memoria.versiones:
+            return 1
+        return max(version.numero_version for version in memoria.versiones) + 1
 
     @staticmethod
     def _crear_version_inicial(memoria: Memoria, user_id: int, fecha_apertura=None):
@@ -216,3 +296,80 @@ class MemoriaService:
             raise
 
         return {"message": "Memoria eliminada correctamente"}
+
+    # ==========================================
+    # CAMBIAR ESTADO
+    # ==========================================
+
+    @staticmethod
+    def change_status(memoria_id: int, data: dict):
+        MemoriaService._validar_payload(data)
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version_actual = MemoriaService._get_version_actual_or_404(memoria)
+        nuevo_estado = MemoriaService._validar_estado(data.get("estado"))
+
+        MemoriaService._validar_transicion_estado(
+            version_actual.estado,
+            nuevo_estado
+        )
+
+        # Mientras la version siga viva, solo muta su estado. La unica salida
+        # definitiva de la version actual es el estado cerrada.
+        version_actual.estado = nuevo_estado
+
+        if nuevo_estado == EstadoMemoria.CERRADA:
+            version_actual.fecha_cierre = MemoriaService._resolver_fecha_evento(
+                data.get("fecha_cierre"),
+                "fecha_cierre"
+            )
+        else:
+            version_actual.fecha_cierre = None
+
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
+
+        return memoria.serialize()
+
+    # ==========================================
+    # REABRIR (NUEVA VERSION)
+    # ==========================================
+
+    @staticmethod
+    def reopen(memoria_id: int, user_id: int, data: dict | None = None):
+        MemoriaService._validar_id(user_id, "user_id")
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version_actual = MemoriaService._get_version_actual_or_404(memoria)
+        data = data or {}
+
+        if version_actual.estado != EstadoMemoria.CERRADA:
+            raise ValueError(
+                "Solo se puede crear una nueva version a partir de una memoria cerrada"
+            )
+
+        # Reabrir no muta la version historica cerrada: crea una nueva version
+        # editable y la convierte en la version actual de la memoria.
+        nueva_version = MemoriaVersion(
+            numero_version=MemoriaService._obtener_siguiente_numero_version(memoria),
+            fecha_apertura=MemoriaService._resolver_fecha_apertura(
+                data.get("fecha_apertura")
+            ),
+            fecha_cierre=None,
+            estado=EstadoMemoria.ABIERTA,
+            memoria=memoria,
+            created_by=user_id
+        )
+
+        db.session.add(nueva_version)
+        db.session.flush()
+        memoria.version_actual_id = nueva_version.id
+
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
+
+        return memoria.serialize()
