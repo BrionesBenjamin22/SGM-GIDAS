@@ -12,7 +12,7 @@ memoria_bp = Blueprint(
 
 
 # LECTURA
-@memoria_bp.route("/", methods=["GET"])
+@memoria_bp.route("", methods=["GET"])
 @requiere_rol("ADMIN", "GESTOR", "LECTURA")
 def get_all():
     return MemoriaController.get_all()
@@ -25,7 +25,7 @@ def get_by_id(memoria_id):
 
 
 # MODIFICACION
-@memoria_bp.route("/", methods=["POST"])
+@memoria_bp.route("", methods=["POST"])
 @requiere_rol("ADMIN", "GESTOR")
 def create():
     return MemoriaController.create()
