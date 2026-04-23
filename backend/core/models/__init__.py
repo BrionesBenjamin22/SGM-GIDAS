@@ -20,6 +20,7 @@ from .trabajo_reunion import TrabajoReunionCientifica
 from .trabajo_revista import TrabajosRevistasReferato
 from .transferencia_socio import TransferenciaSocioProductiva, TipoContrato
 from .audit_mixin import AuditMixin
+from .auditoria_campo import AuditoriaCampo
 from .persona import Persona
 from .usuario import Usuario, RolUsuario
 from .visita_grupo import VisitaAcademica
