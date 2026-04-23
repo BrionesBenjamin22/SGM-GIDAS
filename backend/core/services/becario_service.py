@@ -1,7 +1,7 @@
 from datetime import date
 
 from extension import db
-from core.models.personal import Becario, TipoFormacion, BecarioHorasHistorial
+from core.models.personal import Becario, TipoFormacion, BecarioHorasHistorial, BecarioMemoriaVersion
 from core.models.grupo import GrupoInvestigacionUtn
 from core.models.proyecto_investigacion import ProyectoInvestigacion
 from core.services.auditoria_service import AuditoriaService
@@ -103,6 +103,14 @@ def _obtener_historial_activo_unico(becario):
         raise ValueError("El becario tiene mas de un historial de horas activo.")
 
     return historiales_activos[0] if historiales_activos else None
+
+
+def _resolver_horas_activas(becario):
+    historial_activo = _obtener_historial_activo_unico(becario)
+    return (
+        historial_activo.horas_semanales
+        if historial_activo else becario.horas_semanales
+    )
 
 
 def _cerrar_historial(historial_activo):
@@ -362,3 +370,55 @@ def obtener_becario_por_id(id: int):
         raise ValueError("Becario no encontrado.")
 
     return becario
+
+
+def obtener_historial_becario(id: int):
+    becario = obtener_becario_por_id(id)
+    return AuditoriaService.obtener_historial_entidad(
+        entidad="becario",
+        registro_id=becario.id
+    )
+
+
+def snapshot_becarios_para_memoria_version(memoria_version, user_id):
+    becarios = Becario.query.filter(
+        Becario.deleted_at.is_(None)
+    ).all()
+
+    snapshots = []
+    for becario in becarios:
+        snapshot = BecarioMemoriaVersion(
+            memoria_version_id=memoria_version.id,
+            becario_id=becario.id,
+            nombre_apellido=becario.nombre_apellido,
+            horas_semanales=_resolver_horas_activas(becario),
+            tipo_formacion_id=becario.tipo_formacion_id,
+            tipo_formacion_nombre=(
+                becario.tipo_formacion.nombre
+                if becario.tipo_formacion else None
+            ),
+            grupo_utn_id=becario.grupo_utn_id,
+            grupo_utn_nombre=(
+                becario.grupo_utn.nombre_sigla_grupo
+                if becario.grupo_utn else None
+            ),
+            created_by=user_id
+        )
+        db.session.add(snapshot)
+        snapshots.append(snapshot)
+
+    return snapshots
+
+
+def obtener_snapshots_becarios_por_memoria_version(memoria_version_id):
+    snapshots = (
+        BecarioMemoriaVersion.query
+        .filter(
+            BecarioMemoriaVersion.memoria_version_id == memoria_version_id,
+            BecarioMemoriaVersion.deleted_at.is_(None)
+        )
+        .order_by(BecarioMemoriaVersion.nombre_apellido.asc())
+        .all()
+    )
+
+    return [snapshot.serialize() for snapshot in snapshots]

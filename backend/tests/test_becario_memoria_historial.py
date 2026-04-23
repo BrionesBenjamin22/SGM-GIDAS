@@ -5,17 +5,15 @@ from unittest.mock import patch
 
 from core.models.auditoria_campo import AuditoriaCampo
 from core.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
-from core.models.personal import Investigador
-from core.services.auditoria_service import AuditoriaService
-from core.services.investigador_service import (
-    obtener_historial_investigador,
-    obtener_snapshots_investigadores_por_memoria_version,
-    snapshot_investigadores_para_memoria_version,
+from core.services.becario_service import (
+    obtener_historial_becario,
+    obtener_snapshots_becarios_por_memoria_version,
+    snapshot_becarios_para_memoria_version,
 )
 from core.services.memoria_service import MemoriaService
 
 
-class InvestigadorMemoriaHistorialTestCase(unittest.TestCase):
+class BecarioMemoriaHistorialTestCase(unittest.TestCase):
 
     def setUp(self):
         self.add_patcher = patch("extension.db.session.add")
@@ -33,53 +31,46 @@ class InvestigadorMemoriaHistorialTestCase(unittest.TestCase):
         self.addCleanup(self.rollback_patcher.stop)
         self.addCleanup(self.get_patcher.stop)
 
-    def test_snapshot_investigadores_para_memoria_version_persiste_foto(self):
+    def test_snapshot_becarios_para_memoria_version_persiste_foto(self):
         version = MemoriaVersion(
-            id=9,
+            id=11,
             numero_version=1,
             fecha_apertura=datetime(2026, 1, 1, 0, 0, 0),
             estado=EstadoMemoria.CERRADA,
             created_by=1
         )
-        investigador = SimpleNamespace(
-            id=5,
-            nombre_apellido="Ana Perez",
-            horas_semanales=20,
-            tipo_dedicacion_id=2,
-            categoria_utn_id=3,
-            programa_incentivos_id=4,
-            grupo_utn_id=6,
-            tipo_dedicacion=SimpleNamespace(nombre="Exclusiva"),
-            categoria_utn=SimpleNamespace(nombre="Categoria I"),
-            programa_incentivos=SimpleNamespace(nombre="Programa A"),
+        becario = SimpleNamespace(
+            id=8,
+            nombre_apellido="Luis Diaz",
+            horas_semanales=12,
+            tipo_formacion_id=2,
+            grupo_utn_id=4,
+            tipo_formacion=SimpleNamespace(nombre="Doctorado"),
             grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS"),
-            historial_horas=[SimpleNamespace(horas_semanales=30, fecha_fin=None)]
+            historial_horas=[SimpleNamespace(horas_semanales=18, fecha_fin=None)]
         )
 
         fake_query = SimpleNamespace(
-            filter=lambda *args, **kwargs: SimpleNamespace(all=lambda: [investigador])
+            filter=lambda *args, **kwargs: SimpleNamespace(all=lambda: [becario])
         )
 
         with patch(
-            "core.services.investigador_service.Investigador",
+            "core.services.becario_service.Becario",
             new=SimpleNamespace(
                 query=fake_query,
                 deleted_at=SimpleNamespace(is_=lambda *_: None)
             )
         ):
-            snapshots = snapshot_investigadores_para_memoria_version(
-                version,
-                user_id=12
-            )
+            snapshots = snapshot_becarios_para_memoria_version(version, user_id=21)
 
         self.assertEqual(len(snapshots), 1)
-        self.assertEqual(snapshots[0].investigador_id, 5)
-        self.assertEqual(snapshots[0].horas_semanales, 30)
-        self.assertEqual(snapshots[0].grupo_utn_nombre, "GIDAS")
-        self.assertEqual(snapshots[0].created_by, 12)
+        self.assertEqual(snapshots[0].becario_id, 8)
+        self.assertEqual(snapshots[0].horas_semanales, 18)
+        self.assertEqual(snapshots[0].tipo_formacion_nombre, "Doctorado")
+        self.assertEqual(snapshots[0].created_by, 21)
         self.mock_add.assert_called()
 
-    def test_change_status_a_cerrada_genera_snapshot_investigadores(self):
+    def test_change_status_a_cerrada_genera_snapshot_becarios(self):
         memoria = Memoria(
             id=1,
             periodo_inicio=date(2026, 1, 1),
@@ -87,7 +78,7 @@ class InvestigadorMemoriaHistorialTestCase(unittest.TestCase):
             created_by=1
         )
         version = MemoriaVersion(
-            id=2,
+            id=3,
             numero_version=1,
             fecha_apertura=datetime(2026, 1, 1, 0, 0, 0),
             estado=EstadoMemoria.EN_REVISION,
@@ -102,28 +93,27 @@ class InvestigadorMemoriaHistorialTestCase(unittest.TestCase):
 
         with patch(
             "core.services.memoria_service.snapshot_investigadores_para_memoria_version"
-        ) as mock_snapshot, patch(
+        ), patch(
             "core.services.memoria_service.snapshot_becarios_para_memoria_version"
-        ):
+        ) as mock_snapshot:
             resultado = MemoriaService.change_status(
                 1,
                 {"estado": "cerrada"},
-                user_id=99
+                user_id=77
             )
 
         self.assertEqual(version.estado, EstadoMemoria.CERRADA)
-        self.assertEqual(version.updated_by, 99)
-        mock_snapshot.assert_called_once_with(version, 99)
+        mock_snapshot.assert_called_once_with(version, 77)
         self.assertEqual(resultado["version_actual"]["estado"], "cerrada")
 
-    def test_obtener_historial_investigador_retorna_auditoria_ordenada(self):
+    def test_obtener_historial_becario_retorna_auditoria_ordenada(self):
         auditoria = AuditoriaCampo(
             id=1,
-            entidad="investigador",
-            registro_id=5,
+            entidad="becario",
+            registro_id=8,
             campo="nombre_apellido",
-            valor_anterior="Ana",
-            valor_nuevo="Ana Gomez",
+            valor_anterior="Luis",
+            valor_nuevo="Luis Diaz",
             fecha_cambio=datetime(2026, 4, 23, 10, 0, 0),
             usuario_id=3
         )
@@ -136,8 +126,8 @@ class InvestigadorMemoriaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.investigador_service.obtener_investigador_por_id",
-            return_value=SimpleNamespace(id=5)
+            "core.services.becario_service.obtener_becario_por_id",
+            return_value=SimpleNamespace(id=8)
         ), patch(
             "core.services.auditoria_service.AuditoriaCampo",
             new=SimpleNamespace(
@@ -148,18 +138,18 @@ class InvestigadorMemoriaHistorialTestCase(unittest.TestCase):
                 id=SimpleNamespace(desc=lambda: None)
             )
         ):
-            historial = obtener_historial_investigador(5)
+            historial = obtener_historial_becario(8)
 
         self.assertEqual(len(historial), 1)
         self.assertEqual(historial[0]["campo"], "nombre_apellido")
         self.assertEqual(historial[0]["usuario_nombre"], "admin")
 
-    def test_obtener_snapshots_investigadores_por_memoria_version(self):
+    def test_obtener_snapshots_becarios_por_memoria_version(self):
         snapshot = SimpleNamespace(
             serialize=lambda: {
-                "investigador_id": 5,
-                "nombre_apellido": "Ana Perez",
-                "memoria_version_id": 9
+                "becario_id": 8,
+                "nombre_apellido": "Luis Diaz",
+                "memoria_version_id": 11
             }
         )
 
@@ -170,7 +160,7 @@ class InvestigadorMemoriaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.investigador_service.InvestigadorMemoriaVersion",
+            "core.services.becario_service.BecarioMemoriaVersion",
             new=SimpleNamespace(
                 query=fake_query,
                 memoria_version_id=None,
@@ -178,11 +168,11 @@ class InvestigadorMemoriaHistorialTestCase(unittest.TestCase):
                 nombre_apellido=SimpleNamespace(asc=lambda: None)
             )
         ):
-            resultado = obtener_snapshots_investigadores_por_memoria_version(9)
+            resultado = obtener_snapshots_becarios_por_memoria_version(11)
 
         self.assertEqual(len(resultado), 1)
-        self.assertEqual(resultado[0]["investigador_id"], 5)
-        self.assertEqual(resultado[0]["memoria_version_id"], 9)
+        self.assertEqual(resultado[0]["becario_id"], 8)
+        self.assertEqual(resultado[0]["memoria_version_id"], 11)
 
 
 if __name__ == "__main__":

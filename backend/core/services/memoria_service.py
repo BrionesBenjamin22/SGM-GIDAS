@@ -3,8 +3,12 @@ from datetime import datetime
 from extension import db
 from core.models.memorias import Memoria, MemoriaVersion, EstadoMemoria
 from core.services.investigador_service import (
-    snapshot_investigadores_para_memoria_version,
     obtener_snapshots_investigadores_por_memoria_version,
+    snapshot_investigadores_para_memoria_version,
+)
+from core.services.becario_service import (
+    snapshot_becarios_para_memoria_version,
+    obtener_snapshots_becarios_por_memoria_version,
 )
 
 
@@ -250,6 +254,16 @@ class MemoriaService:
 
         return obtener_snapshots_investigadores_por_memoria_version(version.id)
 
+    @staticmethod
+    def get_becarios_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return obtener_snapshots_becarios_por_memoria_version(version.id)
+
     # ==========================================
     # CREATE
     # ==========================================
@@ -349,6 +363,10 @@ class MemoriaService:
             if user_id is not None:
                 version_actual.mark_updated(user_id)
                 snapshot_investigadores_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                snapshot_becarios_para_memoria_version(
                     version_actual,
                     user_id
                 )

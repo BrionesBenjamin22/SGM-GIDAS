@@ -277,6 +277,56 @@ class Investigador(db.Model, AuditMixin):
         return data
 
 
+class BecarioMemoriaVersion(db.Model, AuditMixin):
+    __tablename__ = "becario_memoria_version"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    memoria_version_id = db.Column(
+        db.Integer,
+        db.ForeignKey("memoria_version.id"),
+        nullable=False
+    )
+    becario_id = db.Column(
+        db.Integer,
+        db.ForeignKey("becario.id"),
+        nullable=False
+    )
+
+    nombre_apellido = db.Column(db.String(120), nullable=False)
+    horas_semanales = db.Column(db.Integer, nullable=False)
+
+    tipo_formacion_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tipo_formacion_becario.id"),
+        nullable=False
+    )
+    tipo_formacion_nombre = db.Column(db.String(100), nullable=True)
+
+    grupo_utn_id = db.Column(
+        db.Integer,
+        db.ForeignKey("grupo_utn.id"),
+        nullable=True
+    )
+    grupo_utn_nombre = db.Column(db.String(255), nullable=True)
+
+    memoria_version = db.relationship("MemoriaVersion", lazy="joined")
+    becario = db.relationship("Becario", lazy="joined")
+    tipo_formacion = db.relationship("TipoFormacion", lazy="joined")
+    grupo_utn = db.relationship("GrupoInvestigacionUtn", lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "memoria_version_id",
+            "becario_id",
+            name="uq_becario_memoria_version"
+        ),
+    )
+
+    def serialize(self):
+        return self.to_dict()
+
+
 class InvestigadorMemoriaVersion(db.Model, AuditMixin):
     __tablename__ = "investigador_memoria_version"
 
