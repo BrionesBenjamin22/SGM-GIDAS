@@ -4,6 +4,7 @@ from extension import db
 from core.models.personal import Becario, TipoFormacion, BecarioHorasHistorial
 from core.models.grupo import GrupoInvestigacionUtn
 from core.models.proyecto_investigacion import ProyectoInvestigacion
+from core.services.auditoria_service import AuditoriaService
 
 
 # =====================================================
@@ -188,6 +189,7 @@ def actualizar_becario(id: int, data: dict, user_id: int):
     _validar_user_id(user_id)
 
     becario = _get_activo_or_404(id)
+    cambios = {}
 
     if "activo" in data:
         if not isinstance(data["activo"], bool):
@@ -199,11 +201,22 @@ def actualizar_becario(id: int, data: dict, user_id: int):
         becario.activo = data["activo"]
 
     if "nombre_apellido" in data:
-        becario.nombre_apellido = _validar_nombre(data["nombre_apellido"])
+        nuevo_valor = _validar_nombre(data["nombre_apellido"])
+        cambio = AuditoriaService.construir_cambio(
+            becario.nombre_apellido,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["nombre_apellido"] = cambio
+            becario.nombre_apellido = nuevo_valor
 
     if "horas_semanales" in data:
         horas = _validar_horas(data["horas_semanales"])
         historial_activo = _obtener_historial_activo_unico(becario)
+        cambio = AuditoriaService.construir_cambio(
+            becario.horas_semanales,
+            horas
+        )
 
         if not historial_activo:
             nuevo_historial = BecarioHorasHistorial(
@@ -227,7 +240,9 @@ def actualizar_becario(id: int, data: dict, user_id: int):
 
             db.session.add(nuevo_historial)
 
-        becario.horas_semanales = horas
+        if cambio:
+            cambios["horas_semanales"] = cambio
+            becario.horas_semanales = horas
 
     if "tipo_formacion_id" in data:
         tipo_formacion_id = _validar_id_positivo(
@@ -235,7 +250,13 @@ def actualizar_becario(id: int, data: dict, user_id: int):
         )
         if not TipoFormacion.query.get(tipo_formacion_id):
             raise ValueError("Tipo de formacion invalido.")
-        becario.tipo_formacion_id = tipo_formacion_id
+        cambio = AuditoriaService.construir_cambio(
+            becario.tipo_formacion_id,
+            tipo_formacion_id
+        )
+        if cambio:
+            cambios["tipo_formacion_id"] = cambio
+            becario.tipo_formacion_id = tipo_formacion_id
 
     if "grupo_utn_id" in data:
         grupo_utn_id = _validar_id_positivo(
@@ -243,12 +264,27 @@ def actualizar_becario(id: int, data: dict, user_id: int):
         )
         if grupo_utn_id and not GrupoInvestigacionUtn.query.get(grupo_utn_id):
             raise ValueError("Grupo UTN invalido.")
-        becario.grupo_utn_id = grupo_utn_id
+        cambio = AuditoriaService.construir_cambio(
+            becario.grupo_utn_id,
+            grupo_utn_id
+        )
+        if cambio:
+            cambios["grupo_utn_id"] = cambio
+            becario.grupo_utn_id = grupo_utn_id
 
     if "proyectos" in data:
         proyectos_ids = _validar_proyectos_ids(data["proyectos"])
         proyectos = _obtener_proyectos_validos(proyectos_ids)
         becario.participaciones_proyecto = proyectos
+
+    if cambios:
+        becario.mark_updated(user_id)
+        AuditoriaService.registrar_cambios(
+            entidad="becario",
+            registro_id=becario.id,
+            cambios=cambios,
+            user_id=user_id
+        )
 
     try:
         db.session.commit()

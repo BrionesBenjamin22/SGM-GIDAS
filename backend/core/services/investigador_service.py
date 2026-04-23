@@ -7,6 +7,7 @@ from core.models.personal import Investigador, TipoDedicacion, InvestigadorHoras
 from core.models.categoria_utn import CategoriaUtn
 from core.models.programa_incentivos import ProgramaIncentivos
 from core.models.grupo import GrupoInvestigacionUtn
+from core.services.auditoria_service import AuditoriaService
 
 
 # =====================================================
@@ -184,13 +185,25 @@ def actualizar_investigador(id, data, user_id):
     _validar_user_id(user_id)
 
     investigador = _obtener_investigador_activo(id)
+    cambios = {}
 
     if "nombre_apellido" in data:
-        investigador.nombre_apellido = _validar_nombre(data["nombre_apellido"])
+        nuevo_valor = _validar_nombre(data["nombre_apellido"])
+        cambio = AuditoriaService.construir_cambio(
+            investigador.nombre_apellido,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["nombre_apellido"] = cambio
+            investigador.nombre_apellido = nuevo_valor
 
     if "horas_semanales" in data:
         horas = _validar_horas(data["horas_semanales"])
         historial_activo = _obtener_historial_activo_unico(investigador)
+        cambio = AuditoriaService.construir_cambio(
+            investigador.horas_semanales,
+            horas
+        )
 
         if not historial_activo:
             nuevo = InvestigadorHorasHistorial(
@@ -214,27 +227,64 @@ def actualizar_investigador(id, data, user_id):
 
             db.session.add(nuevo)
 
-        investigador.horas_semanales = horas
+        if cambio:
+            cambios["horas_semanales"] = cambio
+            investigador.horas_semanales = horas
 
     if "tipo_dedicacion_id" in data:
-        investigador.tipo_dedicacion_id = _validar_tipo_dedicacion(
+        nuevo_valor = _validar_tipo_dedicacion(
             data["tipo_dedicacion_id"]
         )
+        cambio = AuditoriaService.construir_cambio(
+            investigador.tipo_dedicacion_id,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["tipo_dedicacion_id"] = cambio
+            investigador.tipo_dedicacion_id = nuevo_valor
 
     if "categoria_utn_id" in data:
-        investigador.categoria_utn_id = _validar_categoria_utn(
+        nuevo_valor = _validar_categoria_utn(
             data["categoria_utn_id"]
         )
+        cambio = AuditoriaService.construir_cambio(
+            investigador.categoria_utn_id,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["categoria_utn_id"] = cambio
+            investigador.categoria_utn_id = nuevo_valor
 
     if "programa_incentivos_id" in data:
-        investigador.programa_incentivos_id = _validar_programa_incentivos(
+        nuevo_valor = _validar_programa_incentivos(
             data["programa_incentivos_id"]
         )
+        cambio = AuditoriaService.construir_cambio(
+            investigador.programa_incentivos_id,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["programa_incentivos_id"] = cambio
+            investigador.programa_incentivos_id = nuevo_valor
 
     if "grupo_utn_id" in data:
-        investigador.grupo_utn_id = _validar_grupo_utn(data["grupo_utn_id"])
+        nuevo_valor = _validar_grupo_utn(data["grupo_utn_id"])
+        cambio = AuditoriaService.construir_cambio(
+            investigador.grupo_utn_id,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["grupo_utn_id"] = cambio
+            investigador.grupo_utn_id = nuevo_valor
 
-    investigador.updated_by = user_id
+    if cambios:
+        investigador.mark_updated(user_id)
+        AuditoriaService.registrar_cambios(
+            entidad="investigador",
+            registro_id=investigador.id,
+            cambios=cambios,
+            user_id=user_id
+        )
 
     try:
         db.session.commit()

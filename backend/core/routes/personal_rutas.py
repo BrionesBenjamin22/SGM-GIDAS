@@ -8,12 +8,12 @@ personal_bp = Blueprint(
     url_prefix="/personal"
 )
 
-@personal_bp.route("/", methods=["POST"])
+@personal_bp.route("", methods=["POST"])
 @requiere_rol("ADMIN", "GESTOR")
 def crear():
     return PersonalController.crear(request)
 
-@personal_bp.route("/", methods=["GET"])
+@personal_bp.route("", methods=["GET"])
 @requiere_rol("ADMIN", "GESTOR", "LECTURA")
 def listar():
     return PersonalController.listar(request)

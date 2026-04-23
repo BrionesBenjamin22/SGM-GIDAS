@@ -14,6 +14,7 @@ from core.models.grupo import GrupoInvestigacionUtn
 from core.models.personal import TipoFormacion, TipoDedicacion
 from core.models.categoria_utn import CategoriaUtn
 from core.models.programa_incentivos import ProgramaIncentivos
+from core.services.auditoria_service import AuditoriaService
 
 
 # =====================================================
@@ -221,6 +222,7 @@ def actualizar_personal(id, data, rol, user_id: int):
     _validar_user_id(user_id)
 
     entidad, historial_model, fk_field = _resolver_entidad_por_rol(id, rol)
+    cambios = {}
 
     if not entidad:
         raise ValueError("Registro no encontrado.")
@@ -229,11 +231,22 @@ def actualizar_personal(id, data, rol, user_id: int):
         raise ValueError("No se puede modificar un registro eliminado.")
 
     if "nombre_apellido" in data:
-        entidad.nombre_apellido = _validar_nombre(data["nombre_apellido"])
+        nuevo_valor = _validar_nombre(data["nombre_apellido"])
+        cambio = AuditoriaService.construir_cambio(
+            entidad.nombre_apellido,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["nombre_apellido"] = cambio
+            entidad.nombre_apellido = nuevo_valor
 
     if "horas_semanales" in data:
         horas = _validar_horas(data["horas_semanales"])
         historial_activo = _obtener_historial_activo_unico(entidad)
+        cambio = AuditoriaService.construir_cambio(
+            entidad.horas_semanales,
+            horas
+        )
 
         if not historial_activo:
             nuevo = historial_model(
@@ -256,7 +269,9 @@ def actualizar_personal(id, data, rol, user_id: int):
             )
             db.session.add(nuevo)
 
-        entidad.horas_semanales = horas
+        if cambio:
+            cambios["horas_semanales"] = cambio
+            entidad.horas_semanales = horas
 
     if "activo" in data:
         if not isinstance(data["activo"], bool):
@@ -269,34 +284,102 @@ def actualizar_personal(id, data, rol, user_id: int):
 
     if rol == "investigador":
         if "tipo_dedicacion_id" in data:
-            entidad.tipo_dedicacion_id = _validar_tipo_dedicacion(
+            nuevo_valor = _validar_tipo_dedicacion(
                 data["tipo_dedicacion_id"]
             )
+            cambio = AuditoriaService.construir_cambio(
+                entidad.tipo_dedicacion_id,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["tipo_dedicacion_id"] = cambio
+                entidad.tipo_dedicacion_id = nuevo_valor
 
         if "categoria_utn_id" in data:
-            entidad.categoria_utn_id = _validar_categoria_utn(data["categoria_utn_id"])
+            nuevo_valor = _validar_categoria_utn(data["categoria_utn_id"])
+            cambio = AuditoriaService.construir_cambio(
+                entidad.categoria_utn_id,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["categoria_utn_id"] = cambio
+                entidad.categoria_utn_id = nuevo_valor
 
         if "programa_incentivos_id" in data:
-            entidad.programa_incentivos_id = _validar_programa_incentivos(
+            nuevo_valor = _validar_programa_incentivos(
                 data["programa_incentivos_id"]
             )
+            cambio = AuditoriaService.construir_cambio(
+                entidad.programa_incentivos_id,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["programa_incentivos_id"] = cambio
+                entidad.programa_incentivos_id = nuevo_valor
 
         if "grupo_utn_id" in data:
-            entidad.grupo_utn_id = _validar_grupo_utn(data["grupo_utn_id"])
+            nuevo_valor = _validar_grupo_utn(data["grupo_utn_id"])
+            cambio = AuditoriaService.construir_cambio(
+                entidad.grupo_utn_id,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["grupo_utn_id"] = cambio
+                entidad.grupo_utn_id = nuevo_valor
 
     if rol == "becario":
         if "tipo_formacion_id" in data:
-            entidad.tipo_formacion_id = _validar_tipo_formacion(data["tipo_formacion_id"])
+            nuevo_valor = _validar_tipo_formacion(data["tipo_formacion_id"])
+            cambio = AuditoriaService.construir_cambio(
+                entidad.tipo_formacion_id,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["tipo_formacion_id"] = cambio
+                entidad.tipo_formacion_id = nuevo_valor
 
         if "grupo_utn_id" in data:
-            entidad.grupo_utn_id = _validar_grupo_utn(data["grupo_utn_id"])
+            nuevo_valor = _validar_grupo_utn(data["grupo_utn_id"])
+            cambio = AuditoriaService.construir_cambio(
+                entidad.grupo_utn_id,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["grupo_utn_id"] = cambio
+                entidad.grupo_utn_id = nuevo_valor
 
     if rol == "personal":
         if "tipo_personal_id" in data:
-            entidad.tipo_personal_id = _validar_tipo_personal(data["tipo_personal_id"])
+            nuevo_valor = _validar_tipo_personal(data["tipo_personal_id"])
+            cambio = AuditoriaService.construir_cambio(
+                entidad.tipo_personal_id,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["tipo_personal_id"] = cambio
+                entidad.tipo_personal_id = nuevo_valor
 
         if "grupo_utn_id" in data:
-            entidad.grupo_utn_id = _validar_grupo_utn(data["grupo_utn_id"], obligatorio=True)
+            nuevo_valor = _validar_grupo_utn(
+                data["grupo_utn_id"],
+                obligatorio=True
+            )
+            cambio = AuditoriaService.construir_cambio(
+                entidad.grupo_utn_id,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["grupo_utn_id"] = cambio
+                entidad.grupo_utn_id = nuevo_valor
+
+    if cambios:
+        entidad.mark_updated(user_id)
+        AuditoriaService.registrar_cambios(
+            entidad=rol,
+            registro_id=entidad.id,
+            cambios=cambios,
+            user_id=user_id
+        )
 
     try:
         db.session.commit()
