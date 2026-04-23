@@ -363,6 +363,7 @@ class TransferenciaSocioProductivaService:
         if len(adoptantes) != len(adoptantes_ids):
             raise ValueError("Uno o más adoptantes no existen o están eliminados")
 
+        hubo_cambios = False
         for adoptante in adoptantes:
 
             existente = db.session.query(AdoptanteTransferencia).filter(
@@ -381,6 +382,21 @@ class TransferenciaSocioProductivaService:
             )
 
             db.session.add(nueva)
+            hubo_cambios = True
+            AuditoriaService.registrar_evento_relacion(
+                entidad="transferencia_socio_productiva",
+                registro_id=transferencia.id,
+                relacion="adoptantes",
+                accion="vincular",
+                detalle={
+                    "adoptante_id": adoptante.id,
+                    "nombre": adoptante.nombre
+                },
+                user_id=user_id
+            )
+
+        if hubo_cambios:
+            transferencia.mark_updated(user_id)
 
         db.session.commit()
 
@@ -397,6 +413,12 @@ class TransferenciaSocioProductivaService:
         if not isinstance(adoptantes_ids, list) or not adoptantes_ids:
             raise ValueError("adoptantes_ids debe ser una lista no vacía")
 
+        transferencia = db.session.get(
+            TransferenciaSocioProductiva,
+            transferencia_id
+        )
+        hubo_cambios = False
+
         for adoptante_id in adoptantes_ids:
 
             participacion = db.session.query(AdoptanteTransferencia).filter(
@@ -406,13 +428,27 @@ class TransferenciaSocioProductivaService:
             ).first()
 
             if participacion:
+                nombre_adoptante = (
+                    participacion.adoptante.nombre
+                    if getattr(participacion, "adoptante", None) else None
+                )
                 participacion.soft_delete(user_id)
+                hubo_cambios = True
+                AuditoriaService.registrar_evento_relacion(
+                    entidad="transferencia_socio_productiva",
+                    registro_id=transferencia_id,
+                    relacion="adoptantes",
+                    accion="desvincular",
+                    detalle={
+                        "adoptante_id": adoptante_id,
+                        "nombre": nombre_adoptante
+                    },
+                    user_id=user_id
+                )
+
+        if transferencia and hubo_cambios:
+            transferencia.mark_updated(user_id)
 
         db.session.commit()
-
-        transferencia = db.session.get(
-            TransferenciaSocioProductiva,
-            transferencia_id
-        )
 
         return transferencia.serialize()

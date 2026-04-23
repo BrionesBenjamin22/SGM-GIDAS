@@ -156,9 +156,11 @@ class TrabajosRevistasReferatoController:
                     "error": "investigadores_ids debe ser una lista no vacía"
                 }), 400
 
+            user_id = g.current_user_id
             result = TrabajosRevistasReferatoService.vincular_investigadores(
                 trabajo_id,
-                investigadores_ids
+                investigadores_ids,
+                user_id
             )
 
             return jsonify(result), 200
@@ -187,9 +189,11 @@ class TrabajosRevistasReferatoController:
                     "error": "investigadores_ids debe ser una lista no vacía"
                 }), 400
 
+            user_id = g.current_user_id
             result = TrabajosRevistasReferatoService.desvincular_investigadores(
                 trabajo_id,
-                investigadores_ids
+                investigadores_ids,
+                user_id
             )
 
             return jsonify(result), 200

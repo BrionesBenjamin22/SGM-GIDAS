@@ -233,6 +233,20 @@ class BecaService:
         )
 
         db.session.add(relacion)
+        beca.mark_updated(user_id)
+        AuditoriaService.registrar_evento_relacion(
+            entidad="beca",
+            registro_id=beca.id,
+            relacion="becarios",
+            accion="vincular",
+            detalle={
+                "becario_id": becario.id,
+                "fecha_inicio": fecha_inicio,
+                "fecha_fin": fecha_fin,
+                "monto_percibido": monto_percibido
+            },
+            user_id=user_id
+        )
         db.session.commit()
 
         return {"message": "Becario vinculado correctamente."}
@@ -251,6 +265,21 @@ class BecaService:
             raise ValueError("La relación no existe.")
 
         relacion.soft_delete(user_id)
+        beca = _get_beca_activa_or_404(beca_id)
+        beca.mark_updated(user_id)
+        AuditoriaService.registrar_evento_relacion(
+            entidad="beca",
+            registro_id=beca_id,
+            relacion="becarios",
+            accion="desvincular",
+            detalle={
+                "becario_id": becario_id,
+                "fecha_inicio": relacion.fecha_inicio,
+                "fecha_fin": relacion.fecha_fin,
+                "monto_percibido": relacion.monto_percibido
+            },
+            user_id=user_id
+        )
         db.session.commit()
 
         return {"message": "Becario desvinculado correctamente."}

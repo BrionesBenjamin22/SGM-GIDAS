@@ -431,7 +431,11 @@ class TrabajoReunionCientificaService:
         return trabajo.serialize()
 
     @staticmethod
-    def vincular_investigadores(trabajo_id: int, investigadores_ids: list[int]):
+    def vincular_investigadores(
+        trabajo_id: int,
+        investigadores_ids: list[int],
+        user_id: int | None = None
+    ):
         trabajo = TrabajoReunionCientificaService._get_activo_or_404(trabajo_id)
         investigadores_ids = (
             TrabajoReunionCientificaService._validar_investigadores_ids(
@@ -451,9 +455,25 @@ class TrabajoReunionCientificaService:
         if len(investigadores) != len(investigadores_ids):
             raise ValueError("Uno o mas investigadores no existen o estan eliminados")
 
+        hubo_cambios = False
         for inv in investigadores:
             if inv not in trabajo.investigadores:
                 trabajo.investigadores.append(inv)
+                hubo_cambios = True
+                AuditoriaService.registrar_evento_relacion(
+                    entidad="trabajo_reunion_cientifica",
+                    registro_id=trabajo.id,
+                    relacion="investigadores",
+                    accion="vincular",
+                    detalle={
+                        "investigador_id": inv.id,
+                        "nombre_apellido": inv.nombre_apellido
+                    },
+                    user_id=user_id
+                )
+
+        if hubo_cambios:
+            trabajo.mark_updated(user_id)
 
         try:
             db.session.commit()
@@ -464,7 +484,11 @@ class TrabajoReunionCientificaService:
         return trabajo.serialize()
 
     @staticmethod
-    def desvincular_investigadores(trabajo_id: int, investigadores_ids: list[int]):
+    def desvincular_investigadores(
+        trabajo_id: int,
+        investigadores_ids: list[int],
+        user_id: int | None = None
+    ):
         trabajo = TrabajoReunionCientificaService._get_activo_or_404(trabajo_id)
         investigadores_ids = (
             TrabajoReunionCientificaService._validar_investigadores_ids(
@@ -472,9 +496,25 @@ class TrabajoReunionCientificaService:
             )
         )
 
+        hubo_cambios = False
         for inv in trabajo.investigadores[:]:
             if inv.id in investigadores_ids:
                 trabajo.investigadores.remove(inv)
+                hubo_cambios = True
+                AuditoriaService.registrar_evento_relacion(
+                    entidad="trabajo_reunion_cientifica",
+                    registro_id=trabajo.id,
+                    relacion="investigadores",
+                    accion="desvincular",
+                    detalle={
+                        "investigador_id": inv.id,
+                        "nombre_apellido": inv.nombre_apellido
+                    },
+                    user_id=user_id
+                )
+
+        if hubo_cambios:
+            trabajo.mark_updated(user_id)
 
         try:
             db.session.commit()
