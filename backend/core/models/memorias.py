@@ -14,8 +14,8 @@ class Memoria(db.Model, AuditMixin):
     __tablename__ = "memoria"
 
     id = db.Column(db.Integer, primary_key=True)
-    periodo_inicio = db.Column(db.String(50), nullable=False)
-    periodo_fin = db.Column(db.String(50), nullable=False)
+    periodo_inicio = db.Column(db.Date, nullable=False)
+    periodo_fin = db.Column(db.Date, nullable=False)
     version_actual_id = db.Column(
         db.Integer,
         db.ForeignKey("memoria_version.id"),
@@ -36,13 +36,26 @@ class Memoria(db.Model, AuditMixin):
         post_update=True
     )
 
+    def serialize(self):
+        data = self.to_dict()
+        data["version_actual"] = (
+            self.version_actual.serialize()
+            if self.version_actual else None
+        )
+        data["cantidad_versiones"] = len(self.versiones)
+        return data
+
 
 class MemoriaVersion(db.Model, AuditMixin):
     __tablename__ = "memoria_version"
 
     id = db.Column(db.Integer, primary_key=True)
     numero_version = db.Column(db.Integer, nullable=False)
+    # La apertura pertenece a la vida de esta version concreta. Puede ser
+    # informada por el usuario al crearla o resolverse desde la capa de servicio.
     fecha_apertura = db.Column(db.DateTime, nullable=False)
+    # La fecha de cierre se completa cuando la version deja de estar activa
+    # por cambio a cerrada o por la logica de versionado definida en servicios.
     fecha_cierre = db.Column(db.DateTime, nullable=True)
     estado = db.Column(
         db.Enum(
@@ -73,3 +86,8 @@ class MemoriaVersion(db.Model, AuditMixin):
             name="uq_memoria_version_numero"
         ),
     )
+
+    def serialize(self):
+        data = self.to_dict()
+        data["estado"] = self.estado.value if self.estado else None
+        return data
