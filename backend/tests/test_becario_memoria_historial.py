@@ -97,6 +97,8 @@ class BecarioMemoriaHistorialTestCase(unittest.TestCase):
             "core.services.memoria_service.snapshot_becarios_para_memoria_version"
         ) as mock_snapshot, patch(
             "core.services.memoria_service.snapshot_personal_para_memoria_version"
+        ), patch(
+            "core.services.memoria_service.ProyectoInvestigacionService.snapshot_para_memoria_version"
         ):
             resultado = MemoriaService.change_status(
                 1,

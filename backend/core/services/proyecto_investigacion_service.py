@@ -7,7 +7,8 @@ from core.models.proyecto_investigacion import (
     ProyectoInvestigacion,
     TipoProyecto,
     InvestigadorProyecto,
-    BecarioProyecto
+    BecarioProyecto,
+    ProyectoInvestigacionMemoriaVersion
 )
 from core.models.grupo import GrupoInvestigacionUtn
 from core.models.fuente_financiamiento import FuenteFinanciamiento
@@ -660,5 +661,72 @@ class ProyectoInvestigacionService:
 
         db.session.commit()
         return proyecto.serialize()
+
+    @staticmethod
+    def obtener_historial(proyecto_id: int):
+        proyecto = ProyectoInvestigacionService._get_proyecto_or_404(proyecto_id)
+        return AuditoriaService.obtener_historial_entidad(
+            entidad="proyecto_investigacion",
+            registro_id=proyecto.id
+        )
+
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        proyectos = ProyectoInvestigacion.query.filter(
+            ProyectoInvestigacion.deleted_at.is_(None)
+        ).all()
+
+        snapshots = []
+        for proyecto in proyectos:
+            snapshot = ProyectoInvestigacionMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                proyecto_investigacion_id=proyecto.id,
+                codigo_proyecto=proyecto.codigo_proyecto,
+                nombre_proyecto=proyecto.nombre_proyecto,
+                descripcion_proyecto=proyecto.descripcion_proyecto,
+                fecha_inicio=proyecto.fecha_inicio,
+                fecha_fin=proyecto.fecha_fin,
+                dificultades_proyecto=proyecto.dificultades_proyecto,
+                monto_destinado=proyecto.monto_destinado,
+                tipo_proyecto_id=proyecto.tipo_proyecto_id,
+                tipo_proyecto_nombre=(
+                    proyecto.tipo_proyecto.nombre
+                    if proyecto.tipo_proyecto else None
+                ),
+                grupo_utn_id=proyecto.grupo_utn_id,
+                grupo_utn_nombre=(
+                    proyecto.grupo_utn.nombre_sigla_grupo
+                    if proyecto.grupo_utn else None
+                ),
+                fuente_financiamiento_id=proyecto.fuente_financiamiento_id,
+                fuente_financiamiento_nombre=(
+                    proyecto.fuente_financiamiento.nombre
+                    if proyecto.fuente_financiamiento else None
+                ),
+                planificacion_id=proyecto.planificacion_id,
+                planificacion_descripcion=(
+                    proyecto.planificacion.descripcion
+                    if proyecto.planificacion else None
+                ),
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            ProyectoInvestigacionMemoriaVersion.query
+            .filter(
+                ProyectoInvestigacionMemoriaVersion.memoria_version_id == memoria_version_id,
+                ProyectoInvestigacionMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(ProyectoInvestigacionMemoriaVersion.nombre_proyecto.asc())
+            .all()
+        )
+
+        return [snapshot.serialize() for snapshot in snapshots]
 
 

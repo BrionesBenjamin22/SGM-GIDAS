@@ -6,14 +6,10 @@ from unittest.mock import patch
 from core.models.auditoria_campo import AuditoriaCampo
 from core.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
 from core.services.memoria_service import MemoriaService
-from core.services.personal_service import (
-    obtener_historial_personal_por_rol,
-    obtener_snapshots_personal_por_memoria_version,
-    snapshot_personal_para_memoria_version,
-)
+from core.services.proyecto_investigacion_service import ProyectoInvestigacionService
 
 
-class PersonalMemoriaHistorialTestCase(unittest.TestCase):
+class ProyectoMemoriaHistorialTestCase(unittest.TestCase):
 
     def setUp(self):
         self.add_patcher = patch("extension.db.session.add")
@@ -31,46 +27,57 @@ class PersonalMemoriaHistorialTestCase(unittest.TestCase):
         self.addCleanup(self.rollback_patcher.stop)
         self.addCleanup(self.get_patcher.stop)
 
-    def test_snapshot_personal_para_memoria_version_persiste_foto(self):
+    def test_snapshot_proyecto_para_memoria_version_persiste_foto(self):
         version = MemoriaVersion(
-            id=13,
+            id=15,
             numero_version=1,
             fecha_apertura=datetime(2026, 1, 1, 0, 0, 0),
             estado=EstadoMemoria.CERRADA,
             created_by=1
         )
-        personal = SimpleNamespace(
-            id=3,
-            nombre_apellido="Maria Lopez",
-            horas_semanales=20,
-            tipo_personal_id=2,
-            grupo_utn_id=4,
-            tipo_personal=SimpleNamespace(nombre="Administrativo"),
+        proyecto = SimpleNamespace(
+            id=4,
+            codigo_proyecto=1001,
+            nombre_proyecto="Proyecto A",
+            descripcion_proyecto="Descripcion",
+            fecha_inicio=date(2026, 1, 1),
+            fecha_fin=None,
+            dificultades_proyecto="Ninguna",
+            monto_destinado=1000.0,
+            tipo_proyecto_id=2,
+            grupo_utn_id=3,
+            fuente_financiamiento_id=4,
+            planificacion_id=5,
+            tipo_proyecto=SimpleNamespace(nombre="PID"),
             grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS"),
-            historial_horas=[SimpleNamespace(horas_semanales=25, fecha_fin=None)]
+            fuente_financiamiento=SimpleNamespace(nombre="UTN"),
+            planificacion=SimpleNamespace(descripcion="Plan A")
         )
 
         fake_query = SimpleNamespace(
-            filter=lambda *args, **kwargs: SimpleNamespace(all=lambda: [personal])
+            filter=lambda *args, **kwargs: SimpleNamespace(all=lambda: [proyecto])
         )
 
         with patch(
-            "core.services.personal_service.Personal",
+            "core.services.proyecto_investigacion_service.ProyectoInvestigacion",
             new=SimpleNamespace(
                 query=fake_query,
                 deleted_at=SimpleNamespace(is_=lambda *_: None)
             )
         ):
-            snapshots = snapshot_personal_para_memoria_version(version, user_id=31)
+            snapshots = ProyectoInvestigacionService.snapshot_para_memoria_version(
+                version,
+                user_id=41
+            )
 
         self.assertEqual(len(snapshots), 1)
-        self.assertEqual(snapshots[0].personal_id, 3)
-        self.assertEqual(snapshots[0].horas_semanales, 25)
-        self.assertEqual(snapshots[0].tipo_personal_nombre, "Administrativo")
-        self.assertEqual(snapshots[0].created_by, 31)
+        self.assertEqual(snapshots[0].proyecto_investigacion_id, 4)
+        self.assertEqual(snapshots[0].tipo_proyecto_nombre, "PID")
+        self.assertEqual(snapshots[0].grupo_utn_nombre, "GIDAS")
+        self.assertEqual(snapshots[0].created_by, 41)
         self.mock_add.assert_called()
 
-    def test_change_status_a_cerrada_genera_snapshot_personal(self):
+    def test_change_status_a_cerrada_genera_snapshot_proyectos(self):
         memoria = Memoria(
             id=1,
             periodo_inicio=date(2026, 1, 1),
@@ -78,7 +85,7 @@ class PersonalMemoriaHistorialTestCase(unittest.TestCase):
             created_by=1
         )
         version = MemoriaVersion(
-            id=4,
+            id=5,
             numero_version=1,
             fecha_apertura=datetime(2026, 1, 1, 0, 0, 0),
             estado=EstadoMemoria.EN_REVISION,
@@ -97,28 +104,27 @@ class PersonalMemoriaHistorialTestCase(unittest.TestCase):
             "core.services.memoria_service.snapshot_becarios_para_memoria_version"
         ), patch(
             "core.services.memoria_service.snapshot_personal_para_memoria_version"
+        ), patch(
+            "core.services.memoria_service.ProyectoInvestigacionService.snapshot_para_memoria_version"
         ) as mock_snapshot:
-            with patch(
-                "core.services.memoria_service.ProyectoInvestigacionService.snapshot_para_memoria_version"
-            ):
-                resultado = MemoriaService.change_status(
-                    1,
-                    {"estado": "cerrada"},
-                    user_id=88
-                )
+            resultado = MemoriaService.change_status(
+                1,
+                {"estado": "cerrada"},
+                user_id=66
+            )
 
         self.assertEqual(version.estado, EstadoMemoria.CERRADA)
-        mock_snapshot.assert_called_once_with(version, 88)
+        mock_snapshot.assert_called_once_with(version, 66)
         self.assertEqual(resultado["version_actual"]["estado"], "cerrada")
 
-    def test_obtener_historial_personal_por_rol_retorna_auditoria_ordenada(self):
+    def test_obtener_historial_proyecto_retorna_auditoria_ordenada(self):
         auditoria = AuditoriaCampo(
             id=1,
-            entidad="personal",
-            registro_id=3,
-            campo="nombre_apellido",
-            valor_anterior="Maria",
-            valor_nuevo="Maria Lopez",
+            entidad="proyecto_investigacion",
+            registro_id=4,
+            campo="nombre_proyecto",
+            valor_anterior="Proyecto A",
+            valor_nuevo="Proyecto B",
             fecha_cambio=datetime(2026, 4, 23, 10, 0, 0),
             usuario_id=3
         )
@@ -131,8 +137,8 @@ class PersonalMemoriaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.personal_service._resolver_entidad_por_rol",
-            return_value=(SimpleNamespace(id=3), None, None)
+            "core.services.proyecto_investigacion_service.ProyectoInvestigacionService._get_proyecto_or_404",
+            return_value=SimpleNamespace(id=4)
         ), patch(
             "core.services.auditoria_service.AuditoriaCampo",
             new=SimpleNamespace(
@@ -143,18 +149,18 @@ class PersonalMemoriaHistorialTestCase(unittest.TestCase):
                 id=SimpleNamespace(desc=lambda: None)
             )
         ):
-            historial = obtener_historial_personal_por_rol(3, "personal")
+            historial = ProyectoInvestigacionService.obtener_historial(4)
 
         self.assertEqual(len(historial), 1)
-        self.assertEqual(historial[0]["campo"], "nombre_apellido")
+        self.assertEqual(historial[0]["campo"], "nombre_proyecto")
         self.assertEqual(historial[0]["usuario_nombre"], "admin")
 
-    def test_obtener_snapshots_personal_por_memoria_version(self):
+    def test_obtener_snapshots_proyecto_por_memoria_version(self):
         snapshot = SimpleNamespace(
             serialize=lambda: {
-                "personal_id": 3,
-                "nombre_apellido": "Maria Lopez",
-                "memoria_version_id": 13
+                "proyecto_investigacion_id": 4,
+                "nombre_proyecto": "Proyecto A",
+                "memoria_version_id": 15
             }
         )
 
@@ -165,20 +171,16 @@ class PersonalMemoriaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.personal_service.PersonalMemoriaVersion",
+            "core.services.proyecto_investigacion_service.ProyectoInvestigacionMemoriaVersion",
             new=SimpleNamespace(
                 query=fake_query,
                 memoria_version_id=None,
                 deleted_at=SimpleNamespace(is_=lambda *_: None),
-                nombre_apellido=SimpleNamespace(asc=lambda: None)
+                nombre_proyecto=SimpleNamespace(asc=lambda: None)
             )
         ):
-            resultado = obtener_snapshots_personal_por_memoria_version(13)
+            resultado = ProyectoInvestigacionService.obtener_snapshots_por_memoria_version(15)
 
         self.assertEqual(len(resultado), 1)
-        self.assertEqual(resultado[0]["personal_id"], 3)
-        self.assertEqual(resultado[0]["memoria_version_id"], 13)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        self.assertEqual(resultado[0]["proyecto_investigacion_id"], 4)
+        self.assertEqual(resultado[0]["memoria_version_id"], 15)

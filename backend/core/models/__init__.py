@@ -14,7 +14,7 @@ from .personal import Investigador, Becario, TipoFormacion, TipoDedicacion, Pers
 from .becas import Beca, Beca_Becario
 from .programa_actividades import PlanificacionGrupo
 from .programa_incentivos import ProgramaIncentivos
-from .proyecto_investigacion import ProyectoInvestigacion, TipoProyecto, BecarioProyecto, InvestigadorProyecto
+from .proyecto_investigacion import ProyectoInvestigacion, TipoProyecto, BecarioProyecto, InvestigadorProyecto, ProyectoInvestigacionMemoriaVersion
 from .registro_patente import RegistrosPropiedad, TipoRegistroPropiedad
 from .tipo_personal import TipoPersonal
 from .trabajo_reunion import TrabajoReunionCientifica

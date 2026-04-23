@@ -14,6 +14,9 @@ from core.services.personal_service import (
     snapshot_personal_para_memoria_version,
     obtener_snapshots_personal_por_memoria_version,
 )
+from core.services.proyecto_investigacion_service import (
+    ProyectoInvestigacionService,
+)
 
 
 class MemoriaService:
@@ -278,6 +281,18 @@ class MemoriaService:
 
         return obtener_snapshots_personal_por_memoria_version(version.id)
 
+    @staticmethod
+    def get_proyectos_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return ProyectoInvestigacionService.obtener_snapshots_por_memoria_version(
+            version.id
+        )
+
     # ==========================================
     # CREATE
     # ==========================================
@@ -385,6 +400,10 @@ class MemoriaService:
                     user_id
                 )
                 snapshot_personal_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                ProyectoInvestigacionService.snapshot_para_memoria_version(
                     version_actual,
                     user_id
                 )
