@@ -87,3 +87,19 @@ class AuditoriaService:
             memoria_version_id=memoria_version_id
         )
         db.session.add(auditoria)
+
+    @staticmethod
+    def obtener_historial_entidad(entidad: str, registro_id: int):
+        historial = (
+            AuditoriaCampo.query
+            .filter(
+                AuditoriaCampo.entidad == entidad,
+                AuditoriaCampo.registro_id == registro_id
+            )
+            .order_by(
+                AuditoriaCampo.fecha_cambio.desc(),
+                AuditoriaCampo.id.desc()
+            )
+            .all()
+        )
+        return [item.serialize() for item in historial]

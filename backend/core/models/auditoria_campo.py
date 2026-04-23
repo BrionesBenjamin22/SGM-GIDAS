@@ -46,4 +46,8 @@ class AuditoriaCampo(db.Model):
 
             data[column.name] = value
 
+        data["usuario_nombre"] = (
+            self.usuario.nombre_usuario if self.usuario else None
+        )
+
         return data

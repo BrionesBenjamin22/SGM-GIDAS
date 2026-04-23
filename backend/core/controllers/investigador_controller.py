@@ -5,7 +5,8 @@ from core.services.investigador_service import (
     eliminar_investigador,
     restaurar_investigador,
     listar_investigadores,
-    obtener_investigador_por_id
+    obtener_investigador_por_id,
+    obtener_historial_investigador
 )
 
 
@@ -65,6 +66,21 @@ class InvestigadorController:
             investigador = obtener_investigador_por_id(id)
 
             return jsonify(investigador.serialize()), 200
+
+        except ValueError as ve:
+            return jsonify({"error": str(ve)}), 404
+
+        except Exception as e:
+            return jsonify({
+                "error": "Error interno del servidor",
+                "detail": str(e)
+            }), 500
+
+    @staticmethod
+    def obtener_historial(req: Request, id: int) -> Response:
+        try:
+            historial = obtener_historial_investigador(id)
+            return jsonify(historial), 200
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 404

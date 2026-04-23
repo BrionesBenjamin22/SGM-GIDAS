@@ -276,6 +276,72 @@ class Investigador(db.Model, AuditMixin):
 
         return data
 
+
+class InvestigadorMemoriaVersion(db.Model, AuditMixin):
+    __tablename__ = "investigador_memoria_version"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    memoria_version_id = db.Column(
+        db.Integer,
+        db.ForeignKey("memoria_version.id"),
+        nullable=False
+    )
+    investigador_id = db.Column(
+        db.Integer,
+        db.ForeignKey("investigador.id"),
+        nullable=False
+    )
+
+    nombre_apellido = db.Column(db.String(120), nullable=False)
+    horas_semanales = db.Column(db.Integer, nullable=False)
+
+    tipo_dedicacion_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tipo_dedicacion.id"),
+        nullable=True
+    )
+    tipo_dedicacion_nombre = db.Column(db.String(100), nullable=True)
+
+    categoria_utn_id = db.Column(
+        db.Integer,
+        db.ForeignKey("categoria_utn.id"),
+        nullable=True
+    )
+    categoria_utn_nombre = db.Column(db.String(100), nullable=True)
+
+    programa_incentivos_id = db.Column(
+        db.Integer,
+        db.ForeignKey("programa_incentivos_investigador.id"),
+        nullable=True
+    )
+    programa_incentivos_nombre = db.Column(db.String(100), nullable=True)
+
+    grupo_utn_id = db.Column(
+        db.Integer,
+        db.ForeignKey("grupo_utn.id"),
+        nullable=True
+    )
+    grupo_utn_nombre = db.Column(db.String(255), nullable=True)
+
+    memoria_version = db.relationship("MemoriaVersion", lazy="joined")
+    investigador = db.relationship("Investigador", lazy="joined")
+    tipo_dedicacion = db.relationship("TipoDedicacion", lazy="joined")
+    categoria_utn = db.relationship("CategoriaUtn", lazy="joined")
+    programa_incentivos = db.relationship("ProgramaIncentivos", lazy="joined")
+    grupo_utn = db.relationship("GrupoInvestigacionUtn", lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "memoria_version_id",
+            "investigador_id",
+            name="uq_investigador_memoria_version"
+        ),
+    )
+
+    def serialize(self):
+        return self.to_dict()
+
     
     
 class BecarioHorasHistorial(db.Model, AuditMixin):

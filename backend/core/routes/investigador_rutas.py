@@ -35,6 +35,12 @@ def obtener(id):
     return InvestigadorController.obtener_por_id(request, id)
 
 
+@investigador_bp.route("/<int:id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def obtener_historial(id):
+    return InvestigadorController.obtener_historial(request, id)
+
+
 # =========================
 # ACTUALIZAR
 # =========================

@@ -23,6 +23,18 @@ class MemoriaController:
             return jsonify({"error": str(e)}), 404
 
     @staticmethod
+    def get_investigadores_snapshot(memoria_id, memoria_version_id):
+        try:
+            return jsonify(
+                MemoriaService.get_investigadores_snapshot(
+                    memoria_id,
+                    memoria_version_id
+                )
+            ), 200
+        except Exception as e:
+            return jsonify({"error": str(e)}), 404
+
+    @staticmethod
     def create():
         try:
             data = request.get_json()
@@ -60,9 +72,10 @@ class MemoriaController:
     def change_status(memoria_id):
         try:
             data = request.get_json()
+            user_id = g.current_user_id
 
             return jsonify(
-                MemoriaService.change_status(memoria_id, data)
+                MemoriaService.change_status(memoria_id, data, user_id)
             ), 200
         except Exception as e:
             return jsonify({"error": str(e)}), 400

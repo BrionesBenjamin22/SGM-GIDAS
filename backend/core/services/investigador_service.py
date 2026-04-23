@@ -3,7 +3,7 @@ from datetime import date
 from sqlalchemy.exc import IntegrityError
 
 from extension import db
-from core.models.personal import Investigador, TipoDedicacion, InvestigadorHorasHistorial
+from core.models.personal import Investigador, TipoDedicacion, InvestigadorHorasHistorial, InvestigadorMemoriaVersion
 from core.models.categoria_utn import CategoriaUtn
 from core.models.programa_incentivos import ProgramaIncentivos
 from core.models.grupo import GrupoInvestigacionUtn
@@ -67,6 +67,14 @@ def _obtener_historial_activo_unico(investigador):
         raise ValueError("El investigador tiene mas de un historial de horas activo.")
 
     return historiales_activos[0] if historiales_activos else None
+
+
+def _resolver_horas_activas(investigador):
+    historial_activo = _obtener_historial_activo_unico(investigador)
+    return (
+        historial_activo.horas_semanales
+        if historial_activo else investigador.horas_semanales
+    )
 
 
 def _cerrar_historial(historial_activo):
@@ -382,3 +390,65 @@ def obtener_investigador_por_id(id):
         raise ValueError("Investigador no encontrado.")
 
     return investigador
+
+
+def obtener_historial_investigador(id):
+    investigador = obtener_investigador_por_id(id)
+    return AuditoriaService.obtener_historial_entidad(
+        entidad="investigador",
+        registro_id=investigador.id
+    )
+
+
+def snapshot_investigadores_para_memoria_version(memoria_version, user_id):
+    investigadores = Investigador.query.filter(
+        Investigador.deleted_at.is_(None)
+    ).all()
+
+    snapshots = []
+    for investigador in investigadores:
+        snapshot = InvestigadorMemoriaVersion(
+            memoria_version_id=memoria_version.id,
+            investigador_id=investigador.id,
+            nombre_apellido=investigador.nombre_apellido,
+            horas_semanales=_resolver_horas_activas(investigador),
+            tipo_dedicacion_id=investigador.tipo_dedicacion_id,
+            tipo_dedicacion_nombre=(
+                investigador.tipo_dedicacion.nombre
+                if investigador.tipo_dedicacion else None
+            ),
+            categoria_utn_id=investigador.categoria_utn_id,
+            categoria_utn_nombre=(
+                investigador.categoria_utn.nombre
+                if investigador.categoria_utn else None
+            ),
+            programa_incentivos_id=investigador.programa_incentivos_id,
+            programa_incentivos_nombre=(
+                investigador.programa_incentivos.nombre
+                if investigador.programa_incentivos else None
+            ),
+            grupo_utn_id=investigador.grupo_utn_id,
+            grupo_utn_nombre=(
+                investigador.grupo_utn.nombre_sigla_grupo
+                if investigador.grupo_utn else None
+            ),
+            created_by=user_id
+        )
+        db.session.add(snapshot)
+        snapshots.append(snapshot)
+
+    return snapshots
+
+
+def obtener_snapshots_investigadores_por_memoria_version(memoria_version_id):
+    snapshots = (
+        InvestigadorMemoriaVersion.query
+        .filter(
+            InvestigadorMemoriaVersion.memoria_version_id == memoria_version_id,
+            InvestigadorMemoriaVersion.deleted_at.is_(None)
+        )
+        .order_by(InvestigadorMemoriaVersion.nombre_apellido.asc())
+        .all()
+    )
+
+    return [snapshot.serialize() for snapshot in snapshots]
