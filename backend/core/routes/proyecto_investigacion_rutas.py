@@ -24,7 +24,7 @@ def get_all():
 def get_by_id(proyecto_id):
     return ProyectoInvestigacionController.get_by_id(proyecto_id)
 
-@proyecto_investigacion_bp.route("/", methods=["POST"])
+@proyecto_investigacion_bp.route("", methods=["POST"])
 @requiere_rol("ADMIN", "GESTOR")
 def create():
     return ProyectoInvestigacionController.create()

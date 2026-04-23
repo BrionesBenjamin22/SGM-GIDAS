@@ -13,6 +13,7 @@ from core.models.grupo import GrupoInvestigacionUtn
 from core.models.fuente_financiamiento import FuenteFinanciamiento
 from core.models.programa_actividades import PlanificacionGrupo
 from core.models.personal import Becario, Investigador
+from core.services.auditoria_service import AuditoriaService
 
 
 class ProyectoInvestigacionService:
@@ -290,6 +291,7 @@ class ProyectoInvestigacionService:
 
         if user_id is not None:
             ProyectoInvestigacionService._validar_id(user_id, "user_id")
+        cambios = {}
 
         es_cierre_por_update = (
             user_id is not None and
@@ -305,7 +307,13 @@ class ProyectoInvestigacionService:
             "monto_destinado"
         ]:
             if field in data:
-                setattr(proyecto, field, data[field])
+                cambio = AuditoriaService.construir_cambio(
+                    getattr(proyecto, field),
+                    data[field]
+                )
+                if cambio:
+                    cambios[field] = cambio
+                    setattr(proyecto, field, data[field])
 
         if "tipo_proyecto_id" in data:
             tipo_proyecto_id = data["tipo_proyecto_id"]
@@ -315,12 +323,24 @@ class ProyectoInvestigacionService:
             if not TipoProyecto.query.get(tipo_proyecto_id):
                 raise ValueError("Tipo de proyecto inválido")
 
-            proyecto.tipo_proyecto_id = tipo_proyecto_id
+            cambio = AuditoriaService.construir_cambio(
+                proyecto.tipo_proyecto_id,
+                tipo_proyecto_id
+            )
+            if cambio:
+                cambios["tipo_proyecto_id"] = cambio
+                proyecto.tipo_proyecto_id = tipo_proyecto_id
 
         if "grupo_utn_id" in data:
             grupo_utn_id = data["grupo_utn_id"]
             if grupo_utn_id in (None, ""):
-                proyecto.grupo_utn_id = None
+                cambio = AuditoriaService.construir_cambio(
+                    proyecto.grupo_utn_id,
+                    None
+                )
+                if cambio:
+                    cambios["grupo_utn_id"] = cambio
+                    proyecto.grupo_utn_id = None
             else:
                 if not isinstance(grupo_utn_id, int) or grupo_utn_id <= 0:
                     raise ValueError("Grupo UTN inválido")
@@ -328,12 +348,24 @@ class ProyectoInvestigacionService:
                 if not GrupoInvestigacionUtn.query.get(grupo_utn_id):
                     raise ValueError("Grupo UTN inválido")
 
-                proyecto.grupo_utn_id = grupo_utn_id
+                cambio = AuditoriaService.construir_cambio(
+                    proyecto.grupo_utn_id,
+                    grupo_utn_id
+                )
+                if cambio:
+                    cambios["grupo_utn_id"] = cambio
+                    proyecto.grupo_utn_id = grupo_utn_id
 
         if "fuente_financiamiento_id" in data:
             fuente_financiamiento_id = data["fuente_financiamiento_id"]
             if fuente_financiamiento_id in (None, ""):
-                proyecto.fuente_financiamiento_id = None
+                cambio = AuditoriaService.construir_cambio(
+                    proyecto.fuente_financiamiento_id,
+                    None
+                )
+                if cambio:
+                    cambios["fuente_financiamiento_id"] = cambio
+                    proyecto.fuente_financiamiento_id = None
             else:
                 if (
                     not isinstance(fuente_financiamiento_id, int)
@@ -344,12 +376,24 @@ class ProyectoInvestigacionService:
                 if not FuenteFinanciamiento.query.get(fuente_financiamiento_id):
                     raise ValueError("Fuente de financiamiento inválida")
 
-                proyecto.fuente_financiamiento_id = fuente_financiamiento_id
+                cambio = AuditoriaService.construir_cambio(
+                    proyecto.fuente_financiamiento_id,
+                    fuente_financiamiento_id
+                )
+                if cambio:
+                    cambios["fuente_financiamiento_id"] = cambio
+                    proyecto.fuente_financiamiento_id = fuente_financiamiento_id
 
         if "planificacion_id" in data:
             planificacion_id = data["planificacion_id"]
             if planificacion_id in (None, ""):
-                proyecto.planificacion_id = None
+                cambio = AuditoriaService.construir_cambio(
+                    proyecto.planificacion_id,
+                    None
+                )
+                if cambio:
+                    cambios["planificacion_id"] = cambio
+                    proyecto.planificacion_id = None
             else:
                 if not isinstance(planificacion_id, int) or planificacion_id <= 0:
                     raise ValueError("Planificación inválida")
@@ -357,19 +401,39 @@ class ProyectoInvestigacionService:
                 if not PlanificacionGrupo.query.get(planificacion_id):
                     raise ValueError("Planificación inválida")
 
-                proyecto.planificacion_id = planificacion_id
+                cambio = AuditoriaService.construir_cambio(
+                    proyecto.planificacion_id,
+                    planificacion_id
+                )
+                if cambio:
+                    cambios["planificacion_id"] = cambio
+                    proyecto.planificacion_id = planificacion_id
 
         if "fecha_inicio" in data:
-            proyecto.fecha_inicio = datetime.strptime(
+            nueva_fecha = datetime.strptime(
                 data["fecha_inicio"], "%Y-%m-%d"
             ).date()
+            cambio = AuditoriaService.construir_cambio(
+                proyecto.fecha_inicio,
+                nueva_fecha
+            )
+            if cambio:
+                cambios["fecha_inicio"] = cambio
+                proyecto.fecha_inicio = nueva_fecha
 
         if "fecha_fin" in data:
-            proyecto.fecha_fin = (
+            nueva_fecha_fin = (
                 datetime.strptime(data["fecha_fin"], "%Y-%m-%d").date()
                 if data["fecha_fin"]
                 else None
             )
+            cambio = AuditoriaService.construir_cambio(
+                proyecto.fecha_fin,
+                nueva_fecha_fin
+            )
+            if cambio:
+                cambios["fecha_fin"] = cambio
+                proyecto.fecha_fin = nueva_fecha_fin
 
         if proyecto.fecha_fin and proyecto.fecha_fin < proyecto.fecha_inicio:
             raise Exception("La fecha fin no puede ser anterior a la fecha inicio")
@@ -380,6 +444,15 @@ class ProyectoInvestigacionService:
                     "No se puede cerrar el proyecto con una fecha futura"
                 )
             proyecto.soft_delete(user_id)
+
+        if cambios and user_id is not None:
+            proyecto.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="proyecto_investigacion",
+                registro_id=proyecto.id,
+                cambios=cambios,
+                user_id=user_id
+            )
 
         db.session.commit()
         return proyecto.serialize()

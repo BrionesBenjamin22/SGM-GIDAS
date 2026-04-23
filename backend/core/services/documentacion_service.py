@@ -1,5 +1,6 @@
 from core.models.grupo import GrupoInvestigacionUtn
 from core.models.documentacion_autores import DocumentacionBibliografica, Autor
+from core.services.auditoria_service import AuditoriaService
 from extension import db
 
 
@@ -102,24 +103,48 @@ class DocumentacionBibliograficaService:
     # UPDATE
     # =========================
     @staticmethod
-    def update(doc_id: int, data: dict):
+    def update(doc_id: int, data: dict, user_id: int):
         doc = DocumentacionBibliograficaService._get_activo_or_404(doc_id)
+        cambios = {}
 
         if "titulo" in data:
-            doc.titulo = DocumentacionBibliograficaService._normalizar_texto(
+            nuevo_valor = DocumentacionBibliograficaService._normalizar_texto(
                 data["titulo"], "Titulo"
             )
+            cambio = AuditoriaService.construir_cambio(doc.titulo, nuevo_valor)
+            if cambio:
+                cambios["titulo"] = cambio
+                doc.titulo = nuevo_valor
 
         if "editorial" in data:
-            doc.editorial = DocumentacionBibliograficaService._normalizar_texto(
+            nuevo_valor = DocumentacionBibliograficaService._normalizar_texto(
                 data["editorial"], "Editorial"
             )
+            cambio = AuditoriaService.construir_cambio(doc.editorial, nuevo_valor)
+            if cambio:
+                cambios["editorial"] = cambio
+                doc.editorial = nuevo_valor
 
         if "anio" in data:
-            doc.anio = data["anio"]
+            cambio = AuditoriaService.construir_cambio(doc.anio, data["anio"])
+            if cambio:
+                cambios["anio"] = cambio
+                doc.anio = data["anio"]
 
         if "grupo_id" in data:
-            doc.grupo_id = data["grupo_id"]
+            cambio = AuditoriaService.construir_cambio(doc.grupo_id, data["grupo_id"])
+            if cambio:
+                cambios["grupo_id"] = cambio
+                doc.grupo_id = data["grupo_id"]
+
+        if cambios:
+            doc.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="documentacion_bibliografica",
+                registro_id=doc.id,
+                cambios=cambios,
+                user_id=user_id
+            )
 
         db.session.commit()
 

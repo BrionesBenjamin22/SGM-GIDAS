@@ -7,6 +7,7 @@ from core.models.actividad_docencia import (
     RolActividad,
 )
 from core.models.personal import Investigador
+from core.services.auditoria_service import AuditoriaService
 from extension import db
 
 
@@ -287,6 +288,7 @@ class ActividadDocenciaService:
             actividad_id,
             permitir_eliminado=False
         )
+        cambios = {}
 
         if "investigador_id" in data and "grado_academico_id" in data:
             raise ValueError(
@@ -343,11 +345,20 @@ class ActividadDocenciaService:
             actividad.id,
         )
 
-        actividad.fecha_inicio = fecha_inicio
-        actividad.fecha_fin = fecha_fin
-        actividad.curso = curso
-        actividad.institucion = institucion
-        actividad.rol_actividad_id = rol_actividad_id
+        for campo, nuevo_valor in (
+            ("fecha_inicio", fecha_inicio),
+            ("fecha_fin", fecha_fin),
+            ("curso", curso),
+            ("institucion", institucion),
+            ("rol_actividad_id", rol_actividad_id),
+        ):
+            cambio = AuditoriaService.construir_cambio(
+                getattr(actividad, campo),
+                nuevo_valor
+            )
+            if cambio:
+                cambios[campo] = cambio
+                setattr(actividad, campo, nuevo_valor)
 
         historial_activo = ActividadDocenciaService._obtener_historial_activo_unico(
             actividad.id
@@ -361,6 +372,10 @@ class ActividadDocenciaService:
         if "grado_academico_id" in data:
             nuevo_grado = ActividadDocenciaService._validar_grado(
                 data["grado_academico_id"]
+            )
+            cambio = AuditoriaService.construir_cambio(
+                historial_activo.grado_academico_id if historial_activo else None,
+                nuevo_grado.id
             )
 
             if not historial_activo:
@@ -390,6 +405,18 @@ class ActividadDocenciaService:
                     created_by=user_id,
                 )
                 db.session.add(nuevo_historial)
+
+            if cambio:
+                cambios["grado_academico_id"] = cambio
+
+        if cambios and user_id is not None:
+            actividad.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="actividad_y_catedra_posgrado",
+                registro_id=actividad.id,
+                cambios=cambios,
+                user_id=user_id
+            )
 
         try:
             db.session.commit()

@@ -40,8 +40,13 @@ class ParticipacionRelevanteController:
     def update(participacion_id):
         try:
             data = request.get_json()
+            user_id = g.current_user_id
             return jsonify(
-                ParticipacionRelevanteService.update(participacion_id, data)
+                ParticipacionRelevanteService.update(
+                    participacion_id,
+                    data,
+                    user_id
+                )
             ), 200
         except Exception as e:
             return jsonify({"error": str(e)}), 400

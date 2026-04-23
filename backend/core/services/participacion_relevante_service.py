@@ -3,6 +3,7 @@ import unicodedata
 
 from core.models.participacion_relevante import ParticipacionRelevante
 from core.models.personal import Investigador
+from core.services.auditoria_service import AuditoriaService
 from extension import db
 
 
@@ -212,8 +213,9 @@ class ParticipacionRelevanteService:
         return participacion.serialize()
 
     @staticmethod
-    def update(participacion_id: int, data: dict):
+    def update(participacion_id: int, data: dict, user_id: int):
         ParticipacionRelevanteService._validar_payload(data)
+        ParticipacionRelevanteService._validar_user_id(user_id)
         part = ParticipacionRelevanteService._get_activa_or_404(participacion_id)
 
         nombre_evento = part.nombre_evento
@@ -250,17 +252,31 @@ class ParticipacionRelevanteService:
             part.id,
         )
 
-        if "nombre_evento" in data:
-            part.nombre_evento = nombre_evento
+        cambios = {}
 
-        if "forma_participacion" in data:
-            part.forma_participacion = forma_participacion
+        for campo, nuevo_valor in (
+            ("nombre_evento", nombre_evento),
+            ("forma_participacion", forma_participacion),
+            ("fecha", fecha),
+            ("investigador_id", investigador_id),
+        ):
+            if campo in data:
+                cambio = AuditoriaService.construir_cambio(
+                    getattr(part, campo),
+                    nuevo_valor
+                )
+                if cambio:
+                    cambios[campo] = cambio
+                    setattr(part, campo, nuevo_valor)
 
-        if "fecha" in data:
-            part.fecha = fecha
-
-        if "investigador_id" in data:
-            part.investigador_id = investigador_id
+        if cambios:
+            part.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="participacion_relevante",
+                registro_id=part.id,
+                cambios=cambios,
+                user_id=user_id
+            )
 
         try:
             db.session.commit()
