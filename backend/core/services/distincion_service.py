@@ -4,6 +4,7 @@ from sqlalchemy import or_
 
 from core.models.distinciones import DistincionRecibida
 from core.models.proyecto_investigacion import ProyectoInvestigacion
+from core.services.auditoria_service import AuditoriaService
 from extension import db
 
 
@@ -199,9 +200,11 @@ class DistincionRecibidaService:
         return dist.serialize()
 
     @staticmethod
-    def update(distincion_id: int, data: dict):
+    def update(distincion_id: int, data: dict, user_id: int):
         DistincionRecibidaService._validar_payload(data)
+        DistincionRecibidaService._validar_user_id(user_id)
         dist = DistincionRecibidaService._get_activa_or_404(distincion_id)
+        cambios = {}
 
         fecha = dist.fecha
         if "fecha" in data:
@@ -226,9 +229,32 @@ class DistincionRecibidaService:
             dist.id
         )
 
-        dist.fecha = fecha
-        dist.descripcion = descripcion
-        dist.proyecto_investigacion_id = proyecto_id
+        cambio = AuditoriaService.construir_cambio(dist.fecha, fecha)
+        if cambio:
+            cambios["fecha"] = cambio
+            dist.fecha = fecha
+
+        cambio = AuditoriaService.construir_cambio(dist.descripcion, descripcion)
+        if cambio:
+            cambios["descripcion"] = cambio
+            dist.descripcion = descripcion
+
+        cambio = AuditoriaService.construir_cambio(
+            dist.proyecto_investigacion_id,
+            proyecto_id
+        )
+        if cambio:
+            cambios["proyecto_investigacion_id"] = cambio
+            dist.proyecto_investigacion_id = proyecto_id
+
+        if cambios:
+            dist.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="distincion_recibida",
+                registro_id=dist.id,
+                cambios=cambios,
+                user_id=user_id
+            )
 
         try:
             db.session.commit()

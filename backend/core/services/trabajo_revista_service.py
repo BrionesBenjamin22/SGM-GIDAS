@@ -6,6 +6,7 @@ from core.models.grupo import GrupoInvestigacionUtn
 from core.models.personal import Investigador
 from core.models.trabajo_reunion import TipoReunion
 from core.models.trabajo_revista import TrabajosRevistasReferato
+from core.services.auditoria_service import AuditoriaService
 from extension import db
 
 
@@ -302,9 +303,11 @@ class TrabajosRevistasReferatoService:
         return trabajo.serialize()
 
     @staticmethod
-    def update(trabajo_id: int, data: dict):
+    def update(trabajo_id: int, data: dict, user_id: int):
         TrabajosRevistasReferatoService._validar_payload(data)
+        TrabajosRevistasReferatoService._validar_user_id(user_id)
         trabajo = TrabajosRevistasReferatoService._get_activo_or_404(trabajo_id)
+        cambios = {}
 
         titulo_trabajo = trabajo.titulo_trabajo
         if "titulo_trabajo" in data:
@@ -362,14 +365,69 @@ class TrabajosRevistasReferatoService:
             trabajo.id,
         )
 
-        trabajo.titulo_trabajo = titulo_trabajo
-        trabajo.nombre_revista = nombre_revista
-        trabajo.editorial = editorial
-        trabajo.issn = issn
-        trabajo.pais = pais
-        trabajo.fecha = fecha
-        trabajo.grupo_utn_id = grupo_utn_id
-        trabajo.tipo_reunion_id = tipo_reunion_id
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.titulo_trabajo,
+            titulo_trabajo
+        )
+        if cambio:
+            cambios["titulo_trabajo"] = cambio
+            trabajo.titulo_trabajo = titulo_trabajo
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.nombre_revista,
+            nombre_revista
+        )
+        if cambio:
+            cambios["nombre_revista"] = cambio
+            trabajo.nombre_revista = nombre_revista
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.editorial,
+            editorial
+        )
+        if cambio:
+            cambios["editorial"] = cambio
+            trabajo.editorial = editorial
+
+        cambio = AuditoriaService.construir_cambio(trabajo.issn, issn)
+        if cambio:
+            cambios["issn"] = cambio
+            trabajo.issn = issn
+
+        cambio = AuditoriaService.construir_cambio(trabajo.pais, pais)
+        if cambio:
+            cambios["pais"] = cambio
+            trabajo.pais = pais
+
+        cambio = AuditoriaService.construir_cambio(trabajo.fecha, fecha)
+        if cambio:
+            cambios["fecha"] = cambio
+            trabajo.fecha = fecha
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.grupo_utn_id,
+            grupo_utn_id
+        )
+        if cambio:
+            cambios["grupo_utn_id"] = cambio
+            trabajo.grupo_utn_id = grupo_utn_id
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.tipo_reunion_id,
+            tipo_reunion_id
+        )
+        if cambio:
+            cambios["tipo_reunion_id"] = cambio
+            trabajo.tipo_reunion_id = tipo_reunion_id
+
+        if cambios:
+            trabajo.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="trabajo_revista_referato",
+                registro_id=trabajo.id,
+                cambios=cambios,
+                user_id=user_id
+            )
 
         try:
             db.session.commit()

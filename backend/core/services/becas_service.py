@@ -5,6 +5,7 @@ from extension import db
 from core.models.becas import Beca, Beca_Becario
 from core.models.personal import Becario
 from core.models.fuente_financiamiento import FuenteFinanciamiento
+from core.services.auditoria_service import AuditoriaService
 
 
 # =====================================================
@@ -116,18 +117,20 @@ class BecaService:
         return nueva_beca.serialize()
 
     @staticmethod
-    def update(beca_id, data):
+    def update(beca_id, data, user_id):
         if not data:
             raise ValueError("Los datos no pueden estar vacios.")
 
         beca = _get_beca_activa_or_404(beca_id)
+        cambios = {}
 
         nombre_beca = beca.nombre_beca
         if "nombre_beca" in data:
             nombre_beca = _validar_nombre_beca(data["nombre_beca"])
 
+        descripcion = beca.descripcion
         if "descripcion" in data:
-            beca.descripcion = data["descripcion"]
+            descripcion = data["descripcion"]
 
         fuente_financiamiento_id = beca.fuente_financiamiento_id
         if "fuente_financiamiento_id" in data:
@@ -141,8 +144,32 @@ class BecaService:
             beca_id=beca.id
         )
 
-        beca.nombre_beca = nombre_beca
-        beca.fuente_financiamiento_id = fuente_financiamiento_id
+        cambio = AuditoriaService.construir_cambio(beca.nombre_beca, nombre_beca)
+        if cambio:
+            cambios["nombre_beca"] = cambio
+            beca.nombre_beca = nombre_beca
+
+        cambio = AuditoriaService.construir_cambio(beca.descripcion, descripcion)
+        if cambio:
+            cambios["descripcion"] = cambio
+            beca.descripcion = descripcion
+
+        cambio = AuditoriaService.construir_cambio(
+            beca.fuente_financiamiento_id,
+            fuente_financiamiento_id
+        )
+        if cambio:
+            cambios["fuente_financiamiento_id"] = cambio
+            beca.fuente_financiamiento_id = fuente_financiamiento_id
+
+        if cambios:
+            beca.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="beca",
+                registro_id=beca.id,
+                cambios=cambios,
+                user_id=user_id
+            )
 
         db.session.commit()
         return beca.serialize()

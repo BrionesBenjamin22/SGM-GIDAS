@@ -56,8 +56,9 @@ class BecaController:
     def update(beca_id):
         try:
             data = request.get_json()
+            user_id = g.current_user_id
 
-            beca_actualizada = BecaService.update(beca_id, data)
+            beca_actualizada = BecaService.update(beca_id, data, user_id)
 
             return jsonify(beca_actualizada), 200
 

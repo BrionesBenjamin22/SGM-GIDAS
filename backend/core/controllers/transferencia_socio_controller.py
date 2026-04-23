@@ -74,13 +74,15 @@ class TransferenciaSocioProductivaController:
     def update(transferencia_id):
         try:
             data = request.get_json()
+            user_id = g.current_user_id
 
             if not data:
                 return jsonify({"error": "Body requerido"}), 400
 
             result = TransferenciaSocioProductivaService.update(
                 transferencia_id,
-                data
+                data,
+                user_id
             )
 
             return jsonify(result), 200

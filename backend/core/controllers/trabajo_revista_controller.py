@@ -86,11 +86,16 @@ class TrabajosRevistasReferatoController:
     def update(trabajo_id):
         try:
             data = request.get_json()
+            user_id = g.current_user_id
 
             if not data:
                 return jsonify({"error": "Body requerido"}), 400
 
-            result = TrabajosRevistasReferatoService.update(trabajo_id, data)
+            result = TrabajosRevistasReferatoService.update(
+                trabajo_id,
+                data,
+                user_id
+            )
 
             return jsonify(result), 200
 

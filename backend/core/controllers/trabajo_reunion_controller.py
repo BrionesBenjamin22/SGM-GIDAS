@@ -72,11 +72,16 @@ class TrabajoReunionCientificaController:
     def update(trabajo_id):
         try:
             data = request.get_json()
+            user_id = g.current_user_id
 
             if not data:
                 return jsonify({"error": "Body requerido"}), 400
 
-            result = TrabajoReunionCientificaService.update(trabajo_id, data)
+            result = TrabajoReunionCientificaService.update(
+                trabajo_id,
+                data,
+                user_id
+            )
 
             return jsonify(result), 200
 

@@ -10,7 +10,7 @@ trabajo_reunion_cientifica_bp = Blueprint(
     url_prefix="/trabajos-reunion-cientifica"
 )
 
-@trabajo_reunion_cientifica_bp.route("/", methods=["GET"], strict_slashes=False)
+@trabajo_reunion_cientifica_bp.route("", methods=["GET"], strict_slashes=False)
 @requiere_rol("ADMIN", "GESTOR", "LECTURA")
 def get_all():
     return TrabajoReunionCientificaController.get_all()
@@ -22,7 +22,7 @@ def get_all():
 def get_by_id(trabajo_id):
     return TrabajoReunionCientificaController.get_by_id(trabajo_id)
 
-@trabajo_reunion_cientifica_bp.route("/", methods=["POST"], strict_slashes=False)
+@trabajo_reunion_cientifica_bp.route("", methods=["POST"], strict_slashes=False)
 @requiere_rol("ADMIN", "GESTOR")
 def create():
     return TrabajoReunionCientificaController.create()

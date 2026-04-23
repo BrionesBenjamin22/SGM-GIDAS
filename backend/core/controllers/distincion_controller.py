@@ -44,8 +44,9 @@ class DistincionRecibidaController:
     def update(distincion_id):
         try:
             data = request.get_json()
+            user_id = g.current_user_id
             return jsonify(
-                DistincionRecibidaService.update(distincion_id, data)
+                DistincionRecibidaService.update(distincion_id, data, user_id)
             ), 200
         except Exception as e:
             return jsonify({"error": str(e)}), 400

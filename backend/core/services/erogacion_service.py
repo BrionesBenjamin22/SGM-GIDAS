@@ -1,6 +1,7 @@
 from core.models.erogacion import Erogacion, TipoErogacion
 from core.models.fuente_financiamiento import FuenteFinanciamiento
 from core.models.grupo import GrupoInvestigacionUtn
+from core.services.auditoria_service import AuditoriaService
 from extension import db
 from datetime import datetime
 
@@ -161,18 +162,42 @@ class ErogacionService:
     # ==========================================
 
     @staticmethod
-    def update(erogacion_id: int, data: dict):
+    def update(erogacion_id: int, data: dict, user_id: int):
 
         erogacion = ErogacionService._get_activa_or_404(erogacion_id)
+        cambios = {}
 
         if "egresos" in data:
-            erogacion.egresos = float(data["egresos"])
+            nuevo_egreso = float(data["egresos"])
+            cambio = AuditoriaService.construir_cambio(
+                erogacion.egresos,
+                nuevo_egreso
+            )
+            if cambio:
+                cambios["egresos"] = cambio
+                erogacion.egresos = nuevo_egreso
 
         if "ingresos" in data:
-            erogacion.ingresos = float(data["ingresos"])
+            nuevo_ingreso = float(data["ingresos"])
+            cambio = AuditoriaService.construir_cambio(
+                erogacion.ingresos,
+                nuevo_ingreso
+            )
+            if cambio:
+                cambios["ingresos"] = cambio
+                erogacion.ingresos = nuevo_ingreso
 
         if erogacion.egresos == 0 and erogacion.ingresos == 0:
             raise Exception("Egresos e ingresos no pueden ser ambos 0")
+
+        if cambios:
+            erogacion.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="erogacion",
+                registro_id=erogacion.id,
+                cambios=cambios,
+                user_id=user_id
+            )
 
         db.session.commit()
         return erogacion.serialize()

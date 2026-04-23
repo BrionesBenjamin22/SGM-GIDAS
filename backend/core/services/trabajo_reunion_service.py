@@ -5,6 +5,7 @@ from sqlalchemy import or_
 from core.models.grupo import GrupoInvestigacionUtn
 from core.models.personal import Investigador
 from core.models.trabajo_reunion import TrabajoReunionCientifica, TipoReunion
+from core.services.auditoria_service import AuditoriaService
 from extension import db
 
 
@@ -282,9 +283,11 @@ class TrabajoReunionCientificaService:
         return trabajo.serialize()
 
     @staticmethod
-    def update(trabajo_id: int, data: dict):
+    def update(trabajo_id: int, data: dict, user_id: int):
         TrabajoReunionCientificaService._validar_payload(data)
+        TrabajoReunionCientificaService._validar_user_id(user_id)
         trabajo = TrabajoReunionCientificaService._get_activo_or_404(trabajo_id)
+        cambios = {}
 
         fecha_inicio = trabajo.fecha_inicio
         if "fecha_inicio" in data:
@@ -330,12 +333,62 @@ class TrabajoReunionCientificaService:
             trabajo.id,
         )
 
-        trabajo.fecha_inicio = fecha_inicio
-        trabajo.titulo_trabajo = titulo
-        trabajo.nombre_reunion = nombre_reunion
-        trabajo.procedencia = procedencia
-        trabajo.tipo_reunion_id = tipo_reunion_id
-        trabajo.grupo_utn_id = grupo_utn_id
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.fecha_inicio,
+            fecha_inicio
+        )
+        if cambio:
+            cambios["fecha_inicio"] = cambio
+            trabajo.fecha_inicio = fecha_inicio
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.titulo_trabajo,
+            titulo
+        )
+        if cambio:
+            cambios["titulo_trabajo"] = cambio
+            trabajo.titulo_trabajo = titulo
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.nombre_reunion,
+            nombre_reunion
+        )
+        if cambio:
+            cambios["nombre_reunion"] = cambio
+            trabajo.nombre_reunion = nombre_reunion
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.procedencia,
+            procedencia
+        )
+        if cambio:
+            cambios["procedencia"] = cambio
+            trabajo.procedencia = procedencia
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.tipo_reunion_id,
+            tipo_reunion_id
+        )
+        if cambio:
+            cambios["tipo_reunion_id"] = cambio
+            trabajo.tipo_reunion_id = tipo_reunion_id
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.grupo_utn_id,
+            grupo_utn_id
+        )
+        if cambio:
+            cambios["grupo_utn_id"] = cambio
+            trabajo.grupo_utn_id = grupo_utn_id
+
+        if cambios:
+            trabajo.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="trabajo_reunion_cientifica",
+                registro_id=trabajo.id,
+                cambios=cambios,
+                user_id=user_id
+            )
 
         try:
             db.session.commit()

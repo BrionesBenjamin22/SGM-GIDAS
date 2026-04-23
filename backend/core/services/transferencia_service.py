@@ -8,6 +8,7 @@ from core.models.transferencia_socio import (
     AdoptanteTransferencia
 )
 from core.models.grupo import GrupoInvestigacionUtn
+from core.services.auditoria_service import AuditoriaService
 
 
 class TransferenciaSocioProductivaService:
@@ -180,7 +181,7 @@ class TransferenciaSocioProductivaService:
     # =================================================
 
     @staticmethod
-    def update(transferencia_id, data: dict):
+    def update(transferencia_id, data: dict, user_id: int):
 
         transferencia = db.session.get(
             TransferenciaSocioProductiva,
@@ -193,38 +194,91 @@ class TransferenciaSocioProductivaService:
         if transferencia.deleted_at is not None:
             raise ValueError("No se puede modificar una transferencia eliminada")
 
+        cambios = {}
+
         if "denominacion" in data:
-            transferencia.denominacion = TransferenciaSocioProductivaService._validar_texto(
+            nuevo_valor = TransferenciaSocioProductivaService._validar_texto(
                 data["denominacion"], "denominacion"
             )
+            cambio = AuditoriaService.construir_cambio(
+                transferencia.denominacion,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["denominacion"] = cambio
+                transferencia.denominacion = nuevo_valor
 
         if "demandante" in data:
-            transferencia.demandante = TransferenciaSocioProductivaService._validar_texto(
+            nuevo_valor = TransferenciaSocioProductivaService._validar_texto(
                 data["demandante"], "demandante"
             )
+            cambio = AuditoriaService.construir_cambio(
+                transferencia.demandante,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["demandante"] = cambio
+                transferencia.demandante = nuevo_valor
 
         if "descripcion_actividad" in data:
-            transferencia.descripcion_actividad = TransferenciaSocioProductivaService._validar_texto(
+            nuevo_valor = TransferenciaSocioProductivaService._validar_texto(
                 data["descripcion_actividad"],
                 "descripcion_actividad",
                 min_len=10
             )
+            cambio = AuditoriaService.construir_cambio(
+                transferencia.descripcion_actividad,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["descripcion_actividad"] = cambio
+                transferencia.descripcion_actividad = nuevo_valor
 
         if "monto" in data:
-            transferencia.monto = TransferenciaSocioProductivaService._validar_monto(
+            nuevo_valor = TransferenciaSocioProductivaService._validar_monto(
                 data["monto"]
             )
+            cambio = AuditoriaService.construir_cambio(
+                transferencia.monto,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["monto"] = cambio
+                transferencia.monto = nuevo_valor
 
         if "fecha_inicio" in data:
-            transferencia.fecha_inicio = datetime.strptime(
+            nuevo_valor = datetime.strptime(
                 data["fecha_inicio"],
                 "%Y-%m-%d"
             ).date()
+            cambio = AuditoriaService.construir_cambio(
+                transferencia.fecha_inicio,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["fecha_inicio"] = cambio
+                transferencia.fecha_inicio = nuevo_valor
 
         if "fecha_fin" in data:
-            transferencia.fecha_fin = (
+            nuevo_valor = (
                 datetime.strptime(data["fecha_fin"], "%Y-%m-%d").date()
                 if data["fecha_fin"] else None
+            )
+            cambio = AuditoriaService.construir_cambio(
+                transferencia.fecha_fin,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["fecha_fin"] = cambio
+                transferencia.fecha_fin = nuevo_valor
+
+        if cambios:
+            transferencia.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="transferencia_socio_productiva",
+                registro_id=transferencia.id,
+                cambios=cambios,
+                user_id=user_id
             )
 
         db.session.commit()
