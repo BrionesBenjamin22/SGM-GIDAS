@@ -5,6 +5,7 @@ from core.models.personal import (
     Personal,
     Becario,
     Investigador,
+    PersonalMemoriaVersion,
     PersonalHorasHistorial,
     BecarioHorasHistorial,
     InvestigadorHorasHistorial,
@@ -81,6 +82,14 @@ def _cerrar_historial(historial_activo):
         raise ValueError("El historial activo tiene una fecha de inicio invalida.")
 
     historial_activo.fecha_fin = date.today()
+
+
+def _resolver_horas_activas(entidad):
+    historial_activo = _obtener_historial_activo_unico(entidad)
+    return (
+        historial_activo.horas_semanales
+        if historial_activo else entidad.horas_semanales
+    )
 
 
 def _resolver_entidad_por_rol(id, rol):
@@ -479,3 +488,59 @@ def obtener_personal_por_id(id):
         raise ValueError("Personal no encontrado.")
 
     return personal
+
+
+def obtener_historial_personal_por_rol(id, rol):
+    entidad, _, _ = _resolver_entidad_por_rol(id, rol)
+
+    if not entidad:
+        raise ValueError("Registro no encontrado.")
+
+    return AuditoriaService.obtener_historial_entidad(
+        entidad=rol,
+        registro_id=entidad.id
+    )
+
+
+def snapshot_personal_para_memoria_version(memoria_version, user_id):
+    personales = Personal.query.filter(
+        Personal.deleted_at.is_(None)
+    ).all()
+
+    snapshots = []
+    for personal in personales:
+        snapshot = PersonalMemoriaVersion(
+            memoria_version_id=memoria_version.id,
+            personal_id=personal.id,
+            nombre_apellido=personal.nombre_apellido,
+            horas_semanales=_resolver_horas_activas(personal),
+            tipo_personal_id=personal.tipo_personal_id,
+            tipo_personal_nombre=(
+                personal.tipo_personal.nombre
+                if personal.tipo_personal else None
+            ),
+            grupo_utn_id=personal.grupo_utn_id,
+            grupo_utn_nombre=(
+                personal.grupo_utn.nombre_sigla_grupo
+                if personal.grupo_utn else None
+            ),
+            created_by=user_id
+        )
+        db.session.add(snapshot)
+        snapshots.append(snapshot)
+
+    return snapshots
+
+
+def obtener_snapshots_personal_por_memoria_version(memoria_version_id):
+    snapshots = (
+        PersonalMemoriaVersion.query
+        .filter(
+            PersonalMemoriaVersion.memoria_version_id == memoria_version_id,
+            PersonalMemoriaVersion.deleted_at.is_(None)
+        )
+        .order_by(PersonalMemoriaVersion.nombre_apellido.asc())
+        .all()
+    )
+
+    return [snapshot.serialize() for snapshot in snapshots]

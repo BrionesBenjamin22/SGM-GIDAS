@@ -51,6 +51,56 @@ class Personal(db.Model, AuditMixin):
         return data
 
 
+class PersonalMemoriaVersion(db.Model, AuditMixin):
+    __tablename__ = "personal_memoria_version"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    memoria_version_id = db.Column(
+        db.Integer,
+        db.ForeignKey("memoria_version.id"),
+        nullable=False
+    )
+    personal_id = db.Column(
+        db.Integer,
+        db.ForeignKey("personal.id"),
+        nullable=False
+    )
+
+    nombre_apellido = db.Column(db.String(120), nullable=False)
+    horas_semanales = db.Column(db.Integer, nullable=False)
+
+    tipo_personal_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tipo_personal.id"),
+        nullable=False
+    )
+    tipo_personal_nombre = db.Column(db.String(100), nullable=True)
+
+    grupo_utn_id = db.Column(
+        db.Integer,
+        db.ForeignKey("grupo_utn.id"),
+        nullable=False
+    )
+    grupo_utn_nombre = db.Column(db.String(255), nullable=True)
+
+    memoria_version = db.relationship("MemoriaVersion", lazy="joined")
+    personal = db.relationship("Personal", lazy="joined")
+    tipo_personal = db.relationship("TipoPersonal", lazy="joined")
+    grupo_utn = db.relationship("GrupoInvestigacionUtn", lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "memoria_version_id",
+            "personal_id",
+            name="uq_personal_memoria_version"
+        ),
+    )
+
+    def serialize(self):
+        return self.to_dict()
+
+
 # =====================================================
 # BECARIO
 # =====================================================

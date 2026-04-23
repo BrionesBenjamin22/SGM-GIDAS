@@ -10,7 +10,7 @@ from .fuente_financiamiento import FuenteFinanciamiento
 from .grupo import GrupoInvestigacionUtn
 from .memorias import Memoria, MemoriaVersion, EstadoMemoria
 from .participacion_relevante import ParticipacionRelevante
-from .personal import Investigador, Becario, TipoFormacion, TipoDedicacion, Personal, BecarioHorasHistorial, InvestigadorHorasHistorial, InvestigadorMemoriaVersion, BecarioMemoriaVersion
+from .personal import Investigador, Becario, TipoFormacion, TipoDedicacion, Personal, BecarioHorasHistorial, InvestigadorHorasHistorial, InvestigadorMemoriaVersion, BecarioMemoriaVersion, PersonalMemoriaVersion
 from .becas import Beca, Beca_Becario
 from .programa_actividades import PlanificacionGrupo
 from .programa_incentivos import ProgramaIncentivos

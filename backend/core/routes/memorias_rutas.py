@@ -42,6 +42,15 @@ def get_becarios_snapshot(memoria_id, memoria_version_id):
     )
 
 
+@memoria_bp.route("/<int:memoria_id>/versiones/<int:memoria_version_id>/personal", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_personal_snapshot(memoria_id, memoria_version_id):
+    return MemoriaController.get_personal_snapshot(
+        memoria_id,
+        memoria_version_id
+    )
+
+
 # MODIFICACION
 @memoria_bp.route("", methods=["POST"])
 @requiere_rol("ADMIN", "GESTOR")

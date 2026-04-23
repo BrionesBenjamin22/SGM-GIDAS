@@ -3,7 +3,8 @@ from core.services.personal_service import (
     crear_personal,
     actualizar_personal,
     eliminar_personal_por_rol,
-    listar_personal
+    listar_personal,
+    obtener_historial_personal_por_rol
 )
 from core.services.personal_completo_service import (
     obtener_personal_por_tipo
@@ -59,6 +60,18 @@ class PersonalController:
                 return jsonify({"error": "Personal no encontrado"}), 404
 
             return jsonify(personal), 200
+
+        except ValueError as ve:
+            return jsonify({"error": str(ve)}), 404
+
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
+
+    @staticmethod
+    def obtener_historial(req: Request, rol: str, id: int) -> Response:
+        try:
+            historial = obtener_historial_personal_por_rol(id, rol)
+            return jsonify(historial), 200
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 404
