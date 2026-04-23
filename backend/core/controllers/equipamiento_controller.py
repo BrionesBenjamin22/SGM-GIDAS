@@ -41,9 +41,10 @@ class EquipamientoController:
     def update(equipamiento_id):
         try:
             data = request.get_json()
+            user_id = g.current_user_id
 
             return jsonify(
-                EquipamientoService.update(equipamiento_id, data)
+                EquipamientoService.update(equipamiento_id, data, user_id)
             ), 200
 
         except Exception as e:

@@ -2,6 +2,7 @@ from datetime import datetime, date
 
 from core.models.equipamiento import Equipamiento
 from core.models.grupo import GrupoInvestigacionUtn
+from core.services.auditoria_service import AuditoriaService
 from extension import db
 
 
@@ -146,33 +147,79 @@ class EquipamientoService:
     # ==========================================
 
     @staticmethod
-    def update(equipamiento_id: int, data: dict):
+    def update(equipamiento_id: int, data: dict, user_id: int):
         EquipamientoService._validar_payload(data)
+        EquipamientoService._validar_id(user_id, "user_id")
         equipamiento = EquipamientoService._get_activo_or_404(equipamiento_id)
+        cambios = {}
 
         if "denominacion" in data:
-            equipamiento.denominacion = EquipamientoService._validar_texto(
+            nuevo_valor = EquipamientoService._validar_texto(
                 data["denominacion"], "La denominacion"
             )
+            cambio = AuditoriaService.construir_cambio(
+                equipamiento.denominacion,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["denominacion"] = cambio
+                equipamiento.denominacion = nuevo_valor
 
         if "descripcion_breve" in data:
-            equipamiento.descripcion_breve = EquipamientoService._validar_texto(
+            nuevo_valor = EquipamientoService._validar_texto(
                 data["descripcion_breve"], "La descripcion"
             )
+            cambio = AuditoriaService.construir_cambio(
+                equipamiento.descripcion_breve,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["descripcion_breve"] = cambio
+                equipamiento.descripcion_breve = nuevo_valor
 
         if "monto_invertido" in data:
-            equipamiento.monto_invertido = EquipamientoService._validar_monto(
+            nuevo_valor = EquipamientoService._validar_monto(
                 data["monto_invertido"]
             )
+            cambio = AuditoriaService.construir_cambio(
+                equipamiento.monto_invertido,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["monto_invertido"] = cambio
+                equipamiento.monto_invertido = nuevo_valor
 
         if "fecha_incorporacion" in data:
-            equipamiento.fecha_incorporacion = EquipamientoService._validar_fecha(
+            nuevo_valor = EquipamientoService._validar_fecha(
                 data["fecha_incorporacion"]
             )
+            cambio = AuditoriaService.construir_cambio(
+                equipamiento.fecha_incorporacion,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["fecha_incorporacion"] = cambio
+                equipamiento.fecha_incorporacion = nuevo_valor
 
         if "grupo_utn_id" in data:
-            equipamiento.grupo_utn_id = EquipamientoService._validar_grupo(
+            nuevo_valor = EquipamientoService._validar_grupo(
                 data["grupo_utn_id"]
+            )
+            cambio = AuditoriaService.construir_cambio(
+                equipamiento.grupo_utn_id,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["grupo_utn_id"] = cambio
+                equipamiento.grupo_utn_id = nuevo_valor
+
+        if cambios:
+            equipamiento.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="equipamiento_grupo",
+                registro_id=equipamiento.id,
+                cambios=cambios,
+                user_id=user_id
             )
 
         try:
