@@ -6,8 +6,8 @@ env_file = os.getenv("ENV_FILE", ".env.local")
 load_dotenv(os.path.join(basedir, env_file))
 
 class Config:
-    SECRET_KEY = os.getenv("SECRET_KEY") or "gidas-dev-secret-key-do-not-use-in-production-2024"
-    FRONTEND_URL = os.getenv("FRONTEND_URL") or "http://localhost:5173"
+    SECRET_KEY = os.getenv("SECRET_KEY") 
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost") 
 
     MAIL_SERVER = os.getenv("MAIL_SERVER")
     MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
