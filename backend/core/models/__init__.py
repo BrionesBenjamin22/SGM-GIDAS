@@ -9,7 +9,7 @@ from .erogacion import Erogacion, TipoErogacion
 from .fuente_financiamiento import FuenteFinanciamiento
 from .grupo import GrupoInvestigacionUtn
 from .memorias import Memoria, MemoriaVersion, EstadoMemoria
-from .participacion_relevante import ParticipacionRelevante
+from .participacion_relevante import ParticipacionRelevante, ParticipacionRelevanteMemoriaVersion
 from .personal import Investigador, Becario, TipoFormacion, TipoDedicacion, Personal, BecarioHorasHistorial, InvestigadorHorasHistorial, InvestigadorMemoriaVersion, BecarioMemoriaVersion, PersonalMemoriaVersion
 from .becas import Beca, Beca_Becario
 from .programa_actividades import PlanificacionGrupo

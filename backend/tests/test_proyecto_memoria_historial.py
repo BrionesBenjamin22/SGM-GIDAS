@@ -106,6 +106,8 @@ class ProyectoMemoriaHistorialTestCase(unittest.TestCase):
             "core.services.memoria_service.ProyectoInvestigacionService.snapshot_para_memoria_version"
         ) as mock_snapshot, patch(
             "core.services.memoria_service.ActividadDocenciaService.snapshot_para_memoria_version"
+        ), patch(
+            "core.services.memoria_service.ParticipacionRelevanteService.snapshot_para_memoria_version"
         ):
             resultado = MemoriaService.change_status(
                 1,

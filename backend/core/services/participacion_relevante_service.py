@@ -1,7 +1,10 @@
 from datetime import date, datetime
 import unicodedata
 
-from core.models.participacion_relevante import ParticipacionRelevante
+from core.models.participacion_relevante import (
+    ParticipacionRelevante,
+    ParticipacionRelevanteMemoriaVersion,
+)
 from core.models.personal import Investigador
 from core.services.auditoria_service import AuditoriaService
 from extension import db
@@ -169,6 +172,14 @@ class ParticipacionRelevanteService:
         ).serialize()
 
     @staticmethod
+    def get_historial(participacion_id: int):
+        participacion = ParticipacionRelevanteService._get_or_404(participacion_id)
+        return AuditoriaService.obtener_historial_entidad(
+            entidad="participacion_relevante",
+            registro_id=participacion.id
+        )
+
+    @staticmethod
     def create(data: dict, user_id: int):
         ParticipacionRelevanteService._validar_payload(data)
         ParticipacionRelevanteService._validar_user_id(user_id)
@@ -300,3 +311,43 @@ class ParticipacionRelevanteService:
             raise
 
         return {"message": "Participacion relevante eliminada correctamente"}
+
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        participaciones = ParticipacionRelevante.query.filter(
+            ParticipacionRelevante.deleted_at.is_(None)
+        ).all()
+
+        snapshots = []
+        for participacion in participaciones:
+            snapshot = ParticipacionRelevanteMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                participacion_relevante_id=participacion.id,
+                nombre_evento=participacion.nombre_evento,
+                forma_participacion=participacion.forma_participacion,
+                fecha=participacion.fecha,
+                investigador_id=participacion.investigador_id,
+                investigador_nombre=(
+                    participacion.investigador.nombre_apellido
+                    if participacion.investigador else None
+                ),
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            ParticipacionRelevanteMemoriaVersion.query
+            .filter(
+                ParticipacionRelevanteMemoriaVersion.memoria_version_id == memoria_version_id,
+                ParticipacionRelevanteMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(ParticipacionRelevanteMemoriaVersion.fecha.desc())
+            .all()
+        )
+
+        return [snapshot.serialize() for snapshot in snapshots]

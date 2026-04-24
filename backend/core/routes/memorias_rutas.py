@@ -69,6 +69,15 @@ def get_actividades_docencia_snapshot(memoria_id, memoria_version_id):
     )
 
 
+@memoria_bp.route("/<int:memoria_id>/versiones/<int:memoria_version_id>/participaciones-relevantes", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_participaciones_relevantes_snapshot(memoria_id, memoria_version_id):
+    return MemoriaController.get_participaciones_relevantes_snapshot(
+        memoria_id,
+        memoria_version_id
+    )
+
+
 # MODIFICACION
 @memoria_bp.route("", methods=["POST"])
 @requiere_rol("ADMIN", "GESTOR")
