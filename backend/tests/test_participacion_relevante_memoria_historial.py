@@ -102,11 +102,14 @@ class ParticipacionRelevanteMemoriaHistorialTestCase(unittest.TestCase):
         ), patch(
             "core.services.memoria_service.ParticipacionRelevanteService.snapshot_para_memoria_version"
         ) as mock_snapshot:
-            resultado = MemoriaService.change_status(
-                1,
-                {"estado": "cerrada"},
-                user_id=71
-            )
+            with patch(
+                "core.services.memoria_service.DocumentacionBibliograficaService.snapshot_para_memoria_version"
+            ):
+                resultado = MemoriaService.change_status(
+                    1,
+                    {"estado": "cerrada"},
+                    user_id=71
+                )
 
         self.assertEqual(version.estado, EstadoMemoria.CERRADA)
         mock_snapshot.assert_called_once_with(version, 71)

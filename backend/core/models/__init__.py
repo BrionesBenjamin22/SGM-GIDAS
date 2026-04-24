@@ -2,7 +2,7 @@ from .articulo_divulgacion import ArticuloDivulgacion
 from .actividad_docencia import ActividadDocencia, RolActividad, GradoAcademico, ActividadDocenciaMemoriaVersion, ActividadDocenciaGradoMemoriaVersion
 from .categoria_utn import CategoriaUtn
 from .distinciones import DistincionRecibida
-from .documentacion_autores import DocumentacionBibliografica, Autor, autor_libro
+from .documentacion_autores import DocumentacionBibliografica, Autor, autor_libro, DocumentacionBibliograficaMemoriaVersion, DocumentacionBibliograficaAutorMemoriaVersion
 from .directivos import Directivo, DirectivoGrupo, Cargo
 from .equipamiento import Equipamiento
 from .erogacion import Erogacion, TipoErogacion

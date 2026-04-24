@@ -27,6 +27,12 @@ def get_by_id(doc_id):
     return DocumentacionBibliograficaController.get_by_id(doc_id)
 
 
+@documentacion_bibliografica_bp.route("/<int:doc_id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_historial(doc_id):
+    return DocumentacionBibliograficaController.get_historial(doc_id)
+
+
 # =========================
 # MODIFICACIÓN
 # =========================

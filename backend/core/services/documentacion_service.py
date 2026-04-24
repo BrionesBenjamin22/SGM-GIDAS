@@ -1,5 +1,10 @@
 from core.models.grupo import GrupoInvestigacionUtn
-from core.models.documentacion_autores import DocumentacionBibliografica, Autor
+from core.models.documentacion_autores import (
+    DocumentacionBibliografica,
+    Autor,
+    DocumentacionBibliograficaMemoriaVersion,
+    DocumentacionBibliograficaAutorMemoriaVersion,
+)
 from core.services.auditoria_service import AuditoriaService
 from extension import db
 
@@ -67,6 +72,16 @@ class DocumentacionBibliograficaService:
         if not doc:
             raise Exception("Documentacion bibliografica no encontrada")
         return doc.serialize()
+
+    @staticmethod
+    def get_historial(doc_id: int):
+        doc = db.session.get(DocumentacionBibliografica, doc_id)
+        if not doc:
+            raise Exception("Documentacion bibliografica no encontrada")
+        return AuditoriaService.obtener_historial_entidad(
+            entidad="documentacion_bibliografica",
+            registro_id=doc.id
+        )
 
     # =========================
     # CREATE
@@ -197,3 +212,58 @@ class DocumentacionBibliograficaService:
         db.session.commit()
 
         return doc.serialize()
+
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        documentos = DocumentacionBibliografica.query.filter(
+            DocumentacionBibliografica.deleted_at.is_(None)
+        ).all()
+
+        snapshots = []
+        for doc in documentos:
+            snapshot = DocumentacionBibliograficaMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                documentacion_bibliografica_id=doc.id,
+                titulo=doc.titulo,
+                editorial=doc.editorial,
+                anio=doc.anio,
+                fecha=doc.fecha,
+                grupo_id=doc.grupo_id,
+                grupo_nombre=(
+                    doc.grupo_utn.nombre_unidad_academica
+                    if doc.grupo_utn else None
+                ),
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            db.session.flush()
+
+            for autor in getattr(doc, "autores", []):
+                if getattr(autor, "deleted_at", None) is not None:
+                    continue
+
+                autor_snapshot = DocumentacionBibliograficaAutorMemoriaVersion(
+                    documentacion_memoria_version=snapshot,
+                    autor_id=autor.id,
+                    nombre_apellido=autor.nombre_apellido,
+                    created_by=user_id
+                )
+                db.session.add(autor_snapshot)
+
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            DocumentacionBibliograficaMemoriaVersion.query
+            .filter(
+                DocumentacionBibliograficaMemoriaVersion.memoria_version_id == memoria_version_id,
+                DocumentacionBibliograficaMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(DocumentacionBibliograficaMemoriaVersion.titulo.asc())
+            .all()
+        )
+
+        return [snapshot.serialize() for snapshot in snapshots]

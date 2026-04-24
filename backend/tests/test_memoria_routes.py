@@ -139,6 +139,23 @@ class MemoriaRoutesTestCase(unittest.TestCase):
         self.assertEqual(response.get_json(), [{"participacion_relevante_id": 1}])
         mock_get_snapshot.assert_called_once_with(1, 2)
 
+    def test_get_snapshot_documentacion_con_rol_lectura_devuelve_200(self):
+        with patch(
+            "core.services.middleware.AuthService.verify_token",
+            return_value={"sub": "15", "rol": "LECTURA"}
+        ), patch(
+            "core.controllers.memoria_controller.MemoriaService.get_documentacion_snapshot",
+            return_value=[{"documentacion_bibliografica_id": 1}]
+        ) as mock_get_snapshot:
+            response = self.client.get(
+                "/memorias/1/versiones/2/documentacion-bibliografica",
+                headers=self._headers()
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), [{"documentacion_bibliografica_id": 1}])
+        mock_get_snapshot.assert_called_once_with(1, 2)
+
     def test_post_con_rol_lectura_devuelve_403(self):
         with patch(
             "core.services.middleware.AuthService.verify_token",
