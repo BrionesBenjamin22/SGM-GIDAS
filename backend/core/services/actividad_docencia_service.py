@@ -2,6 +2,8 @@ from datetime import date, datetime
 
 from core.models.actividad_docencia import (
     ActividadDocencia,
+    ActividadDocenciaGradoMemoriaVersion,
+    ActividadDocenciaMemoriaVersion,
     GradoAcademico,
     InvestigadorActividadGrado,
     RolActividad,
@@ -114,6 +116,17 @@ class ActividadDocenciaService:
             )
 
         return historiales[0] if historiales else None
+
+    @staticmethod
+    def _obtener_grado_activo_desde_actividad(actividad):
+        historial_activo = next(
+            (
+                item for item in getattr(actividad, "investigadores_grado", [])
+                if item.fecha_fin is None
+            ),
+            None
+        )
+        return historial_activo.grado_academico if historial_activo else None
 
     @staticmethod
     def _validar_grado(grado_id):
@@ -528,3 +541,78 @@ class ActividadDocenciaService:
             raise
 
         return {"message": "Actividad de docencia eliminada correctamente"}
+
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        actividades = ActividadDocencia.query.filter(
+            ActividadDocencia.deleted_at.is_(None)
+        ).all()
+
+        snapshots = []
+        for actividad in actividades:
+            grado_activo = (
+                ActividadDocenciaService._obtener_grado_activo_desde_actividad(
+                    actividad
+                )
+            )
+            snapshot = ActividadDocenciaMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                actividad_docencia_id=actividad.id,
+                curso=actividad.curso,
+                institucion=actividad.institucion,
+                fecha_inicio=actividad.fecha_inicio,
+                fecha_fin=actividad.fecha_fin,
+                investigador_id=actividad.investigador_id,
+                investigador_nombre=(
+                    actividad.investigador.nombre_apellido
+                    if actividad.investigador else None
+                ),
+                rol_actividad_id=actividad.rol_actividad_id,
+                rol_actividad_nombre=(
+                    actividad.rol_actividad.nombre
+                    if actividad.rol_actividad else None
+                ),
+                grado_academico_id=(
+                    grado_activo.id if grado_activo else None
+                ),
+                grado_academico_nombre=(
+                    grado_activo.nombre if grado_activo else None
+                ),
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            db.session.flush()
+
+            for historial in getattr(actividad, "investigadores_grado", []):
+                historial_snapshot = ActividadDocenciaGradoMemoriaVersion(
+                    actividad_docencia_memoria_version=snapshot,
+                    investigador_actividad_grado_id=historial.id,
+                    investigador_id=historial.investigador_id,
+                    grado_academico_id=historial.grado_academico_id,
+                    grado_academico_nombre=(
+                        historial.grado_academico.nombre
+                        if historial.grado_academico else None
+                    ),
+                    fecha_inicio=historial.fecha_inicio,
+                    fecha_fin=historial.fecha_fin,
+                    created_by=user_id
+                )
+                db.session.add(historial_snapshot)
+
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            ActividadDocenciaMemoriaVersion.query
+            .filter(
+                ActividadDocenciaMemoriaVersion.memoria_version_id == memoria_version_id,
+                ActividadDocenciaMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(ActividadDocenciaMemoriaVersion.curso.asc())
+            .all()
+        )
+
+        return [snapshot.serialize() for snapshot in snapshots]

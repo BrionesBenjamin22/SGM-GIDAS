@@ -3,74 +3,100 @@ from datetime import date, datetime
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from core.models.auditoria_campo import AuditoriaCampo
 from core.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
-from core.services.becario_service import (
-    obtener_historial_becario,
-    obtener_snapshots_becarios_por_memoria_version,
-    snapshot_becarios_para_memoria_version,
-)
+from core.services.actividad_docencia_service import ActividadDocenciaService
 from core.services.memoria_service import MemoriaService
 
 
-class BecarioMemoriaHistorialTestCase(unittest.TestCase):
+class ActividadDocenciaMemoriaHistorialTestCase(unittest.TestCase):
 
     def setUp(self):
         self.add_patcher = patch("extension.db.session.add")
+        self.flush_patcher = patch("extension.db.session.flush")
         self.commit_patcher = patch("extension.db.session.commit")
         self.rollback_patcher = patch("extension.db.session.rollback")
         self.get_patcher = patch("core.services.memoria_service.db.session.get")
 
         self.mock_add = self.add_patcher.start()
+        self.mock_flush = self.flush_patcher.start()
         self.mock_commit = self.commit_patcher.start()
         self.mock_rollback = self.rollback_patcher.start()
         self.mock_get = self.get_patcher.start()
 
         self.addCleanup(self.add_patcher.stop)
+        self.addCleanup(self.flush_patcher.stop)
         self.addCleanup(self.commit_patcher.stop)
         self.addCleanup(self.rollback_patcher.stop)
         self.addCleanup(self.get_patcher.stop)
 
-    def test_snapshot_becarios_para_memoria_version_persiste_foto(self):
+    def test_snapshot_actividad_docencia_para_memoria_version_persiste_foto(self):
         version = MemoriaVersion(
-            id=11,
+            id=21,
             numero_version=1,
             fecha_apertura=datetime(2026, 1, 1, 0, 0, 0),
             estado=EstadoMemoria.CERRADA,
             created_by=1
         )
-        becario = SimpleNamespace(
-            id=8,
-            nombre_apellido="Luis Diaz",
-            horas_semanales=12,
-            tipo_formacion_id=2,
-            grupo_utn_id=4,
-            tipo_formacion=SimpleNamespace(nombre="Doctorado"),
-            grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS"),
-            historial_horas=[SimpleNamespace(horas_semanales=18, fecha_fin=None)]
+        grado_activo = SimpleNamespace(id=8, nombre="Titular")
+        actividad = SimpleNamespace(
+            id=3,
+            curso="Curso A",
+            institucion="UTN",
+            fecha_inicio=date(2026, 3, 1),
+            fecha_fin=date(2026, 7, 1),
+            investigador_id=4,
+            investigador=SimpleNamespace(nombre_apellido="Ana Perez"),
+            rol_actividad_id=5,
+            rol_actividad=SimpleNamespace(nombre="Responsable"),
+            investigadores_grado=[
+                SimpleNamespace(
+                    id=9,
+                    investigador_id=4,
+                    grado_academico_id=8,
+                    fecha_inicio=date(2026, 3, 1),
+                    fecha_fin=None,
+                    grado_academico=grado_activo
+                ),
+                SimpleNamespace(
+                    id=10,
+                    investigador_id=4,
+                    grado_academico_id=6,
+                    fecha_inicio=date(2026, 1, 1),
+                    fecha_fin=date(2026, 2, 28),
+                    grado_academico=SimpleNamespace(id=6, nombre="Adjunto")
+                )
+            ]
         )
 
         fake_query = SimpleNamespace(
-            filter=lambda *args, **kwargs: SimpleNamespace(all=lambda: [becario])
+            filter=lambda *args, **kwargs: SimpleNamespace(all=lambda: [actividad])
         )
 
         with patch(
-            "core.services.becario_service.Becario",
+            "core.services.actividad_docencia_service.ActividadDocencia",
             new=SimpleNamespace(
                 query=fake_query,
                 deleted_at=SimpleNamespace(is_=lambda *_: None)
             )
         ):
-            snapshots = snapshot_becarios_para_memoria_version(version, user_id=21)
+            snapshots = ActividadDocenciaService.snapshot_para_memoria_version(
+                version,
+                user_id=33
+            )
 
         self.assertEqual(len(snapshots), 1)
-        self.assertEqual(snapshots[0].becario_id, 8)
-        self.assertEqual(snapshots[0].horas_semanales, 18)
-        self.assertEqual(snapshots[0].tipo_formacion_nombre, "Doctorado")
-        self.assertEqual(snapshots[0].created_by, 21)
+        self.assertEqual(snapshots[0].actividad_docencia_id, 3)
+        self.assertEqual(snapshots[0].grado_academico_id, 8)
+        self.assertEqual(snapshots[0].grado_academico_nombre, "Titular")
+        self.assertEqual(len(snapshots[0].historial_grados), 2)
+        self.assertEqual(
+            snapshots[0].historial_grados[0].investigador_actividad_grado_id,
+            9
+        )
+        self.assertEqual(snapshots[0].created_by, 33)
         self.mock_add.assert_called()
 
-    def test_change_status_a_cerrada_genera_snapshot_becarios(self):
+    def test_change_status_a_cerrada_genera_snapshot_docencia(self):
         memoria = Memoria(
             id=1,
             periodo_inicio=date(2026, 1, 1),
@@ -78,7 +104,7 @@ class BecarioMemoriaHistorialTestCase(unittest.TestCase):
             created_by=1
         )
         version = MemoriaVersion(
-            id=3,
+            id=5,
             numero_version=1,
             fecha_apertura=datetime(2026, 1, 1, 0, 0, 0),
             estado=EstadoMemoria.EN_REVISION,
@@ -95,67 +121,35 @@ class BecarioMemoriaHistorialTestCase(unittest.TestCase):
             "core.services.memoria_service.snapshot_investigadores_para_memoria_version"
         ), patch(
             "core.services.memoria_service.snapshot_becarios_para_memoria_version"
-        ) as mock_snapshot, patch(
+        ), patch(
             "core.services.memoria_service.snapshot_personal_para_memoria_version"
         ), patch(
             "core.services.memoria_service.ProyectoInvestigacionService.snapshot_para_memoria_version"
         ), patch(
             "core.services.memoria_service.ActividadDocenciaService.snapshot_para_memoria_version"
-        ):
+        ) as mock_snapshot:
             resultado = MemoriaService.change_status(
                 1,
                 {"estado": "cerrada"},
-                user_id=77
+                user_id=66
             )
 
         self.assertEqual(version.estado, EstadoMemoria.CERRADA)
-        mock_snapshot.assert_called_once_with(version, 77)
+        mock_snapshot.assert_called_once_with(version, 66)
         self.assertEqual(resultado["version_actual"]["estado"], "cerrada")
 
-    def test_obtener_historial_becario_retorna_auditoria_ordenada(self):
-        auditoria = AuditoriaCampo(
-            id=1,
-            entidad="becario",
-            registro_id=8,
-            campo="nombre_apellido",
-            valor_anterior="Luis",
-            valor_nuevo="Luis Diaz",
-            fecha_cambio=datetime(2026, 4, 23, 10, 0, 0),
-            usuario_id=3
-        )
-        auditoria.usuario = SimpleNamespace(nombre_usuario="admin")
-
-        fake_query = SimpleNamespace(
-            filter=lambda *args, **kwargs: SimpleNamespace(
-                order_by=lambda *a, **k: SimpleNamespace(all=lambda: [auditoria])
-            )
-        )
-
-        with patch(
-            "core.services.becario_service.obtener_becario_por_id",
-            return_value=SimpleNamespace(id=8)
-        ), patch(
-            "core.services.auditoria_service.AuditoriaCampo",
-            new=SimpleNamespace(
-                query=fake_query,
-                entidad=None,
-                registro_id=None,
-                fecha_cambio=SimpleNamespace(desc=lambda: None),
-                id=SimpleNamespace(desc=lambda: None)
-            )
-        ):
-            historial = obtener_historial_becario(8)
-
-        self.assertEqual(len(historial), 1)
-        self.assertEqual(historial[0]["campo"], "nombre_apellido")
-        self.assertEqual(historial[0]["usuario_nombre"], "admin")
-
-    def test_obtener_snapshots_becarios_por_memoria_version(self):
+    def test_obtener_snapshots_docencia_por_memoria_version(self):
         snapshot = SimpleNamespace(
             serialize=lambda: {
-                "becario_id": 8,
-                "nombre_apellido": "Luis Diaz",
-                "memoria_version_id": 11
+                "actividad_docencia_id": 3,
+                "curso": "Curso A",
+                "memoria_version_id": 21,
+                "historial_grados": [
+                    {
+                        "investigador_actividad_grado_id": 9,
+                        "grado_academico_nombre": "Titular"
+                    }
+                ]
             }
         )
 
@@ -166,19 +160,23 @@ class BecarioMemoriaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.becario_service.BecarioMemoriaVersion",
+            "core.services.actividad_docencia_service.ActividadDocenciaMemoriaVersion",
             new=SimpleNamespace(
                 query=fake_query,
                 memoria_version_id=None,
                 deleted_at=SimpleNamespace(is_=lambda *_: None),
-                nombre_apellido=SimpleNamespace(asc=lambda: None)
+                curso=SimpleNamespace(asc=lambda: None)
             )
         ):
-            resultado = obtener_snapshots_becarios_por_memoria_version(11)
+            resultado = ActividadDocenciaService.obtener_snapshots_por_memoria_version(21)
 
         self.assertEqual(len(resultado), 1)
-        self.assertEqual(resultado[0]["becario_id"], 8)
-        self.assertEqual(resultado[0]["memoria_version_id"], 11)
+        self.assertEqual(resultado[0]["actividad_docencia_id"], 3)
+        self.assertEqual(resultado[0]["memoria_version_id"], 21)
+        self.assertEqual(
+            resultado[0]["historial_grados"][0]["investigador_actividad_grado_id"],
+            9
+        )
 
 
 if __name__ == "__main__":

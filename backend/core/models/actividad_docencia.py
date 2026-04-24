@@ -209,3 +209,136 @@ class InvestigadorActividadGrado(db.Model, AuditMixin):
         )
         data["activo"] = self.fecha_fin is None
         return data
+
+
+class ActividadDocenciaMemoriaVersion(db.Model, AuditMixin):
+    __tablename__ = "actividad_docencia_memoria_version"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    memoria_version_id = db.Column(
+        db.Integer,
+        db.ForeignKey("memoria_version.id"),
+        nullable=False
+    )
+    actividad_docencia_id = db.Column(
+        db.Integer,
+        db.ForeignKey("actividad_y_catedra_posgrado.id"),
+        nullable=False
+    )
+
+    curso = db.Column(db.Text, nullable=False)
+    institucion = db.Column(db.Text, nullable=False)
+    fecha_inicio = db.Column(db.Date, nullable=False)
+    fecha_fin = db.Column(db.Date, nullable=False)
+
+    investigador_id = db.Column(
+        db.Integer,
+        db.ForeignKey("investigador.id"),
+        nullable=False
+    )
+    investigador_nombre = db.Column(db.String(255), nullable=True)
+
+    rol_actividad_id = db.Column(
+        db.Integer,
+        db.ForeignKey("rol_actividad_docencia.id"),
+        nullable=True
+    )
+    rol_actividad_nombre = db.Column(db.String(255), nullable=True)
+
+    grado_academico_id = db.Column(
+        db.Integer,
+        db.ForeignKey("grado_academico.id"),
+        nullable=True
+    )
+    grado_academico_nombre = db.Column(db.String(255), nullable=True)
+
+    memoria_version = db.relationship("MemoriaVersion", lazy="joined")
+    actividad_docencia = db.relationship("ActividadDocencia", lazy="joined")
+    investigador = db.relationship("Investigador", lazy="joined")
+    rol_actividad = db.relationship("RolActividad", lazy="joined")
+    grado_academico = db.relationship("GradoAcademico", lazy="joined")
+    historial_grados = db.relationship(
+        "ActividadDocenciaGradoMemoriaVersion",
+        back_populates="actividad_docencia_memoria_version",
+        cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "memoria_version_id",
+            "actividad_docencia_id",
+            name="uq_actividad_docencia_memoria_version"
+        ),
+    )
+
+    def serialize(self):
+        data = self.to_dict()
+        data["historial_grados"] = [
+            item.serialize() for item in sorted(
+                self.historial_grados,
+                key=lambda item: (
+                    item.fecha_inicio or date.min,
+                    item.id or 0
+                ),
+                reverse=True
+            )
+            if item.deleted_at is None
+        ]
+        return data
+
+
+class ActividadDocenciaGradoMemoriaVersion(db.Model, AuditMixin):
+    __tablename__ = "actividad_docencia_grado_memoria_version"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    actividad_docencia_memoria_version_id = db.Column(
+        db.Integer,
+        db.ForeignKey("actividad_docencia_memoria_version.id"),
+        nullable=False
+    )
+    investigador_actividad_grado_id = db.Column(
+        db.Integer,
+        db.ForeignKey("investigador_actividad_grado.id"),
+        nullable=False
+    )
+
+    investigador_id = db.Column(
+        db.Integer,
+        db.ForeignKey("investigador.id"),
+        nullable=False
+    )
+    grado_academico_id = db.Column(
+        db.Integer,
+        db.ForeignKey("grado_academico.id"),
+        nullable=False
+    )
+    grado_academico_nombre = db.Column(db.String(255), nullable=True)
+    fecha_inicio = db.Column(db.Date, nullable=False)
+    fecha_fin = db.Column(db.Date, nullable=True)
+
+    actividad_docencia_memoria_version = db.relationship(
+        "ActividadDocenciaMemoriaVersion",
+        back_populates="historial_grados",
+        lazy="joined"
+    )
+    investigador_actividad_grado = db.relationship(
+        "InvestigadorActividadGrado",
+        lazy="joined"
+    )
+    investigador = db.relationship("Investigador", lazy="joined")
+    grado_academico = db.relationship("GradoAcademico", lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "actividad_docencia_memoria_version_id",
+            "investigador_actividad_grado_id",
+            name="uq_actividad_docencia_grado_memoria_version"
+        ),
+    )
+
+    def serialize(self):
+        data = self.to_dict()
+        data["activo"] = self.fecha_fin is None
+        return data
