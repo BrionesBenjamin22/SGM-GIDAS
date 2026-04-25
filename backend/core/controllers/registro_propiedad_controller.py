@@ -30,6 +30,16 @@ class RegistrosPropiedadController:
         except Exception:
             return jsonify({"error": "Error interno del servidor"}), 500
 
+    @staticmethod
+    def get_historial(registro_id):
+        try:
+            historial = RegistrosPropiedadService.get_historial(registro_id)
+            return jsonify(historial), 200
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 404
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
+
 
     # =========================
     # CREAR
@@ -57,8 +67,9 @@ class RegistrosPropiedadController:
     def update(registro_id):
         try:
             data = request.get_json()
+            user_id = g.current_user_id
 
-            registro = RegistrosPropiedadService.update(registro_id, data)
+            registro = RegistrosPropiedadService.update(registro_id, data, user_id)
             return jsonify(registro), 200
 
         except ValueError as e:

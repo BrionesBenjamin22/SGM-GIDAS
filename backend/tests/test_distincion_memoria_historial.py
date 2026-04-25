@@ -117,11 +117,14 @@ class DistincionMemoriaHistorialTestCase(unittest.TestCase):
         ), patch(
             "core.services.memoria_service.DistincionRecibidaService.snapshot_para_memoria_version"
         ) as mock_snapshot:
-            resultado = MemoriaService.change_status(
-                1,
-                {"estado": "cerrada"},
-                user_id=97
-            )
+            with patch(
+                "core.services.memoria_service.RegistrosPropiedadService.snapshot_para_memoria_version"
+            ):
+                resultado = MemoriaService.change_status(
+                    1,
+                    {"estado": "cerrada"},
+                    user_id=97
+                )
 
         self.assertEqual(version.estado, EstadoMemoria.CERRADA)
         mock_snapshot.assert_called_once_with(version, 97)

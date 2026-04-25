@@ -258,6 +258,23 @@ class MemoriaRoutesTestCase(unittest.TestCase):
         self.assertEqual(response.get_json(), [{"distincion_id": 1}])
         mock_get_snapshot.assert_called_once_with(1, 2)
 
+    def test_get_snapshot_registros_propiedad_con_rol_lectura_devuelve_200(self):
+        with patch(
+            "core.services.middleware.AuthService.verify_token",
+            return_value={"sub": "22", "rol": "LECTURA"}
+        ), patch(
+            "core.controllers.memoria_controller.MemoriaService.get_registros_propiedad_snapshot",
+            return_value=[{"registro_propiedad_id": 1}]
+        ) as mock_get_snapshot:
+            response = self.client.get(
+                "/memorias/1/versiones/2/registros-propiedad",
+                headers=self._headers()
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), [{"registro_propiedad_id": 1}])
+        mock_get_snapshot.assert_called_once_with(1, 2)
+
     def test_post_con_rol_lectura_devuelve_403(self):
         with patch(
             "core.services.middleware.AuthService.verify_token",

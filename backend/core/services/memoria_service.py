@@ -44,6 +44,9 @@ from core.services.trabajo_revista_service import (
 from core.services.distincion_service import (
     DistincionRecibidaService,
 )
+from core.services.registro_propiedad_service import (
+    RegistrosPropiedadService,
+)
 
 
 class MemoriaService:
@@ -426,6 +429,18 @@ class MemoriaService:
             version.id
         )
 
+    @staticmethod
+    def get_registros_propiedad_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return RegistrosPropiedadService.obtener_snapshots_por_memoria_version(
+            version.id
+        )
+
     # ==========================================
     # CREATE
     # ==========================================
@@ -573,6 +588,10 @@ class MemoriaService:
                     user_id
                 )
                 DistincionRecibidaService.snapshot_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                RegistrosPropiedadService.snapshot_para_memoria_version(
                     version_actual,
                     user_id
                 )

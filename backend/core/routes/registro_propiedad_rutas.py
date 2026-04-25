@@ -21,6 +21,13 @@ def get_all():
 def get_by_id(registro_id):
     return RegistrosPropiedadController.get_by_id(registro_id)
 
+@registros_propiedad_bp.route(
+    "/<int:registro_id>/historial", methods=["GET"], strict_slashes=False
+)
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_historial(registro_id):
+    return RegistrosPropiedadController.get_historial(registro_id)
+
 @registros_propiedad_bp.route("/", methods=["POST"], strict_slashes=False)
 @requiere_rol("ADMIN", "GESTOR")
 def create():

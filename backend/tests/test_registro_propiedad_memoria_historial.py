@@ -6,13 +6,13 @@ from unittest.mock import patch
 from core.models.auditoria_campo import AuditoriaCampo
 from core.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
 from core.services.memoria_service import MemoriaService
-from core.services.trabajo_reunion_service import TrabajoReunionCientificaService
+from core.services.registro_propiedad_service import RegistrosPropiedadService
 
 
-class TrabajoReunionMemoriaHistorialTestCase(unittest.TestCase):
+class RegistroPropiedadMemoriaHistorialTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.add_patcher = patch("core.services.trabajo_reunion_service.db.session.add")
+        self.add_patcher = patch("core.services.registro_propiedad_service.db.session.add")
         self.commit_patcher = patch("extension.db.session.commit")
         self.rollback_patcher = patch("extension.db.session.rollback")
         self.get_patcher = patch("core.services.memoria_service.db.session.get")
@@ -27,57 +27,49 @@ class TrabajoReunionMemoriaHistorialTestCase(unittest.TestCase):
         self.addCleanup(self.rollback_patcher.stop)
         self.addCleanup(self.get_patcher.stop)
 
-    def test_snapshot_trabajo_reunion_para_memoria_version_persiste_foto(self):
+    def test_snapshot_registro_propiedad_para_memoria_version_persiste_foto(self):
         version = MemoriaVersion(
-            id=71,
+            id=101,
             numero_version=1,
             fecha_apertura=datetime(2026, 1, 1, 0, 0, 0),
             estado=EstadoMemoria.CERRADA,
             created_by=1
         )
-        trabajo = SimpleNamespace(
+        registro = SimpleNamespace(
             id=5,
-            titulo_trabajo="Arquitectura institucional",
-            nombre_reunion="Congreso Nacional",
-            procedencia="UTN",
-            fecha_inicio=date(2026, 3, 20),
-            tipo_reunion_id=2,
-            tipo_reunion_cientifica=SimpleNamespace(nombre="Congreso"),
+            nombre_articulo="Patente institucional",
+            organismo_registrante="INPI",
+            fecha_registro=date(2026, 4, 12),
+            tipo_registro_id=2,
+            tipo_registro=SimpleNamespace(nombre="Patente"),
             grupo_utn_id=4,
-            grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS"),
-            investigadores=[
-                SimpleNamespace(nombre_apellido="Ana Perez", deleted_at=None),
-                SimpleNamespace(nombre_apellido="Luis Diaz", deleted_at=None)
-            ]
+            grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS")
         )
 
         fake_query = SimpleNamespace(
-            filter=lambda *args, **kwargs: SimpleNamespace(all=lambda: [trabajo])
+            filter=lambda *args, **kwargs: SimpleNamespace(all=lambda: [registro])
         )
 
         with patch(
-            "core.services.trabajo_reunion_service.TrabajoReunionCientifica",
+            "core.services.registro_propiedad_service.RegistrosPropiedad",
             new=SimpleNamespace(
                 query=fake_query,
                 deleted_at=SimpleNamespace(is_=lambda *_: None)
             )
         ):
-            snapshots = TrabajoReunionCientificaService.snapshot_para_memoria_version(
+            snapshots = RegistrosPropiedadService.snapshot_para_memoria_version(
                 version,
-                user_id=23
+                user_id=26
             )
 
         self.assertEqual(len(snapshots), 1)
-        self.assertEqual(snapshots[0].trabajo_reunion_id, 5)
-        self.assertEqual(snapshots[0].tipo_reunion_nombre, "Congreso")
-        self.assertEqual(
-            snapshots[0].investigadores_participantes,
-            "Ana Perez, Luis Diaz"
-        )
-        self.assertEqual(snapshots[0].created_by, 23)
+        self.assertEqual(snapshots[0].registro_propiedad_id, 5)
+        self.assertEqual(snapshots[0].tipo_registro_nombre, "Patente")
+        self.assertEqual(snapshots[0].grupo_utn_nombre, "GIDAS")
+        self.assertEqual(snapshots[0].created_by, 26)
         self.mock_add.assert_called()
 
-    def test_change_status_a_cerrada_genera_snapshot_trabajo_reunion(self):
+    def test_change_status_a_cerrada_genera_snapshot_registros_propiedad(self):
         memoria = Memoria(
             id=1,
             periodo_inicio=date(2026, 1, 1),
@@ -85,7 +77,7 @@ class TrabajoReunionMemoriaHistorialTestCase(unittest.TestCase):
             created_by=1
         )
         version = MemoriaVersion(
-            id=11,
+            id=14,
             numero_version=1,
             fecha_apertura=datetime(2026, 1, 1, 0, 0, 0),
             estado=EstadoMemoria.EN_REVISION,
@@ -120,32 +112,31 @@ class TrabajoReunionMemoriaHistorialTestCase(unittest.TestCase):
             "core.services.memoria_service.TransferenciaSocioProductivaService.snapshot_para_memoria_version"
         ), patch(
             "core.services.memoria_service.TrabajoReunionCientificaService.snapshot_para_memoria_version"
+        ), patch(
+            "core.services.memoria_service.TrabajosRevistasReferatoService.snapshot_para_memoria_version"
+        ), patch(
+            "core.services.memoria_service.DistincionRecibidaService.snapshot_para_memoria_version"
+        ), patch(
+            "core.services.memoria_service.RegistrosPropiedadService.snapshot_para_memoria_version"
         ) as mock_snapshot:
-            with patch(
-                "core.services.memoria_service.TrabajosRevistasReferatoService.snapshot_para_memoria_version"
-            ), patch(
-                "core.services.memoria_service.DistincionRecibidaService.snapshot_para_memoria_version"
-            ), patch(
-                "core.services.memoria_service.RegistrosPropiedadService.snapshot_para_memoria_version"
-            ):
-                resultado = MemoriaService.change_status(
-                    1,
-                    {"estado": "cerrada"},
-                    user_id=95
-                )
+            resultado = MemoriaService.change_status(
+                1,
+                {"estado": "cerrada"},
+                user_id=98
+            )
 
         self.assertEqual(version.estado, EstadoMemoria.CERRADA)
-        mock_snapshot.assert_called_once_with(version, 95)
+        mock_snapshot.assert_called_once_with(version, 98)
         self.assertEqual(resultado["version_actual"]["estado"], "cerrada")
 
-    def test_obtener_historial_trabajo_reunion_retorna_auditoria_ordenada(self):
+    def test_obtener_historial_registro_propiedad_retorna_auditoria_ordenada(self):
         auditoria = AuditoriaCampo(
             id=1,
-            entidad="trabajo_reunion_cientifica",
+            entidad="registro_propiedad",
             registro_id=5,
-            campo="titulo_trabajo",
-            valor_anterior="Trabajo A",
-            valor_nuevo="Trabajo B",
+            campo="nombre_articulo",
+            valor_anterior="Patente A",
+            valor_nuevo="Patente B",
             fecha_cambio=datetime(2026, 4, 25, 10, 0, 0),
             usuario_id=3
         )
@@ -158,7 +149,7 @@ class TrabajoReunionMemoriaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.trabajo_reunion_service.db.session.get",
+            "core.services.registro_propiedad_service.db.session.get",
             return_value=SimpleNamespace(id=5)
         ), patch(
             "core.services.auditoria_service.AuditoriaCampo",
@@ -170,18 +161,18 @@ class TrabajoReunionMemoriaHistorialTestCase(unittest.TestCase):
                 id=SimpleNamespace(desc=lambda: None)
             )
         ):
-            historial = TrabajoReunionCientificaService.get_historial(5)
+            historial = RegistrosPropiedadService.get_historial(5)
 
         self.assertEqual(len(historial), 1)
-        self.assertEqual(historial[0]["campo"], "titulo_trabajo")
+        self.assertEqual(historial[0]["campo"], "nombre_articulo")
         self.assertEqual(historial[0]["usuario_nombre"], "admin")
 
-    def test_obtener_snapshots_trabajo_reunion_por_memoria_version(self):
+    def test_obtener_snapshots_registro_propiedad_por_memoria_version(self):
         snapshot = SimpleNamespace(
             serialize=lambda: {
-                "trabajo_reunion_id": 5,
-                "titulo_trabajo": "Arquitectura institucional",
-                "memoria_version_id": 71
+                "registro_propiedad_id": 5,
+                "nombre_articulo": "Patente institucional",
+                "memoria_version_id": 101
             }
         )
 
@@ -192,20 +183,20 @@ class TrabajoReunionMemoriaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.trabajo_reunion_service.TrabajoReunionCientificaMemoriaVersion",
+            "core.services.registro_propiedad_service.RegistrosPropiedadMemoriaVersion",
             new=SimpleNamespace(
                 query=fake_query,
                 memoria_version_id=None,
                 deleted_at=SimpleNamespace(is_=lambda *_: None),
-                fecha_inicio=SimpleNamespace(desc=lambda: None),
+                fecha_registro=SimpleNamespace(desc=lambda: None),
                 id=SimpleNamespace(desc=lambda: None)
             )
         ):
-            resultado = TrabajoReunionCientificaService.obtener_snapshots_por_memoria_version(71)
+            resultado = RegistrosPropiedadService.obtener_snapshots_por_memoria_version(101)
 
         self.assertEqual(len(resultado), 1)
-        self.assertEqual(resultado[0]["trabajo_reunion_id"], 5)
-        self.assertEqual(resultado[0]["memoria_version_id"], 71)
+        self.assertEqual(resultado[0]["registro_propiedad_id"], 5)
+        self.assertEqual(resultado[0]["memoria_version_id"], 101)
 
 
 if __name__ == "__main__":

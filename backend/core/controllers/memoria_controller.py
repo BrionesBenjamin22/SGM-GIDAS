@@ -179,6 +179,18 @@ class MemoriaController:
             return jsonify({"error": str(e)}), 404
 
     @staticmethod
+    def get_registros_propiedad_snapshot(memoria_id, memoria_version_id):
+        try:
+            return jsonify(
+                MemoriaService.get_registros_propiedad_snapshot(
+                    memoria_id,
+                    memoria_version_id
+                )
+            ), 200
+        except Exception as e:
+            return jsonify({"error": str(e)}), 404
+
+    @staticmethod
     def create():
         try:
             data = request.get_json()
