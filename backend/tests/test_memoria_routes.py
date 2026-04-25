@@ -173,6 +173,23 @@ class MemoriaRoutesTestCase(unittest.TestCase):
         self.assertEqual(response.get_json(), [{"equipamiento_id": 1}])
         mock_get_snapshot.assert_called_once_with(1, 2)
 
+    def test_get_snapshot_erogaciones_con_rol_lectura_devuelve_200(self):
+        with patch(
+            "core.services.middleware.AuthService.verify_token",
+            return_value={"sub": "17", "rol": "LECTURA"}
+        ), patch(
+            "core.controllers.memoria_controller.MemoriaService.get_erogaciones_snapshot",
+            return_value=[{"erogacion_id": 1}]
+        ) as mock_get_snapshot:
+            response = self.client.get(
+                "/memorias/1/versiones/2/erogaciones",
+                headers=self._headers()
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), [{"erogacion_id": 1}])
+        mock_get_snapshot.assert_called_once_with(1, 2)
+
     def test_post_con_rol_lectura_devuelve_403(self):
         with patch(
             "core.services.middleware.AuthService.verify_token",

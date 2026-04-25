@@ -29,6 +29,9 @@ from core.services.documentacion_service import (
 from core.services.equipamiento_service import (
     EquipamientoService,
 )
+from core.services.erogacion_service import (
+    ErogacionService,
+)
 
 
 class MemoriaService:
@@ -353,6 +356,16 @@ class MemoriaService:
             version.id
         )
 
+    @staticmethod
+    def get_erogaciones_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return ErogacionService.obtener_snapshots_por_memoria_version(version.id)
+
     # ==========================================
     # CREATE
     # ==========================================
@@ -480,6 +493,10 @@ class MemoriaService:
                     user_id
                 )
                 EquipamientoService.snapshot_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                ErogacionService.snapshot_para_memoria_version(
                     version_actual,
                     user_id
                 )

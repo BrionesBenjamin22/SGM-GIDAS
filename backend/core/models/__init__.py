@@ -5,7 +5,7 @@ from .distinciones import DistincionRecibida
 from .documentacion_autores import DocumentacionBibliografica, Autor, autor_libro, DocumentacionBibliograficaMemoriaVersion, DocumentacionBibliograficaAutorMemoriaVersion
 from .directivos import Directivo, DirectivoGrupo, Cargo
 from .equipamiento import Equipamiento, EquipamientoMemoriaVersion
-from .erogacion import Erogacion, TipoErogacion
+from .erogacion import Erogacion, TipoErogacion, ErogacionMemoriaVersion
 from .fuente_financiamiento import FuenteFinanciamiento
 from .grupo import GrupoInvestigacionUtn
 from .memorias import Memoria, MemoriaVersion, EstadoMemoria

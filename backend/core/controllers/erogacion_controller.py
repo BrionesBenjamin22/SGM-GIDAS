@@ -24,6 +24,15 @@ class ErogacionController:
         except Exception as e:
             return jsonify({"error": str(e)}), 404
 
+    @staticmethod
+    def get_historial(erogacion_id):
+        try:
+            return jsonify(
+                ErogacionService.get_historial(erogacion_id)
+            ), 200
+        except Exception as e:
+            return jsonify({"error": str(e)}), 404
+
 
     @staticmethod
     def create():

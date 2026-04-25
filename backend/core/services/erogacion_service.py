@@ -1,28 +1,20 @@
-from core.models.erogacion import Erogacion, TipoErogacion
+from datetime import datetime
+
+from core.models.erogacion import Erogacion, TipoErogacion, ErogacionMemoriaVersion
 from core.models.fuente_financiamiento import FuenteFinanciamiento
 from core.models.grupo import GrupoInvestigacionUtn
 from core.services.auditoria_service import AuditoriaService
 from extension import db
-from datetime import datetime
 
 
 class ErogacionService:
-
-    # ==========================================
-    # HELPERS
-    # ==========================================
 
     @staticmethod
     def _get_activa_or_404(erogacion_id: int):
         erogacion = db.session.get(Erogacion, erogacion_id)
         if not erogacion or erogacion.deleted_at is not None:
-            raise Exception("Erogación no encontrada")
+            raise Exception("Erogacion no encontrada")
         return erogacion
-
-
-    # ==========================================
-    # GET ALL
-    # ==========================================
 
     @staticmethod
     def get_all(filters: dict = None):
@@ -31,61 +23,50 @@ class ErogacionService:
         if not filters:
             filters = {"activos": "true"}
 
-        activos = filters.get("activos", "true")
-        if activos is None:
-            activos = "true"
-
-        activos = activos.strip().lower()
+        activos = (filters.get("activos", "true") or "true").strip().lower()
 
         if activos == "true":
             query = query.filter(Erogacion.deleted_at.is_(None))
         elif activos == "false":
             query = query.filter(Erogacion.deleted_at.isnot(None))
-        elif activos == "all":
-            pass
+
+        if filters.get("fuente_financiamiento_id"):
+            query = query.filter(
+                Erogacion.fuente_financiamiento_id == filters["fuente_financiamiento_id"]
+            )
+
+        if filters.get("tipo_erogacion_id"):
+            query = query.filter(
+                Erogacion.tipo_erogacion_id == filters["tipo_erogacion_id"]
+            )
+
+        orden = filters.get("orden")
+        if orden == "asc":
+            query = query.order_by(Erogacion.fecha.asc())
         else:
-            query = query.filter(Erogacion.deleted_at.is_(None))
-
-        if filters:
-
-            if filters.get("fuente_financiamiento_id"):
-                query = query.filter(
-                    Erogacion.fuente_financiamiento_id == filters["fuente_financiamiento_id"]
-                )
-
-            if filters.get("tipo_erogacion_id"):
-                query = query.filter(
-                    Erogacion.tipo_erogacion_id == filters["tipo_erogacion_id"]
-                )
-
-            orden = filters.get("orden")
-            if orden == "asc":
-                query = query.order_by(Erogacion.fecha.asc())
-            elif orden == "desc":
-                query = query.order_by(Erogacion.fecha.desc())
+            query = query.order_by(Erogacion.fecha.desc())
 
         return [e.serialize() for e in query.all()]
-
-
-    # ==========================================
-    # GET BY ID
-    # ==========================================
 
     @staticmethod
     def get_by_id(erogacion_id: int):
         erogacion = db.session.get(Erogacion, erogacion_id)
         if not erogacion:
-            raise Exception("Erogación no encontrada")
+            raise Exception("Erogacion no encontrada")
         return erogacion.serialize()
 
-
-    # ==========================================
-    # CREATE
-    # ==========================================
+    @staticmethod
+    def get_historial(erogacion_id: int):
+        erogacion = db.session.get(Erogacion, erogacion_id)
+        if not erogacion:
+            raise Exception("Erogacion no encontrada")
+        return AuditoriaService.obtener_historial_entidad(
+            entidad="erogacion",
+            registro_id=erogacion.id
+        )
 
     @staticmethod
     def create(data: dict, user_id: int):
-
         if not data:
             raise Exception("El body es obligatorio")
 
@@ -93,52 +74,48 @@ class ErogacionService:
         grupo_id = data.get("grupo_utn_id")
 
         if not numero:
-            raise ValueError("El número de erogación es obligatorio")
-
+            raise ValueError("El numero de erogacion es obligatorio")
         if not grupo_id:
             raise ValueError("El grupo es obligatorio")
 
-        # Validar grupo
         grupo = db.session.get(GrupoInvestigacionUtn, grupo_id)
         if not grupo or grupo.deleted_at is not None:
-            raise Exception("Grupo inválido")
+            raise Exception("Grupo invalido")
 
-        # Validar duplicado activo
         existe = Erogacion.query.filter(
             Erogacion.numero_erogacion == numero,
             Erogacion.grupo_utn_id == grupo_id,
             Erogacion.deleted_at.is_(None)
         ).first()
-
         if existe:
-            raise Exception("Ya existe una erogación activa con ese número en el grupo")
+            raise Exception("Ya existe una erogacion activa con ese numero en el grupo")
 
-        # Validar egresos / ingresos
         try:
             egresos = float(data["egresos"])
             ingresos = float(data["ingresos"])
-        except:
-            raise Exception("Ingresos y egresos deben ser numéricos")
+        except Exception:
+            raise Exception("Ingresos y egresos deben ser numericos")
 
         if egresos < 0 or ingresos < 0:
             raise Exception("Ingresos y egresos no pueden ser negativos")
-
         if egresos == 0 and ingresos == 0:
             raise Exception("Egresos e ingresos no pueden ser ambos 0")
 
-        # Validar tipo
         tipo = db.session.get(TipoErogacion, data.get("tipo_erogacion_id"))
         if not tipo:
-            raise Exception("Tipo de erogación inválido")
+            raise Exception("Tipo de erogacion invalido")
 
-        # Validar fuente
-        fuente = db.session.get(FuenteFinanciamiento, data.get("fuente_financiamiento_id"))
+        fuente = db.session.get(
+            FuenteFinanciamiento,
+            data.get("fuente_financiamiento_id")
+        )
         if not fuente:
-            raise Exception("Fuente de financiamiento inválida")
+            raise Exception("Fuente de financiamiento invalida")
 
-        fecha = datetime.strptime(
-            data.get("fecha"), "%Y-%m-%d"
-        ).date() if data.get("fecha") else datetime.today().date()
+        fecha = (
+            datetime.strptime(data.get("fecha"), "%Y-%m-%d").date()
+            if data.get("fecha") else datetime.today().date()
+        )
 
         erogacion = Erogacion(
             numero_erogacion=numero,
@@ -153,17 +130,10 @@ class ErogacionService:
 
         db.session.add(erogacion)
         db.session.commit()
-
         return erogacion.serialize()
-
-
-    # ==========================================
-    # UPDATE
-    # ==========================================
 
     @staticmethod
     def update(erogacion_id: int, data: dict, user_id: int):
-
         erogacion = ErogacionService._get_activa_or_404(erogacion_id)
         cambios = {}
 
@@ -202,18 +172,59 @@ class ErogacionService:
         db.session.commit()
         return erogacion.serialize()
 
-
-    # ==========================================
-    # SOFT DELETE
-    # ==========================================
-
     @staticmethod
     def delete(erogacion_id: int, user_id: int):
-
         erogacion = ErogacionService._get_activa_or_404(erogacion_id)
-
         erogacion.soft_delete(user_id)
-
         db.session.commit()
+        return {"message": "Erogacion eliminada correctamente"}
 
-        return {"message": "Erogación eliminada correctamente"}
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        erogaciones = Erogacion.query.filter(
+            Erogacion.deleted_at.is_(None)
+        ).all()
+
+        snapshots = []
+        for erogacion in erogaciones:
+            snapshot = ErogacionMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                erogacion_id=erogacion.id,
+                numero_erogacion=erogacion.numero_erogacion,
+                egresos=erogacion.egresos,
+                ingresos=erogacion.ingresos,
+                fecha=erogacion.fecha,
+                tipo_erogacion_id=erogacion.tipo_erogacion_id,
+                tipo_erogacion_nombre=(
+                    erogacion.tipo_erogacion.nombre
+                    if erogacion.tipo_erogacion else None
+                ),
+                fuente_financiamiento_id=erogacion.fuente_financiamiento_id,
+                fuente_financiamiento_nombre=(
+                    erogacion.fuente_financiamiento.nombre
+                    if erogacion.fuente_financiamiento else None
+                ),
+                grupo_utn_id=erogacion.grupo_utn_id,
+                grupo_utn_nombre=(
+                    erogacion.grupo_utn.nombre_sigla_grupo
+                    if erogacion.grupo_utn else None
+                ),
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            ErogacionMemoriaVersion.query
+            .filter(
+                ErogacionMemoriaVersion.memoria_version_id == memoria_version_id,
+                ErogacionMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(ErogacionMemoriaVersion.fecha.desc())
+            .all()
+        )
+        return [snapshot.serialize() for snapshot in snapshots]

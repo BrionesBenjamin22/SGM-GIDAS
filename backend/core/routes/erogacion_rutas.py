@@ -22,6 +22,12 @@ def get_by_id(erogacion_id):
     return ErogacionController.get_by_id(erogacion_id)
 
 
+@erogacion_bp.route("/<int:erogacion_id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_historial(erogacion_id):
+    return ErogacionController.get_historial(erogacion_id)
+
+
 # MODIFICACIÓN
 @erogacion_bp.route("/", methods=["POST"])
 @requiere_rol("ADMIN", "GESTOR")

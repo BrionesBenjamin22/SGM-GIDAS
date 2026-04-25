@@ -107,6 +107,8 @@ class BecarioMemoriaHistorialTestCase(unittest.TestCase):
             "core.services.memoria_service.DocumentacionBibliograficaService.snapshot_para_memoria_version"
         ), patch(
             "core.services.memoria_service.EquipamientoService.snapshot_para_memoria_version"
+        ), patch(
+            "core.services.memoria_service.ErogacionService.snapshot_para_memoria_version"
         ):
             resultado = MemoriaService.change_status(
                 1,
