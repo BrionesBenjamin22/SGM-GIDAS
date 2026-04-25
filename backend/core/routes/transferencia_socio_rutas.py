@@ -21,6 +21,11 @@ def get_all():
 def get_by_id(transferencia_id):
     return TransferenciaSocioProductivaController.get_by_id(transferencia_id)
 
+@transferencia_socio_productiva_bp.route("/<int:transferencia_id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_historial(transferencia_id):
+    return TransferenciaSocioProductivaController.get_historial(transferencia_id)
+
 @transferencia_socio_productiva_bp.route("", methods=["POST"])
 @requiere_rol("ADMIN", "GESTOR")
 def create():

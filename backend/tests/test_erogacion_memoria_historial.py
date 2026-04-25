@@ -111,11 +111,14 @@ class ErogacionMemoriaHistorialTestCase(unittest.TestCase):
         ), patch(
             "core.services.memoria_service.ErogacionService.snapshot_para_memoria_version"
         ) as mock_snapshot:
-            resultado = MemoriaService.change_status(
-                1,
-                {"estado": "cerrada"},
-                user_id=93
-            )
+            with patch(
+                "core.services.memoria_service.TransferenciaSocioProductivaService.snapshot_para_memoria_version"
+            ):
+                resultado = MemoriaService.change_status(
+                    1,
+                    {"estado": "cerrada"},
+                    user_id=93
+                )
 
         self.assertEqual(version.estado, EstadoMemoria.CERRADA)
         mock_snapshot.assert_called_once_with(version, 93)

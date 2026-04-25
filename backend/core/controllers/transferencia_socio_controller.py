@@ -40,6 +40,18 @@ class TransferenciaSocioProductivaController:
         except Exception:
             return jsonify({"error": "Error interno del servidor"}), 500
 
+    @staticmethod
+    def get_historial(transferencia_id):
+        try:
+            result = TransferenciaSocioProductivaService.get_historial(
+                transferencia_id
+            )
+            return jsonify(result), 200
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 404
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
+
 
     # =================================================
     # CREATE

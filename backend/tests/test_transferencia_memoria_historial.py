@@ -6,76 +6,98 @@ from unittest.mock import patch
 from core.models.auditoria_campo import AuditoriaCampo
 from core.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
 from core.services.memoria_service import MemoriaService
-from core.services.proyecto_investigacion_service import ProyectoInvestigacionService
+from core.services.transferencia_service import TransferenciaSocioProductivaService
 
 
-class ProyectoMemoriaHistorialTestCase(unittest.TestCase):
+class TransferenciaMemoriaHistorialTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.add_patcher = patch("extension.db.session.add")
+        self.add_patcher = patch("core.services.transferencia_service.db.session.add")
+        self.flush_patcher = patch("core.services.transferencia_service.db.session.flush")
         self.commit_patcher = patch("extension.db.session.commit")
         self.rollback_patcher = patch("extension.db.session.rollback")
         self.get_patcher = patch("core.services.memoria_service.db.session.get")
 
         self.mock_add = self.add_patcher.start()
+        self.mock_flush = self.flush_patcher.start()
         self.mock_commit = self.commit_patcher.start()
         self.mock_rollback = self.rollback_patcher.start()
         self.mock_get = self.get_patcher.start()
 
         self.addCleanup(self.add_patcher.stop)
+        self.addCleanup(self.flush_patcher.stop)
         self.addCleanup(self.commit_patcher.stop)
         self.addCleanup(self.rollback_patcher.stop)
         self.addCleanup(self.get_patcher.stop)
 
-    def test_snapshot_proyecto_para_memoria_version_persiste_foto(self):
+    def test_snapshot_transferencia_para_memoria_version_persiste_foto(self):
         version = MemoriaVersion(
-            id=15,
+            id=61,
             numero_version=1,
             fecha_apertura=datetime(2026, 1, 1, 0, 0, 0),
             estado=EstadoMemoria.CERRADA,
             created_by=1
         )
-        proyecto = SimpleNamespace(
-            id=4,
-            codigo_proyecto=1001,
-            nombre_proyecto="Proyecto A",
-            descripcion_proyecto="Descripcion",
-            fecha_inicio=date(2026, 1, 1),
-            fecha_fin=None,
-            dificultades_proyecto="Ninguna",
-            monto_destinado=1000.0,
-            tipo_proyecto_id=2,
-            grupo_utn_id=3,
-            fuente_financiamiento_id=4,
-            tipo_proyecto=SimpleNamespace(nombre="PID"),
+        transferencia = SimpleNamespace(
+            id=7,
+            numero_transferencia=300,
+            denominacion="Transferencia con pyme",
+            demandante="Empresa A",
+            descripcion_actividad="Asistencia tecnica especializada",
+            monto=2500.0,
+            fecha_inicio=date(2026, 2, 1),
+            fecha_fin=date(2026, 8, 1),
+            tipo_contrato_id=2,
+            tipo_contrato_transferencia=SimpleNamespace(nombre="Convenio"),
+            grupo_utn_id=4,
             grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS"),
-            fuente_financiamiento=SimpleNamespace(nombre="UTN")
+            participaciones=[
+                SimpleNamespace(
+                    id=10,
+                    deleted_at=None,
+                    adoptante=SimpleNamespace(
+                        id=3,
+                        deleted_at=None,
+                        nombre="Empresa A"
+                    )
+                ),
+                SimpleNamespace(
+                    id=11,
+                    deleted_at=None,
+                    adoptante=SimpleNamespace(
+                        id=4,
+                        deleted_at=None,
+                        nombre="Empresa B"
+                    )
+                )
+            ]
         )
 
         fake_query = SimpleNamespace(
-            filter=lambda *args, **kwargs: SimpleNamespace(all=lambda: [proyecto])
+            filter=lambda *args, **kwargs: SimpleNamespace(all=lambda: [transferencia])
         )
 
         with patch(
-            "core.services.proyecto_investigacion_service.ProyectoInvestigacion",
+            "core.services.transferencia_service.TransferenciaSocioProductiva",
             new=SimpleNamespace(
                 query=fake_query,
                 deleted_at=SimpleNamespace(is_=lambda *_: None)
             )
         ):
-            snapshots = ProyectoInvestigacionService.snapshot_para_memoria_version(
+            snapshots = TransferenciaSocioProductivaService.snapshot_para_memoria_version(
                 version,
-                user_id=41
+                user_id=19
             )
 
         self.assertEqual(len(snapshots), 1)
-        self.assertEqual(snapshots[0].proyecto_investigacion_id, 4)
-        self.assertEqual(snapshots[0].tipo_proyecto_nombre, "PID")
-        self.assertEqual(snapshots[0].grupo_utn_nombre, "GIDAS")
-        self.assertEqual(snapshots[0].created_by, 41)
+        self.assertEqual(snapshots[0].transferencia_id, 7)
+        self.assertEqual(snapshots[0].tipo_contrato_nombre, "Convenio")
+        self.assertEqual(len(snapshots[0].adoptantes_snapshot), 2)
+        self.assertEqual(snapshots[0].adoptantes_snapshot[0].adoptante_id, 3)
+        self.assertEqual(snapshots[0].created_by, 19)
         self.mock_add.assert_called()
 
-    def test_change_status_a_cerrada_genera_snapshot_proyectos(self):
+    def test_change_status_a_cerrada_genera_snapshot_transferencias(self):
         memoria = Memoria(
             id=1,
             periodo_inicio=date(2026, 1, 1),
@@ -83,7 +105,7 @@ class ProyectoMemoriaHistorialTestCase(unittest.TestCase):
             created_by=1
         )
         version = MemoriaVersion(
-            id=5,
+            id=10,
             numero_version=1,
             fecha_apertura=datetime(2026, 1, 1, 0, 0, 0),
             estado=EstadoMemoria.EN_REVISION,
@@ -104,7 +126,7 @@ class ProyectoMemoriaHistorialTestCase(unittest.TestCase):
             "core.services.memoria_service.snapshot_personal_para_memoria_version"
         ), patch(
             "core.services.memoria_service.ProyectoInvestigacionService.snapshot_para_memoria_version"
-        ) as mock_snapshot, patch(
+        ), patch(
             "core.services.memoria_service.ActividadDocenciaService.snapshot_para_memoria_version"
         ), patch(
             "core.services.memoria_service.ParticipacionRelevanteService.snapshot_para_memoria_version"
@@ -116,26 +138,26 @@ class ProyectoMemoriaHistorialTestCase(unittest.TestCase):
             "core.services.memoria_service.ErogacionService.snapshot_para_memoria_version"
         ), patch(
             "core.services.memoria_service.TransferenciaSocioProductivaService.snapshot_para_memoria_version"
-        ):
+        ) as mock_snapshot:
             resultado = MemoriaService.change_status(
                 1,
                 {"estado": "cerrada"},
-                user_id=66
+                user_id=94
             )
 
         self.assertEqual(version.estado, EstadoMemoria.CERRADA)
-        mock_snapshot.assert_called_once_with(version, 66)
+        mock_snapshot.assert_called_once_with(version, 94)
         self.assertEqual(resultado["version_actual"]["estado"], "cerrada")
 
-    def test_obtener_historial_proyecto_retorna_auditoria_ordenada(self):
+    def test_obtener_historial_transferencia_retorna_auditoria_ordenada(self):
         auditoria = AuditoriaCampo(
             id=1,
-            entidad="proyecto_investigacion",
-            registro_id=4,
-            campo="nombre_proyecto",
-            valor_anterior="Proyecto A",
-            valor_nuevo="Proyecto B",
-            fecha_cambio=datetime(2026, 4, 23, 10, 0, 0),
+            entidad="transferencia_socio_productiva",
+            registro_id=7,
+            campo="monto",
+            valor_anterior=1000.0,
+            valor_nuevo=2500.0,
+            fecha_cambio=datetime(2026, 4, 25, 10, 0, 0),
             usuario_id=3
         )
         auditoria.usuario = SimpleNamespace(nombre_usuario="admin")
@@ -147,8 +169,8 @@ class ProyectoMemoriaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.proyecto_investigacion_service.ProyectoInvestigacionService._get_proyecto_or_404",
-            return_value=SimpleNamespace(id=4)
+            "core.services.transferencia_service.db.session.get",
+            return_value=SimpleNamespace(id=7)
         ), patch(
             "core.services.auditoria_service.AuditoriaCampo",
             new=SimpleNamespace(
@@ -159,18 +181,18 @@ class ProyectoMemoriaHistorialTestCase(unittest.TestCase):
                 id=SimpleNamespace(desc=lambda: None)
             )
         ):
-            historial = ProyectoInvestigacionService.obtener_historial(4)
+            historial = TransferenciaSocioProductivaService.get_historial(7)
 
         self.assertEqual(len(historial), 1)
-        self.assertEqual(historial[0]["campo"], "nombre_proyecto")
+        self.assertEqual(historial[0]["campo"], "monto")
         self.assertEqual(historial[0]["usuario_nombre"], "admin")
 
-    def test_obtener_snapshots_proyecto_por_memoria_version(self):
+    def test_obtener_snapshots_transferencia_por_memoria_version(self):
         snapshot = SimpleNamespace(
             serialize=lambda: {
-                "proyecto_investigacion_id": 4,
-                "nombre_proyecto": "Proyecto A",
-                "memoria_version_id": 15
+                "transferencia_id": 7,
+                "numero_transferencia": 300,
+                "memoria_version_id": 61
             }
         )
 
@@ -181,16 +203,21 @@ class ProyectoMemoriaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.proyecto_investigacion_service.ProyectoInvestigacionMemoriaVersion",
+            "core.services.transferencia_service.TransferenciaSocioProductivaMemoriaVersion",
             new=SimpleNamespace(
                 query=fake_query,
                 memoria_version_id=None,
                 deleted_at=SimpleNamespace(is_=lambda *_: None),
-                nombre_proyecto=SimpleNamespace(asc=lambda: None)
+                fecha_inicio=SimpleNamespace(desc=lambda: None),
+                id=SimpleNamespace(desc=lambda: None)
             )
         ):
-            resultado = ProyectoInvestigacionService.obtener_snapshots_por_memoria_version(15)
+            resultado = TransferenciaSocioProductivaService.obtener_snapshots_por_memoria_version(61)
 
         self.assertEqual(len(resultado), 1)
-        self.assertEqual(resultado[0]["proyecto_investigacion_id"], 4)
-        self.assertEqual(resultado[0]["memoria_version_id"], 15)
+        self.assertEqual(resultado[0]["transferencia_id"], 7)
+        self.assertEqual(resultado[0]["memoria_version_id"], 61)
+
+
+if __name__ == "__main__":
+    unittest.main()

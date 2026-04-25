@@ -5,7 +5,9 @@ from core.models.transferencia_socio import (
     Adoptante,
     TransferenciaSocioProductiva,
     TipoContrato,
-    AdoptanteTransferencia
+    AdoptanteTransferencia,
+    TransferenciaSocioProductivaMemoriaVersion,
+    AdoptanteTransferenciaMemoriaVersion,
 )
 from core.models.grupo import GrupoInvestigacionUtn
 from core.services.auditoria_service import AuditoriaService
@@ -102,6 +104,21 @@ class TransferenciaSocioProductivaService:
             raise ValueError("Transferencia socio-productiva no encontrada")
 
         return transferencia.serialize()
+
+    @staticmethod
+    def get_historial(transferencia_id):
+        transferencia = db.session.get(
+            TransferenciaSocioProductiva,
+            transferencia_id
+        )
+
+        if not transferencia:
+            raise ValueError("Transferencia socio-productiva no encontrada")
+
+        return AuditoriaService.obtener_historial_entidad(
+            entidad="transferencia_socio_productiva",
+            registro_id=transferencia.id
+        )
 
 
     # =================================================
@@ -452,3 +469,72 @@ class TransferenciaSocioProductivaService:
         db.session.commit()
 
         return transferencia.serialize()
+
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        transferencias = TransferenciaSocioProductiva.query.filter(
+            TransferenciaSocioProductiva.deleted_at.is_(None)
+        ).all()
+
+        snapshots = []
+        for transferencia in transferencias:
+            snapshot = TransferenciaSocioProductivaMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                transferencia_id=transferencia.id,
+                numero_transferencia=transferencia.numero_transferencia,
+                denominacion=transferencia.denominacion,
+                demandante=transferencia.demandante,
+                descripcion_actividad=transferencia.descripcion_actividad,
+                monto=transferencia.monto,
+                fecha_inicio=transferencia.fecha_inicio,
+                fecha_fin=transferencia.fecha_fin,
+                tipo_contrato_id=transferencia.tipo_contrato_id,
+                tipo_contrato_nombre=(
+                    transferencia.tipo_contrato_transferencia.nombre
+                    if transferencia.tipo_contrato_transferencia else None
+                ),
+                grupo_utn_id=transferencia.grupo_utn_id,
+                grupo_utn_nombre=(
+                    transferencia.grupo_utn.nombre_sigla_grupo
+                    if transferencia.grupo_utn else None
+                ),
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            db.session.flush()
+
+            for participacion in transferencia.participaciones:
+                if participacion.deleted_at is not None or participacion.adoptante is None:
+                    continue
+                if getattr(participacion.adoptante, "deleted_at", None) is not None:
+                    continue
+
+                participacion_snapshot = AdoptanteTransferenciaMemoriaVersion(
+                    transferencia_memoria_version=snapshot,
+                    adoptante_transferencia_id=participacion.id,
+                    adoptante_id=participacion.adoptante.id,
+                    adoptante_nombre=participacion.adoptante.nombre,
+                    created_by=user_id
+                )
+                db.session.add(participacion_snapshot)
+
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            TransferenciaSocioProductivaMemoriaVersion.query
+            .filter(
+                TransferenciaSocioProductivaMemoriaVersion.memoria_version_id == memoria_version_id,
+                TransferenciaSocioProductivaMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(
+                TransferenciaSocioProductivaMemoriaVersion.fecha_inicio.desc(),
+                TransferenciaSocioProductivaMemoriaVersion.id.desc()
+            )
+            .all()
+        )
+
+        return [snapshot.serialize() for snapshot in snapshots]

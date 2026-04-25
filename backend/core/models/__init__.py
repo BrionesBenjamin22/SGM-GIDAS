@@ -19,7 +19,7 @@ from .registro_patente import RegistrosPropiedad, TipoRegistroPropiedad
 from .tipo_personal import TipoPersonal
 from .trabajo_reunion import TrabajoReunionCientifica
 from .trabajo_revista import TrabajosRevistasReferato
-from .transferencia_socio import TransferenciaSocioProductiva, TipoContrato
+from .transferencia_socio import TransferenciaSocioProductiva, TipoContrato, TransferenciaSocioProductivaMemoriaVersion, AdoptanteTransferenciaMemoriaVersion
 from .audit_mixin import AuditMixin
 from .auditoria_campo import AuditoriaCampo
 from .persona import Persona
