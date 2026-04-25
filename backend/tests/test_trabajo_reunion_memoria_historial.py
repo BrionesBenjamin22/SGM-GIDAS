@@ -121,11 +121,14 @@ class TrabajoReunionMemoriaHistorialTestCase(unittest.TestCase):
         ), patch(
             "core.services.memoria_service.TrabajoReunionCientificaService.snapshot_para_memoria_version"
         ) as mock_snapshot:
-            resultado = MemoriaService.change_status(
-                1,
-                {"estado": "cerrada"},
-                user_id=95
-            )
+            with patch(
+                "core.services.memoria_service.TrabajosRevistasReferatoService.snapshot_para_memoria_version"
+            ):
+                resultado = MemoriaService.change_status(
+                    1,
+                    {"estado": "cerrada"},
+                    user_id=95
+                )
 
         self.assertEqual(version.estado, EstadoMemoria.CERRADA)
         mock_snapshot.assert_called_once_with(version, 95)

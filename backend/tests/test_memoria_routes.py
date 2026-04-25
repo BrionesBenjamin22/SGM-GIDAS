@@ -224,6 +224,23 @@ class MemoriaRoutesTestCase(unittest.TestCase):
         self.assertEqual(response.get_json(), [{"trabajo_reunion_id": 1}])
         mock_get_snapshot.assert_called_once_with(1, 2)
 
+    def test_get_snapshot_trabajos_revista_con_rol_lectura_devuelve_200(self):
+        with patch(
+            "core.services.middleware.AuthService.verify_token",
+            return_value={"sub": "20", "rol": "LECTURA"}
+        ), patch(
+            "core.controllers.memoria_controller.MemoriaService.get_trabajos_revista_snapshot",
+            return_value=[{"trabajo_revista_id": 1}]
+        ) as mock_get_snapshot:
+            response = self.client.get(
+                "/memorias/1/versiones/2/trabajos-revistas",
+                headers=self._headers()
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), [{"trabajo_revista_id": 1}])
+        mock_get_snapshot.assert_called_once_with(1, 2)
+
     def test_post_con_rol_lectura_devuelve_403(self):
         with patch(
             "core.services.middleware.AuthService.verify_token",

@@ -139,6 +139,8 @@ class ActividadDocenciaMemoriaHistorialTestCase(unittest.TestCase):
             "core.services.memoria_service.TransferenciaSocioProductivaService.snapshot_para_memoria_version"
         ), patch(
             "core.services.memoria_service.TrabajoReunionCientificaService.snapshot_para_memoria_version"
+        ), patch(
+            "core.services.memoria_service.TrabajosRevistasReferatoService.snapshot_para_memoria_version"
         ):
             resultado = MemoriaService.change_status(
                 1,
