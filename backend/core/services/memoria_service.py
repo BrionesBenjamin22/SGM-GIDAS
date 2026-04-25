@@ -50,6 +50,10 @@ from core.services.registro_propiedad_service import (
 from core.services.articulo_divulgacion_service import (
     ArticuloDivulgacionService,
 )
+from core.services.visita_service import (
+    obtener_snapshots_visitas_por_memoria_version,
+    snapshot_visitas_para_memoria_version,
+)
 
 
 class MemoriaService:
@@ -456,6 +460,16 @@ class MemoriaService:
             version.id
         )
 
+    @staticmethod
+    def get_visitas_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return obtener_snapshots_visitas_por_memoria_version(version.id)
+
     # ==========================================
     # CREATE
     # ==========================================
@@ -611,6 +625,10 @@ class MemoriaService:
                     user_id
                 )
                 ArticuloDivulgacionService.snapshot_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                snapshot_visitas_para_memoria_version(
                     version_actual,
                     user_id
                 )

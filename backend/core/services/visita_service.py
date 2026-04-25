@@ -1,9 +1,13 @@
 from datetime import datetime, date
 
 from extension import db
-from core.models.visita_grupo import VisitaAcademica
+from core.models.visita_grupo import (
+    VisitaAcademica,
+    VisitaAcademicaMemoriaVersion,
+)
 from core.models.grupo import GrupoInvestigacionUtn
 from core.models.trabajo_reunion import TipoReunion
+from core.services.auditoria_service import AuditoriaService
 
 
 def _validar_payload(data: dict):
@@ -101,21 +105,62 @@ def crear_visita_academica(data, user_id=None):
 def actualizar_visita_academica(id, data):
     _validar_payload(data)
     visita = _get_activa_or_404(id)
+    cambios = {}
 
     if "tipo_visita_id" in data:
-        visita.tipo_visita_id = _validar_tipo_visita(data["tipo_visita_id"])
+        nuevo_valor = _validar_tipo_visita(data["tipo_visita_id"])
+        cambio = AuditoriaService.construir_cambio(
+            visita.tipo_visita_id,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["tipo_visita_id"] = cambio
+            visita.tipo_visita_id = nuevo_valor
 
     if "razon" in data:
-        visita.razon = _validar_texto(data["razon"], "La razon")
+        nuevo_valor = _validar_texto(data["razon"], "La razon")
+        cambio = AuditoriaService.construir_cambio(visita.razon, nuevo_valor)
+        if cambio:
+            cambios["razon"] = cambio
+            visita.razon = nuevo_valor
 
     if "procedencia" in data:
-        visita.procedencia = _validar_procedencia(data["procedencia"])
+        nuevo_valor = _validar_procedencia(data["procedencia"])
+        cambio = AuditoriaService.construir_cambio(
+            visita.procedencia,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["procedencia"] = cambio
+            visita.procedencia = nuevo_valor
 
     if "fecha" in data:
-        visita.fecha = _validar_fecha(data["fecha"])
+        nuevo_valor = _validar_fecha(data["fecha"])
+        cambio = AuditoriaService.construir_cambio(visita.fecha, nuevo_valor)
+        if cambio:
+            cambios["fecha"] = cambio
+            visita.fecha = nuevo_valor
 
     if "grupo_utn_id" in data:
-        visita.grupo_utn_id = _validar_grupo(data["grupo_utn_id"])
+        nuevo_valor = _validar_grupo(data["grupo_utn_id"])
+        cambio = AuditoriaService.construir_cambio(
+            visita.grupo_utn_id,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["grupo_utn_id"] = cambio
+            visita.grupo_utn_id = nuevo_valor
+
+    user_id = data.get("user_id")
+    if cambios and user_id is not None:
+        _validar_id(user_id, "user_id")
+        visita.mark_updated(user_id)
+        AuditoriaService.registrar_cambios(
+            entidad="visita_academica",
+            registro_id=visita.id,
+            cambios=cambios,
+            user_id=user_id
+        )
 
     try:
         db.session.commit()
@@ -156,3 +201,57 @@ def listar_visitas(activos="true"):
 
 def obtener_visita_por_id(id):
     return _get_or_404(id)
+
+
+def obtener_historial_visita(id):
+    visita = _get_or_404(id)
+    return AuditoriaService.obtener_historial_entidad(
+        entidad="visita_academica",
+        registro_id=visita.id
+    )
+
+
+def snapshot_visitas_para_memoria_version(memoria_version, user_id):
+    visitas = VisitaAcademica.query.filter(
+        VisitaAcademica.deleted_at.is_(None)
+    ).all()
+
+    snapshots = []
+    for visita in visitas:
+        snapshot = VisitaAcademicaMemoriaVersion(
+            memoria_version_id=memoria_version.id,
+            visita_academica_id=visita.id,
+            razon=visita.razon,
+            procedencia=visita.procedencia,
+            fecha=visita.fecha,
+            tipo_visita_id=visita.tipo_visita_id,
+            tipo_visita_nombre=(
+                visita.tipo_visita.nombre if visita.tipo_visita else None
+            ),
+            grupo_utn_id=visita.grupo_utn_id,
+            grupo_utn_nombre=(
+                visita.grupo_utn.nombre_sigla_grupo if visita.grupo_utn else None
+            ),
+            created_by=user_id
+        )
+        db.session.add(snapshot)
+        snapshots.append(snapshot)
+
+    return snapshots
+
+
+def obtener_snapshots_visitas_por_memoria_version(memoria_version_id):
+    snapshots = (
+        VisitaAcademicaMemoriaVersion.query
+        .filter(
+            VisitaAcademicaMemoriaVersion.memoria_version_id == memoria_version_id,
+            VisitaAcademicaMemoriaVersion.deleted_at.is_(None)
+        )
+        .order_by(
+            VisitaAcademicaMemoriaVersion.fecha.desc(),
+            VisitaAcademicaMemoriaVersion.id.desc()
+        )
+        .all()
+    )
+
+    return [snapshot.serialize() for snapshot in snapshots]

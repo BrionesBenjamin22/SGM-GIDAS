@@ -120,6 +120,8 @@ class RegistroPropiedadMemoriaHistorialTestCase(unittest.TestCase):
             "core.services.memoria_service.RegistrosPropiedadService.snapshot_para_memoria_version"
         ), patch(
             "core.services.memoria_service.ArticuloDivulgacionService.snapshot_para_memoria_version"
+        ), patch(
+            "core.services.memoria_service.snapshot_visitas_para_memoria_version"
         ) as mock_snapshot:
             resultado = MemoriaService.change_status(
                 1,

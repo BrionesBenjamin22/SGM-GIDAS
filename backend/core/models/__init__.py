@@ -24,7 +24,7 @@ from .audit_mixin import AuditMixin
 from .auditoria_campo import AuditoriaCampo
 from .persona import Persona
 from .usuario import Usuario, RolUsuario
-from .visita_grupo import VisitaAcademica
+from .visita_grupo import VisitaAcademica, VisitaAcademicaMemoriaVersion
 
 
 

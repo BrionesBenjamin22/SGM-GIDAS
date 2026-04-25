@@ -129,6 +129,8 @@ class TrabajoReunionMemoriaHistorialTestCase(unittest.TestCase):
                 "core.services.memoria_service.RegistrosPropiedadService.snapshot_para_memoria_version"
             ), patch(
                 "core.services.memoria_service.ArticuloDivulgacionService.snapshot_para_memoria_version"
+            ), patch(
+                "core.services.memoria_service.snapshot_visitas_para_memoria_version"
             ):
                 resultado = MemoriaService.change_status(
                     1,

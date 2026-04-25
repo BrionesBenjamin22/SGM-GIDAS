@@ -4,7 +4,8 @@ from core.services.visita_service import (
     actualizar_visita_academica,
     eliminar_visita_academica,
     listar_visitas,
-    obtener_visita_por_id
+    obtener_visita_por_id,
+    obtener_historial_visita,
 )
 
 
@@ -44,10 +45,21 @@ class VisitaAcademicaController:
     def actualizar(req: Request, id: int) -> Response:
         data = req.get_json()
         try:
+            data["user_id"] = g.current_user_id
             visita = actualizar_visita_academica(id, data)
             return jsonify(visita.serialize()), 200
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 400
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
+
+    @staticmethod
+    def obtener_historial(req: Request, id: int) -> Response:
+        try:
+            historial = obtener_historial_visita(id)
+            return jsonify(historial), 200
+        except ValueError as ve:
+            return jsonify({"error": str(ve)}), 404
         except Exception:
             return jsonify({"error": "Error interno del servidor"}), 500
 
