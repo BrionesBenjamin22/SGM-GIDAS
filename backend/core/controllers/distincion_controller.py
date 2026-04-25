@@ -30,6 +30,15 @@ class DistincionRecibidaController:
             return jsonify({"error": str(e)}), 404
 
     @staticmethod
+    def get_historial(distincion_id):
+        try:
+            return jsonify(
+                DistincionRecibidaService.get_historial(distincion_id)
+            ), 200
+        except Exception as e:
+            return jsonify({"error": str(e)}), 404
+
+    @staticmethod
     def create():
         try:
             data = request.get_json()

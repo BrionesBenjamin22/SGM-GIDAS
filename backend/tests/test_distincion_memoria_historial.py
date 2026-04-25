@@ -5,14 +5,14 @@ from unittest.mock import patch
 
 from core.models.auditoria_campo import AuditoriaCampo
 from core.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
+from core.services.distincion_service import DistincionRecibidaService
 from core.services.memoria_service import MemoriaService
-from core.services.trabajo_revista_service import TrabajosRevistasReferatoService
 
 
-class TrabajoRevistaMemoriaHistorialTestCase(unittest.TestCase):
+class DistincionMemoriaHistorialTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.add_patcher = patch("core.services.trabajo_revista_service.db.session.add")
+        self.add_patcher = patch("core.services.distincion_service.db.session.add")
         self.commit_patcher = patch("extension.db.session.commit")
         self.rollback_patcher = patch("extension.db.session.rollback")
         self.get_patcher = patch("core.services.memoria_service.db.session.get")
@@ -27,59 +27,49 @@ class TrabajoRevistaMemoriaHistorialTestCase(unittest.TestCase):
         self.addCleanup(self.rollback_patcher.stop)
         self.addCleanup(self.get_patcher.stop)
 
-    def test_snapshot_trabajo_revista_para_memoria_version_persiste_foto(self):
+    def test_snapshot_distincion_para_memoria_version_persiste_foto(self):
         version = MemoriaVersion(
-            id=81,
+            id=91,
             numero_version=1,
             fecha_apertura=datetime(2026, 1, 1, 0, 0, 0),
             estado=EstadoMemoria.CERRADA,
             created_by=1
         )
-        trabajo = SimpleNamespace(
-            id=6,
-            titulo_trabajo="Modelo de versionado",
-            nombre_revista="Revista de Sistemas",
-            editorial="Editorial UTN",
-            issn="1234-5678",
-            pais="Argentina",
+        distincion = SimpleNamespace(
+            id=4,
             fecha=date(2026, 4, 10),
-            grupo_utn_id=4,
-            grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS"),
-            tipo_reunion_id=2,
-            tipo_reunion=SimpleNamespace(nombre="Articulo"),
-            investigadores=[
-                SimpleNamespace(nombre_apellido="Ana Perez", deleted_at=None),
-                SimpleNamespace(nombre_apellido="Luis Diaz", deleted_at=None)
-            ]
+            descripcion="Premio a la innovacion",
+            proyecto_investigacion_id=8,
+            proyecto_investigacion=SimpleNamespace(
+                codigo_proyecto=2026,
+                nombre_proyecto="Sistema GIDAS"
+            )
         )
 
         fake_query = SimpleNamespace(
-            filter=lambda *args, **kwargs: SimpleNamespace(all=lambda: [trabajo])
+            filter=lambda *args, **kwargs: SimpleNamespace(all=lambda: [distincion])
         )
 
         with patch(
-            "core.services.trabajo_revista_service.TrabajosRevistasReferato",
+            "core.services.distincion_service.DistincionRecibida",
             new=SimpleNamespace(
                 query=fake_query,
                 deleted_at=SimpleNamespace(is_=lambda *_: None)
             )
         ):
-            snapshots = TrabajosRevistasReferatoService.snapshot_para_memoria_version(
+            snapshots = DistincionRecibidaService.snapshot_para_memoria_version(
                 version,
-                user_id=24
+                user_id=25
             )
 
         self.assertEqual(len(snapshots), 1)
-        self.assertEqual(snapshots[0].trabajo_revista_id, 6)
-        self.assertEqual(snapshots[0].tipo_reunion_nombre, "Articulo")
-        self.assertEqual(
-            snapshots[0].investigadores_participantes,
-            "Ana Perez, Luis Diaz"
-        )
-        self.assertEqual(snapshots[0].created_by, 24)
+        self.assertEqual(snapshots[0].distincion_id, 4)
+        self.assertEqual(snapshots[0].proyecto_codigo, 2026)
+        self.assertEqual(snapshots[0].proyecto_nombre, "Sistema GIDAS")
+        self.assertEqual(snapshots[0].created_by, 25)
         self.mock_add.assert_called()
 
-    def test_change_status_a_cerrada_genera_snapshot_trabajo_revista(self):
+    def test_change_status_a_cerrada_genera_snapshot_distinciones(self):
         memoria = Memoria(
             id=1,
             periodo_inicio=date(2026, 1, 1),
@@ -87,7 +77,7 @@ class TrabajoRevistaMemoriaHistorialTestCase(unittest.TestCase):
             created_by=1
         )
         version = MemoriaVersion(
-            id=12,
+            id=13,
             numero_version=1,
             fecha_apertura=datetime(2026, 1, 1, 0, 0, 0),
             estado=EstadoMemoria.EN_REVISION,
@@ -124,28 +114,27 @@ class TrabajoRevistaMemoriaHistorialTestCase(unittest.TestCase):
             "core.services.memoria_service.TrabajoReunionCientificaService.snapshot_para_memoria_version"
         ), patch(
             "core.services.memoria_service.TrabajosRevistasReferatoService.snapshot_para_memoria_version"
+        ), patch(
+            "core.services.memoria_service.DistincionRecibidaService.snapshot_para_memoria_version"
         ) as mock_snapshot:
-            with patch(
-                "core.services.memoria_service.DistincionRecibidaService.snapshot_para_memoria_version"
-            ):
-                resultado = MemoriaService.change_status(
-                    1,
-                    {"estado": "cerrada"},
-                    user_id=96
-                )
+            resultado = MemoriaService.change_status(
+                1,
+                {"estado": "cerrada"},
+                user_id=97
+            )
 
         self.assertEqual(version.estado, EstadoMemoria.CERRADA)
-        mock_snapshot.assert_called_once_with(version, 96)
+        mock_snapshot.assert_called_once_with(version, 97)
         self.assertEqual(resultado["version_actual"]["estado"], "cerrada")
 
-    def test_obtener_historial_trabajo_revista_retorna_auditoria_ordenada(self):
+    def test_obtener_historial_distincion_retorna_auditoria_ordenada(self):
         auditoria = AuditoriaCampo(
             id=1,
-            entidad="trabajo_revista_referato",
-            registro_id=6,
-            campo="titulo_trabajo",
-            valor_anterior="Trabajo A",
-            valor_nuevo="Trabajo B",
+            entidad="distincion_recibida",
+            registro_id=4,
+            campo="descripcion",
+            valor_anterior="Premio",
+            valor_nuevo="Premio nacional",
             fecha_cambio=datetime(2026, 4, 25, 10, 0, 0),
             usuario_id=3
         )
@@ -158,8 +147,8 @@ class TrabajoRevistaMemoriaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.trabajo_revista_service.db.session.get",
-            return_value=SimpleNamespace(id=6)
+            "core.services.distincion_service.db.session.get",
+            return_value=SimpleNamespace(id=4)
         ), patch(
             "core.services.auditoria_service.AuditoriaCampo",
             new=SimpleNamespace(
@@ -170,18 +159,18 @@ class TrabajoRevistaMemoriaHistorialTestCase(unittest.TestCase):
                 id=SimpleNamespace(desc=lambda: None)
             )
         ):
-            historial = TrabajosRevistasReferatoService.get_historial(6)
+            historial = DistincionRecibidaService.get_historial(4)
 
         self.assertEqual(len(historial), 1)
-        self.assertEqual(historial[0]["campo"], "titulo_trabajo")
+        self.assertEqual(historial[0]["campo"], "descripcion")
         self.assertEqual(historial[0]["usuario_nombre"], "admin")
 
-    def test_obtener_snapshots_trabajo_revista_por_memoria_version(self):
+    def test_obtener_snapshots_distincion_por_memoria_version(self):
         snapshot = SimpleNamespace(
             serialize=lambda: {
-                "trabajo_revista_id": 6,
-                "titulo_trabajo": "Modelo de versionado",
-                "memoria_version_id": 81
+                "distincion_id": 4,
+                "descripcion": "Premio a la innovacion",
+                "memoria_version_id": 91
             }
         )
 
@@ -192,7 +181,7 @@ class TrabajoRevistaMemoriaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.trabajo_revista_service.TrabajosRevistasReferatoMemoriaVersion",
+            "core.services.distincion_service.DistincionRecibidaMemoriaVersion",
             new=SimpleNamespace(
                 query=fake_query,
                 memoria_version_id=None,
@@ -201,11 +190,11 @@ class TrabajoRevistaMemoriaHistorialTestCase(unittest.TestCase):
                 id=SimpleNamespace(desc=lambda: None)
             )
         ):
-            resultado = TrabajosRevistasReferatoService.obtener_snapshots_por_memoria_version(81)
+            resultado = DistincionRecibidaService.obtener_snapshots_por_memoria_version(91)
 
         self.assertEqual(len(resultado), 1)
-        self.assertEqual(resultado[0]["trabajo_revista_id"], 6)
-        self.assertEqual(resultado[0]["memoria_version_id"], 81)
+        self.assertEqual(resultado[0]["distincion_id"], 4)
+        self.assertEqual(resultado[0]["memoria_version_id"], 91)
 
 
 if __name__ == "__main__":
