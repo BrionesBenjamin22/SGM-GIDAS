@@ -4,7 +4,11 @@ from sqlalchemy import or_
 
 from core.models.grupo import GrupoInvestigacionUtn
 from core.models.personal import Investigador
-from core.models.trabajo_reunion import TrabajoReunionCientifica, TipoReunion
+from core.models.trabajo_reunion import (
+    TrabajoReunionCientifica,
+    TipoReunion,
+    TrabajoReunionCientificaMemoriaVersion,
+)
 from core.services.auditoria_service import AuditoriaService
 from extension import db
 
@@ -231,6 +235,14 @@ class TrabajoReunionCientificaService:
     @staticmethod
     def get_by_id(trabajo_id: int):
         return TrabajoReunionCientificaService._get_or_404(trabajo_id).serialize()
+
+    @staticmethod
+    def get_historial(trabajo_id: int):
+        trabajo = TrabajoReunionCientificaService._get_or_404(trabajo_id)
+        return AuditoriaService.obtener_historial_entidad(
+            entidad="trabajo_reunion_cientifica",
+            registro_id=trabajo.id
+        )
 
     @staticmethod
     def create(data: dict, user_id: int):
@@ -523,3 +535,59 @@ class TrabajoReunionCientificaService:
             raise
 
         return trabajo.serialize()
+
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        trabajos = TrabajoReunionCientifica.query.filter(
+            TrabajoReunionCientifica.deleted_at.is_(None)
+        ).all()
+
+        snapshots = []
+        for trabajo in trabajos:
+            investigadores_participantes = ", ".join(sorted([
+                investigador.nombre_apellido
+                for investigador in trabajo.investigadores
+                if getattr(investigador, "deleted_at", None) is None
+            ]))
+
+            snapshot = TrabajoReunionCientificaMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                trabajo_reunion_id=trabajo.id,
+                titulo_trabajo=trabajo.titulo_trabajo,
+                nombre_reunion=trabajo.nombre_reunion,
+                procedencia=trabajo.procedencia,
+                fecha_inicio=trabajo.fecha_inicio,
+                tipo_reunion_id=trabajo.tipo_reunion_id,
+                tipo_reunion_nombre=(
+                    trabajo.tipo_reunion_cientifica.nombre
+                    if trabajo.tipo_reunion_cientifica else None
+                ),
+                grupo_utn_id=trabajo.grupo_utn_id,
+                grupo_utn_nombre=(
+                    trabajo.grupo_utn.nombre_sigla_grupo
+                    if trabajo.grupo_utn else None
+                ),
+                investigadores_participantes=investigadores_participantes,
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            TrabajoReunionCientificaMemoriaVersion.query
+            .filter(
+                TrabajoReunionCientificaMemoriaVersion.memoria_version_id == memoria_version_id,
+                TrabajoReunionCientificaMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(
+                TrabajoReunionCientificaMemoriaVersion.fecha_inicio.desc(),
+                TrabajoReunionCientificaMemoriaVersion.id.desc()
+            )
+            .all()
+        )
+
+        return [snapshot.serialize() for snapshot in snapshots]

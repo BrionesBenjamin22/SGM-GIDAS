@@ -17,7 +17,7 @@ from .programa_incentivos import ProgramaIncentivos
 from .proyecto_investigacion import ProyectoInvestigacion, TipoProyecto, BecarioProyecto, InvestigadorProyecto, ProyectoInvestigacionMemoriaVersion
 from .registro_patente import RegistrosPropiedad, TipoRegistroPropiedad
 from .tipo_personal import TipoPersonal
-from .trabajo_reunion import TrabajoReunionCientifica
+from .trabajo_reunion import TrabajoReunionCientifica, TrabajoReunionCientificaMemoriaVersion
 from .trabajo_revista import TrabajosRevistasReferato
 from .transferencia_socio import TransferenciaSocioProductiva, TipoContrato, TransferenciaSocioProductivaMemoriaVersion, AdoptanteTransferenciaMemoriaVersion
 from .audit_mixin import AuditMixin

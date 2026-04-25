@@ -88,6 +88,7 @@ postgresql://postgres:postgres@localhost:5432/gidas_db
 
 Ejecucion local
 1. Crear y activar entorno virtual.
+   python -m venv venv 
 2. Instalar dependencias:
    pip install -r requirements.txt
 3. Configurar variables de entorno en .env.local.

@@ -41,6 +41,16 @@ class TrabajoReunionCientificaController:
         except Exception:
             return jsonify({"error": "Error interno del servidor"}), 500
 
+    @staticmethod
+    def get_historial(trabajo_id):
+        try:
+            result = TrabajoReunionCientificaService.get_historial(trabajo_id)
+            return jsonify(result), 200
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 404
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
+
 
     # =================================================
     # CREATE (con auditoría)
