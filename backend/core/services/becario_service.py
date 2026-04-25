@@ -113,6 +113,33 @@ def _resolver_horas_activas(becario):
     )
 
 
+def _resolver_becas_percibidas(becario):
+    relaciones_activas = [
+        relacion
+        for relacion in getattr(becario, "becas", [])
+        if getattr(relacion, "deleted_at", None) is None
+        and getattr(relacion, "beca", None) is not None
+        and getattr(relacion.beca, "deleted_at", None) is None
+    ]
+
+    nombres_becas = sorted({
+        relacion.beca.nombre_beca
+        for relacion in relaciones_activas
+        if getattr(relacion.beca, "nombre_beca", None)
+    })
+    fuentes = sorted({
+        relacion.beca.fuente_financiamiento.nombre
+        for relacion in relaciones_activas
+        if getattr(relacion.beca, "fuente_financiamiento", None) is not None
+        and getattr(relacion.beca.fuente_financiamiento, "nombre", None)
+    })
+
+    return {
+        "becas_percibidas": ", ".join(nombres_becas),
+        "fuentes_financiamiento_beca": ", ".join(fuentes)
+    }
+
+
 def _cerrar_historial(historial_activo):
     if historial_activo.fecha_inicio > date.today():
         raise ValueError("El historial activo tiene una fecha de inicio invalida.")
@@ -387,6 +414,7 @@ def snapshot_becarios_para_memoria_version(memoria_version, user_id):
 
     snapshots = []
     for becario in becarios:
+        resumen_becas = _resolver_becas_percibidas(becario)
         snapshot = BecarioMemoriaVersion(
             memoria_version_id=memoria_version.id,
             becario_id=becario.id,
@@ -402,6 +430,8 @@ def snapshot_becarios_para_memoria_version(memoria_version, user_id):
                 becario.grupo_utn.nombre_sigla_grupo
                 if becario.grupo_utn else None
             ),
+            becas_percibidas=resumen_becas["becas_percibidas"],
+            fuentes_financiamiento_beca=resumen_becas["fuentes_financiamiento_beca"],
             created_by=user_id
         )
         db.session.add(snapshot)

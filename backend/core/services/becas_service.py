@@ -2,7 +2,10 @@ from datetime import datetime
 from sqlalchemy import func
 from sqlalchemy import extract, or_
 from extension import db
-from core.models.becas import Beca, Beca_Becario
+from core.models.becas import (
+    Beca,
+    Beca_Becario,
+)
 from core.models.personal import Becario
 from core.models.fuente_financiamiento import FuenteFinanciamiento
 from core.services.auditoria_service import AuditoriaService
@@ -92,6 +95,14 @@ class BecaService:
     @staticmethod
     def get_by_id(beca_id):
         return _get_beca_activa_or_404(beca_id).serialize()
+
+    @staticmethod
+    def get_historial(beca_id):
+        beca = _get_beca_activa_or_404(beca_id)
+        return AuditoriaService.obtener_historial_entidad(
+            entidad="beca",
+            registro_id=beca.id
+        )
 
     @staticmethod
     def create(data, user_id):

@@ -47,7 +47,17 @@ class BecarioMemoriaHistorialTestCase(unittest.TestCase):
             grupo_utn_id=4,
             tipo_formacion=SimpleNamespace(nombre="Doctorado"),
             grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS"),
-            historial_horas=[SimpleNamespace(horas_semanales=18, fecha_fin=None)]
+            historial_horas=[SimpleNamespace(horas_semanales=18, fecha_fin=None)],
+            becas=[
+                SimpleNamespace(
+                    deleted_at=None,
+                    beca=SimpleNamespace(
+                        deleted_at=None,
+                        nombre_beca="Beca Doctoral",
+                        fuente_financiamiento=SimpleNamespace(nombre="CONICET")
+                    )
+                )
+            ]
         )
 
         fake_query = SimpleNamespace(
@@ -67,6 +77,11 @@ class BecarioMemoriaHistorialTestCase(unittest.TestCase):
         self.assertEqual(snapshots[0].becario_id, 8)
         self.assertEqual(snapshots[0].horas_semanales, 18)
         self.assertEqual(snapshots[0].tipo_formacion_nombre, "Doctorado")
+        self.assertEqual(snapshots[0].becas_percibidas, "Beca Doctoral")
+        self.assertEqual(
+            snapshots[0].fuentes_financiamiento_beca,
+            "CONICET"
+        )
         self.assertEqual(snapshots[0].created_by, 21)
         self.mock_add.assert_called()
 
@@ -163,7 +178,9 @@ class BecarioMemoriaHistorialTestCase(unittest.TestCase):
             serialize=lambda: {
                 "becario_id": 8,
                 "nombre_apellido": "Luis Diaz",
-                "memoria_version_id": 11
+                "memoria_version_id": 11,
+                "becas_percibidas": "Beca Doctoral",
+                "fuentes_financiamiento_beca": "CONICET"
             }
         )
 
@@ -187,6 +204,7 @@ class BecarioMemoriaHistorialTestCase(unittest.TestCase):
         self.assertEqual(len(resultado), 1)
         self.assertEqual(resultado[0]["becario_id"], 8)
         self.assertEqual(resultado[0]["memoria_version_id"], 11)
+        self.assertEqual(resultado[0]["becas_percibidas"], "Beca Doctoral")
 
 
 if __name__ == "__main__":

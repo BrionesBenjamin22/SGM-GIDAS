@@ -29,6 +29,16 @@ class BecaController:
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
+    @staticmethod
+    def get_historial(beca_id):
+        try:
+            data = BecaService.get_historial(beca_id)
+            return jsonify(data), 200
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 404
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
 
     # =========================
     # CREATE

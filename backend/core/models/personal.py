@@ -359,6 +359,8 @@ class BecarioMemoriaVersion(db.Model, AuditMixin):
         nullable=True
     )
     grupo_utn_nombre = db.Column(db.String(255), nullable=True)
+    becas_percibidas = db.Column(db.Text, nullable=True)
+    fuentes_financiamiento_beca = db.Column(db.Text, nullable=True)
 
     memoria_version = db.relationship("MemoriaVersion", lazy="joined")
     becario = db.relationship("Becario", lazy="joined")
@@ -374,7 +376,12 @@ class BecarioMemoriaVersion(db.Model, AuditMixin):
     )
 
     def serialize(self):
-        return self.to_dict()
+        data = self.to_dict()
+        data.update({
+            "becas_percibidas": self.becas_percibidas or "",
+            "fuentes_financiamiento_beca": self.fuentes_financiamiento_beca or ""
+        })
+        return data
 
 
 class InvestigadorMemoriaVersion(db.Model, AuditMixin):
