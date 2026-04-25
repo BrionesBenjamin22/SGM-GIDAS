@@ -1,4 +1,4 @@
-from .articulo_divulgacion import ArticuloDivulgacion
+from .articulo_divulgacion import ArticuloDivulgacion, ArticuloDivulgacionMemoriaVersion
 from .actividad_docencia import ActividadDocencia, RolActividad, GradoAcademico, ActividadDocenciaMemoriaVersion, ActividadDocenciaGradoMemoriaVersion
 from .categoria_utn import CategoriaUtn
 from .distinciones import DistincionRecibida, DistincionRecibidaMemoriaVersion

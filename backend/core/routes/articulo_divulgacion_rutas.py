@@ -36,6 +36,11 @@ def listar():
 def obtener_por_id(articulo_id):
     return ArticuloDivulgacionController.obtener_por_id(articulo_id)
 
+@articulo_divulgacion_bp.route("/<int:articulo_id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def obtener_historial(articulo_id):
+    return ArticuloDivulgacionController.obtener_historial(articulo_id)
+
 
 # -------------------------------------------------
 # ACTUALIZAR (ADMIN o GESTOR)
