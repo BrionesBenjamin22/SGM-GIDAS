@@ -4,7 +4,7 @@ from .categoria_utn import CategoriaUtn
 from .distinciones import DistincionRecibida
 from .documentacion_autores import DocumentacionBibliografica, Autor, autor_libro, DocumentacionBibliograficaMemoriaVersion, DocumentacionBibliograficaAutorMemoriaVersion
 from .directivos import Directivo, DirectivoGrupo, Cargo
-from .equipamiento import Equipamiento
+from .equipamiento import Equipamiento, EquipamientoMemoriaVersion
 from .erogacion import Erogacion, TipoErogacion
 from .fuente_financiamiento import FuenteFinanciamiento
 from .grupo import GrupoInvestigacionUtn

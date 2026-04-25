@@ -1,6 +1,6 @@
 from datetime import datetime, date
 
-from core.models.equipamiento import Equipamiento
+from core.models.equipamiento import Equipamiento, EquipamientoMemoriaVersion
 from core.models.grupo import GrupoInvestigacionUtn
 from core.services.auditoria_service import AuditoriaService
 from extension import db
@@ -104,6 +104,19 @@ class EquipamientoService:
         if not equipamiento:
             raise Exception("Equipamiento no encontrado")
         return equipamiento.serialize()
+
+    @staticmethod
+    def get_historial(equipamiento_id: int):
+        equipamiento = db.session.get(
+            Equipamiento,
+            EquipamientoService._validar_id(equipamiento_id, "equipamiento_id")
+        )
+        if not equipamiento:
+            raise Exception("Equipamiento no encontrado")
+        return AuditoriaService.obtener_historial_entidad(
+            entidad="equipamiento_grupo",
+            registro_id=equipamiento.id
+        )
 
     # ==========================================
     # CREATE
@@ -248,3 +261,44 @@ class EquipamientoService:
             raise
 
         return {"message": "Equipamiento eliminado correctamente"}
+
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        equipamientos = Equipamiento.query.filter(
+            Equipamiento.deleted_at.is_(None)
+        ).all()
+
+        snapshots = []
+        for equipamiento in equipamientos:
+            snapshot = EquipamientoMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                equipamiento_id=equipamiento.id,
+                denominacion=equipamiento.denominacion,
+                descripcion_breve=equipamiento.descripcion_breve,
+                fecha_incorporacion=equipamiento.fecha_incorporacion,
+                monto_invertido=equipamiento.monto_invertido,
+                grupo_utn_id=equipamiento.grupo_utn_id,
+                grupo_utn_nombre=(
+                    equipamiento.grupo_utn.nombre_sigla_grupo
+                    if equipamiento.grupo_utn else None
+                ),
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            EquipamientoMemoriaVersion.query
+            .filter(
+                EquipamientoMemoriaVersion.memoria_version_id == memoria_version_id,
+                EquipamientoMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(EquipamientoMemoriaVersion.denominacion.asc())
+            .all()
+        )
+
+        return [snapshot.serialize() for snapshot in snapshots]

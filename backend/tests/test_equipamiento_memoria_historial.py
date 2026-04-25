@@ -5,78 +5,69 @@ from unittest.mock import patch
 
 from core.models.auditoria_campo import AuditoriaCampo
 from core.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
-from core.services.documentacion_service import DocumentacionBibliograficaService
+from core.services.equipamiento_service import EquipamientoService
 from core.services.memoria_service import MemoriaService
 
 
-class DocumentacionMemoriaHistorialTestCase(unittest.TestCase):
+class EquipamientoMemoriaHistorialTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.add_patcher = patch("core.services.documentacion_service.db.session.add")
-        self.flush_patcher = patch("core.services.documentacion_service.db.session.flush")
+        self.add_patcher = patch("core.services.equipamiento_service.db.session.add")
         self.commit_patcher = patch("extension.db.session.commit")
         self.rollback_patcher = patch("extension.db.session.rollback")
         self.get_patcher = patch("core.services.memoria_service.db.session.get")
 
         self.mock_add = self.add_patcher.start()
-        self.mock_flush = self.flush_patcher.start()
         self.mock_commit = self.commit_patcher.start()
         self.mock_rollback = self.rollback_patcher.start()
         self.mock_get = self.get_patcher.start()
 
         self.addCleanup(self.add_patcher.stop)
-        self.addCleanup(self.flush_patcher.stop)
         self.addCleanup(self.commit_patcher.stop)
         self.addCleanup(self.rollback_patcher.stop)
         self.addCleanup(self.get_patcher.stop)
 
-    def test_snapshot_documentacion_para_memoria_version_persiste_foto(self):
+    def test_snapshot_equipamiento_para_memoria_version_persiste_foto(self):
         version = MemoriaVersion(
-            id=31,
+            id=41,
             numero_version=1,
             fecha_apertura=datetime(2026, 1, 1, 0, 0, 0),
             estado=EstadoMemoria.CERRADA,
             created_by=1
         )
-        documento = SimpleNamespace(
-            id=9,
-            titulo="manual de laboratorio",
-            editorial="editorial utn",
-            anio=2026,
-            fecha=date(2026, 3, 10),
-            grupo_id=4,
-            grupo_utn=SimpleNamespace(nombre_unidad_academica="UTN FRBA"),
-            autores=[
-                SimpleNamespace(id=1, nombre_apellido="Ana Perez"),
-                SimpleNamespace(id=2, nombre_apellido="Luis Diaz")
-            ]
+        equipamiento = SimpleNamespace(
+            id=5,
+            denominacion="Microscopio",
+            descripcion_breve="Equipo optico",
+            fecha_incorporacion=date(2026, 2, 1),
+            monto_invertido=1200.0,
+            grupo_utn_id=4,
+            grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS")
         )
 
         fake_query = SimpleNamespace(
-            filter=lambda *args, **kwargs: SimpleNamespace(all=lambda: [documento])
+            filter=lambda *args, **kwargs: SimpleNamespace(all=lambda: [equipamiento])
         )
 
         with patch(
-            "core.services.documentacion_service.DocumentacionBibliografica",
+            "core.services.equipamiento_service.Equipamiento",
             new=SimpleNamespace(
                 query=fake_query,
                 deleted_at=SimpleNamespace(is_=lambda *_: None)
             )
         ):
-            snapshots = DocumentacionBibliograficaService.snapshot_para_memoria_version(
+            snapshots = EquipamientoService.snapshot_para_memoria_version(
                 version,
-                user_id=22
+                user_id=17
             )
 
         self.assertEqual(len(snapshots), 1)
-        self.assertEqual(snapshots[0].documentacion_bibliografica_id, 9)
-        self.assertEqual(snapshots[0].grupo_nombre, "UTN FRBA")
-        self.assertEqual(len(snapshots[0].autores_snapshot), 2)
-        self.assertEqual(snapshots[0].autores_snapshot[0].autor_id, 1)
-        self.assertEqual(snapshots[0].created_by, 22)
+        self.assertEqual(snapshots[0].equipamiento_id, 5)
+        self.assertEqual(snapshots[0].grupo_utn_nombre, "GIDAS")
+        self.assertEqual(snapshots[0].created_by, 17)
         self.mock_add.assert_called()
 
-    def test_change_status_a_cerrada_genera_snapshot_documentacion(self):
+    def test_change_status_a_cerrada_genera_snapshot_equipamiento(self):
         memoria = Memoria(
             id=1,
             periodo_inicio=date(2026, 1, 1),
@@ -84,7 +75,7 @@ class DocumentacionMemoriaHistorialTestCase(unittest.TestCase):
             created_by=1
         )
         version = MemoriaVersion(
-            id=7,
+            id=8,
             numero_version=1,
             fecha_apertura=datetime(2026, 1, 1, 0, 0, 0),
             estado=EstadoMemoria.EN_REVISION,
@@ -111,28 +102,27 @@ class DocumentacionMemoriaHistorialTestCase(unittest.TestCase):
             "core.services.memoria_service.ParticipacionRelevanteService.snapshot_para_memoria_version"
         ), patch(
             "core.services.memoria_service.DocumentacionBibliograficaService.snapshot_para_memoria_version"
+        ), patch(
+            "core.services.memoria_service.EquipamientoService.snapshot_para_memoria_version"
         ) as mock_snapshot:
-            with patch(
-                "core.services.memoria_service.EquipamientoService.snapshot_para_memoria_version"
-            ):
-                resultado = MemoriaService.change_status(
-                    1,
-                    {"estado": "cerrada"},
-                    user_id=81
-                )
+            resultado = MemoriaService.change_status(
+                1,
+                {"estado": "cerrada"},
+                user_id=91
+            )
 
         self.assertEqual(version.estado, EstadoMemoria.CERRADA)
-        mock_snapshot.assert_called_once_with(version, 81)
+        mock_snapshot.assert_called_once_with(version, 91)
         self.assertEqual(resultado["version_actual"]["estado"], "cerrada")
 
-    def test_obtener_historial_documentacion_retorna_auditoria_ordenada(self):
+    def test_obtener_historial_equipamiento_retorna_auditoria_ordenada(self):
         auditoria = AuditoriaCampo(
             id=1,
-            entidad="documentacion_bibliografica",
-            registro_id=9,
-            campo="titulo",
-            valor_anterior="manual a",
-            valor_nuevo="manual b",
+            entidad="equipamiento_grupo",
+            registro_id=5,
+            campo="denominacion",
+            valor_anterior="Microscopio A",
+            valor_nuevo="Microscopio B",
             fecha_cambio=datetime(2026, 4, 23, 10, 0, 0),
             usuario_id=3
         )
@@ -145,8 +135,8 @@ class DocumentacionMemoriaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.documentacion_service.db.session.get",
-            return_value=SimpleNamespace(id=9)
+            "core.services.equipamiento_service.db.session.get",
+            return_value=SimpleNamespace(id=5)
         ), patch(
             "core.services.auditoria_service.AuditoriaCampo",
             new=SimpleNamespace(
@@ -157,19 +147,18 @@ class DocumentacionMemoriaHistorialTestCase(unittest.TestCase):
                 id=SimpleNamespace(desc=lambda: None)
             )
         ):
-            historial = DocumentacionBibliograficaService.get_historial(9)
+            historial = EquipamientoService.get_historial(5)
 
         self.assertEqual(len(historial), 1)
-        self.assertEqual(historial[0]["campo"], "titulo")
+        self.assertEqual(historial[0]["campo"], "denominacion")
         self.assertEqual(historial[0]["usuario_nombre"], "admin")
 
-    def test_obtener_snapshots_documentacion_por_memoria_version(self):
+    def test_obtener_snapshots_equipamiento_por_memoria_version(self):
         snapshot = SimpleNamespace(
             serialize=lambda: {
-                "documentacion_bibliografica_id": 9,
-                "titulo": "manual de laboratorio",
-                "memoria_version_id": 31,
-                "autores": [{"autor_id": 1}]
+                "equipamiento_id": 5,
+                "denominacion": "Microscopio",
+                "memoria_version_id": 41
             }
         )
 
@@ -180,20 +169,19 @@ class DocumentacionMemoriaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.documentacion_service.DocumentacionBibliograficaMemoriaVersion",
+            "core.services.equipamiento_service.EquipamientoMemoriaVersion",
             new=SimpleNamespace(
                 query=fake_query,
                 memoria_version_id=None,
                 deleted_at=SimpleNamespace(is_=lambda *_: None),
-                titulo=SimpleNamespace(asc=lambda: None)
+                denominacion=SimpleNamespace(asc=lambda: None)
             )
         ):
-            resultado = DocumentacionBibliograficaService.obtener_snapshots_por_memoria_version(31)
+            resultado = EquipamientoService.obtener_snapshots_por_memoria_version(41)
 
         self.assertEqual(len(resultado), 1)
-        self.assertEqual(resultado[0]["documentacion_bibliografica_id"], 9)
-        self.assertEqual(resultado[0]["memoria_version_id"], 31)
-        self.assertEqual(resultado[0]["autores"][0]["autor_id"], 1)
+        self.assertEqual(resultado[0]["equipamiento_id"], 5)
+        self.assertEqual(resultado[0]["memoria_version_id"], 41)
 
 
 if __name__ == "__main__":
