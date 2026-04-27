@@ -10,6 +10,7 @@ from core.models.trabajo_reunion import (
     TrabajoReunionCientificaMemoriaVersion,
 )
 from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
 
 
@@ -538,12 +539,16 @@ class TrabajoReunionCientificaService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        trabajos = TrabajoReunionCientifica.query.filter(
-            TrabajoReunionCientifica.deleted_at.is_(None)
-        ).all()
+        trabajos = TrabajoReunionCientifica.query.filter().all()
 
         snapshots = []
         for trabajo in trabajos:
+            if not estuvo_activo_en_periodo_memoria(
+                memoria_version,
+                trabajo.fecha_inicio,
+                getattr(trabajo, "deleted_at", None)
+            ):
+                continue
             investigadores_participantes = ", ".join(sorted([
                 investigador.nombre_apellido
                 for investigador in trabajo.investigadores

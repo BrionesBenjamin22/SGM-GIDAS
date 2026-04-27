@@ -7,6 +7,7 @@ from core.models.articulo_divulgacion import (
 )
 from core.models.grupo import GrupoInvestigacionUtn
 from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 
 
 class ArticuloDivulgacionService:
@@ -271,12 +272,16 @@ class ArticuloDivulgacionService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        articulos = ArticuloDivulgacion.query.filter(
-            ArticuloDivulgacion.deleted_at.is_(None)
-        ).all()
+        articulos = ArticuloDivulgacion.query.filter().all()
 
         snapshots = []
         for articulo in articulos:
+            if not estuvo_activo_en_periodo_memoria(
+                memoria_version,
+                articulo.fecha_publicacion,
+                getattr(articulo, "deleted_at", None)
+            ):
+                continue
             snapshot = ArticuloDivulgacionMemoriaVersion(
                 memoria_version_id=memoria_version.id,
                 articulo_divulgacion_id=articulo.id,

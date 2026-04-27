@@ -5,6 +5,10 @@ from core.models.personal import Becario, TipoFormacion, BecarioHorasHistorial, 
 from core.models.grupo import GrupoInvestigacionUtn
 from core.models.proyecto_investigacion import ProyectoInvestigacion
 from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import (
+    validar_fecha_alta_grupo,
+    estuvo_activo_en_periodo_memoria,
+)
 
 
 # =====================================================
@@ -113,14 +117,25 @@ def _resolver_horas_activas(becario):
     )
 
 
-def _resolver_becas_percibidas(becario):
-    relaciones_activas = [
-        relacion
-        for relacion in getattr(becario, "becas", [])
-        if getattr(relacion, "deleted_at", None) is None
-        and getattr(relacion, "beca", None) is not None
-        and getattr(relacion.beca, "deleted_at", None) is None
-    ]
+def _resolver_becas_percibidas(becario, memoria_version=None):
+    relaciones_activas = []
+    for relacion in getattr(becario, "becas", []):
+        beca = getattr(relacion, "beca", None)
+        if beca is None:
+            continue
+
+        if memoria_version is not None:
+            if not estuvo_activo_en_periodo_memoria(
+                memoria_version,
+                getattr(relacion, "fecha_inicio", None),
+                getattr(relacion, "fecha_fin", None)
+                or getattr(relacion, "deleted_at", None)
+            ):
+                continue
+        elif getattr(relacion, "deleted_at", None) is not None:
+            continue
+
+        relaciones_activas.append(relacion)
 
     nombres_becas = sorted({
         relacion.beca.nombre_beca
@@ -184,6 +199,9 @@ def crear_becario(data: dict, user_id: int):
     becario = Becario(
         nombre_apellido=nombre,
         horas_semanales=horas,
+        fecha_alta_grupo=validar_fecha_alta_grupo(
+            data.get("fecha_alta_grupo")
+        ),
         tipo_formacion_id=tipo_formacion_id,
         grupo_utn_id=grupo_utn_id,
         activo=True,
@@ -307,6 +325,16 @@ def actualizar_becario(id: int, data: dict, user_id: int):
             cambios["grupo_utn_id"] = cambio
             becario.grupo_utn_id = grupo_utn_id
 
+    if "fecha_alta_grupo" in data:
+        nuevo_valor = validar_fecha_alta_grupo(data["fecha_alta_grupo"])
+        cambio = AuditoriaService.construir_cambio(
+            becario.fecha_alta_grupo,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["fecha_alta_grupo"] = cambio
+            becario.fecha_alta_grupo = nuevo_valor
+
     if "proyectos" in data:
         proyectos_ids = _validar_proyectos_ids(data["proyectos"])
         proyectos = _obtener_proyectos_validos(proyectos_ids)
@@ -408,13 +436,17 @@ def obtener_historial_becario(id: int):
 
 
 def snapshot_becarios_para_memoria_version(memoria_version, user_id):
-    becarios = Becario.query.filter(
-        Becario.deleted_at.is_(None)
-    ).all()
+    becarios = Becario.query.filter().all()
 
     snapshots = []
     for becario in becarios:
-        resumen_becas = _resolver_becas_percibidas(becario)
+        if not estuvo_activo_en_periodo_memoria(
+            memoria_version,
+            becario.fecha_alta_grupo,
+            getattr(becario, "deleted_at", None)
+        ):
+            continue
+        resumen_becas = _resolver_becas_percibidas(becario, memoria_version)
         snapshot = BecarioMemoriaVersion(
             memoria_version_id=memoria_version.id,
             becario_id=becario.id,

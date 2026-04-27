@@ -67,6 +67,64 @@ class EquipamientoMemoriaHistorialTestCase(unittest.TestCase):
         self.assertEqual(snapshots[0].created_by, 17)
         self.mock_add.assert_called()
 
+    def test_snapshot_equipamiento_incluye_si_estuvo_activo_durante_el_periodo(self):
+        memoria = Memoria(
+            id=2,
+            periodo_inicio=date(2026, 1, 1),
+            periodo_fin=date(2026, 12, 31),
+            created_by=1
+        )
+        version = MemoriaVersion(
+            id=42,
+            numero_version=1,
+            fecha_apertura=datetime(2026, 1, 1, 0, 0, 0),
+            estado=EstadoMemoria.CERRADA,
+            created_by=1
+        )
+        version.memoria = memoria
+
+        equipamiento_en_periodo = SimpleNamespace(
+            id=5,
+            denominacion="Microscopio",
+            descripcion_breve="Equipo optico",
+            fecha_incorporacion=date(2025, 11, 20),
+            deleted_at=datetime(2026, 2, 10, 10, 0, 0),
+            monto_invertido=1200.0,
+            grupo_utn_id=4,
+            grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS")
+        )
+        equipamiento_fuera_periodo = SimpleNamespace(
+            id=6,
+            denominacion="Servidor viejo",
+            descripcion_breve="Infraestructura anterior",
+            fecha_incorporacion=date(2025, 11, 20),
+            deleted_at=datetime(2025, 12, 20, 10, 0, 0),
+            monto_invertido=800.0,
+            grupo_utn_id=4,
+            grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS")
+        )
+
+        fake_query = SimpleNamespace(
+            filter=lambda *args, **kwargs: SimpleNamespace(
+                all=lambda: [equipamiento_en_periodo, equipamiento_fuera_periodo]
+            )
+        )
+
+        with patch(
+            "core.services.equipamiento_service.Equipamiento",
+            new=SimpleNamespace(
+                query=fake_query,
+                deleted_at=SimpleNamespace(is_=lambda *_: None)
+            )
+        ):
+            snapshots = EquipamientoService.snapshot_para_memoria_version(
+                version,
+                user_id=17
+            )
+
+        self.assertEqual(len(snapshots), 1)
+        self.assertEqual(snapshots[0].equipamiento_id, 5)
+
     def test_change_status_a_cerrada_genera_snapshot_equipamiento(self):
         memoria = Memoria(
             id=1,

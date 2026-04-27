@@ -1,4 +1,5 @@
 from extension import db
+from datetime import date
 from core.models.trabajo_reunion import investigador_x_trabajo_reunion
 from core.models.trabajo_revista import investigador_x_trabajo_revista
 from core.models.audit_mixin import AuditMixin
@@ -13,6 +14,7 @@ class Personal(db.Model, AuditMixin):
     nombre_apellido = db.Column(db.String(120), nullable=False)
     horas_semanales = db.Column(db.Integer, nullable=False)
     activo = db.Column(db.Boolean, default=True, nullable=False)
+    fecha_alta_grupo = db.Column(db.Date, nullable=True)
 
     tipo_personal_id = db.Column(db.Integer, db.ForeignKey('tipo_personal.id'), nullable=False)
     grupo_utn_id = db.Column(db.Integer, db.ForeignKey('grupo_utn.id'), nullable=False)
@@ -36,6 +38,10 @@ class Personal(db.Model, AuditMixin):
         )
         data.update({
             "horas_semanales": horas_activas,
+            "fecha_alta_grupo": (
+                self.fecha_alta_grupo.isoformat()
+                if self.fecha_alta_grupo else None
+            ),
             "tipo_personal": self.tipo_personal.nombre if self.tipo_personal else None,
             "grupo": self.grupo_utn.nombre_sigla_grupo if self.grupo_utn else None,
             "historial_horas": [
@@ -111,6 +117,7 @@ class Becario(db.Model, AuditMixin):
     nombre_apellido = db.Column(db.String(120), nullable=False)
     horas_semanales = db.Column(db.Integer, nullable=False)
     activo = db.Column(db.Boolean, default=True, nullable=False)
+    fecha_alta_grupo = db.Column(db.Date, nullable=True)
 
     tipo_formacion_id = db.Column(
         db.Integer,
@@ -158,6 +165,10 @@ class Becario(db.Model, AuditMixin):
 
         data.update({
             "horas_semanales": horas_activas,
+            "fecha_alta_grupo": (
+                self.fecha_alta_grupo.isoformat()
+                if self.fecha_alta_grupo else None
+            ),
             "tipo_formacion": self.tipo_formacion.nombre if self.tipo_formacion else None,
             "grupo": self.grupo_utn.nombre_sigla_grupo if self.grupo_utn else None,
             "historial_horas": [
@@ -224,6 +235,7 @@ class Investigador(db.Model, AuditMixin):
     nombre_apellido = db.Column(db.String(120), nullable=False)
     horas_semanales = db.Column(db.Integer, nullable=False)
     activo = db.Column(db.Boolean, default=True, nullable=False)
+    fecha_alta_grupo = db.Column(db.Date, nullable=True)
 
     tipo_dedicacion_id = db.Column(db.Integer, db.ForeignKey('tipo_dedicacion.id'))
     categoria_utn_id = db.Column(db.Integer, db.ForeignKey('categoria_utn.id'), nullable=True)
@@ -290,6 +302,10 @@ class Investigador(db.Model, AuditMixin):
 
         data.update({
             "horas_semanales": horas_activas,
+            "fecha_alta_grupo": (
+                self.fecha_alta_grupo.isoformat()
+                if self.fecha_alta_grupo else None
+            ),
             "categoria_utn": self.categoria_utn.nombre if self.categoria_utn else None,
             "programa_incentivos": self.programa_incentivos.nombre if self.programa_incentivos else None,
             "tipo_dedicacion": self.tipo_dedicacion.nombre if self.tipo_dedicacion else None,

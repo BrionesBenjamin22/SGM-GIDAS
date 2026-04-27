@@ -14,6 +14,7 @@ from core.models.grupo import GrupoInvestigacionUtn
 from core.models.fuente_financiamiento import FuenteFinanciamiento
 from core.models.personal import Becario, Investigador
 from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 
 
 class ProyectoInvestigacionService:
@@ -640,12 +641,17 @@ class ProyectoInvestigacionService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        proyectos = ProyectoInvestigacion.query.filter(
-            ProyectoInvestigacion.deleted_at.is_(None)
-        ).all()
+        proyectos = ProyectoInvestigacion.query.filter().all()
 
         snapshots = []
         for proyecto in proyectos:
+            if not estuvo_activo_en_periodo_memoria(
+                memoria_version,
+                proyecto.fecha_inicio,
+                getattr(proyecto, "fecha_fin", None)
+                or getattr(proyecto, "deleted_at", None)
+            ):
+                continue
             snapshot = ProyectoInvestigacionMemoriaVersion(
                 memoria_version_id=memoria_version.id,
                 proyecto_investigacion_id=proyecto.id,

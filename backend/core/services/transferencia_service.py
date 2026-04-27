@@ -11,6 +11,7 @@ from core.models.transferencia_socio import (
 )
 from core.models.grupo import GrupoInvestigacionUtn
 from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 
 
 class TransferenciaSocioProductivaService:
@@ -472,12 +473,17 @@ class TransferenciaSocioProductivaService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        transferencias = TransferenciaSocioProductiva.query.filter(
-            TransferenciaSocioProductiva.deleted_at.is_(None)
-        ).all()
+        transferencias = TransferenciaSocioProductiva.query.filter().all()
 
         snapshots = []
         for transferencia in transferencias:
+            if not estuvo_activo_en_periodo_memoria(
+                memoria_version,
+                transferencia.fecha_inicio,
+                getattr(transferencia, "fecha_fin", None)
+                or getattr(transferencia, "deleted_at", None)
+            ):
+                continue
             snapshot = TransferenciaSocioProductivaMemoriaVersion(
                 memoria_version_id=memoria_version.id,
                 transferencia_id=transferencia.id,

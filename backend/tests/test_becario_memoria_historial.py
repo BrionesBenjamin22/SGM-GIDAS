@@ -43,6 +43,7 @@ class BecarioMemoriaHistorialTestCase(unittest.TestCase):
             id=8,
             nombre_apellido="Luis Diaz",
             horas_semanales=12,
+            fecha_alta_grupo=date(2026, 1, 1),
             tipo_formacion_id=2,
             grupo_utn_id=4,
             tipo_formacion=SimpleNamespace(nombre="Doctorado"),
@@ -51,6 +52,8 @@ class BecarioMemoriaHistorialTestCase(unittest.TestCase):
             becas=[
                 SimpleNamespace(
                     deleted_at=None,
+                    fecha_inicio=date(2026, 1, 1),
+                    fecha_fin=None,
                     beca=SimpleNamespace(
                         deleted_at=None,
                         nombre_beca="Beca Doctoral",

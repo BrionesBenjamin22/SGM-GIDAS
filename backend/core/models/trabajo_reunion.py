@@ -17,7 +17,6 @@ class TrabajoReunionCientifica(db.Model, AuditMixin):
     titulo_trabajo = db.Column(db.Text, nullable=False)
     nombre_reunion = db.Column(db.Text, nullable=False)
     procedencia = db.Column(db.Text, nullable=False)
-
     fecha_inicio = db.Column(db.Date, nullable=False)
 
     tipo_reunion_id = db.Column(

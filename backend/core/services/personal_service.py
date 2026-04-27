@@ -16,6 +16,10 @@ from core.models.personal import TipoFormacion, TipoDedicacion
 from core.models.categoria_utn import CategoriaUtn
 from core.models.programa_incentivos import ProgramaIncentivos
 from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import (
+    validar_fecha_alta_grupo,
+    estuvo_activo_en_periodo_memoria,
+)
 
 
 # =====================================================
@@ -194,6 +198,9 @@ def crear_personal(data, user_id):
     nuevo = Personal(
         nombre_apellido=nombre,
         horas_semanales=horas,
+        fecha_alta_grupo=validar_fecha_alta_grupo(
+            data.get("fecha_alta_grupo")
+        ),
         tipo_personal_id=tipo_personal_id,
         grupo_utn_id=grupo_utn_id,
         activo=True,
@@ -290,6 +297,16 @@ def actualizar_personal(id, data, rol, user_id: int):
             raise ValueError("Para dar de baja un registro debe utilizarse el metodo eliminar.")
 
         entidad.activo = data["activo"]
+
+    if "fecha_alta_grupo" in data:
+        nuevo_valor = validar_fecha_alta_grupo(data["fecha_alta_grupo"])
+        cambio = AuditoriaService.construir_cambio(
+            entidad.fecha_alta_grupo,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["fecha_alta_grupo"] = cambio
+            entidad.fecha_alta_grupo = nuevo_valor
 
     if rol == "investigador":
         if "tipo_dedicacion_id" in data:
@@ -503,12 +520,16 @@ def obtener_historial_personal_por_rol(id, rol):
 
 
 def snapshot_personal_para_memoria_version(memoria_version, user_id):
-    personales = Personal.query.filter(
-        Personal.deleted_at.is_(None)
-    ).all()
+    personales = Personal.query.filter().all()
 
     snapshots = []
     for personal in personales:
+        if not estuvo_activo_en_periodo_memoria(
+            memoria_version,
+            personal.fecha_alta_grupo,
+            getattr(personal, "deleted_at", None)
+        ):
+            continue
         snapshot = PersonalMemoriaVersion(
             memoria_version_id=memoria_version.id,
             personal_id=personal.id,

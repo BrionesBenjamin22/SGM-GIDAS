@@ -8,6 +8,7 @@ from core.models.distinciones import (
 )
 from core.models.proyecto_investigacion import ProyectoInvestigacion
 from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
 
 
@@ -292,12 +293,16 @@ class DistincionRecibidaService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        distinciones = DistincionRecibida.query.filter(
-            DistincionRecibida.deleted_at.is_(None)
-        ).all()
+        distinciones = DistincionRecibida.query.filter().all()
 
         snapshots = []
         for distincion in distinciones:
+            if not estuvo_activo_en_periodo_memoria(
+                memoria_version,
+                distincion.fecha,
+                getattr(distincion, "deleted_at", None)
+            ):
+                continue
             snapshot = DistincionRecibidaMemoriaVersion(
                 memoria_version_id=memoria_version.id,
                 distincion_id=distincion.id,

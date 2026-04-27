@@ -10,6 +10,7 @@ from core.models.actividad_docencia import (
 )
 from core.models.personal import Investigador
 from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
 
 
@@ -544,12 +545,17 @@ class ActividadDocenciaService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        actividades = ActividadDocencia.query.filter(
-            ActividadDocencia.deleted_at.is_(None)
-        ).all()
+        actividades = ActividadDocencia.query.filter().all()
 
         snapshots = []
         for actividad in actividades:
+            if not estuvo_activo_en_periodo_memoria(
+                memoria_version,
+                actividad.fecha_inicio,
+                getattr(actividad, "fecha_fin", None)
+                or getattr(actividad, "deleted_at", None)
+            ):
+                continue
             grado_activo = (
                 ActividadDocenciaService._obtener_grado_activo_desde_actividad(
                     actividad

@@ -9,6 +9,7 @@ from core.models.becas import (
 from core.models.personal import Becario
 from core.models.fuente_financiamiento import FuenteFinanciamiento
 from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import validar_fecha_alta_grupo
 
 
 # =====================================================
@@ -118,6 +119,9 @@ class BecaService:
         nueva_beca = Beca(
             nombre_beca=nombre_beca,
             descripcion=data.get("descripcion"),
+            fecha_alta_grupo=validar_fecha_alta_grupo(
+                data.get("fecha_alta_grupo")
+            ),
             fuente_financiamiento_id=fuente_financiamiento_id,
             created_by=user_id
         )
@@ -172,6 +176,16 @@ class BecaService:
         if cambio:
             cambios["fuente_financiamiento_id"] = cambio
             beca.fuente_financiamiento_id = fuente_financiamiento_id
+
+        if "fecha_alta_grupo" in data:
+            nuevo_valor = validar_fecha_alta_grupo(data["fecha_alta_grupo"])
+            cambio = AuditoriaService.construir_cambio(
+                beca.fecha_alta_grupo,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["fecha_alta_grupo"] = cambio
+                beca.fecha_alta_grupo = nuevo_valor
 
         if cambios:
             beca.mark_updated(user_id)

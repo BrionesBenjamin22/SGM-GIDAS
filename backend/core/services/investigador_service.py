@@ -8,6 +8,10 @@ from core.models.categoria_utn import CategoriaUtn
 from core.models.programa_incentivos import ProgramaIncentivos
 from core.models.grupo import GrupoInvestigacionUtn
 from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import (
+    validar_fecha_alta_grupo,
+    estuvo_activo_en_periodo_memoria,
+)
 
 
 # =====================================================
@@ -155,6 +159,9 @@ def crear_investigador(data, user_id):
     investigador = Investigador(
         nombre_apellido=nombre,
         horas_semanales=horas,
+        fecha_alta_grupo=validar_fecha_alta_grupo(
+            data.get("fecha_alta_grupo")
+        ),
         tipo_dedicacion_id=tipo_dedicacion_id,
         categoria_utn_id=_validar_categoria_utn(data.get("categoria_utn_id")),
         programa_incentivos_id=_validar_programa_incentivos(data.get("programa_incentivos_id")),
@@ -285,6 +292,16 @@ def actualizar_investigador(id, data, user_id):
             cambios["grupo_utn_id"] = cambio
             investigador.grupo_utn_id = nuevo_valor
 
+    if "fecha_alta_grupo" in data:
+        nuevo_valor = validar_fecha_alta_grupo(data["fecha_alta_grupo"])
+        cambio = AuditoriaService.construir_cambio(
+            investigador.fecha_alta_grupo,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["fecha_alta_grupo"] = cambio
+            investigador.fecha_alta_grupo = nuevo_valor
+
     if cambios:
         investigador.mark_updated(user_id)
         AuditoriaService.registrar_cambios(
@@ -401,12 +418,16 @@ def obtener_historial_investigador(id):
 
 
 def snapshot_investigadores_para_memoria_version(memoria_version, user_id):
-    investigadores = Investigador.query.filter(
-        Investigador.deleted_at.is_(None)
-    ).all()
+    investigadores = Investigador.query.filter().all()
 
     snapshots = []
     for investigador in investigadores:
+        if not estuvo_activo_en_periodo_memoria(
+            memoria_version,
+            investigador.fecha_alta_grupo,
+            getattr(investigador, "deleted_at", None)
+        ):
+            continue
         snapshot = InvestigadorMemoriaVersion(
             memoria_version_id=memoria_version.id,
             investigador_id=investigador.id,

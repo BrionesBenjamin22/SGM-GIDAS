@@ -3,6 +3,7 @@ from datetime import datetime, date
 from core.models.equipamiento import Equipamiento, EquipamientoMemoriaVersion
 from core.models.grupo import GrupoInvestigacionUtn
 from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
 
 
@@ -264,12 +265,16 @@ class EquipamientoService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        equipamientos = Equipamiento.query.filter(
-            Equipamiento.deleted_at.is_(None)
-        ).all()
+        equipamientos = Equipamiento.query.filter().all()
 
         snapshots = []
         for equipamiento in equipamientos:
+            if not estuvo_activo_en_periodo_memoria(
+                memoria_version,
+                equipamiento.fecha_incorporacion,
+                getattr(equipamiento, "deleted_at", None)
+            ):
+                continue
             snapshot = EquipamientoMemoriaVersion(
                 memoria_version_id=memoria_version.id,
                 equipamiento_id=equipamiento.id,

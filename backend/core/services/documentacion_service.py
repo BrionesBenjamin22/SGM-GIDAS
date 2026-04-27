@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from core.models.grupo import GrupoInvestigacionUtn
 from core.models.documentacion_autores import (
     DocumentacionBibliografica,
@@ -6,6 +8,7 @@ from core.models.documentacion_autores import (
     DocumentacionBibliograficaAutorMemoriaVersion,
 )
 from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
 
 
@@ -28,6 +31,15 @@ class DocumentacionBibliograficaService:
             raise Exception(f"{campo} es obligatorio")
 
         return " ".join(valor.strip().split()).lower()
+
+    @staticmethod
+    def _parse_fecha(valor, campo="fecha"):
+        try:
+            return datetime.strptime(valor, "%Y-%m-%d").date()
+        except (TypeError, ValueError):
+            raise Exception(
+                f"El campo '{campo}' es obligatorio y debe tener formato YYYY-MM-DD"
+            )
 
     # =========================
     # GET ALL
@@ -105,6 +117,7 @@ class DocumentacionBibliograficaService:
                 data["editorial"], "Editorial"
             ),
             anio=data["anio"],
+            fecha=DocumentacionBibliograficaService._parse_fecha(data.get("fecha")),
             grupo_id=data["grupo_id"],
             created_by=user_id
         )
@@ -145,6 +158,15 @@ class DocumentacionBibliograficaService:
             if cambio:
                 cambios["anio"] = cambio
                 doc.anio = data["anio"]
+
+        if "fecha" in data:
+            nuevo_valor = DocumentacionBibliograficaService._parse_fecha(
+                data["fecha"]
+            )
+            cambio = AuditoriaService.construir_cambio(doc.fecha, nuevo_valor)
+            if cambio:
+                cambios["fecha"] = cambio
+                doc.fecha = nuevo_valor
 
         if "grupo_id" in data:
             cambio = AuditoriaService.construir_cambio(doc.grupo_id, data["grupo_id"])
@@ -215,12 +237,16 @@ class DocumentacionBibliograficaService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        documentos = DocumentacionBibliografica.query.filter(
-            DocumentacionBibliografica.deleted_at.is_(None)
-        ).all()
+        documentos = DocumentacionBibliografica.query.filter().all()
 
         snapshots = []
         for doc in documentos:
+            if not estuvo_activo_en_periodo_memoria(
+                memoria_version,
+                doc.fecha,
+                getattr(doc, "deleted_at", None)
+            ):
+                continue
             snapshot = DocumentacionBibliograficaMemoriaVersion(
                 memoria_version_id=memoria_version.id,
                 documentacion_bibliografica_id=doc.id,

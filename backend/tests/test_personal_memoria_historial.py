@@ -43,6 +43,7 @@ class PersonalMemoriaHistorialTestCase(unittest.TestCase):
             id=3,
             nombre_apellido="Maria Lopez",
             horas_semanales=20,
+            fecha_alta_grupo=date(2026, 1, 15),
             tipo_personal_id=2,
             grupo_utn_id=4,
             tipo_personal=SimpleNamespace(nombre="Administrativo"),

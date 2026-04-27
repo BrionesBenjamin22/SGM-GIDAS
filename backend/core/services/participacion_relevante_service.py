@@ -7,6 +7,7 @@ from core.models.participacion_relevante import (
 )
 from core.models.personal import Investigador
 from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
 
 
@@ -314,12 +315,16 @@ class ParticipacionRelevanteService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        participaciones = ParticipacionRelevante.query.filter(
-            ParticipacionRelevante.deleted_at.is_(None)
-        ).all()
+        participaciones = ParticipacionRelevante.query.filter().all()
 
         snapshots = []
         for participacion in participaciones:
+            if not estuvo_activo_en_periodo_memoria(
+                memoria_version,
+                participacion.fecha,
+                getattr(participacion, "deleted_at", None)
+            ):
+                continue
             snapshot = ParticipacionRelevanteMemoriaVersion(
                 memoria_version_id=memoria_version.id,
                 participacion_relevante_id=participacion.id,

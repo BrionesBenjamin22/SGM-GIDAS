@@ -4,6 +4,7 @@ from core.models.erogacion import Erogacion, TipoErogacion, ErogacionMemoriaVers
 from core.models.fuente_financiamiento import FuenteFinanciamiento
 from core.models.grupo import GrupoInvestigacionUtn
 from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
 
 
@@ -181,12 +182,16 @@ class ErogacionService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        erogaciones = Erogacion.query.filter(
-            Erogacion.deleted_at.is_(None)
-        ).all()
+        erogaciones = Erogacion.query.filter().all()
 
         snapshots = []
         for erogacion in erogaciones:
+            if not estuvo_activo_en_periodo_memoria(
+                memoria_version,
+                erogacion.fecha,
+                getattr(erogacion, "deleted_at", None)
+            ):
+                continue
             snapshot = ErogacionMemoriaVersion(
                 memoria_version_id=memoria_version.id,
                 erogacion_id=erogacion.id,

@@ -45,6 +45,7 @@ class InvestigadorMemoriaHistorialTestCase(unittest.TestCase):
             id=5,
             nombre_apellido="Ana Perez",
             horas_semanales=20,
+            fecha_alta_grupo=date(2026, 2, 1),
             tipo_dedicacion_id=2,
             categoria_utn_id=3,
             programa_incentivos_id=4,
@@ -78,6 +79,79 @@ class InvestigadorMemoriaHistorialTestCase(unittest.TestCase):
         self.assertEqual(snapshots[0].grupo_utn_nombre, "GIDAS")
         self.assertEqual(snapshots[0].created_by, 12)
         self.mock_add.assert_called()
+
+    def test_snapshot_investigadores_incluye_si_estuvo_activo_durante_el_periodo(self):
+        memoria = Memoria(
+            id=2,
+            periodo_inicio=date(2026, 1, 1),
+            periodo_fin=date(2026, 12, 31),
+            created_by=1
+        )
+        version = MemoriaVersion(
+            id=10,
+            numero_version=1,
+            fecha_apertura=datetime(2026, 1, 1, 0, 0, 0),
+            estado=EstadoMemoria.CERRADA,
+            created_by=1
+        )
+        version.memoria = memoria
+
+        investigador_activo_durante_periodo = SimpleNamespace(
+            id=6,
+            nombre_apellido="Ana Perez",
+            horas_semanales=20,
+            fecha_alta_grupo=date(2025, 12, 20),
+            deleted_at=datetime(2026, 3, 1, 10, 0, 0),
+            tipo_dedicacion_id=2,
+            categoria_utn_id=3,
+            programa_incentivos_id=4,
+            grupo_utn_id=6,
+            tipo_dedicacion=SimpleNamespace(nombre="Exclusiva"),
+            categoria_utn=SimpleNamespace(nombre="Categoria I"),
+            programa_incentivos=SimpleNamespace(nombre="Programa A"),
+            grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS"),
+            historial_horas=[SimpleNamespace(horas_semanales=30, fecha_fin=None)]
+        )
+        investigador_fuera_periodo = SimpleNamespace(
+            id=7,
+            nombre_apellido="Luis Diaz",
+            horas_semanales=15,
+            fecha_alta_grupo=date(2018, 5, 10),
+            deleted_at=datetime(2025, 12, 20, 10, 0, 0),
+            tipo_dedicacion_id=2,
+            categoria_utn_id=3,
+            programa_incentivos_id=4,
+            grupo_utn_id=6,
+            tipo_dedicacion=SimpleNamespace(nombre="Simple"),
+            categoria_utn=SimpleNamespace(nombre="Categoria II"),
+            programa_incentivos=SimpleNamespace(nombre="Programa B"),
+            grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS"),
+            historial_horas=[SimpleNamespace(horas_semanales=15, fecha_fin=None)]
+        )
+
+        fake_query = SimpleNamespace(
+            filter=lambda *args, **kwargs: SimpleNamespace(
+                all=lambda: [
+                    investigador_activo_durante_periodo,
+                    investigador_fuera_periodo
+                ]
+            )
+        )
+
+        with patch(
+            "core.services.investigador_service.Investigador",
+            new=SimpleNamespace(
+                query=fake_query,
+                deleted_at=SimpleNamespace(is_=lambda *_: None)
+            )
+        ):
+            snapshots = snapshot_investigadores_para_memoria_version(
+                version,
+                user_id=12
+            )
+
+        self.assertEqual(len(snapshots), 1)
+        self.assertEqual(snapshots[0].investigador_id, 6)
 
     def test_change_status_a_cerrada_genera_snapshot_investigadores(self):
         memoria = Memoria(

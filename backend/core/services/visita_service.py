@@ -8,6 +8,7 @@ from core.models.visita_grupo import (
 from core.models.grupo import GrupoInvestigacionUtn
 from core.models.trabajo_reunion import TipoReunion
 from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 
 
 def _validar_payload(data: dict):
@@ -212,12 +213,16 @@ def obtener_historial_visita(id):
 
 
 def snapshot_visitas_para_memoria_version(memoria_version, user_id):
-    visitas = VisitaAcademica.query.filter(
-        VisitaAcademica.deleted_at.is_(None)
-    ).all()
+    visitas = VisitaAcademica.query.filter().all()
 
     snapshots = []
     for visita in visitas:
+        if not estuvo_activo_en_periodo_memoria(
+            memoria_version,
+            visita.fecha,
+            getattr(visita, "deleted_at", None)
+        ):
+            continue
         snapshot = VisitaAcademicaMemoriaVersion(
             memoria_version_id=memoria_version.id,
             visita_academica_id=visita.id,

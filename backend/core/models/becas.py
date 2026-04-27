@@ -7,6 +7,7 @@ class Beca(db.Model, AuditMixin):
     id = db.Column(db.Integer, primary_key=True)
     nombre_beca = db.Column(db.String(100), nullable=False)
     descripcion = db.Column(db.Text, nullable=True)
+    fecha_alta_grupo = db.Column(db.Date, nullable=True)
 
     fuente_financiamiento_id = db.Column(
         db.Integer,
