@@ -3,6 +3,7 @@ import { http } from "@/lib/http";
 export interface BecarioPayload {
   nombre_apellido: string;
   horas_semanales: number;
+  fecha_alta_grupo: string;
   grupo_utn_id: number;
   tipo_formacion_id: number;
   activo: boolean;

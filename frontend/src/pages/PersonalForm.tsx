@@ -134,6 +134,7 @@ export default function PersonalForm() {
 
         {(tipo === "PTAA" || tipo === "PROFESIONAL") && (
           <FormPTAAProfesional
+            key={`${tipo}-${id ?? "new"}`}
             tipo={tipo}
             initialData={initialData}
             onCancel={() => navigate(-1)}
@@ -142,6 +143,7 @@ export default function PersonalForm() {
 
         {tipo === "BECARIO" && (
           <FormBecario
+            key={`${tipo}-${id ?? "new"}`}
             initialData={initialData}
             onCancel={() => navigate(-1)}
           />
@@ -149,6 +151,7 @@ export default function PersonalForm() {
 
         {tipo === "INVESTIGADOR" && (
           <FormInvestigador
+            key={`${tipo}-${id ?? "new"}`}
             initialData={initialData}
             onCancel={() => navigate(-1)}
           />

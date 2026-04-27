@@ -7,6 +7,17 @@ export interface HistorialHorasItem {
   fecha_fin: string | null;
 }
 
+export interface HistorialCambioItem {
+  id: number | string;
+  campo?: string;
+  fecha_cambio?: string | null;
+  usuario_nombre?: string | null;
+  valor_anterior?: unknown;
+  valor_nuevo?: unknown;
+  tipo?: string;
+  [key: string]: unknown;
+}
+
 export interface PersonalCompleto {
   id: number;
   nombre_apellido: string;
@@ -37,4 +48,11 @@ export const getPersonalCompletoByRolAndId = (
 
 export function getPersonalCompletoById(id: number) {
   return http<PersonalCompleto>(`/personal-all/${id}`);
+}
+
+export function getHistorialPersonalByRolAndId(
+  rol: string,
+  id: number
+) {
+  return http<HistorialCambioItem[]>(`/personal/${rol}/${id}/historial`);
 }

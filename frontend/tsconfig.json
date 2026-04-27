@@ -5,6 +5,7 @@
     "jsx": "react-jsx",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "baseUrl": ".",
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
