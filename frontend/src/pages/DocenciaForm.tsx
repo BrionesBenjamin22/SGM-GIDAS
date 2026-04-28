@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
+import SuccessToast from "@/components/SuccessToast";
+import { HttpError } from "@/lib/http";
 import { useInvestigadores } from "@/hooks/useInvestigadores";
 import { useGradosAcademicos } from "@/hooks/useGradoAcademico";
 import { useRolesActividadDocencia } from "@/hooks/useActividadDocenciaRol";
@@ -37,24 +39,65 @@ export default function FormDocenciaInvestigador() {
   const [gradoAcademicoId, setGradoAcademicoId] = useState<number | null>(null);
   const [rolActividadId, setRolActividadId] = useState<number | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    if (!initialData) return;
+    if (!initialData) {
+      setInvestigadorId(null);
+      setCurso("");
+      setInstitucion("");
+      setFechaInicio(null);
+      setFechaFin(null);
+      setGradoAcademicoId(null);
+      setRolActividadId(null);
+      return;
+    }
 
-    setInvestigadorId(initialData.investigador_id);
+    setInvestigadorId(
+      initialData.investigador_id ??
+        (typeof initialData.investigador === "object"
+          ? initialData.investigador?.id ?? null
+          : null)
+    );
     setCurso(initialData.curso ?? "");
     setInstitucion(initialData.institucion ?? "");
-    setGradoAcademicoId(initialData.grado_academico_id ?? null);
+    setGradoAcademicoId(
+      initialData.grado_academico_actual?.id ??
+        initialData.grado_academico_id ??
+        null
+    );
     setRolActividadId(initialData.rol_actividad_id ?? null);
-
-    if (initialData.fecha_inicio) {
-      setFechaInicio(new Date(initialData.fecha_inicio));
-    }
-
-    if (initialData.fecha_fin) {
-      setFechaFin(new Date(initialData.fecha_fin));
-    }
+    setFechaInicio(
+      initialData.fecha_inicio
+        ? new Date(`${initialData.fecha_inicio}T00:00:00`)
+        : null
+    );
+    setFechaFin(
+      initialData.fecha_fin
+        ? new Date(`${initialData.fecha_fin}T00:00:00`)
+        : null
+    );
   }, [initialData]);
+
+  const formatDateStr = (date: Date | null) => {
+    if (!date) return null;
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const getInitialInvestigadorId = () =>
+    initialData?.investigador_id ??
+    (typeof initialData?.investigador === "object"
+      ? initialData?.investigador?.id ?? null
+      : null);
+
+  const getInitialGradoAcademicoId = () =>
+    initialData?.grado_academico_actual?.id ??
+    initialData?.grado_academico_id ??
+    null;
 
   const mutation = useMutation({
     mutationFn: (payload: any) =>
@@ -63,14 +106,45 @@ export default function FormDocenciaInvestigador() {
         : crearActividadDocencia(payload),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["docencia"] });
+      await qc.invalidateQueries({ queryKey: ["actividad-docencia", id] });
+
+      if (isEdit && id) {
+        navigate(`/docenciaInvestigador/${id}`, {
+          replace: true,
+          state: {
+            successMessage: "Actividad en docencia actualizada con exito.",
+          },
+        });
+        return;
+      }
 
       navigate("/docenciaInvestigador", {
         state: {
-          successMessage: isEdit
-            ? "Actualizado con éxito!"
-            : "Creado con éxito!",
+          successMessage: "Actividad en docencia creada con exito.",
         },
       });
+    },
+    onError: (error) => {
+      const defaultMessage =
+        isEdit
+          ? "No se pudo actualizar la actividad en docencia."
+          : "No se pudo crear la actividad en docencia.";
+
+      if (error instanceof HttpError && error.body && typeof error.body === "object") {
+        const body = error.body as Record<string, unknown>;
+        const backendMessage =
+          typeof body.error === "string"
+            ? body.error
+            : typeof body.message === "string"
+              ? body.message
+              : null;
+
+        setErrorMessage(backendMessage ?? defaultMessage);
+      } else {
+        setErrorMessage(defaultMessage);
+      }
+
+      setShowError(true);
     },
   });
 
@@ -85,18 +159,23 @@ export default function FormDocenciaInvestigador() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!investigadorId)
+    if (!investigadorId) {
       newErrors.investigador = "Debe seleccionar investigador";
+    }
     if (!curso.trim()) newErrors.curso = "Debe ingresar curso";
-    if (!institucion.trim())
-      newErrors.institucion = "Debe ingresar institución";
-    if (!fechaInicio)
+    if (!institucion.trim()) {
+      newErrors.institucion = "Debe ingresar institucion";
+    }
+    if (!fechaInicio) {
       newErrors.fechaInicio = "Debe seleccionar fecha de inicio";
+    }
     if (!fechaFin) newErrors.fechaFin = "Debe seleccionar fecha de fin";
-    if (!gradoAcademicoId)
-      newErrors.gradoAcademico = "Debe seleccionar grado académico";
-    if (!rolActividadId)
+    if (!gradoAcademicoId) {
+      newErrors.gradoAcademico = "Debe seleccionar grado academico";
+    }
+    if (!rolActividadId) {
       newErrors.rolActividad = "Debe seleccionar rol";
+    }
 
     if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
       newErrors.fechaFin =
@@ -111,18 +190,51 @@ export default function FormDocenciaInvestigador() {
     e.preventDefault();
     if (!validate()) return;
 
-    mutation.mutate({
+    const payload = {
       investigador_id: investigadorId!,
       curso,
       institucion,
-      fecha_inicio: fechaInicio!.toISOString().split("T")[0],
-      fecha_fin: fechaFin!.toISOString().split("T")[0],
+      fecha_inicio: formatDateStr(fechaInicio)!,
+      fecha_fin: formatDateStr(fechaFin)!,
       grado_academico_id: gradoAcademicoId,
       rol_actividad_id: rolActividadId,
-    });
+    };
+
+    if (!isEdit) {
+      mutation.mutate(payload);
+      return;
+    }
+
+    const initialPayload = {
+      investigador_id: getInitialInvestigadorId(),
+      curso: initialData?.curso ?? "",
+      institucion: initialData?.institucion ?? "",
+      fecha_inicio: initialData?.fecha_inicio ?? null,
+      fecha_fin: initialData?.fecha_fin ?? null,
+      grado_academico_id: getInitialGradoAcademicoId(),
+      rol_actividad_id: initialData?.rol_actividad_id ?? null,
+    };
+
+    const changedPayload = Object.fromEntries(
+      Object.entries(payload).filter(([key, value]) => {
+        return initialPayload[key as keyof typeof initialPayload] !== value;
+      })
+    );
+
+    if (Object.keys(changedPayload).length === 0) {
+      navigate(`/docenciaInvestigador/${id}`, {
+        replace: true,
+        state: {
+          successMessage: "No hubo cambios para actualizar.",
+        },
+      });
+      return;
+    }
+
+    mutation.mutate(changedPayload);
   };
 
-  if (isEdit && isLoading) return <p>Cargando actividad…</p>;
+  if (isEdit && isLoading) return <p>Cargando actividad...</p>;
 
   const inputClass = (field: string) =>
     `input ${errors[field] ? "!border-red-500 !ring-2 !ring-red-500" : ""}`;
@@ -137,7 +249,7 @@ export default function FormDocenciaInvestigador() {
 
       <form
         onSubmit={submit}
-        className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 space-y-6"
+        className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
         <Field label="Investigador">
           <>
@@ -162,9 +274,7 @@ export default function FormDocenciaInvestigador() {
               ))}
             </select>
             {errors.investigador && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.investigador}
-              </p>
+              <p className="mt-1 text-sm text-red-500">{errors.investigador}</p>
             )}
           </>
         </Field>
@@ -181,12 +291,12 @@ export default function FormDocenciaInvestigador() {
               }}
             />
             {errors.curso && (
-              <p className="text-red-500 text-sm mt-1">{errors.curso}</p>
+              <p className="mt-1 text-sm text-red-500">{errors.curso}</p>
             )}
           </>
         </Field>
 
-        <Field label="Institución">
+        <Field label="Institucion">
           <>
             <input
               className={inputClass("institucion")}
@@ -198,14 +308,12 @@ export default function FormDocenciaInvestigador() {
               }}
             />
             {errors.institucion && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.institucion}
-              </p>
+              <p className="mt-1 text-sm text-red-500">{errors.institucion}</p>
             )}
           </>
         </Field>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Field label="Fecha inicio">
             <>
               <Calendar
@@ -218,9 +326,7 @@ export default function FormDocenciaInvestigador() {
                 helperText={errors.fechaInicio ?? "DD/MM/AAAA"}
               />
               {errors.fechaInicio && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.fechaInicio}
-                </p>
+                <p className="mt-1 text-sm text-red-500">{errors.fechaInicio}</p>
               )}
             </>
           </Field>
@@ -238,13 +344,13 @@ export default function FormDocenciaInvestigador() {
                 helperText={errors.fechaFin ?? "DD/MM/AAAA"}
               />
               {errors.fechaFin && (
-                <p className="text-red-500 text-sm mt-1">{errors.fechaFin}</p>
+                <p className="mt-1 text-sm text-red-500">{errors.fechaFin}</p>
               )}
             </>
           </Field>
         </div>
 
-        <Field label="Grado académico">
+        <Field label="Grado academico">
           <>
             <select
               className={`${inputClass("gradoAcademico")} ${
@@ -258,7 +364,7 @@ export default function FormDocenciaInvestigador() {
               }}
             >
               <option value="" disabled>
-                Seleccionar grado académico
+                Seleccionar grado academico
               </option>
               {gradosAcademicos.map((grado) => (
                 <option key={grado.id} value={grado.id}>
@@ -267,7 +373,7 @@ export default function FormDocenciaInvestigador() {
               ))}
             </select>
             {errors.gradoAcademico && (
-              <p className="text-red-500 text-sm mt-1">
+              <p className="mt-1 text-sm text-red-500">
                 {errors.gradoAcademico}
               </p>
             )}
@@ -297,9 +403,7 @@ export default function FormDocenciaInvestigador() {
               ))}
             </select>
             {errors.rolActividad && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.rolActividad}
-              </p>
+              <p className="mt-1 text-sm text-red-500">{errors.rolActividad}</p>
             )}
           </>
         </Field>
@@ -325,6 +429,13 @@ export default function FormDocenciaInvestigador() {
           </Button>
         </div>
       </form>
+
+      <SuccessToast
+        open={showError}
+        message={errorMessage}
+        onClose={() => setShowError(false)}
+        variant="error"
+      />
     </section>
   );
 }

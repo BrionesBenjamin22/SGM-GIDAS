@@ -60,6 +60,11 @@ export default function DocenciaLanding() {
     queryFn: () => getActividadesDocencia(undefined, filtroActivos),
   });
 
+  const getInvestigadorNombre = (d: ActividadDocencia) =>
+    typeof d.investigador === "string"
+      ? d.investigador
+      : d.investigador?.nombre_apellido ?? "";
+
   const opcionesFiltros = useMemo(() => {
     const cursos = new Set<string>();
     const instituciones = new Set<string>();
@@ -70,7 +75,9 @@ export default function DocenciaLanding() {
     list.forEach((d) => {
       if (d.curso) cursos.add(toTitleCase(d.curso));
       if (d.institucion) instituciones.add(toTitleCase(d.institucion));
-      if (d.investigador) investigadores.add(toTitleCase(d.investigador));
+      if (getInvestigadorNombre(d)) {
+        investigadores.add(toTitleCase(getInvestigadorNombre(d)));
+      }
       if (d.grado_academico) gradosAcademicos.add(toTitleCase(d.grado_academico));
       if (d.rol_actividad) rolesActividad.add(toTitleCase(d.rol_actividad));
     });
@@ -92,12 +99,11 @@ export default function DocenciaLanding() {
         !query ||
         d.curso?.toLowerCase().includes(query) ||
         d.institucion?.toLowerCase().includes(query) ||
-        d.investigador?.toLowerCase().includes(query) ||
+        getInvestigadorNombre(d).toLowerCase().includes(query) ||
         d.grado_academico?.toLowerCase().includes(query) ||
         d.rol_actividad?.toLowerCase().includes(query);
 
-      const matchCurso =
-        !filters.curso || toTitleCase(d.curso) === filters.curso;
+      const matchCurso = !filters.curso || toTitleCase(d.curso) === filters.curso;
 
       const matchInstitucion =
         !filters.institucion ||
@@ -105,7 +111,7 @@ export default function DocenciaLanding() {
 
       const matchInvestigador =
         !filters.investigador ||
-        toTitleCase(d.investigador) === filters.investigador;
+        toTitleCase(getInvestigadorNombre(d)) === filters.investigador;
 
       const matchGradoAcademico =
         !filters.gradoAcademico ||
@@ -200,7 +206,7 @@ export default function DocenciaLanding() {
       setErrorMessage(
         invalidItems.length === 1
           ? "La actividad seleccionada ya fue eliminada."
-          : "Una o más actividades seleccionadas ya fueron eliminadas."
+          : "Una o mas actividades seleccionadas ya fueron eliminadas."
       );
       setShowError(true);
       return;
@@ -216,33 +222,33 @@ export default function DocenciaLanding() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Actividad en docencia eliminada con éxito."
-          : "Actividades en docencia eliminadas con éxito."
+          ? "Actividad en docencia eliminada con exito."
+          : "Actividades en docencia eliminadas con exito."
       );
       setShowSuccess(true);
     } catch {
       setShowConfirm(false);
       setErrorMessage(
-        "Ocurrió un error inesperado al eliminar la actividad en docencia."
+        "Ocurrio un error inesperado al eliminar la actividad en docencia."
       );
       setShowError(true);
     }
   };
 
   return (
-    <section className="w-full min-h-[calc(100vh-80px)] px-4 md:px-6 py-4 flex flex-col text-sm">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+    <section className="flex min-h-[calc(100vh-80px)] w-full flex-col px-4 py-4 text-sm md:px-6">
+      <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <h2 className="text-2xl md:text-3xl font-semibold leading-none text-slate-800">
+          <h2 className="text-2xl font-semibold leading-none text-slate-800 md:text-3xl">
             Actividades en Docencia
           </h2>
-          <p className="text-xs text-slate-500 mt-2">
+          <p className="mt-2 text-xs text-slate-500">
             {docenciaFiltrada.length} de {list.length} resultados
           </p>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <div className="flex items-center rounded-lg border border-slate-200 bg-white overflow-hidden">
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
             <button
               type="button"
               onClick={() => setQuickEstado("")}
@@ -258,7 +264,7 @@ export default function DocenciaLanding() {
             <button
               type="button"
               onClick={() => setQuickEstado("todos")}
-              className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+              className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                 quickEstadoActual === "todos"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
@@ -270,7 +276,7 @@ export default function DocenciaLanding() {
             <button
               type="button"
               onClick={() => setQuickEstado("inactivos")}
-              className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+              className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                 quickEstadoActual === "inactivos"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
@@ -283,8 +289,8 @@ export default function DocenciaLanding() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por curso, institución, investigador..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-10 py-1.5 focus:bg-white focus:ring-2 focus:ring-slate-200 outline-none transition-all text-xs"
+              placeholder="Buscar por curso, institucion, investigador..."
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -328,7 +334,7 @@ export default function DocenciaLanding() {
               >
                 Filtros
                 {filtrosActivosCount > 0 && (
-                  <span className="ml-1.5 bg-slate-800 text-white text-[10px] rounded-full px-1.5 py-0.5">
+                  <span className="ml-1.5 rounded-full bg-slate-800 px-1.5 py-0.5 text-[10px] text-white">
                     {filtrosActivosCount}
                   </span>
                 )}
@@ -352,11 +358,7 @@ export default function DocenciaLanding() {
                 </Button>
               )}
 
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={cancelSelection}
-              >
+              <Button variant="secondary" size="sm" onClick={cancelSelection}>
                 Cancelar
               </Button>
             </div>
@@ -366,22 +368,22 @@ export default function DocenciaLanding() {
 
       <div className="flex-1">
         {isLoading ? (
-          <p className="text-slate-500 text-center py-10">Cargando…</p>
+          <p className="py-10 text-center text-slate-500">Cargando...</p>
         ) : isError ? (
-          <p className="text-slate-500 text-center py-10">Error al cargar.</p>
+          <p className="py-10 text-center text-slate-500">Error al cargar.</p>
         ) : docenciaFiltrada.length === 0 ? (
-          <p className="text-slate-500 text-center py-10">
+          <p className="py-10 text-center text-slate-500">
             No hay actividades registradas.
           </p>
         ) : (
           <>
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {paginatedItems.map((d) => (
                 <Tarjeta<ActividadDocencia>
                   key={d.id}
                   item={d}
-                  title={(x) => toTitleCase(x.curso) || "—"}
-                  subtitle={(x) => toTitleCase(x.investigador) || "—"}
+                  title={(x) => toTitleCase(x.curso) || "-"}
+                  subtitle={(x) => toTitleCase(getInvestigadorNombre(x)) || "-"}
                   badge={(x) => (x.deleted_at ? "INACTIVA" : "ACTIVA")}
                   selectable={puedeEliminar && selectMode}
                   selectDisabled={!!d.deleted_at}
@@ -396,14 +398,14 @@ export default function DocenciaLanding() {
 
             {totalPages > 1 && (
               <div className="mt-8">
-                <div className="flex justify-center items-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                   <Button
                     size="sm"
                     variant="secondary"
                     disabled={currentPage === 1}
                     onClick={() => setCurrentPage((p) => p - 1)}
                   >
-                    ←
+                    {"<"}
                   </Button>
 
                   {[...Array(totalPages)].map((_, i) => {
@@ -412,7 +414,7 @@ export default function DocenciaLanding() {
                       <button
                         key={page}
                         onClick={() => setCurrentPage(page)}
-                        className={`px-3 py-1 rounded-lg text-sm ${
+                        className={`rounded-lg px-3 py-1 text-sm ${
                           currentPage === page
                             ? "bg-slate-800 text-white"
                             : "bg-slate-100 hover:bg-slate-200"
@@ -429,7 +431,7 @@ export default function DocenciaLanding() {
                     disabled={currentPage === totalPages}
                     onClick={() => setCurrentPage((p) => p + 1)}
                   >
-                    →
+                    {">"}
                   </Button>
                 </div>
               </div>
@@ -441,19 +443,19 @@ export default function DocenciaLanding() {
       {showFilters && (
         <>
           <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
             onClick={() => setShowFilters(false)}
           />
-          <div className="fixed top-0 right-0 h-full w-[380px] bg-white z-50 shadow-2xl p-6 flex flex-col overflow-y-auto">
-            <h3 className="text-xl font-semibold mb-6">Filtros Avanzados</h3>
+          <div className="fixed right-0 top-0 z-50 flex h-full w-[380px] flex-col overflow-y-auto bg-white p-6 shadow-2xl">
+            <h3 className="mb-6 text-xl font-semibold">Filtros Avanzados</h3>
 
-            <div className="space-y-5 flex-1 text-[11px]">
+            <div className="flex-1 space-y-5 text-[11px]">
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
                   Estado
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.estado}
                   onChange={(e) =>
                     setTempFilters({
@@ -469,11 +471,11 @@ export default function DocenciaLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
                   Curso
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.curso}
                   onChange={(e) =>
                     setTempFilters({
@@ -492,11 +494,11 @@ export default function DocenciaLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
-                  Institución
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
+                  Institucion
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.institucion}
                   onChange={(e) =>
                     setTempFilters({
@@ -515,11 +517,11 @@ export default function DocenciaLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
                   Investigador
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.investigador}
                   onChange={(e) =>
                     setTempFilters({
@@ -538,11 +540,11 @@ export default function DocenciaLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
-                  Grado Académico
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
+                  Grado Academico
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.gradoAcademico}
                   onChange={(e) =>
                     setTempFilters({
@@ -561,11 +563,11 @@ export default function DocenciaLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
                   Rol de Actividad
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.rolActividad}
                   onChange={(e) =>
                     setTempFilters({
@@ -584,7 +586,7 @@ export default function DocenciaLanding() {
               </div>
             </div>
 
-            <div className="flex justify-between gap-2 pt-6 border-t mt-4">
+            <div className="mt-4 flex justify-between gap-2 border-t pt-6">
               <Button
                 variant="secondary"
                 className="flex-1"
@@ -621,8 +623,8 @@ export default function DocenciaLanding() {
       <ConfirmDialog
         open={showConfirm}
         title="Eliminar actividades en docencia"
-        message="¿Estás seguro de eliminar las siguientes actividades?"
-        items={selectedActiveItems.map((d) => toTitleCase(d.curso) || "—")}
+        message="¿Estas seguro de eliminar las siguientes actividades?"
+        items={selectedActiveItems.map((d) => toTitleCase(d.curso) || "-")}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
       />
@@ -637,6 +639,7 @@ export default function DocenciaLanding() {
         open={showError}
         message={errorMessage}
         onClose={() => setShowError(false)}
+        variant="error"
       />
     </section>
   );

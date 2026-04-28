@@ -98,6 +98,13 @@ export default function PersonalLanding() {
     }
   }, [location.state]);
 
+  const quickEstadoActual =
+    filtroActivos === "all"
+      ? "todos"
+      : filtroActivos === "false"
+        ? "inactivos"
+        : "activos";
+
   const toggleSelect = (
     id: number,
     rol: string,
@@ -190,7 +197,7 @@ export default function PersonalLanding() {
               type="button"
               onClick={() => setFiltroActivos("true")}
               className={`px-3 py-1.5 text-xs transition-colors ${
-                filtroActivos === "true"
+                quickEstadoActual === "activos"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
               }`}
@@ -202,12 +209,24 @@ export default function PersonalLanding() {
               type="button"
               onClick={() => setFiltroActivos("all")}
               className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
-                filtroActivos === "all"
+                quickEstadoActual === "todos"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
               }`}
             >
               Todos
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFiltroActivos("false")}
+              className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+                quickEstadoActual === "inactivos"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              Inactivos
             </button>
           </div>
 

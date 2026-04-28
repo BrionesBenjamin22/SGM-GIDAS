@@ -1,9 +1,15 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import Button from "@/components/Button";
-import { getActividadDocenciaById } from "@/services/actividadDocenciaServices";
-import { getGradoAcademicoById } from "@/services/gradoAcademicoService";
-import { getRolActividadById } from "@/services/rolActividadService";
+import HistorialCambiosCard from "@/components/HistorialCambiosCard";
+import SuccessToast from "@/components/SuccessToast";
+import {
+  getActividadDocenciaById,
+  getHistorialActividadDocenciaById,
+} from "@/services/actividadDocenciaServices";
+import { useGradosAcademicos } from "@/hooks/useGradoAcademico";
+import { useRolesActividadDocencia } from "@/hooks/useActividadDocenciaRol";
 import { useAuditoria } from "@/hooks/useAuditoria";
 import { toTitleCase } from "@/utils/format";
 import { useAuth } from "@/context/AuthContext";
@@ -11,7 +17,12 @@ import { useAuth } from "@/context/AuthContext";
 export default function ActividadDocenciaDetalle() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { canEditRecords } = useAuth();
+  const { data: gradosAcademicos = [] } = useGradosAcademicos();
+  const { data: rolesActividad = [] } = useRolesActividadDocencia();
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const puedeEditar = canEditRecords();
 
@@ -21,29 +32,31 @@ export default function ActividadDocenciaDetalle() {
     enabled: !!id,
   });
 
-  const { data: gradoAcademico } = useQuery({
-    queryKey: ["grado-academico", data?.grado_academico_id],
-    queryFn: () => getGradoAcademicoById(Number(data?.grado_academico_id)),
-    enabled: !!data?.grado_academico_id,
-  });
-
-  const { data: rolActividad } = useQuery({
-    queryKey: ["rol-actividad", data?.rol_actividad_id],
-    queryFn: () => getRolActividadById(Number(data?.rol_actividad_id)),
-    enabled: !!data?.rol_actividad_id,
+  const { data: historialCambios = [], isLoading: isLoadingHistorial } = useQuery({
+    queryKey: ["actividad-docencia-historial", id],
+    queryFn: () => getHistorialActividadDocenciaById(Number(id)),
+    enabled: !!id,
   });
 
   const auditoria = useAuditoria(data);
 
-  if (isLoading) return <p className="text-slate-500">Cargando…</p>;
+  useEffect(() => {
+    if (location.state?.successMessage) {
+      setSuccessMessage(location.state.successMessage);
+      setShowSuccess(true);
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.state, navigate, location.pathname]);
+
+  if (isLoading) return <p className="text-slate-500">Cargando...</p>;
   if (!data)
-    return <p className="text-slate-500">No se encontró la actividad.</p>;
+    return <p className="text-slate-500">No se encontro la actividad.</p>;
 
   const isDeleted = !!data.deleted_at;
 
   const formatFecha = (fecha?: string | null) => {
-    if (!fecha) return "—";
-    const date = new Date(fecha);
+    if (!fecha) return "-";
+    const date = new Date(`${fecha}T00:00:00`);
     const dia = String(date.getDate()).padStart(2, "0");
     const mes = String(date.getMonth() + 1).padStart(2, "0");
     const anio = date.getFullYear();
@@ -51,8 +64,79 @@ export default function ActividadDocenciaDetalle() {
   };
 
   const formatFechaHora = (fecha?: string | null) => {
-    if (!fecha) return "—";
+    if (!fecha) return "-";
     return new Date(fecha).toLocaleString("es-AR");
+  };
+
+  const investigadorNombre =
+    typeof data.investigador === "string"
+      ? data.investigador
+      : data.investigador?.nombre_apellido;
+
+  const gradoActualNombre =
+    data.grado_academico_actual?.nombre ?? data.grado_academico;
+
+  const rolActividadNombre =
+    rolesActividad.find((rol) => rol.id === data.rol_actividad_id)?.nombre ??
+    data.rol_actividad;
+
+  const formatHistorialValue = (
+    item: { campo?: string; tipo?: string },
+    value: unknown
+  ) => {
+    if (value === null || value === undefined || value === "") {
+      return "-";
+    }
+
+    if (item.tipo === "historial_grado" && typeof value === "object" && value) {
+      const record = value as {
+        grado_academico?: string;
+        fecha_inicio?: string | null;
+        fecha_fin?: string | null;
+        activo?: boolean;
+      };
+
+      return [
+        record.grado_academico ? `Grado: ${record.grado_academico}` : null,
+        record.fecha_inicio || record.fecha_fin
+          ? `Periodo: ${formatFecha(record.fecha_inicio)} - ${formatFecha(
+              record.fecha_fin
+            )}`
+          : null,
+        record.activo !== undefined ? `Activo: ${record.activo ? "Si" : "No"}` : null,
+      ]
+        .filter(Boolean)
+        .join(" | ");
+    }
+
+    const asNumber =
+      typeof value === "number"
+        ? value
+        : typeof value === "string" && value.trim() !== ""
+          ? Number(value)
+          : NaN;
+
+    switch (item.campo) {
+      case "grado_academico_id":
+        return (
+          gradosAcademicos.find((grado) => grado.id === asNumber)?.nombre ??
+          String(value)
+        );
+      case "rol_actividad_id":
+        return (
+          rolesActividad.find((rol) => rol.id === asNumber)?.nombre ??
+          String(value)
+        );
+      default:
+        if (typeof value === "object") {
+          try {
+            return JSON.stringify(value);
+          } catch {
+            return "-";
+          }
+        }
+        return String(value);
+    }
   };
 
   return (
@@ -60,14 +144,14 @@ export default function ActividadDocenciaDetalle() {
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-2">
           <h2 className="text-2xl md:text-3xl font-semibold leading-none">
-            {toTitleCase(data.curso) || "—"}
+            {toTitleCase(data.curso) || "-"}
           </h2>
 
           <span
-            className={`w-fit px-3 py-1 text-xs font-semibold rounded-full uppercase tracking-wider border ${
+            className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider ${
               isDeleted
-                ? "bg-red-50 text-red-700 border-red-200"
-                : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                ? "border-red-200 bg-red-50 text-red-700"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700"
             }`}
           >
             {isDeleted ? "ELIMINADA" : "ACTIVA"}
@@ -85,58 +169,53 @@ export default function ActividadDocenciaDetalle() {
       </div>
 
       <article className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
-        <div className="space-y-2 text-sm md:text-base text-slate-500">
+        <div className="space-y-2 text-sm text-slate-500 md:text-base">
           <p>
             <span className="font-medium text-slate-700">Investigador:</span>{" "}
-            {toTitleCase(data.investigador) || "—"}
+            {toTitleCase(investigadorNombre) || "-"}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">
-              Fecha de inicio:
-            </span>{" "}
+            <span className="font-medium text-slate-700">Fecha de inicio:</span>{" "}
             {formatFecha(data.fecha_inicio)}
           </p>
 
           <p>
             <span className="font-medium text-slate-700">
-              Fecha de finalización:
+              Fecha de finalizacion:
             </span>{" "}
             {formatFecha(data.fecha_fin)}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">
-              Grado académico:
-            </span>{" "}
-            {toTitleCase(gradoAcademico?.nombre) || "—"}
+            <span className="font-medium text-slate-700">Grado academico:</span>{" "}
+            {toTitleCase(gradoActualNombre) || "-"}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Institución:</span>{" "}
-            {toTitleCase(data.institucion) || "—"}
+            <span className="font-medium text-slate-700">Institucion:</span>{" "}
+            {toTitleCase(data.institucion) || "-"}
           </p>
 
           <p>
             <span className="font-medium text-slate-700">
               Rol en la actividad:
             </span>{" "}
-            {toTitleCase(rolActividad?.nombre) || "—"}
+            {toTitleCase(rolActividadNombre) || "-"}
           </p>
         </div>
       </article>
 
       <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-slate-700">Auditoría</h3>
+          <h3 className="text-lg font-semibold text-slate-700">Auditoria</h3>
 
-          <p className="text-xs text-slate-500 mt-1">
-            {toTitleCase(data.curso) || "—"} -{" "}
-            {toTitleCase(data.investigador) || "—"}
+          <p className="mt-1 text-xs text-slate-500">
+            {toTitleCase(data.curso) || "-"} - {toTitleCase(investigadorNombre) || "-"}
           </p>
         </div>
 
-        <div className="space-y-2 text-sm md:text-base text-slate-500">
+        <div className="space-y-2 text-sm text-slate-500 md:text-base">
           <p>
             <span className="font-medium text-slate-700">Creado por:</span>{" "}
             {auditoria.nombreCreador}
@@ -144,7 +223,7 @@ export default function ActividadDocenciaDetalle() {
 
           <p>
             <span className="font-medium text-slate-700">
-              Fecha de creación:
+              Fecha de creacion:
             </span>{" "}
             {formatFechaHora(data.created_at)}
           </p>
@@ -156,12 +235,23 @@ export default function ActividadDocenciaDetalle() {
 
           <p>
             <span className="font-medium text-slate-700">
-              Fecha de eliminación:
+              Fecha de eliminacion:
             </span>{" "}
             {formatFechaHora(data.deleted_at)}
           </p>
         </div>
       </article>
+
+      <HistorialCambiosCard
+        subtitle={`${toTitleCase(data.curso) || "-"} - ${
+          toTitleCase(investigadorNombre) || "-"
+        }`}
+        items={historialCambios}
+        isLoading={isLoadingHistorial}
+        updatedAt={data.updated_at}
+        updatedByName={data.updated_by_nombre}
+        formatItemValue={(item, value) => formatHistorialValue(item, value)}
+      />
 
       <div className="flex justify-start pt-4">
         <Button
@@ -172,6 +262,12 @@ export default function ActividadDocenciaDetalle() {
           Volver
         </Button>
       </div>
+
+      <SuccessToast
+        open={showSuccess}
+        message={successMessage}
+        onClose={() => setShowSuccess(false)}
+      />
     </section>
   );
 }
