@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
+import SuccessToast from "@/components/SuccessToast";
 import { HttpError } from "@/lib/http";
 import {
   crearDistincion,
@@ -13,7 +14,7 @@ import {
 import {
   getProyectos,
   type Proyecto,
-} from "@/services/proyectoInvestigacionServices";
+} from "@/services/proyectosServices";
 import { useUct } from "@/hooks/useUct";
 
 export default function DistincionesForm() {
@@ -41,39 +42,16 @@ export default function DistincionesForm() {
   const [proyectoId, setProyectoId] = useState<number | null>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     if (!initialData) return;
 
-    setFecha(initialData.fecha ? new Date(initialData.fecha) : null);
+    setFecha(initialData.fecha ? new Date(`${initialData.fecha}T00:00:00`) : null);
     setDescripcion(initialData.descripcion ?? "");
-    setProyectoId(initialData.proyecto_investigacion_id ?? null);
+    setProyectoId(initialData.proyecto?.id ?? null);
   }, [initialData]);
-
-  const mutation = useMutation({
-    mutationFn: (payload: any) =>
-      isEdit
-        ? actualizarDistincion(Number(id), payload)
-        : crearDistincion(payload),
-    onSuccess: async (saved) => {
-      await qc.invalidateQueries({ queryKey: ["distinciones"] });
-      await qc.invalidateQueries({ queryKey: ["distincion", id] });
-
-      if (isEdit) {
-        navigate(`/distinciones/${id}`, {
-          state: {
-            successMessage: "Distinción actualizada con éxito!",
-          },
-        });
-      } else {
-        navigate(`/distinciones/${saved.id}`, {
-          state: {
-            successMessage: "Distinción creada con éxito!",
-          },
-        });
-      }
-    },
-  });
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -91,16 +69,79 @@ export default function DistincionesForm() {
     }
 
     if (!descripcion.trim()) {
-      newErrors.descripcion = "Debe ingresar descripción";
+      newErrors.descripcion = "Debe ingresar descripcion";
     }
 
     if (!proyectoId) {
-      newErrors.proyecto = "Debe seleccionar un proyecto de investigación";
+      newErrors.proyecto = "Debe seleccionar un proyecto de investigacion";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  const formatDateStr = (date: Date | null) => {
+    if (!date) return null;
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const mutation = useMutation({
+    mutationFn: (payload: any) =>
+      isEdit
+        ? actualizarDistincion(Number(id), payload)
+        : crearDistincion(payload),
+    onSuccess: async (saved) => {
+      const distincionId = isEdit ? Number(id) : saved.id;
+
+      await qc.invalidateQueries({ queryKey: ["distinciones"] });
+      await qc.invalidateQueries({ queryKey: ["distincion", distincionId] });
+      await qc.invalidateQueries({ queryKey: ["distincion-historial", distincionId] });
+
+      navigate(`/distinciones/${distincionId}`, {
+        replace: true,
+        state: {
+          successMessage: isEdit
+            ? "Distincion actualizada con exito."
+            : "Distincion creada con exito.",
+        },
+      });
+    },
+    onError: (error) => {
+      const defaultMessage = isEdit
+        ? "No se pudo actualizar la distincion."
+        : "No se pudo crear la distincion.";
+
+      let backendMessage = defaultMessage;
+
+      if (error instanceof HttpError && error.body && typeof error.body === "object") {
+        const body = error.body as Record<string, unknown>;
+        backendMessage =
+          typeof body.error === "string"
+            ? body.error
+            : typeof body.message === "string"
+              ? body.message
+              : typeof body.detalle === "string"
+                ? body.detalle
+                : defaultMessage;
+
+        const lowerMessage = backendMessage.toLowerCase();
+
+        if (lowerMessage.includes("fecha")) {
+          setErrors((prev) => ({ ...prev, fecha: backendMessage }));
+        } else if (lowerMessage.includes("descripcion")) {
+          setErrors((prev) => ({ ...prev, descripcion: backendMessage }));
+        } else if (lowerMessage.includes("proyecto")) {
+          setErrors((prev) => ({ ...prev, proyecto: backendMessage }));
+        }
+      }
+
+      setErrorMessage(backendMessage);
+      setShowError(true);
+    },
+  });
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,62 +149,43 @@ export default function DistincionesForm() {
     if (!uct) return;
 
     const payload = {
-      fecha: fecha!.toISOString().split("T")[0],
+      fecha: formatDateStr(fecha)!,
       descripcion: descripcion.trim(),
       proyecto_investigacion_id: proyectoId!,
-      grupo_utn_id: uct.id,
     };
 
-    try {
+    if (!isEdit) {
       await mutation.mutateAsync(payload);
-    } catch (error) {
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | { message?: string; error?: string; detalle?: string }
-          | undefined;
-
-        const backendMessage =
-          body?.error || body?.message || body?.detalle || "";
-
-        const lowerMessage = backendMessage.toLowerCase();
-
-        if (lowerMessage.includes("fecha")) {
-          setErrors((prev) => ({
-            ...prev,
-            fecha: backendMessage,
-          }));
-          return;
-        }
-
-        if (
-          lowerMessage.includes("descripcion") ||
-          lowerMessage.includes("descripción")
-        ) {
-          setErrors((prev) => ({
-            ...prev,
-            descripcion: backendMessage,
-          }));
-          return;
-        }
-
-        if (lowerMessage.includes("proyecto")) {
-          setErrors((prev) => ({
-            ...prev,
-            proyecto: backendMessage,
-          }));
-          return;
-        }
-      }
-
-      setErrors((prev) => ({
-        ...prev,
-        general: "No se pudo guardar la distinción.",
-      }));
+      return;
     }
+
+    const initialPayload = {
+      fecha: initialData?.fecha ?? null,
+      descripcion: initialData?.descripcion ?? "",
+      proyecto_investigacion_id: initialData?.proyecto?.id ?? null,
+    };
+
+    const changedPayload = Object.fromEntries(
+      Object.entries(payload).filter(([key, value]) => {
+        return initialPayload[key as keyof typeof initialPayload] !== value;
+      })
+    );
+
+    if (Object.keys(changedPayload).length === 0) {
+      navigate(`/distinciones/${id}`, {
+        replace: true,
+        state: {
+          successMessage: "No hubo cambios para actualizar.",
+        },
+      });
+      return;
+    }
+
+    await mutation.mutateAsync(changedPayload);
   };
 
   if (isEdit && isLoading) {
-    return <p className="text-slate-500">Cargando distinción…</p>;
+    return <p className="text-slate-500">Cargando distincion...</p>;
   }
 
   const inputClass = (field: string) =>
@@ -171,13 +193,13 @@ export default function DistincionesForm() {
 
   return (
     <section className="w-full">
-      <h2 className="text-2xl md:text-3xl font-semibold leading-none">
-        {isEdit ? "Editar distinción" : "Nueva distinción recibida"}
+      <h2 className="text-2xl font-semibold leading-none md:text-3xl">
+        {isEdit ? "Editar distincion" : "Nueva distincion recibida"}
       </h2>
 
       <form
         onSubmit={submit}
-        className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 space-y-6"
+        className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
         <Field label="Fecha">
           <Calendar
@@ -191,7 +213,7 @@ export default function DistincionesForm() {
           />
         </Field>
 
-        <Field label="Descripción">
+        <Field label="Descripcion">
           <>
             <textarea
               className={`${inputClass("descripcion")} min-h-[80px]`}
@@ -200,17 +222,15 @@ export default function DistincionesForm() {
                 setDescripcion(e.target.value);
                 if (e.target.value.trim()) clearError("descripcion");
               }}
-              placeholder="Ej: Reconocimiento por aporte científico"
+              placeholder="Ej: Reconocimiento por aporte cientifico"
             />
             {errors.descripcion && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.descripcion}
-              </p>
+              <p className="mt-1 text-sm text-red-500">{errors.descripcion}</p>
             )}
           </>
         </Field>
 
-        <Field label="Proyecto de investigación">
+        <Field label="Proyecto de investigacion">
           <>
             <select
               className={`${inputClass("proyecto")} ${
@@ -228,21 +248,15 @@ export default function DistincionesForm() {
               </option>
               {proyectos.map((p: Proyecto) => (
                 <option key={p.id} value={p.id}>
-                  {p.codigo} - {p.nombre}
+                  {p.codigoProyecto} - {p.nombreProyecto}
                 </option>
               ))}
             </select>
             {errors.proyecto && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.proyecto}
-              </p>
+              <p className="mt-1 text-sm text-red-500">{errors.proyecto}</p>
             )}
           </>
         </Field>
-
-        {errors.general && (
-          <p className="text-red-500 text-sm">{errors.general}</p>
-        )}
 
         <div className="flex justify-between pt-6">
           <Button
@@ -256,13 +270,22 @@ export default function DistincionesForm() {
 
           <Button type="submit" size="sm" disabled={mutation.isPending || !uct}>
             {mutation.isPending
-              ? "Guardando…"
+              ? isEdit
+                ? "Actualizando..."
+                : "Guardando..."
               : isEdit
                 ? "Actualizar"
                 : "Guardar"}
           </Button>
         </div>
       </form>
+
+      <SuccessToast
+        open={showError}
+        message={errorMessage}
+        onClose={() => setShowError(false)}
+        variant="error"
+      />
     </section>
   );
 }
