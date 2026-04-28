@@ -19,8 +19,10 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { toTitleCase } from "@/utils/format";
 
+const ITEMS_PER_PAGE = 9;
+
 const formatFecha = (fecha?: string | null) => {
-  if (!fecha) return "—";
+  if (!fecha) return "-";
 
   const [y, m, d] = fecha.split("-");
   if (!y || !m || !d) return fecha;
@@ -49,6 +51,7 @@ export default function TrabajosReunionLanding() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
 
   const [filters, setFilters] = useState({
     estado: "",
@@ -66,10 +69,7 @@ export default function TrabajosReunionLanding() {
     return "true";
   }, [filters.estado]);
 
-  const { list = [], isLoading, isError } = useTrabajosReunion(
-    filtroActivos,
-    "asc"
-  );
+  const { list = [], isLoading, isError } = useTrabajosReunion(filtroActivos, "asc");
   const { tipos = [] } = useTiposReunion();
   const { data: investigadores = [] } = useInvestigadores();
 
@@ -87,8 +87,7 @@ export default function TrabajosReunionLanding() {
           String(i.nombre_apellido ?? "").toLowerCase().includes(query)
         );
 
-      const matchTipo =
-        !filters.tipo || t.tipo_reunion?.id === Number(filters.tipo);
+      const matchTipo = !filters.tipo || t.tipo_reunion?.id === Number(filters.tipo);
 
       const matchProcedencia =
         !filters.procedencia ||
@@ -114,15 +113,31 @@ export default function TrabajosReunionLanding() {
     });
   }, [list, filters, searchQuery]);
 
+  const totalPages = Math.max(1, Math.ceil(trabajosFiltrados.length / ITEMS_PER_PAGE));
+  const trabajosPaginados = trabajosFiltrados.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE
+  );
+
   const filtrosActivosCount = Object.values(filters).filter(Boolean).length;
 
   useEffect(() => {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      window.history.replaceState({}, document.title);
+      navigate(location.pathname, { replace: true });
     }
-  }, [location.state]);
+  }, [location.state, navigate, location.pathname]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, filters]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   const setQuickEstado = (estado: "" | "todos" | "inactivos") => {
     setFilters((prev) => ({
@@ -145,7 +160,7 @@ export default function TrabajosReunionLanding() {
 
     if (item?.deleted_at) {
       setErrorMessage(
-        "No se puede eliminar un trabajo presentado que ya fue eliminado."
+        "No se puede eliminar un trabajo en reunion cientifica que ya fue eliminado."
       );
       setShowError(true);
       return;
@@ -162,9 +177,7 @@ export default function TrabajosReunionLanding() {
     setShowConfirm(false);
   };
 
-  const selectedItems = trabajosFiltrados.filter((t) =>
-    selectedIds.includes(t.id)
-  );
+  const selectedItems = trabajosFiltrados.filter((t) => selectedIds.includes(t.id));
   const selectedActiveItems = selectedItems.filter((t) => !t.deleted_at);
 
   const confirmDelete = async () => {
@@ -175,15 +188,15 @@ export default function TrabajosReunionLanding() {
       setErrorMessage(
         invalidItems.length === 1
           ? "El trabajo seleccionado ya fue eliminado."
-          : "Uno o más trabajos seleccionados ya fueron eliminados."
+          : "Uno o mas trabajos seleccionados ya fueron eliminados."
       );
       setShowError(true);
       return;
     }
 
     try {
-      for (const id of selectedActiveItems.map((t) => t.id)) {
-        await deleteTrabajoReunion(id);
+      for (const item of selectedActiveItems) {
+        await deleteTrabajoReunion(item.id);
       }
 
       await qc.invalidateQueries({
@@ -194,8 +207,8 @@ export default function TrabajosReunionLanding() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Trabajo eliminado con éxito."
-          : "Trabajos eliminados con éxito."
+          ? "Trabajo eliminado con exito."
+          : "Trabajos eliminados con exito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -210,11 +223,11 @@ export default function TrabajosReunionLanding() {
           body?.message ||
             body?.error ||
             body?.detalle ||
-            "No se pudo eliminar el trabajo presentado."
+            "No se pudo eliminar el trabajo en reunion cientifica."
         );
       } else {
         setErrorMessage(
-          "Ocurrió un error inesperado al eliminar el trabajo presentado."
+          "Ocurrio un error inesperado al eliminar el trabajo en reunion cientifica."
         );
       }
 
@@ -223,19 +236,19 @@ export default function TrabajosReunionLanding() {
   };
 
   return (
-    <section className="w-full min-h-[calc(100vh-80px)] px-4 md:px-6 py-4 flex flex-col text-sm">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+    <section className="flex min-h-[calc(100vh-80px)] w-full flex-col px-4 py-4 text-sm md:px-6">
+      <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <h2 className="text-2xl md:text-3xl font-semibold leading-none text-slate-800">
+          <h2 className="text-2xl font-semibold leading-none text-slate-800 md:text-3xl">
             Trabajos presentados en Congresos
           </h2>
-          <p className="text-xs text-slate-500 mt-2">
+          <p className="mt-2 text-xs text-slate-500">
             {trabajosFiltrados.length} de {list.length} resultados
           </p>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <div className="flex items-center rounded-lg border border-slate-200 bg-white overflow-hidden">
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
             <button
               type="button"
               onClick={() => setQuickEstado("")}
@@ -251,7 +264,7 @@ export default function TrabajosReunionLanding() {
             <button
               type="button"
               onClick={() => setQuickEstado("todos")}
-              className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+              className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                 quickEstadoActual === "todos"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
@@ -263,7 +276,7 @@ export default function TrabajosReunionLanding() {
             <button
               type="button"
               onClick={() => setQuickEstado("inactivos")}
-              className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+              className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                 quickEstadoActual === "inactivos"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
@@ -276,8 +289,8 @@ export default function TrabajosReunionLanding() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por título, congreso, investigador..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-10 py-1.5 focus:bg-white focus:ring-2 focus:ring-slate-200 outline-none transition-all text-xs"
+              placeholder="Buscar por titulo, congreso, investigador..."
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -302,11 +315,7 @@ export default function TrabajosReunionLanding() {
           {!selectMode ? (
             <div className="flex gap-2">
               {puedeEliminar && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setSelectMode(true)}
-                >
+                <Button variant="secondary" size="sm" onClick={() => setSelectMode(true)}>
                   Seleccionar
                 </Button>
               )}
@@ -321,7 +330,7 @@ export default function TrabajosReunionLanding() {
               >
                 Filtros
                 {filtrosActivosCount > 0 && (
-                  <span className="ml-1.5 bg-slate-800 text-white text-[10px] rounded-full px-1.5 py-0.5">
+                  <span className="ml-1.5 rounded-full bg-slate-800 px-1.5 py-0.5 text-[10px] text-white">
                     {filtrosActivosCount}
                   </span>
                 )}
@@ -345,11 +354,7 @@ export default function TrabajosReunionLanding() {
                 </Button>
               )}
 
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={cancelSelection}
-              >
+              <Button variant="secondary" size="sm" onClick={cancelSelection}>
                 Cancelar
               </Button>
             </div>
@@ -359,34 +364,62 @@ export default function TrabajosReunionLanding() {
 
       <div className="flex-1">
         {isLoading ? (
-          <p className="text-slate-500 text-center py-10">Cargando…</p>
+          <p className="py-10 text-center text-slate-500">Cargando...</p>
         ) : isError ? (
-          <p className="text-slate-500 text-center py-10">Error al cargar.</p>
+          <p className="py-10 text-center text-slate-500">Error al cargar.</p>
         ) : trabajosFiltrados.length === 0 ? (
-          <p className="text-slate-500 text-center py-10">
+          <p className="py-10 text-center text-slate-500">
             No hay trabajos presentados registrados.
           </p>
         ) : (
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {trabajosFiltrados.map((t: TrabajoReunion) => (
-              <Tarjeta<TrabajoReunion>
-                key={t.id}
-                item={t}
-                title={(x) => x.titulo_trabajo || "—"}
-                subtitle={(x) =>
-                  `${x.nombre_reunion || "—"} · ${formatFecha(x.fecha_inicio)}`
-                }
-                badge={(x) => (x.deleted_at ? "INACTIVO" : "ACTIVO")}
-                selectable={puedeEliminar && selectMode}
-                selectDisabled={!!t.deleted_at}
-                selected={selectedIds.includes(t.id)}
-                onSelectChange={(checked) => toggleSelect(t.id, checked)}
-                onClick={() =>
-                  !selectMode && navigate(`/trabajos-reunion/${t.id}`)
-                }
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {trabajosPaginados.map((t: TrabajoReunion) => (
+                <Tarjeta<TrabajoReunion>
+                  key={t.id}
+                  item={t}
+                  title={(x) => x.titulo_trabajo || "-"}
+                  subtitle={(x) =>
+                    `${x.nombre_reunion || "-"} · ${formatFecha(x.fecha_inicio)}`
+                  }
+                  badge={(x) => (x.deleted_at ? "INACTIVO" : "ACTIVO")}
+                  selectable={puedeEliminar && selectMode}
+                  selectDisabled={!!t.deleted_at}
+                  selected={selectedIds.includes(t.id)}
+                  onSelectChange={(checked) => toggleSelect(t.id, checked)}
+                  onClick={() => !selectMode && navigate(`/trabajos-reunion/${t.id}`)}
+                />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-between">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                  disabled={page === 1}
+                >
+                  Anterior
+                </Button>
+
+                <span className="text-sm text-slate-500">
+                  Pagina {page} de {totalPages}
+                </span>
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={page === totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -394,7 +427,7 @@ export default function TrabajosReunionLanding() {
         open={showConfirm}
         title="Eliminar trabajos"
         message="¿Eliminar los siguientes trabajos?"
-        items={selectedActiveItems.map((t) => t.titulo_trabajo || "—")}
+        items={selectedActiveItems.map((t) => t.titulo_trabajo || "-")}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
       />
@@ -409,25 +442,26 @@ export default function TrabajosReunionLanding() {
         open={showError}
         message={errorMessage}
         onClose={() => setShowError(false)}
+        variant="error"
       />
 
       {showFilters && (
         <>
           <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
             onClick={() => setShowFilters(false)}
           />
 
-          <div className="fixed top-0 right-0 h-full w-[380px] bg-white z-50 shadow-2xl p-6 flex flex-col overflow-y-auto">
-            <h3 className="text-xl font-semibold mb-6">Filtros Avanzados</h3>
+          <div className="fixed right-0 top-0 z-50 flex h-full w-[380px] flex-col overflow-y-auto bg-white p-6 shadow-2xl">
+            <h3 className="mb-6 text-xl font-semibold">Filtros avanzados</h3>
 
-            <div className="space-y-5 flex-1 text-[11px]">
+            <div className="flex-1 space-y-5 text-[11px]">
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
                   Estado
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.estado}
                   onChange={(e) =>
                     setTempFilters({
@@ -443,11 +477,11 @@ export default function TrabajosReunionLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
-                  Tipo de reunión
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
+                  Tipo de reunion
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.tipo}
                   onChange={(e) =>
                     setTempFilters({
@@ -466,11 +500,11 @@ export default function TrabajosReunionLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
                   Procedencia
                 </label>
                 <input
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.procedencia}
                   onChange={(e) =>
                     setTempFilters({
@@ -483,11 +517,11 @@ export default function TrabajosReunionLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
                   Investigador
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.investigador}
                   onChange={(e) =>
                     setTempFilters({
@@ -506,12 +540,12 @@ export default function TrabajosReunionLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
                   Año
                 </label>
                 <input
                   type="number"
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.anio}
                   onChange={(e) =>
                     setTempFilters({
@@ -524,7 +558,7 @@ export default function TrabajosReunionLanding() {
               </div>
             </div>
 
-            <div className="flex justify-between gap-2 pt-6 border-t mt-4">
+            <div className="mt-4 flex justify-between gap-2 border-t pt-6">
               <Button
                 variant="secondary"
                 className="flex-1"
