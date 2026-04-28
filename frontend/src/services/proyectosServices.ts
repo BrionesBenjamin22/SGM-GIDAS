@@ -3,16 +3,16 @@ import { http } from "@/lib/http";
 export type ProyectosActivosFilter = "true" | "false" | "all";
 
 export type InvestigadorProyecto = {
-  fecha_inicio: any;
-  fecha_fin?: any;
+  fecha_inicio: string;
+  fecha_fin?: string | null;
   id: number;
   nombre_apellido: string;
   es_coordinador?: boolean;
 };
 
 export type BecarioProyecto = {
-  fecha_inicio?: any;
-  fecha_fin?: any;
+  fecha_inicio?: string | null;
+  fecha_fin?: string | null;
   id: number;
   nombre_apellido: string;
 };
@@ -24,70 +24,60 @@ export type InvestigadorVinculacionPayload = {
   es_coordinador?: boolean;
 };
 
+export type HistorialProyectoItem = {
+  id: number | string;
+  campo?: string;
+  fecha_cambio?: string | null;
+  usuario_nombre?: string | null;
+  valor_anterior?: unknown;
+  valor_nuevo?: unknown;
+  tipo?: string;
+};
+
 export type Proyecto = {
   id?: string;
-
   created_by?: number | null;
   created_by_nombre?: string | null;
   created_at?: string | null | undefined;
+  updated_by?: number | null;
+  updated_by_nombre?: string | null;
+  updated_at?: string | null | undefined;
   deleted_by?: number | null;
   deleted_by_nombre?: string | null;
   deleted_at?: string | null | undefined;
   activo?: boolean;
   cerrado?: boolean;
-
   tipoProyectoId: number;
   tipoProyectoNombre?: string;
-
   codigoProyecto: string;
   nombreProyecto: string;
-
   fechaInicio: string;
-  fechaFinalizacion?: string;
-
-  fuenteFinanciamientoId?: number;
+  fechaFinalizacion?: string | null;
+  fuenteFinanciamientoId?: number | null;
   fuenteFinanciamientoNombre?: string;
-
   descripcionProyecto?: string;
   dificultadesProyecto?: string;
   montoDestinado?: number;
-
-  grupoUtnId?: number;
+  grupoUtnId?: number | null;
   grupoUtnNombre?: string;
-
-  planificacionId?: number;
-  planificacionDescripcion?: string;
-
   investigadores?: InvestigadorProyecto[];
   becarios?: BecarioProyecto[];
 };
 
-const BASE = import.meta.env.VITE_API_URL;
-
-export async function getProyectos(
-  activos: ProyectosActivosFilter = "true"
-): Promise<Proyecto[]> {
-  if (!BASE) return [];
-
-  const activosParam: ProyectosActivosFilter =
-    activos === "all" || activos === "false" || activos === "true"
-      ? activos
-      : "true";
-
-  const data = await http<any[]>(`/proyectos?activos=${activosParam}`);
-
-  return data.map((p: any) => ({
+function mapProyecto(p: any): Proyecto {
+  return {
     id: String(p.id),
-
     created_by: p.created_by ?? null,
     created_by_nombre: p.created_by_nombre ?? null,
     created_at: p.created_at ?? null,
+    updated_by: p.updated_by ?? null,
+    updated_by_nombre: p.updated_by_nombre ?? null,
+    updated_at: p.updated_at ?? null,
     deleted_by: p.deleted_by ?? null,
     deleted_by_nombre: p.deleted_by_nombre ?? null,
     deleted_at: p.deleted_at ?? null,
     activo: p.activo,
     cerrado: Boolean(p.cerrado),
-
     codigoProyecto: String(p.codigo_proyecto),
     nombreProyecto: p.nombre_proyecto,
     descripcionProyecto: p.descripcion_proyecto || "",
@@ -96,23 +86,16 @@ export async function getProyectos(
       p.monto_destinado !== null && p.monto_destinado !== undefined
         ? Number(p.monto_destinado)
         : undefined,
-
     fechaInicio: p.fecha_inicio,
     fechaFinalizacion: p.fecha_fin,
-
-    tipoProyectoId: p.tipo_proyecto?.id,
+    tipoProyectoId: p.tipo_proyecto?.id ?? p.tipo_proyecto_id,
     tipoProyectoNombre: p.tipo_proyecto?.nombre || "N/A",
-
-    fuenteFinanciamientoId: p.fuente_financiamiento?.id,
+    fuenteFinanciamientoId:
+      p.fuente_financiamiento?.id ?? p.fuente_financiamiento_id ?? null,
     fuenteFinanciamientoNombre: p.fuente_financiamiento?.nombre || "N/A",
-
-    grupoUtnId: p.grupo_utn?.id,
+    grupoUtnId: p.grupo_utn?.id ?? p.grupo_utn_id ?? null,
     grupoUtnNombre:
-      p.grupo_utn?.nombre || p.grupo_utn?.nombre_sigla_grupo,
-
-    planificacionId: p.planificacion?.id,
-    planificacionDescripcion: p.planificacion?.descripcion,
-
+      p.grupo_utn?.nombre || p.grupo_utn?.nombre_sigla_grupo || undefined,
     investigadores: (p.investigadores || []).map((inv: any) => ({
       id: inv.id,
       nombre_apellido: inv.nombre_apellido,
@@ -120,39 +103,74 @@ export async function getProyectos(
       fecha_fin: inv.fecha_fin,
       es_coordinador: Boolean(inv.es_coordinador),
     })),
-
     becarios: (p.becarios || []).map((bec: any) => ({
       id: bec.id,
       nombre_apellido: bec.nombre_apellido,
       fecha_inicio: bec.fecha_inicio,
       fecha_fin: bec.fecha_fin,
     })),
-  }));
+  };
+}
+
+export async function getProyectos(
+  activos: ProyectosActivosFilter = "true"
+): Promise<Proyecto[]> {
+  const activosParam =
+    activos === "all" || activos === "false" || activos === "true"
+      ? activos
+      : "true";
+
+  const data = await http<any[]>(`/proyectos?activos=${activosParam}`);
+  return data.map(mapProyecto);
 }
 
 export async function upsertProyectos(payload: any) {
-  if (!BASE) throw new Error("Sin Backend");
+  const body: Record<string, unknown> = {};
 
-  const body = {
-    codigo_proyecto: payload.codigoProyecto,
-    nombre_proyecto: payload.nombreProyecto,
-    descripcion_proyecto: payload.descripcionProyecto,
-    fecha_inicio: payload.fechaInicio,
-    fecha_fin: payload.fechaFinalizacion || null,
+  if ("codigoProyecto" in payload) {
+    body.codigo_proyecto = payload.codigoProyecto;
+  }
 
-    dificultades_proyecto: payload.dificultadesProyecto || null,
-    monto_destinado:
+  if ("nombreProyecto" in payload) {
+    body.nombre_proyecto = payload.nombreProyecto;
+  }
+
+  if ("descripcionProyecto" in payload) {
+    body.descripcion_proyecto = payload.descripcionProyecto;
+  }
+
+  if ("fechaInicio" in payload) {
+    body.fecha_inicio = payload.fechaInicio;
+  }
+
+  if ("fechaFinalizacion" in payload) {
+    body.fecha_fin = payload.fechaFinalizacion || null;
+  }
+
+  if ("dificultadesProyecto" in payload) {
+    body.dificultades_proyecto = payload.dificultadesProyecto || null;
+  }
+
+  if ("montoDestinado" in payload) {
+    body.monto_destinado =
       payload.montoDestinado !== undefined &&
       payload.montoDestinado !== null &&
       payload.montoDestinado !== ""
         ? Number(payload.montoDestinado)
-        : null,
+        : null;
+  }
 
-    tipo_proyecto_id: payload.tipoProyectoId,
-    fuente_financiamiento_id: payload.fuenteFinanciamientoId ?? null,
-    grupo_utn_id: payload.grupoUtnId ?? null,
-    planificacion_id: payload.planificacionId ?? null,
-  };
+  if ("tipoProyectoId" in payload) {
+    body.tipo_proyecto_id = payload.tipoProyectoId;
+  }
+
+  if ("fuenteFinanciamientoId" in payload) {
+    body.fuente_financiamiento_id = payload.fuenteFinanciamientoId ?? null;
+  }
+
+  if ("grupoUtnId" in payload) {
+    body.grupo_utn_id = payload.grupoUtnId ?? null;
+  }
 
   const url = payload.id ? `/proyectos/${payload.id}` : "/proyectos/";
   const method = payload.id ? "PUT" : "POST";
@@ -166,59 +184,28 @@ export async function deleteProyectos(id: string) {
 
 export async function getProyectoById(id: number): Promise<Proyecto> {
   const data = await http<any>(`/proyectos/${id}`);
+  return mapProyecto(data);
+}
 
-  return {
-    id: String(data.id),
+export async function getHistorialProyectoById(
+  id: number
+): Promise<HistorialProyectoItem[]> {
+  const data = await http<HistorialProyectoItem[] | { data?: HistorialProyectoItem[] }>(
+    `/proyectos/${id}/historial`,
+    {
+      method: "GET",
+    }
+  );
 
-    created_by: data.created_by ?? null,
-    created_by_nombre: data.created_by_nombre ?? null,
-    created_at: data.created_at ?? null,
-    deleted_by: data.deleted_by ?? null,
-    deleted_by_nombre: data.deleted_by_nombre ?? null,
-    deleted_at: data.deleted_at ?? null,
-    activo: data.activo,
-    cerrado: Boolean(data.cerrado),
+  if (Array.isArray(data)) {
+    return data;
+  }
 
-    codigoProyecto: String(data.codigo_proyecto),
-    nombreProyecto: data.nombre_proyecto,
-    descripcionProyecto: data.descripcion_proyecto || "",
-    dificultadesProyecto: data.dificultades_proyecto || "",
-    montoDestinado:
-      data.monto_destinado !== null && data.monto_destinado !== undefined
-        ? Number(data.monto_destinado)
-        : undefined,
+  if (Array.isArray(data?.data)) {
+    return data.data;
+  }
 
-    fechaInicio: data.fecha_inicio,
-    fechaFinalizacion: data.fecha_fin,
-
-    tipoProyectoId: data.tipo_proyecto?.id,
-    tipoProyectoNombre: data.tipo_proyecto?.nombre,
-
-    grupoUtnId: data.grupo_utn?.id,
-    grupoUtnNombre:
-      data.grupo_utn?.nombre || data.grupo_utn?.nombre_sigla_grupo,
-
-    fuenteFinanciamientoId: data.fuente_financiamiento?.id,
-    fuenteFinanciamientoNombre: data.fuente_financiamiento?.nombre,
-
-    planificacionId: data.planificacion?.id,
-    planificacionDescripcion: data.planificacion?.descripcion,
-
-    investigadores: (data.investigadores || []).map((inv: any) => ({
-      id: inv.id,
-      nombre_apellido: inv.nombre_apellido,
-      fecha_inicio: inv.fecha_inicio,
-      fecha_fin: inv.fecha_fin,
-      es_coordinador: Boolean(inv.es_coordinador),
-    })),
-
-    becarios: (data.becarios || []).map((bec: any) => ({
-      id: bec.id,
-      nombre_apellido: bec.nombre_apellido,
-      fecha_inicio: bec.fecha_inicio,
-      fecha_fin: bec.fecha_fin,
-    })),
-  };
+  return [];
 }
 
 export async function cerrarProyecto(id: string, fechaFin: string) {

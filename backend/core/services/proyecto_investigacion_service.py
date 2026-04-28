@@ -234,22 +234,22 @@ class ProyectoInvestigacionService:
                 raise Exception("La fecha fin no puede ser anterior a la fecha inicio")
 
         if not TipoProyecto.query.get(data.get("tipo_proyecto_id")):
-            raise Exception("Tipo de proyecto invÃ¡lido")
+            raise Exception("Tipo de proyecto inválido")
         
         if data.get("fuente_financiamiento_id"):
             fuente = FuenteFinanciamiento.query.get(data["fuente_financiamiento_id"])
             if not fuente:
-                raise ValueError("Fuente de financiamiento invÃ¡lida")
+                raise ValueError("Fuente de financiamiento inválida")
             
         if data.get("grupo_utn_id"):
             grupo = GrupoInvestigacionUtn.query.get(data["grupo_utn_id"])
             if not grupo:
-                raise ValueError("Grupo UTN invÃ¡lido")
+                raise ValueError("Grupo UTN inválido")
             
         if data.get("tipo_proyecto_id"):
             tipo = TipoProyecto.query.get(data["tipo_proyecto_id"])
             if not tipo:
-                raise ValueError("Tipo de proyecto invÃ¡lido")
+                raise ValueError("Tipo de proyecto inválido")
 
         proyecto = ProyectoInvestigacion(
             codigo_proyecto=data["codigo_proyecto"],
@@ -556,12 +556,12 @@ class ProyectoInvestigacionService:
             ).first()
 
             if not participacion:
-                raise ValueError("ParticipaciÃ³n activa no encontrada.")
+                raise ValueError("Participación activa no encontrada.")
 
-            # ðŸ”¹ LÃ³gica de negocio
+            # Lógica de negocio
             participacion.fecha_fin = date.today()
 
-            # ðŸ”¹ LÃ³gica de auditorÃ­a
+            # Lógica de auditoría
             participacion.soft_delete(user_id=user_id)
 
         db.session.commit()
@@ -589,7 +589,7 @@ class ProyectoInvestigacionService:
             ).first()
 
             if existente:
-                raise ValueError("Ya existe participaciÃ³n activa.")
+                raise ValueError("Ya existe participación activa.")
 
             nueva = BecarioProyecto(
                 id_becario=becario_id,
@@ -623,7 +623,7 @@ class ProyectoInvestigacionService:
             ).first()
 
             if not participacion:
-                raise ValueError("ParticipaciÃ³n activa no encontrada.")
+                raise ValueError("Participación activa no encontrada.")
 
             participacion.fecha_fin = date.today()
             participacion.soft_delete(user_id=user_id)
@@ -633,10 +633,10 @@ class ProyectoInvestigacionService:
 
     @staticmethod
     def obtener_historial(proyecto_id: int):
-        proyecto = ProyectoInvestigacionService._get_proyecto_or_404(proyecto_id)
+        ProyectoInvestigacionService._get_proyecto_or_404(proyecto_id)
         return AuditoriaService.obtener_historial_entidad(
-            entidad="proyecto_investigacion",
-            registro_id=proyecto.id
+            "proyecto_investigacion",
+            proyecto_id
         )
 
     @staticmethod
@@ -648,10 +648,10 @@ class ProyectoInvestigacionService:
             if not estuvo_activo_en_periodo_memoria(
                 memoria_version,
                 proyecto.fecha_inicio,
-                getattr(proyecto, "fecha_fin", None)
-                or getattr(proyecto, "deleted_at", None)
+                getattr(proyecto, "deleted_at", None)
             ):
                 continue
+
             snapshot = ProyectoInvestigacionMemoriaVersion(
                 memoria_version_id=memoria_version.id,
                 proyecto_investigacion_id=proyecto.id,

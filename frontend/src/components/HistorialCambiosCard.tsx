@@ -19,7 +19,7 @@ export type HistorialCambioCardItem = {
 type Props = {
   title?: string;
   subtitle?: string;
-  items: HistorialCambioCardItem[];
+  items?: HistorialCambioCardItem[] | null;
   isLoading?: boolean;
   updatedAt?: string | null;
   updatedByName?: string | null;
@@ -72,6 +72,8 @@ export default function HistorialCambiosCard({
   const [page, setPage] = useState(1);
 
   const normalizedItems = useMemo(() => {
+    const safeItems = Array.isArray(items) ? items : [];
+
     const updateItem = updatedAt
       ? [
           {
@@ -83,7 +85,7 @@ export default function HistorialCambiosCard({
         ]
       : [];
 
-    return [...updateItem, ...items];
+    return [...updateItem, ...safeItems];
   }, [items, updatedAt, updatedByName]);
 
   const totalPages = Math.max(1, Math.ceil(normalizedItems.length / pageSize));
