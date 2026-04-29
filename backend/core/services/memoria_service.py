@@ -254,6 +254,44 @@ class MemoriaService:
         memoria.version_actual_id = version.id
         return version
 
+    @staticmethod
+    def _contar_elementos_version(version: MemoriaVersion):
+        if not version or version.deleted_at is not None:
+            return 0
+
+        if version.estado != EstadoMemoria.CERRADA:
+            return 0
+
+        colecciones = [
+            obtener_snapshots_investigadores_por_memoria_version(version.id),
+            obtener_snapshots_becarios_por_memoria_version(version.id),
+            obtener_snapshots_personal_por_memoria_version(version.id),
+            ProyectoInvestigacionService.obtener_snapshots_por_memoria_version(version.id),
+            ActividadDocenciaService.obtener_snapshots_por_memoria_version(version.id),
+            ParticipacionRelevanteService.obtener_snapshots_por_memoria_version(version.id),
+            DocumentacionBibliograficaService.obtener_snapshots_por_memoria_version(version.id),
+            EquipamientoService.obtener_snapshots_por_memoria_version(version.id),
+            ErogacionService.obtener_snapshots_por_memoria_version(version.id),
+            TransferenciaSocioProductivaService.obtener_snapshots_por_memoria_version(version.id),
+            TrabajoReunionCientificaService.obtener_snapshots_por_memoria_version(version.id),
+            TrabajosRevistasReferatoService.obtener_snapshots_por_memoria_version(version.id),
+            DistincionRecibidaService.obtener_snapshots_por_memoria_version(version.id),
+            RegistrosPropiedadService.obtener_snapshots_por_memoria_version(version.id),
+            ArticuloDivulgacionService.obtener_snapshots_por_memoria_version(version.id),
+            obtener_snapshots_visitas_por_memoria_version(version.id)
+        ]
+
+        return sum(len(coleccion) for coleccion in colecciones)
+
+    @staticmethod
+    def _serializar_memoria(memoria: Memoria):
+        data = memoria.serialize()
+        version_actual = memoria.version_actual
+        data["cantidad_elementos"] = MemoriaService._contar_elementos_version(
+            version_actual
+        ) if version_actual else 0
+        return data
+
     # ==========================================
     # GET ALL
     # ==========================================
@@ -272,7 +310,7 @@ class MemoriaService:
             query = query.filter(Memoria.deleted_at.is_(None))
 
         memorias = query.order_by(Memoria.id.desc()).all()
-        return [memoria.serialize() for memoria in memorias]
+        return [MemoriaService._serializar_memoria(memoria) for memoria in memorias]
 
     # ==========================================
     # GET BY ID
@@ -286,7 +324,13 @@ class MemoriaService:
         )
         if not memoria:
             raise Exception("Memoria no encontrada")
-        return memoria.serialize()
+        data = MemoriaService._serializar_memoria(memoria)
+        data["versiones"] = [
+            version.serialize()
+            for version in memoria.versiones
+            if version.deleted_at is None
+        ]
+        return data
 
     @staticmethod
     def get_investigadores_snapshot(memoria_id: int, memoria_version_id: int):

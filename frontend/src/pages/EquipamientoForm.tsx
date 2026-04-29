@@ -219,6 +219,7 @@ export default function EquipamientoForm() {
             <input
               className={inputClass("denominacion")}
               value={data.denominacion}
+              placeholder="Ej: Osciloscopio digital Tektronix"
               onChange={(e) => {
                 setData((d) => ({
                   ...d,
@@ -238,6 +239,7 @@ export default function EquipamientoForm() {
             <input
               className={inputClass("descripcion")}
               value={data.descripcion_breve}
+              placeholder="Describir brevemente el equipamiento y su uso"
               onChange={(e) => {
                 setData((d) => ({
                   ...d,
@@ -260,6 +262,7 @@ export default function EquipamientoForm() {
               min={0}
               className={inputClass("monto")}
               value={data.monto_invertido ?? ""}
+              placeholder="Ej: 1250000"
               onChange={(e) => {
                 const value = e.target.value ? Number(e.target.value) : undefined;
 

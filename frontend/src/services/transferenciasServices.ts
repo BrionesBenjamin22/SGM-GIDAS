@@ -153,7 +153,7 @@ export async function getTransferencias(
     return [];
   }
 
-  const response = await http<any>(`/transferencias/?activos=${activos}`);
+  const response = await http<any>(`/transferencias?activos=${activos}`);
   const items = Array.isArray(response)
     ? response
     : Array.isArray(response?.data)
@@ -189,7 +189,7 @@ export async function getHistorialTransferenciaById(
 export async function createTransferencia(
   data: TransferenciaPayload
 ): Promise<Transferencia> {
-  const raw = await http<TransferenciaBackend>("/transferencias/", {
+  const raw = await http<TransferenciaBackend>("/transferencias", {
     method: "POST",
     body: JSON.stringify(toBackend(data)),
   });

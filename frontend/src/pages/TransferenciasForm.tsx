@@ -262,6 +262,7 @@ export default function TransferenciasForm() {
               type="number"
               className={inputClass("numeroTransferencia")}
               value={data.numeroTransferencia}
+              placeholder="Ej: 2025001"
               onChange={(e) => {
                 setData((prev) => ({ ...prev, numeroTransferencia: e.target.value }));
                 if (e.target.value) clearError("numeroTransferencia");
@@ -278,6 +279,7 @@ export default function TransferenciasForm() {
             <input
               className={inputClass("denominacion")}
               value={data.denominacion}
+              placeholder="Ej: Convenio de asistencia tecnica"
               onChange={(e) => {
                 setData((prev) => ({ ...prev, denominacion: e.target.value }));
                 if (e.target.value.trim()) clearError("denominacion");
@@ -294,6 +296,7 @@ export default function TransferenciasForm() {
             <input
               className={inputClass("demandante")}
               value={data.demandante}
+              placeholder="Ej: Municipalidad de Resistencia"
               onChange={(e) => {
                 setData((prev) => ({ ...prev, demandante: e.target.value }));
                 if (e.target.value.trim()) clearError("demandante");
@@ -311,6 +314,7 @@ export default function TransferenciasForm() {
               rows={5}
               className={inputClass("descripcionActividad")}
               value={data.descripcionActividad}
+              placeholder="Describir brevemente la actividad desarrollada"
               onChange={(e) => {
                 setData((prev) => ({
                   ...prev,
@@ -333,6 +337,7 @@ export default function TransferenciasForm() {
               min={0}
               className={inputClass("monto")}
               value={data.monto}
+              placeholder="Ej: 250000"
               onChange={(e) => {
                 setData((prev) => ({ ...prev, monto: e.target.value }));
                 if (e.target.value) clearError("monto");
