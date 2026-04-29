@@ -6,11 +6,16 @@ import Button from "@/components/Button";
 import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { HttpError } from "@/lib/http";
 
 import { useArticulosDivulgacion } from "@/hooks/useArticulosDivulgacion";
 import type { ArticuloDivulgacion } from "@/services/articulosDivulgacionServices";
 import { useAuth } from "@/context/AuthContext";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -53,18 +58,27 @@ export default function ArticulosDivulgacionHome() {
   });
 
   const [tempFilters, setTempFilters] = useState(filters);
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "articulos-divulgacion"),
+    [location.state]
+  );
 
   const filtroActivos = useMemo<"true" | "false" | "all">(() => {
+    if (memoriaFilter) return "all";
     if (filters.estado === "todos") return "all";
     if (filters.estado === "inactivos") return "false";
     return "true";
-  }, [filters.estado]);
+  }, [filters.estado, memoriaFilter]);
 
   const { list = [], isLoading, isError, remove } =
     useArticulosDivulgacion(filtroActivos);
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
+  );
 
   const articulosFiltrados = useMemo(() => {
-    return list.filter((a) => {
+    return scopedList.filter((a) => {
       const query = searchQuery.toLowerCase().trim();
 
       const matchSearch =
@@ -86,7 +100,7 @@ export default function ArticulosDivulgacionHome() {
 
       return matchSearch && matchGrupo && matchAnio;
     });
-  }, [list, searchQuery, filters]);
+  }, [scopedList, searchQuery, filters]);
 
   const totalPages = Math.max(1, Math.ceil(articulosFiltrados.length / ITEMS_PER_PAGE));
   const articulosPaginados = articulosFiltrados.slice(
@@ -131,7 +145,7 @@ export default function ArticulosDivulgacionHome() {
   const toggleSelect = (id: number, checked: boolean) => {
     if (!puedeEliminar) return;
 
-    const item = articulosFiltrados.find((x) => x.id === id);
+    const item = scopedList.find((x) => x.id === id);
 
     if (item?.deleted_at) {
       setErrorMessage(
@@ -152,7 +166,7 @@ export default function ArticulosDivulgacionHome() {
     setShowConfirm(false);
   };
 
-  const selectedItems = articulosFiltrados.filter((a) =>
+  const selectedItems = scopedList.filter((a) =>
     selectedIds.includes(a.id)
   );
   const selectedActiveItems = selectedItems.filter((a) => !a.deleted_at);
@@ -218,7 +232,7 @@ export default function ArticulosDivulgacionHome() {
             Articulos de Divulgacion
           </h2>
           <p className="mt-2 text-xs text-slate-500">
-            {articulosFiltrados.length} de {list.length} resultados
+            {articulosFiltrados.length} de {scopedList.length} resultados
           </p>
         </div>
 
@@ -344,6 +358,8 @@ export default function ArticulosDivulgacionHome() {
           )}
         </div>
       </div>
+
+      {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
 
       <div className="flex-1">
         {isLoading ? (

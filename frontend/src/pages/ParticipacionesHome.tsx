@@ -6,8 +6,13 @@ import Button from "@/components/Button";
 import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { HttpError } from "@/lib/http";
 import { useAuth } from "@/context/AuthContext";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
 
 import {
   eliminarParticipacion,
@@ -64,12 +69,17 @@ export default function ParticipacionesHome() {
   });
 
   const [tempFilters, setTempFilters] = useState(filters);
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "participaciones-relevantes"),
+    [location.state]
+  );
 
   const filtroActivos = useMemo<"true" | "false" | "all">(() => {
+    if (memoriaFilter) return "all";
     if (filters.estado === "todos") return "all";
     if (filters.estado === "inactivos") return "false";
     return "true";
-  }, [filters.estado]);
+  }, [filters.estado, memoriaFilter]);
 
   const { data: list = [], isLoading, isError } = useQuery({
     queryKey: ["participaciones", filtroActivos],
@@ -79,11 +89,15 @@ export default function ParticipacionesHome() {
         orden: "desc",
       }),
   });
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
+  );
 
   const participacionesFiltradas = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
 
-    return list.filter((p) => {
+    return scopedList.filter((p) => {
       const formaParticipacionLabel =
         FORMA_PARTICIPACION_LABELS[p.forma_participacion] || p.forma_participacion;
 
@@ -117,7 +131,7 @@ export default function ParticipacionesHome() {
         matchAnio
       );
     });
-  }, [list, searchQuery, filters]);
+  }, [scopedList, searchQuery, filters]);
 
   const totalPages = Math.max(
     1,
@@ -165,7 +179,7 @@ export default function ParticipacionesHome() {
   const toggleSelect = (id: number, checked: boolean) => {
     if (!puedeEliminar) return;
 
-    const item = participacionesFiltradas.find((x) => x.id === id);
+    const item = scopedList.find((x) => x.id === id);
 
     if (item?.deleted_at) {
       setErrorMessage(
@@ -186,7 +200,7 @@ export default function ParticipacionesHome() {
     setShowConfirm(false);
   };
 
-  const selectedItems = participacionesFiltradas.filter((p) =>
+  const selectedItems = scopedList.filter((p) =>
     selectedIds.includes(p.id)
   );
   const selectedActiveItems = selectedItems.filter((p) => !p.deleted_at);
@@ -252,7 +266,7 @@ export default function ParticipacionesHome() {
             Participaciones Relevantes
           </h2>
           <p className="mt-2 text-xs text-slate-500">
-            {participacionesFiltradas.length} de {list.length} resultados
+            {participacionesFiltradas.length} de {scopedList.length} resultados
           </p>
         </div>
 
@@ -378,6 +392,8 @@ export default function ParticipacionesHome() {
           )}
         </div>
       </div>
+
+      {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
 
       <div className="flex-1">
         {isLoading ? (

@@ -6,9 +6,14 @@ import Button from "@/components/Button";
 import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { HttpError } from "@/lib/http";
 import { useEquipamiento } from "@/hooks/useEquipamiento";
 import { useAuth } from "@/context/AuthContext";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -43,26 +48,35 @@ export default function EquipamientoLanding() {
   });
 
   const [tempFilters, setTempFilters] = useState(filters);
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "equipamiento"),
+    [location.state]
+  );
 
   const filtroActivos = useMemo<"true" | "false" | "all">(() => {
+    if (memoriaFilter) return "all";
     if (filters.estado === "todos") return "all";
     if (filters.estado === "inactivos") return "false";
     return "true";
-  }, [filters.estado]);
+  }, [filters.estado, memoriaFilter]);
 
   const { list = [], isLoading, isError, remove } =
     useEquipamiento(filtroActivos);
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
+  );
 
   const aniosDisponibles = useMemo(() => {
-    const years = list
+    const years = scopedList
       .filter((e) => e.fecha_incorporacion)
       .map((e) => new Date(e.fecha_incorporacion).getFullYear());
 
     return [...new Set(years)].sort((a, b) => b - a);
-  }, [list]);
+  }, [scopedList]);
 
   const equipamientoFiltrado = useMemo(() => {
-    return list.filter((e) => {
+    return scopedList.filter((e) => {
       const query = searchQuery.toLowerCase().trim();
 
       const matchSearch =
@@ -82,7 +96,7 @@ export default function EquipamientoLanding() {
 
       return matchSearch && matchMontoMin && matchMontoMax && matchAnio;
     });
-  }, [list, searchQuery, filters]);
+  }, [scopedList, searchQuery, filters]);
 
   const filtrosActivosCount = Object.values(filters).filter(Boolean).length;
 
@@ -131,7 +145,7 @@ export default function EquipamientoLanding() {
   const toggleSelect = (id: number, checked: boolean) => {
     if (!puedeEliminar) return;
 
-    const item = equipamientoFiltrado.find((x) => x.id === id);
+    const item = scopedList.find((x) => x.id === id);
 
     if (item?.deleted_at) {
       setErrorMessage(
@@ -152,7 +166,7 @@ export default function EquipamientoLanding() {
     setShowConfirm(false);
   };
 
-  const selectedItems = equipamientoFiltrado.filter((e) =>
+  const selectedItems = scopedList.filter((e) =>
     selectedIds.includes(e.id)
   );
   const selectedActiveItems = selectedItems.filter((e) => !e.deleted_at);
@@ -217,7 +231,7 @@ export default function EquipamientoLanding() {
             Equipamiento e Infraestructura
           </h2>
           <p className="mt-2 text-xs text-slate-500">
-            {equipamientoFiltrado.length} de {list.length} resultados
+            {equipamientoFiltrado.length} de {scopedList.length} resultados
           </p>
         </div>
 
@@ -343,6 +357,8 @@ export default function EquipamientoLanding() {
           )}
         </div>
       </div>
+
+      {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
 
       <div className="flex flex-1 flex-col">
         {isLoading ? (

@@ -6,6 +6,7 @@ import Button from "@/components/Button";
 import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 
 import { useErogaciones } from "@/hooks/useErogaciones";
 import { useTiposErogacion } from "@/hooks/useTipoErogacion";
@@ -13,6 +14,10 @@ import { useFuentesFinanciamiento } from "@/hooks/useFuenteFinanciamiento";
 import { deleteErogaciones } from "@/services/erogacionesServices";
 import { HttpError } from "@/lib/http";
 import { useAuth } from "@/context/AuthContext";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -40,7 +45,6 @@ export default function ErogacionesLanding() {
     "true"
   );
 
-  const { list = [], isLoading, isError } = useErogaciones(filtroActivos);
   const { tipos } = useTiposErogacion();
   const { fuentes } = useFuentesFinanciamiento();
 
@@ -55,19 +59,28 @@ export default function ErogacionesLanding() {
 
   const [tempFilters, setTempFilters] = useState(filters);
   const [currentPage, setCurrentPage] = useState(1);
-
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "erogaciones"),
+    [location.state]
+  );
+  const effectiveActivos = memoriaFilter ? "all" : filtroActivos;
+  const { list = [], isLoading, isError } = useErogaciones(effectiveActivos);
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
+  );
   const filtrosActivos = Object.values(filters).filter(Boolean).length;
 
   const aniosDisponibles = useMemo(() => {
-    const years = list
+    const years = scopedList
       .filter((item) => item.fecha)
       .map((item) => new Date(item.fecha).getFullYear());
 
     return [...new Set(years)].sort((a, b) => b - a);
-  }, [list]);
+  }, [scopedList]);
 
   const erogacionesFiltradas = useMemo(() => {
-    return list.filter((item) => {
+    return scopedList.filter((item) => {
       const search = filters.search.toLowerCase().trim();
 
       const matchSearch =
@@ -101,7 +114,7 @@ export default function ErogacionesLanding() {
         matchAnio
       );
     });
-  }, [list, filters]);
+  }, [scopedList, filters]);
 
   const totalPages = Math.max(
     1,
@@ -134,7 +147,7 @@ export default function ErogacionesLanding() {
   const toggleSelect = (id: number, checked: boolean) => {
     if (!puedeEliminar) return;
 
-    const erogacion = list.find((item) => item.id === id);
+    const erogacion = scopedList.find((item) => item.id === id);
 
     if (erogacion?.deleted_at) {
       setErrorMessage("No se puede eliminar una erogacion que ya fue eliminada.");
@@ -153,7 +166,7 @@ export default function ErogacionesLanding() {
     setShowConfirm(false);
   };
 
-  const selectedItems = list.filter((item) => selectedIds.includes(item.id));
+  const selectedItems = scopedList.filter((item) => selectedIds.includes(item.id));
   const selectedActiveItems = selectedItems.filter((item) => !item.deleted_at);
 
   const confirmDelete = async () => {
@@ -214,7 +227,7 @@ export default function ErogacionesLanding() {
             Resumen de ingresos y egresos
           </h2>
           <p className="mt-2 text-xs text-slate-500">
-            {erogacionesFiltradas.length} de {list.length} resultados
+            {erogacionesFiltradas.length} de {scopedList.length} resultados
           </p>
         </div>
 
@@ -341,6 +354,8 @@ export default function ErogacionesLanding() {
           )}
         </div>
       </div>
+
+      {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
 
       <div className="flex flex-1 flex-col">
         {isLoading ? (

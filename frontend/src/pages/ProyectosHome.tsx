@@ -6,6 +6,7 @@ import Button from "@/components/Button";
 import CerrarProyectoDialog from "@/components/CerrarProyectoDialog";
 import SuccessToast from "@/components/SuccessToast";
 import Tarjeta from "@/components/Tarjeta";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { useAuth } from "@/context/AuthContext";
 import { useProyectos } from "@/hooks/useProyectos";
 import {
@@ -13,6 +14,10 @@ import {
   reabrirProyecto,
   type Proyecto,
 } from "@/services/proyectosServices";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -42,14 +47,23 @@ export default function ProyectosLanding() {
   });
   const [tempFilters, setTempFilters] = useState(filters);
   const [currentPage, setCurrentPage] = useState(1);
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "proyectos"),
+    [location.state]
+  );
 
   const activosFilter = useMemo<"true" | "false" | "all">(() => {
+    if (memoriaFilter) return "all";
     if (filters.estado === "todos") return "all";
     if (filters.estado === "inactivos") return "false";
     return "true";
-  }, [filters.estado]);
+  }, [filters.estado, memoriaFilter]);
 
   const { data: list = [], isLoading } = useProyectos(activosFilter);
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
+  );
 
   const opcionesFiltros = useMemo(() => {
     const tipos = new Set<string>();
@@ -57,7 +71,7 @@ export default function ProyectosLanding() {
     const investigadores = new Set<string>();
     const becarios = new Set<string>();
 
-    list.forEach((proyecto) => {
+    scopedList.forEach((proyecto) => {
       if (proyecto.tipoProyectoNombre) {
         tipos.add(proyecto.tipoProyectoNombre);
       }
@@ -78,10 +92,10 @@ export default function ProyectosLanding() {
       investigadores: Array.from(investigadores).sort(),
       becarios: Array.from(becarios).sort(),
     };
-  }, [list]);
+  }, [scopedList]);
 
   const proyectosFiltrados = useMemo(() => {
-    return list.filter((proyecto) => {
+    return scopedList.filter((proyecto) => {
       const query = searchQuery.toLowerCase().trim();
 
       const matchesSearch =
@@ -126,7 +140,7 @@ export default function ProyectosLanding() {
         matchBecario
       );
     });
-  }, [list, filters, searchQuery]);
+  }, [scopedList, filters, searchQuery]);
 
   const totalPages = Math.ceil(proyectosFiltrados.length / ITEMS_PER_PAGE);
 
@@ -202,11 +216,11 @@ export default function ProyectosLanding() {
         : "activos";
 
   const haySeleccionablesCerrados = selectedIds.some((id) =>
-    list.some((proyecto) => String(proyecto.id) === id && proyecto.cerrado)
+    scopedList.some((proyecto) => String(proyecto.id) === id && proyecto.cerrado)
   );
 
   const haySeleccionablesActivos = selectedIds.some((id) =>
-    list.some((proyecto) => String(proyecto.id) === id && !proyecto.cerrado)
+    scopedList.some((proyecto) => String(proyecto.id) === id && !proyecto.cerrado)
   );
 
   return (
@@ -217,7 +231,7 @@ export default function ProyectosLanding() {
             Proyectos
           </h2>
           <p className="mt-2 text-xs text-slate-500">
-            {proyectosFiltrados.length} de {list.length} resultados
+            {proyectosFiltrados.length} de {scopedList.length} resultados
           </p>
         </div>
 
@@ -345,6 +359,8 @@ export default function ProyectosLanding() {
           )}
         </div>
       </div>
+
+      {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
 
       <div className="flex-1">
         {isLoading ? (

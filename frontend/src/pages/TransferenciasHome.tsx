@@ -6,11 +6,16 @@ import Button from "@/components/Button";
 import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 
 import { useTransferencias } from "@/hooks/useTransferencias";
 import { deleteTransferencia } from "@/services/transferenciasServices";
 import { HttpError } from "@/lib/http";
 import { useAuth } from "@/context/AuthContext";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -46,14 +51,23 @@ export default function TransferenciasHome() {
   });
 
   const [tempFilters, setTempFilters] = useState(filters);
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "transferencias"),
+    [location.state]
+  );
 
   const filtroActivos = useMemo<"true" | "false" | "all">(() => {
+    if (memoriaFilter) return "all";
     if (filters.estado === "todas") return "all";
     if (filters.estado === "inactivas") return "false";
     return "true";
-  }, [filters.estado]);
+  }, [filters.estado, memoriaFilter]);
 
   const { list = [], isLoading, isError } = useTransferencias(filtroActivos);
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
+  );
 
   useEffect(() => {
     if (location.state?.successMessage) {
@@ -68,7 +82,7 @@ export default function TransferenciasHome() {
   const transferenciasFiltradas = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
 
-    return list.filter((item) => {
+    return scopedList.filter((item) => {
       const matchSearch =
         !query ||
         String(item.denominacion ?? "").toLowerCase().includes(query) ||
@@ -106,7 +120,7 @@ export default function TransferenciasHome() {
         matchAnio
       );
     });
-  }, [list, searchQuery, filters]);
+  }, [scopedList, searchQuery, filters]);
 
   const totalPages = Math.max(
     1,
@@ -129,14 +143,14 @@ export default function TransferenciasHome() {
   }, [currentPage, totalPages]);
 
   const aniosDisponibles = useMemo(() => {
-    const years = list
+    const years = scopedList
       .map((item) => item.fechaInicio || item.fechaFin)
       .filter(Boolean)
       .map((fecha) => new Date(fecha as string).getFullYear())
       .filter((year) => !Number.isNaN(year));
 
     return [...new Set(years)].sort((a, b) => b - a);
-  }, [list]);
+  }, [scopedList]);
 
   const filtrosActivosCount = Object.values(filters).filter(Boolean).length;
 
@@ -154,7 +168,7 @@ export default function TransferenciasHome() {
   const toggleSelect = (id: number, checked: boolean) => {
     if (!puedeEliminar) return;
 
-    const transferencia = list.find((item) => item.id === id);
+    const transferencia = scopedList.find((item) => item.id === id);
 
     if (transferencia && isTransferenciaDeleted(transferencia)) {
       setErrorMessage("No se puede eliminar una transferencia que ya fue eliminada.");
@@ -173,7 +187,7 @@ export default function TransferenciasHome() {
     setShowConfirm(false);
   };
 
-  const selectedTransfers = list.filter((item) => selectedIds.includes(item.id));
+  const selectedTransfers = scopedList.filter((item) => selectedIds.includes(item.id));
   const selectedActiveTransfers = selectedTransfers.filter(
     (item) => !isTransferenciaDeleted(item)
   );
@@ -247,7 +261,7 @@ export default function TransferenciasHome() {
             Vinculacion socio-productiva
           </h2>
           <p className="mt-2 text-xs text-slate-500">
-            {transferenciasFiltradas.length} de {list.length} resultados
+            {transferenciasFiltradas.length} de {scopedList.length} resultados
           </p>
         </div>
 
@@ -361,6 +375,8 @@ export default function TransferenciasHome() {
           )}
         </div>
       </div>
+
+      {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
 
       <div className="flex flex-1 flex-col">
         {isLoading ? (

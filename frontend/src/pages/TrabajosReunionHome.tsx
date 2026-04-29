@@ -6,6 +6,7 @@ import Button from "@/components/Button";
 import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { HttpError } from "@/lib/http";
 
 import { useTrabajosReunion } from "@/hooks/useTrabajosReunion";
@@ -18,6 +19,10 @@ import {
 } from "@/services/trabajosReunionServices";
 import { useAuth } from "@/context/AuthContext";
 import { toTitleCase } from "@/utils/format";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -62,19 +67,28 @@ export default function TrabajosReunionLanding() {
   });
 
   const [tempFilters, setTempFilters] = useState(filters);
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "trabajos-reunion-cientifica"),
+    [location.state]
+  );
 
   const filtroActivos = useMemo<"true" | "false" | "all">(() => {
+    if (memoriaFilter) return "all";
     if (filters.estado === "todos") return "all";
     if (filters.estado === "inactivos") return "false";
     return "true";
-  }, [filters.estado]);
+  }, [filters.estado, memoriaFilter]);
 
   const { list = [], isLoading, isError } = useTrabajosReunion(filtroActivos, "asc");
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
+  );
   const { tipos = [] } = useTiposReunion();
   const { data: investigadores = [] } = useInvestigadores();
 
   const trabajosFiltrados = useMemo(() => {
-    return list.filter((t) => {
+    return scopedList.filter((t) => {
       const query = searchQuery.toLowerCase().trim();
 
       const matchSearch =
@@ -111,7 +125,7 @@ export default function TrabajosReunionLanding() {
         matchAnio
       );
     });
-  }, [list, filters, searchQuery]);
+  }, [scopedList, filters, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(trabajosFiltrados.length / ITEMS_PER_PAGE));
   const trabajosPaginados = trabajosFiltrados.slice(
@@ -156,7 +170,7 @@ export default function TrabajosReunionLanding() {
   const toggleSelect = (id: number, checked: boolean) => {
     if (!puedeEliminar) return;
 
-    const item = trabajosFiltrados.find((x) => x.id === id);
+    const item = scopedList.find((x) => x.id === id);
 
     if (item?.deleted_at) {
       setErrorMessage(
@@ -177,7 +191,7 @@ export default function TrabajosReunionLanding() {
     setShowConfirm(false);
   };
 
-  const selectedItems = trabajosFiltrados.filter((t) => selectedIds.includes(t.id));
+  const selectedItems = scopedList.filter((t) => selectedIds.includes(t.id));
   const selectedActiveItems = selectedItems.filter((t) => !t.deleted_at);
 
   const confirmDelete = async () => {
@@ -243,7 +257,7 @@ export default function TrabajosReunionLanding() {
             Trabajos presentados en Congresos
           </h2>
           <p className="mt-2 text-xs text-slate-500">
-            {trabajosFiltrados.length} de {list.length} resultados
+            {trabajosFiltrados.length} de {scopedList.length} resultados
           </p>
         </div>
 
@@ -361,6 +375,8 @@ export default function TrabajosReunionLanding() {
           )}
         </div>
       </div>
+
+      {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
 
       <div className="flex-1">
         {isLoading ? (

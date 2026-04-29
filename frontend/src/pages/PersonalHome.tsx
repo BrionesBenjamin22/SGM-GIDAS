@@ -5,10 +5,15 @@ import Button from "@/components/Button";
 import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { usePersonal } from "@/hooks/usePersonal";
 import { eliminarPersonal } from "@/services/personalServices";
 import type { PersonalType } from "@/services/personalServices";
 import { useAuth } from "@/context/AuthContext";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -27,10 +32,27 @@ export default function PersonalLanding() {
   const [filtroActivos, setFiltroActivos] = useState<"true" | "false" | "all">(
     "true"
   );
+  const memoriaFilter = useMemo(
+    () =>
+      getMemoriaSectionFilter(
+        location.state,
+        tipo === "INVESTIGADOR"
+          ? "investigadores"
+          : tipo === "BECARIO"
+            ? "becarios"
+            : "personal"
+      ),
+    [location.state, tipo]
+  );
+  const effectiveActivos = memoriaFilter ? "all" : filtroActivos;
 
   const { list = [], isLoading, isError } = usePersonal(
     tipo ?? undefined,
-    filtroActivos
+    effectiveActivos
+  );
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
   );
 
   const [showFilters, setShowFilters] = useState(false);
@@ -45,12 +67,12 @@ export default function PersonalLanding() {
   const filtrosActivos = Object.values(filters).filter(Boolean).length;
 
   const rolesDisponibles = useMemo(() => {
-    const roles = list.map((p) => p.rol).filter(Boolean);
+    const roles = scopedList.map((p) => p.rol).filter(Boolean);
     return [...new Set(roles)];
-  }, [list]);
+  }, [scopedList]);
 
   const personalFiltrado = useMemo(() => {
-    return list.filter((p) => {
+    return scopedList.filter((p) => {
       const search = filters.search.toLowerCase().trim();
 
       const matchSearch =
@@ -63,7 +85,7 @@ export default function PersonalLanding() {
 
       return matchSearch && matchRol;
     });
-  }, [list, filters]);
+  }, [scopedList, filters]);
 
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -186,7 +208,7 @@ export default function PersonalLanding() {
           <h2 className="text-2xl md:text-3xl font-semibold">Personal</h2>
           {!isLoading && (
             <p className="text-sm text-slate-500 mt-1">
-              Mostrando {personalFiltrado.length} de {list.length} resultados
+              Mostrando {personalFiltrado.length} de {scopedList.length} resultados
             </p>
           )}
         </div>
@@ -279,6 +301,8 @@ export default function PersonalLanding() {
           )}
         </div>
       </div>
+
+      {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
 
       <div className="flex-1 flex flex-col">
         {isLoading && <p className="text-slate-500">Cargando…</p>}

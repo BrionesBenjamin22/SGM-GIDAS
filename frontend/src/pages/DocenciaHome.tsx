@@ -5,6 +5,7 @@ import Button from "@/components/Button";
 import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import {
   getActividadesDocencia,
   eliminarActividadDocencia,
@@ -12,6 +13,10 @@ import {
 } from "@/services/actividadDocenciaServices";
 import { toTitleCase } from "@/utils/format";
 import { useAuth } from "@/context/AuthContext";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -48,17 +53,26 @@ export default function DocenciaLanding() {
   });
 
   const [tempFilters, setTempFilters] = useState(filters);
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "actividades-docencia"),
+    [location.state]
+  );
 
   const filtroActivos = useMemo<"true" | "false" | "all">(() => {
+    if (memoriaFilter) return "all";
     if (filters.estado === "todos") return "all";
     if (filters.estado === "inactivos") return "false";
     return "true";
-  }, [filters.estado]);
+  }, [filters.estado, memoriaFilter]);
 
   const { data: list = [], isLoading, isError } = useQuery({
     queryKey: ["docencia", "all", filtroActivos],
     queryFn: () => getActividadesDocencia(undefined, filtroActivos),
   });
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
+  );
 
   const getInvestigadorNombre = (d: ActividadDocencia) =>
     typeof d.investigador === "string"
@@ -72,7 +86,7 @@ export default function DocenciaLanding() {
     const gradosAcademicos = new Set<string>();
     const rolesActividad = new Set<string>();
 
-    list.forEach((d) => {
+    scopedList.forEach((d) => {
       if (d.curso) cursos.add(toTitleCase(d.curso));
       if (d.institucion) instituciones.add(toTitleCase(d.institucion));
       if (getInvestigadorNombre(d)) {
@@ -89,10 +103,10 @@ export default function DocenciaLanding() {
       gradosAcademicos: Array.from(gradosAcademicos).sort(),
       rolesActividad: Array.from(rolesActividad).sort(),
     };
-  }, [list]);
+  }, [scopedList]);
 
   const docenciaFiltrada = useMemo(() => {
-    return list.filter((d) => {
+    return scopedList.filter((d) => {
       const query = searchQuery.toLowerCase().trim();
 
       const matchesSearch =
@@ -130,7 +144,7 @@ export default function DocenciaLanding() {
         matchRolActividad
       );
     });
-  }, [list, filters, searchQuery]);
+  }, [scopedList, filters, searchQuery]);
 
   const filtrosActivosCount = Object.values(filters).filter(Boolean).length;
 
@@ -172,7 +186,7 @@ export default function DocenciaLanding() {
   const toggleSelect = (id: number, checked: boolean) => {
     if (!puedeEliminar) return;
 
-    const item = list.find((x) => x.id === id);
+    const item = scopedList.find((x) => x.id === id);
 
     if (item?.deleted_at) {
       setErrorMessage(
@@ -193,7 +207,7 @@ export default function DocenciaLanding() {
     setShowConfirm(false);
   };
 
-  const selectedItems = list.filter((d) => selectedIds.includes(d.id));
+  const selectedItems = scopedList.filter((d) => selectedIds.includes(d.id));
   const selectedActiveItems = selectedItems.filter((d) => !d.deleted_at);
 
   const confirmDelete = async () => {
@@ -243,7 +257,7 @@ export default function DocenciaLanding() {
             Actividades en Docencia
           </h2>
           <p className="mt-2 text-xs text-slate-500">
-            {docenciaFiltrada.length} de {list.length} resultados
+            {docenciaFiltrada.length} de {scopedList.length} resultados
           </p>
         </div>
 
@@ -365,6 +379,8 @@ export default function DocenciaLanding() {
           )}
         </div>
       </div>
+
+      {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
 
       <div className="flex-1">
         {isLoading ? (

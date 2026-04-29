@@ -5,10 +5,15 @@ import Button from "@/components/Button";
 import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { useDocumentacion } from "@/hooks/useDocumentacion";
 import { deleteDocumentacion } from "@/services/documentacionServices";
 import { HttpError } from "@/lib/http";
 import { useAuth } from "@/context/AuthContext";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -48,28 +53,37 @@ export default function DocumentacionHome() {
   });
 
   const [tempFilters, setTempFilters] = useState(filters);
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "documentacion-bibliografica"),
+    [location.state]
+  );
 
   const filtroActivos = useMemo<"true" | "false" | "all">(() => {
+    if (memoriaFilter) return "all";
     if (filters.estado === "todos") return "all";
     if (filters.estado === "inactivas") return "false";
     return "true";
-  }, [filters.estado]);
+  }, [filters.estado, memoriaFilter]);
 
   const { list = [], isLoading, isError } = useDocumentacion(filtroActivos);
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
+  );
 
   const aniosDisponibles = useMemo(() => {
-    const years = list
+    const years = scopedList
       .filter((item) => item.anio)
       .map((item) => Number(item.anio))
       .filter((year) => !Number.isNaN(year));
 
     return [...new Set(years)].sort((a, b) => b - a);
-  }, [list]);
+  }, [scopedList]);
 
   const documentacionFiltrada = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
 
-    return list.filter((item) => {
+    return scopedList.filter((item) => {
       const autoresTexto = item.autores?.length
         ? item.autores.map((autor) => autor.nombre_apellido).join(", ")
         : "";
@@ -94,7 +108,7 @@ export default function DocumentacionHome() {
 
       return matchSearch && matchAutor && matchAnio;
     });
-  }, [list, searchQuery, filters]);
+  }, [scopedList, searchQuery, filters]);
 
   const filtrosActivosCount = Object.values(filters).filter(Boolean).length;
 
@@ -140,7 +154,7 @@ export default function DocumentacionHome() {
   const toggleSelect = (id: number, checked: boolean) => {
     if (!puedeEliminar) return;
 
-    const documento = list.find((item) => item.id === id);
+    const documento = scopedList.find((item) => item.id === id);
     if (documento?.deleted_at) {
       setErrorMessage("No se puede eliminar un documento que ya fue eliminado.");
       setShowError(true);
@@ -158,7 +172,7 @@ export default function DocumentacionHome() {
     setShowConfirm(false);
   };
 
-  const selectedDocuments = list.filter((item) => selectedIds.includes(item.id));
+  const selectedDocuments = scopedList.filter((item) => selectedIds.includes(item.id));
   const selectedActiveDocuments = selectedDocuments.filter((item) => !item.deleted_at);
 
   const confirmDelete = async () => {
@@ -221,7 +235,7 @@ export default function DocumentacionHome() {
             Documentacion
           </h2>
           <p className="mt-2 text-xs text-slate-500">
-            {documentacionFiltrada.length} de {list.length} resultados
+            {documentacionFiltrada.length} de {scopedList.length} resultados
           </p>
         </div>
 
@@ -335,6 +349,8 @@ export default function DocumentacionHome() {
           )}
         </div>
       </div>
+
+      {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
 
       <div className="flex flex-1 flex-col">
         {isLoading ? (

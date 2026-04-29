@@ -6,11 +6,16 @@ import Button from "@/components/Button";
 import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { HttpError } from "@/lib/http";
 
 import { useDistinciones } from "@/hooks/useDistinciones";
 import type { Distincion } from "@/services/distincionesServices";
 import { useAuth } from "@/context/AuthContext";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -53,17 +58,26 @@ export default function DistincionesHome() {
   });
 
   const [tempFilters, setTempFilters] = useState(filters);
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "distinciones"),
+    [location.state]
+  );
 
   const filtroActivos = useMemo<"true" | "false" | "all">(() => {
+    if (memoriaFilter) return "all";
     if (filters.estado === "todos") return "all";
     if (filters.estado === "inactivos") return "false";
     return "true";
-  }, [filters.estado]);
+  }, [filters.estado, memoriaFilter]);
 
   const { list = [], isLoading, isError, remove } = useDistinciones(filtroActivos);
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
+  );
 
   const distincionesFiltradas = useMemo(() => {
-    return list.filter((d) => {
+    return scopedList.filter((d) => {
       const query = searchQuery.toLowerCase().trim();
 
       const matchSearch =
@@ -84,7 +98,7 @@ export default function DistincionesHome() {
 
       return matchSearch && matchProyecto && matchAnio;
     });
-  }, [list, searchQuery, filters]);
+  }, [scopedList, searchQuery, filters]);
 
   const totalPages = Math.max(1, Math.ceil(distincionesFiltradas.length / ITEMS_PER_PAGE));
   const distincionesPaginadas = distincionesFiltradas.slice(
@@ -129,7 +143,7 @@ export default function DistincionesHome() {
   const toggleSelect = (id: number, checked: boolean) => {
     if (!puedeEliminar) return;
 
-    const item = distincionesFiltradas.find((x) => x.id === id);
+    const item = scopedList.find((x) => x.id === id);
 
     if (item?.deleted_at) {
       setErrorMessage(
@@ -150,7 +164,7 @@ export default function DistincionesHome() {
     setShowConfirm(false);
   };
 
-  const selectedItems = distincionesFiltradas.filter((d) =>
+  const selectedItems = scopedList.filter((d) =>
     selectedIds.includes(d.id)
   );
   const selectedActiveItems = selectedItems.filter((d) => !d.deleted_at);
@@ -216,7 +230,7 @@ export default function DistincionesHome() {
             Distinciones Recibidas
           </h2>
           <p className="mt-2 text-xs text-slate-500">
-            {distincionesFiltradas.length} de {list.length} resultados
+            {distincionesFiltradas.length} de {scopedList.length} resultados
           </p>
         </div>
 
@@ -342,6 +356,8 @@ export default function DistincionesHome() {
           )}
         </div>
       </div>
+
+      {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
 
       <div className="flex-1">
         {isLoading ? (

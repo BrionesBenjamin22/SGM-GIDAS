@@ -5,6 +5,7 @@ import Button from "@/components/Button";
 import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { HttpError } from "@/lib/http";
 
 import { useTrabajosRevistas } from "@/hooks/useTrabajosRevistas";
@@ -13,6 +14,10 @@ import {
   type TrabajoRevista,
 } from "@/services/trabajosRevistasServices";
 import { useAuth } from "@/context/AuthContext";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -55,20 +60,29 @@ export default function TrabajosRevistasLanding() {
   });
 
   const [tempFilters, setTempFilters] = useState(filters);
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "trabajos-revistas"),
+    [location.state]
+  );
 
   const filtroActivos = useMemo<"true" | "false" | "all">(() => {
+    if (memoriaFilter) return "all";
     if (filters.estado === "todos") return "all";
     if (filters.estado === "inactivos") return "false";
     return "true";
-  }, [filters.estado]);
+  }, [filters.estado, memoriaFilter]);
 
   const { list = [], isLoading, isError } = useTrabajosRevistas(
     filtroActivos,
     "asc"
   );
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
+  );
 
   const trabajosFiltrados = useMemo(() => {
-    return list.filter((t) => {
+    return scopedList.filter((t) => {
       const query = searchQuery.toLowerCase().trim();
 
       const matchSearch =
@@ -89,7 +103,7 @@ export default function TrabajosRevistasLanding() {
 
       return matchSearch && matchRevista && matchAnio;
     });
-  }, [list, filters, searchQuery]);
+  }, [scopedList, filters, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(trabajosFiltrados.length / ITEMS_PER_PAGE));
   const trabajosPaginados = trabajosFiltrados.slice(
@@ -134,7 +148,7 @@ export default function TrabajosRevistasLanding() {
   const toggleSelect = (id: number, checked: boolean) => {
     if (!puedeEliminar) return;
 
-    const item = trabajosFiltrados.find((x) => x.id === id);
+    const item = scopedList.find((x) => x.id === id);
 
     if (item?.deleted_at) {
       setErrorMessage(
@@ -155,7 +169,7 @@ export default function TrabajosRevistasLanding() {
     setShowConfirm(false);
   };
 
-  const selectedItems = trabajosFiltrados.filter((t) =>
+  const selectedItems = scopedList.filter((t) =>
     selectedIds.includes(t.id)
   );
   const selectedActiveItems = selectedItems.filter((t) => !t.deleted_at);
@@ -223,7 +237,7 @@ export default function TrabajosRevistasLanding() {
             Trabajos en Revistas
           </h2>
           <p className="mt-2 text-xs text-slate-500">
-            {trabajosFiltrados.length} de {list.length} resultados
+            {trabajosFiltrados.length} de {scopedList.length} resultados
           </p>
         </div>
 
@@ -349,6 +363,8 @@ export default function TrabajosRevistasLanding() {
           )}
         </div>
       </div>
+
+      {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
 
       <div className="flex-1">
         {isLoading ? (

@@ -6,6 +6,7 @@ import Button from "@/components/Button";
 import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { HttpError } from "@/lib/http";
 import { useAuth } from "@/context/AuthContext";
 
@@ -14,6 +15,10 @@ import {
   getVisitantes,
   type Visitante,
 } from "@/services/visitantesServices";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -54,23 +59,32 @@ export default function VisitantesHome() {
   });
 
   const [tempFilters, setTempFilters] = useState(filters);
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "visitas-academicas"),
+    [location.state]
+  );
 
   const filtroActivos = useMemo<"true" | "false" | "all">(() => {
+    if (memoriaFilter) return "all";
     if (filters.estado === "todos") return "all";
     if (filters.estado === "inactivos") return "false";
     return "true";
-  }, [filters.estado]);
+  }, [filters.estado, memoriaFilter]);
 
   const { data: list = [], isLoading, isError } = useQuery({
     queryKey: ["visitantes", filtroActivos],
     queryFn: () => getVisitantes(filtroActivos),
     staleTime: 60_000,
   });
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
+  );
 
   const visitantesFiltrados = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
 
-    return list.filter((v) => {
+    return scopedList.filter((v) => {
       const matchSearch =
         !query ||
         String(v.razon ?? "").toLowerCase().includes(query) ||
@@ -90,7 +104,7 @@ export default function VisitantesHome() {
 
       return matchSearch && matchProcedencia && matchAnio;
     });
-  }, [list, searchQuery, filters]);
+  }, [scopedList, searchQuery, filters]);
 
   const totalPages = Math.max(1, Math.ceil(visitantesFiltrados.length / ITEMS_PER_PAGE));
   const visitantesPaginados = visitantesFiltrados.slice(
@@ -135,7 +149,7 @@ export default function VisitantesHome() {
   const toggleSelect = (id: number, checked: boolean) => {
     if (!puedeEliminar) return;
 
-    const visitante = visitantesFiltrados.find((x) => x.id === id);
+    const visitante = scopedList.find((x) => x.id === id);
 
     if (visitante?.deleted_at) {
       setErrorMessage("No se puede eliminar un visitante ya eliminado.");
@@ -154,7 +168,7 @@ export default function VisitantesHome() {
     setShowConfirm(false);
   };
 
-  const selectedItems = visitantesFiltrados.filter((v) =>
+  const selectedItems = scopedList.filter((v) =>
     selectedIds.includes(v.id)
   );
   const selectedActiveItems = selectedItems.filter((v) => !v.deleted_at);
@@ -220,7 +234,7 @@ export default function VisitantesHome() {
             Visitantes del pais y del extranjero
           </h2>
           <p className="mt-2 text-xs text-slate-500">
-            {visitantesFiltrados.length} de {list.length} resultados
+            {visitantesFiltrados.length} de {scopedList.length} resultados
           </p>
         </div>
 
@@ -346,6 +360,8 @@ export default function VisitantesHome() {
           )}
         </div>
       </div>
+
+      {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
 
       <div className="flex-1">
         {isLoading ? (

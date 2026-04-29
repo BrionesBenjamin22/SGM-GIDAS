@@ -6,6 +6,7 @@ import Button from "@/components/Button";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 import Tarjeta from "@/components/Tarjeta";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { useAuth } from "@/context/AuthContext";
 import { HttpError } from "@/lib/http";
 import { useRegistrosPropiedad } from "@/hooks/useRegistrosPropiedad";
@@ -14,6 +15,10 @@ import {
   type RegistroPropiedad,
 } from "@/services/registrosPropiedadServices";
 import { toTitleCase } from "@/utils/format";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -52,23 +57,32 @@ export default function RegistrosPropiedadLanding() {
     fechaRegistro: "",
   });
   const [tempFilters, setTempFilters] = useState(filters);
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "registros-propiedad"),
+    [location.state]
+  );
 
   const filtroActivos = useMemo<"true" | "false" | "all">(() => {
+    if (memoriaFilter) return "all";
     if (filters.estado === "todos") return "all";
     if (filters.estado === "inactivos") return "false";
     return "true";
-  }, [filters.estado]);
+  }, [filters.estado, memoriaFilter]);
 
   const { list, isLoading, isError } = useRegistrosPropiedad(
     filtroActivos,
     "asc"
+  );
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
   );
 
   const opcionesFiltros = useMemo(() => {
     const tiposRegistro = new Set<string>();
     const fechasRegistro = new Set<string>();
 
-    list.forEach((registro) => {
+    scopedList.forEach((registro) => {
       if (registro.tipo_registro != null) {
         tiposRegistro.add(toTitleCase(registro.tipo_registro));
       }
@@ -82,10 +96,10 @@ export default function RegistrosPropiedadLanding() {
       tiposRegistro: Array.from(tiposRegistro).sort(),
       fechasRegistro: Array.from(fechasRegistro).sort(),
     };
-  }, [list]);
+  }, [scopedList]);
 
   const registrosFiltrados = useMemo(() => {
-    return list.filter((registro) => {
+    return scopedList.filter((registro) => {
       const query = searchQuery.toLowerCase().trim();
 
       const matchesSearch =
@@ -107,7 +121,7 @@ export default function RegistrosPropiedadLanding() {
 
       return matchesSearch && matchTipoRegistro && matchFechaRegistro;
     });
-  }, [list, filters, searchQuery]);
+  }, [scopedList, filters, searchQuery]);
 
   const totalPages = Math.ceil(registrosFiltrados.length / ITEMS_PER_PAGE);
 
@@ -147,7 +161,7 @@ export default function RegistrosPropiedadLanding() {
   const toggleSelect = (id: number, checked: boolean) => {
     if (!puedeEliminar) return;
 
-    const item = list.find((registro) => registro.id === id);
+    const item = scopedList.find((registro) => registro.id === id);
 
     if (item?.deleted_at) {
       setErrorMessage(
@@ -168,7 +182,7 @@ export default function RegistrosPropiedadLanding() {
     setShowConfirm(false);
   };
 
-  const selectedItems = list.filter((registro) =>
+  const selectedItems = scopedList.filter((registro) =>
     selectedIds.includes(registro.id)
   );
   const selectedActiveItems = selectedItems.filter(
@@ -236,7 +250,7 @@ export default function RegistrosPropiedadLanding() {
               Registros de Propiedad
             </h2>
             <p className="mt-2 text-xs text-slate-500">
-              {registrosFiltrados.length} de {list.length} resultados
+              {registrosFiltrados.length} de {scopedList.length} resultados
             </p>
           </div>
 
@@ -362,6 +376,8 @@ export default function RegistrosPropiedadLanding() {
             )}
           </div>
         </div>
+
+        {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
 
         <div className="flex-1">
           {isLoading ? (
