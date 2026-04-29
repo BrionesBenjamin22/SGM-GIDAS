@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import Button from "@/components/Button";
@@ -7,14 +7,31 @@ import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 import { HttpError } from "@/lib/http";
-import { toTitleCase } from "@/utils/format";
 import { useAuth } from "@/context/AuthContext";
 
 import {
-  getParticipaciones,
   eliminarParticipacion,
+  getParticipaciones,
   type Participacion,
 } from "@/services/participacionesServices";
+
+const ITEMS_PER_PAGE = 9;
+
+const FORMA_PARTICIPACION_LABELS: Record<string, string> = {
+  jurado: "Jurado",
+  evaluador: "Evaluador",
+  panelista: "Panelista",
+  comite: "Miembro de comite cientifico",
+};
+
+const formatDate = (dateStr?: string | null) => {
+  if (!dateStr) return "-";
+
+  const [y, m, d] = dateStr.split("-");
+  if (!y || !m || !d) return dateStr;
+
+  return `${d}/${m}/${y}`;
+};
 
 export default function ParticipacionesHome() {
   const navigate = useNavigate();
@@ -37,6 +54,7 @@ export default function ParticipacionesHome() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
 
   const [filters, setFilters] = useState({
     estado: "",
@@ -58,7 +76,7 @@ export default function ParticipacionesHome() {
     queryFn: () =>
       getParticipaciones({
         activos: filtroActivos,
-        orden: "asc",
+        orden: "desc",
       }),
   });
 
@@ -66,11 +84,14 @@ export default function ParticipacionesHome() {
     const query = searchQuery.toLowerCase().trim();
 
     return list.filter((p) => {
+      const formaParticipacionLabel =
+        FORMA_PARTICIPACION_LABELS[p.forma_participacion] || p.forma_participacion;
+
       const matchSearch =
         !query ||
         String(p.nombre_evento ?? "").toLowerCase().includes(query) ||
         String(p.investigador ?? "").toLowerCase().includes(query) ||
-        String(p.forma_participacion ?? "").toLowerCase().includes(query) ||
+        String(formaParticipacionLabel ?? "").toLowerCase().includes(query) ||
         String(p.fecha ?? "").toLowerCase().includes(query);
 
       const matchInvestigador =
@@ -81,7 +102,7 @@ export default function ParticipacionesHome() {
 
       const matchFormaParticipacion =
         !filters.formaParticipacion ||
-        String(p.forma_participacion ?? "")
+        String(formaParticipacionLabel ?? "")
           .toLowerCase()
           .includes(filters.formaParticipacion.toLowerCase());
 
@@ -98,15 +119,34 @@ export default function ParticipacionesHome() {
     });
   }, [list, searchQuery, filters]);
 
+  const totalPages = Math.max(
+    1,
+    Math.ceil(participacionesFiltradas.length / ITEMS_PER_PAGE)
+  );
+  const participacionesPaginadas = participacionesFiltradas.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE
+  );
+
   const filtrosActivosCount = Object.values(filters).filter(Boolean).length;
 
   useEffect(() => {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      window.history.replaceState({}, document.title);
+      navigate(location.pathname, { replace: true });
     }
-  }, [location.state]);
+  }, [location.state, navigate, location.pathname]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, filters]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   const setQuickEstado = (estado: "" | "todos" | "inactivos") => {
     setFilters((prev) => ({
@@ -129,7 +169,7 @@ export default function ParticipacionesHome() {
 
     if (item?.deleted_at) {
       setErrorMessage(
-        "No se puede eliminar una participación que ya fue eliminada."
+        "No se puede eliminar una participacion que ya fue eliminada."
       );
       setShowError(true);
       return;
@@ -158,8 +198,8 @@ export default function ParticipacionesHome() {
       setShowConfirm(false);
       setErrorMessage(
         invalidItems.length === 1
-          ? "La participación seleccionada ya fue eliminada."
-          : "Una o más participaciones seleccionadas ya fueron eliminadas."
+          ? "La participacion seleccionada ya fue eliminada."
+          : "Una o mas participaciones seleccionadas ya fueron eliminadas."
       );
       setShowError(true);
       return;
@@ -176,8 +216,8 @@ export default function ParticipacionesHome() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Participación eliminada con éxito."
-          : "Participaciones eliminadas con éxito."
+          ? "Participacion eliminada con exito."
+          : "Participaciones eliminadas con exito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -192,11 +232,11 @@ export default function ParticipacionesHome() {
           body?.message ||
             body?.error ||
             body?.detalle ||
-            "No se pudo eliminar la participación."
+            "No se pudo eliminar la participacion."
         );
       } else {
         setErrorMessage(
-          "Ocurrió un error inesperado al eliminar la participación."
+          "Ocurrio un error inesperado al eliminar la participacion."
         );
       }
 
@@ -205,19 +245,19 @@ export default function ParticipacionesHome() {
   };
 
   return (
-    <section className="w-full min-h-[calc(100vh-80px)] px-4 md:px-6 py-4 flex flex-col text-sm">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+    <section className="flex min-h-[calc(100vh-80px)] w-full flex-col px-4 py-4 text-sm md:px-6">
+      <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <h2 className="text-2xl md:text-3xl font-semibold leading-none text-slate-800">
+          <h2 className="text-2xl font-semibold leading-none text-slate-800 md:text-3xl">
             Participaciones Relevantes
           </h2>
-          <p className="text-xs text-slate-500 mt-2">
+          <p className="mt-2 text-xs text-slate-500">
             {participacionesFiltradas.length} de {list.length} resultados
           </p>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <div className="flex items-center rounded-lg border border-slate-200 bg-white overflow-hidden">
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
             <button
               type="button"
               onClick={() => setQuickEstado("")}
@@ -233,7 +273,7 @@ export default function ParticipacionesHome() {
             <button
               type="button"
               onClick={() => setQuickEstado("todos")}
-              className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+              className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                 quickEstadoActual === "todos"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
@@ -245,7 +285,7 @@ export default function ParticipacionesHome() {
             <button
               type="button"
               onClick={() => setQuickEstado("inactivos")}
-              className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+              className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                 quickEstadoActual === "inactivos"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
@@ -259,7 +299,7 @@ export default function ParticipacionesHome() {
             <input
               type="text"
               placeholder="Buscar por evento, investigador o fecha..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-10 py-1.5 focus:bg-white focus:ring-2 focus:ring-slate-200 outline-none transition-all text-xs"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -303,7 +343,7 @@ export default function ParticipacionesHome() {
               >
                 Filtros
                 {filtrosActivosCount > 0 && (
-                  <span className="ml-1.5 bg-slate-800 text-white text-[10px] rounded-full px-1.5 py-0.5">
+                  <span className="ml-1.5 rounded-full bg-slate-800 px-1.5 py-0.5 text-[10px] text-white">
                     {filtrosActivosCount}
                   </span>
                 )}
@@ -341,32 +381,66 @@ export default function ParticipacionesHome() {
 
       <div className="flex-1">
         {isLoading ? (
-          <p className="text-slate-500 text-center py-10">Cargando…</p>
+          <p className="py-10 text-center text-slate-500">Cargando...</p>
         ) : isError ? (
-          <p className="text-slate-500 text-center py-10">Error al cargar.</p>
+          <p className="py-10 text-center text-slate-500">Error al cargar.</p>
         ) : participacionesFiltradas.length === 0 ? (
-          <p className="text-slate-500 text-center py-10">
+          <p className="py-10 text-center text-slate-500">
             No hay participaciones registradas.
           </p>
         ) : (
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {participacionesFiltradas.map((p: Participacion) => (
-              <Tarjeta<Participacion>
-                key={p.id}
-                item={p}
-                title={(x) => toTitleCase(x.nombre_evento) || "—"}
-                subtitle={(x) => toTitleCase(x.investigador) || "—"}
-                badge={(x) => (x.deleted_at ? "INACTIVO" : "ACTIVO")}
-                selectable={puedeEliminar && selectMode}
-                selectDisabled={!!p.deleted_at}
-                selected={selectedIds.includes(p.id)}
-                onSelectChange={(checked) => toggleSelect(p.id, checked)}
-                onClick={() =>
-                  !selectMode && navigate(`/participaciones/${p.id}`)
-                }
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {participacionesPaginadas.map((p: Participacion) => (
+                <Tarjeta<Participacion>
+                  key={p.id}
+                  item={p}
+                  title={(x) => x.nombre_evento || "-"}
+                  subtitle={(x) =>
+                    x.investigador
+                      ? `${x.investigador} - ${formatDate(x.fecha)}`
+                      : formatDate(x.fecha)
+                  }
+                  badge={(x) => (x.deleted_at ? "INACTIVO" : "ACTIVO")}
+                  selectable={puedeEliminar && selectMode}
+                  selectDisabled={!!p.deleted_at}
+                  selected={selectedIds.includes(p.id)}
+                  onSelectChange={(checked) => toggleSelect(p.id, checked)}
+                  onClick={() =>
+                    !selectMode && navigate(`/participaciones/${p.id}`)
+                  }
+                />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-between">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                  disabled={page === 1}
+                >
+                  Anterior
+                </Button>
+
+                <span className="text-sm text-slate-500">
+                  Pagina {page} de {totalPages}
+                </span>
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={page === totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -374,7 +448,7 @@ export default function ParticipacionesHome() {
         open={showConfirm}
         title="Eliminar participaciones"
         message="¿Eliminar las siguientes participaciones?"
-        items={selectedActiveItems.map((p) => toTitleCase(p.nombre_evento))}
+        items={selectedActiveItems.map((p) => p.nombre_evento || "-")}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
       />
@@ -389,25 +463,26 @@ export default function ParticipacionesHome() {
         open={showError}
         message={errorMessage}
         onClose={() => setShowError(false)}
+        variant="error"
       />
 
       {showFilters && (
         <>
           <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
             onClick={() => setShowFilters(false)}
           />
 
-          <div className="fixed top-0 right-0 h-full w-[380px] bg-white z-50 shadow-2xl p-6 flex flex-col overflow-y-auto">
-            <h3 className="text-xl font-semibold mb-6">Filtros Avanzados</h3>
+          <div className="fixed top-0 right-0 z-50 flex h-full w-[380px] flex-col overflow-y-auto bg-white p-6 shadow-2xl">
+            <h3 className="mb-6 text-xl font-semibold">Filtros avanzados</h3>
 
-            <div className="space-y-5 flex-1 text-[11px]">
+            <div className="flex-1 space-y-5 text-[11px]">
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
                   Estado
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.estado}
                   onChange={(e) =>
                     setTempFilters({
@@ -423,11 +498,11 @@ export default function ParticipacionesHome() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
                   Investigador
                 </label>
                 <input
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.investigador}
                   onChange={(e) =>
                     setTempFilters({
@@ -435,16 +510,16 @@ export default function ParticipacionesHome() {
                       investigador: e.target.value,
                     })
                   }
-                  placeholder="Ej: Juan Pérez"
+                  placeholder="Ej: Juan Perez"
                 />
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
-                  Forma de participación
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
+                  Forma de participacion
                 </label>
                 <input
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.formaParticipacion}
                   onChange={(e) =>
                     setTempFilters({
@@ -452,17 +527,17 @@ export default function ParticipacionesHome() {
                       formaParticipacion: e.target.value,
                     })
                   }
-                  placeholder="Ej: Expositor"
+                  placeholder="Ej: Jurado"
                 />
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
-                  Año
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
+                  Ano
                 </label>
                 <input
                   type="number"
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.anio}
                   onChange={(e) =>
                     setTempFilters({
@@ -475,7 +550,7 @@ export default function ParticipacionesHome() {
               </div>
             </div>
 
-            <div className="flex justify-between gap-2 pt-6 border-t mt-4">
+            <div className="mt-4 flex justify-between gap-2 border-t pt-6">
               <Button
                 variant="secondary"
                 className="flex-1"

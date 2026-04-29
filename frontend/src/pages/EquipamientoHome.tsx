@@ -33,6 +33,7 @@ export default function EquipamientoLanding() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [filters, setFilters] = useState({
     estado: "",
@@ -77,8 +78,7 @@ export default function EquipamientoLanding() {
 
       const matchAnio =
         !filters.anio ||
-        new Date(e.fecha_incorporacion).getFullYear().toString() ===
-          filters.anio;
+        new Date(e.fecha_incorporacion).getFullYear().toString() === filters.anio;
 
       return matchSearch && matchMontoMin && matchMontoMax && matchAnio;
     });
@@ -86,9 +86,10 @@ export default function EquipamientoLanding() {
 
   const filtrosActivosCount = Object.values(filters).filter(Boolean).length;
 
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const totalPages = Math.ceil(equipamientoFiltrado.length / ITEMS_PER_PAGE);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(equipamientoFiltrado.length / ITEMS_PER_PAGE)
+  );
 
   const paginatedItems = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -100,12 +101,18 @@ export default function EquipamientoLanding() {
   }, [filters, searchQuery]);
 
   useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      window.history.replaceState({}, document.title);
+      navigate(location.pathname, { replace: true });
     }
-  }, [location.state]);
+  }, [location.state, navigate, location.pathname]);
 
   const setQuickEstado = (estado: "" | "todos" | "inactivos") => {
     setFilters((prev) => ({
@@ -158,7 +165,7 @@ export default function EquipamientoLanding() {
       setErrorMessage(
         invalidItems.length === 1
           ? "El equipamiento seleccionado ya fue eliminado."
-          : "Uno o más equipamientos seleccionados ya fueron eliminados."
+          : "Uno o mas equipamientos seleccionados ya fueron eliminados."
       );
       setShowError(true);
       return;
@@ -174,8 +181,8 @@ export default function EquipamientoLanding() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Equipamiento eliminado con éxito."
-          : "Equipamientos eliminados con éxito."
+          ? "Equipamiento eliminado con exito."
+          : "Equipamientos eliminados con exito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -194,7 +201,7 @@ export default function EquipamientoLanding() {
         );
       } else {
         setErrorMessage(
-          "Ocurrió un error inesperado al eliminar el equipamiento."
+          "Ocurrio un error inesperado al eliminar el equipamiento."
         );
       }
 
@@ -203,19 +210,19 @@ export default function EquipamientoLanding() {
   };
 
   return (
-    <section className="w-full min-h-[calc(100vh-80px)] px-4 md:px-6 py-4 flex flex-col text-sm">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+    <section className="w-full min-h-[calc(100vh-80px)] px-4 py-4 flex flex-col text-sm md:px-6">
+      <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <h2 className="text-2xl md:text-3xl font-semibold leading-none text-slate-800">
+          <h2 className="text-2xl font-semibold leading-none text-slate-800 md:text-3xl">
             Equipamiento e Infraestructura
           </h2>
-          <p className="text-xs text-slate-500 mt-2">
+          <p className="mt-2 text-xs text-slate-500">
             {equipamientoFiltrado.length} de {list.length} resultados
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2 items-center justify-end">
-          <div className="flex items-center rounded-lg border border-slate-200 bg-white overflow-hidden">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
             <button
               type="button"
               onClick={() => setQuickEstado("")}
@@ -231,7 +238,7 @@ export default function EquipamientoLanding() {
             <button
               type="button"
               onClick={() => setQuickEstado("todos")}
-              className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+              className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                 quickEstadoActual === "todos"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
@@ -243,7 +250,7 @@ export default function EquipamientoLanding() {
             <button
               type="button"
               onClick={() => setQuickEstado("inactivos")}
-              className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+              className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                 quickEstadoActual === "inactivos"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
@@ -256,8 +263,8 @@ export default function EquipamientoLanding() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por denominación o descripción..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-10 py-1.5 focus:bg-white focus:ring-2 focus:ring-slate-200 outline-none transition-all text-xs"
+              placeholder="Buscar por denominacion o descripcion..."
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -301,7 +308,7 @@ export default function EquipamientoLanding() {
               >
                 Filtros
                 {filtrosActivosCount > 0 && (
-                  <span className="ml-1.5 bg-slate-800 text-white text-[10px] rounded-full px-1.5 py-0.5">
+                  <span className="ml-1.5 rounded-full bg-slate-800 px-1.5 py-0.5 text-[10px] text-white">
                     {filtrosActivosCount}
                   </span>
                 )}
@@ -337,23 +344,23 @@ export default function EquipamientoLanding() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex flex-1 flex-col">
         {isLoading ? (
-          <p className="text-slate-500 text-center py-10">Cargando…</p>
+          <p className="py-10 text-center text-slate-500">Cargando...</p>
         ) : isError ? (
-          <p className="text-slate-500 text-center py-10">Error al cargar.</p>
+          <p className="py-10 text-center text-slate-500">Error al cargar.</p>
         ) : equipamientoFiltrado.length === 0 ? (
-          <p className="text-slate-500 text-center py-10">
+          <p className="py-10 text-center text-slate-500">
             No hay equipamiento registrado.
           </p>
         ) : (
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {paginatedItems.map((e) => (
               <Tarjeta
                 key={e.id}
                 item={e}
-                title={(x) => x.denominacion || "—"}
-                subtitle={(x) => x.descripcion_breve || "Sin descripción"}
+                title={(x) => x.denominacion || "-"}
+                subtitle={(x) => x.descripcion_breve || "Sin descripcion"}
                 badge={(x) => (x.deleted_at ? "INACTIVO" : "ACTIVO")}
                 selectable={puedeEliminar && selectMode}
                 selectDisabled={!!e.deleted_at}
@@ -367,40 +374,31 @@ export default function EquipamientoLanding() {
 
         {totalPages > 1 && (
           <div className="mt-auto pt-8">
-            <div className="flex justify-center items-center gap-2">
+            <div className="flex items-center justify-between">
               <Button
-                size="sm"
+                type="button"
                 variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => p - 1)}
               >
-                ←
+                Anterior
               </Button>
 
-              {[...Array(totalPages)].map((_, i) => {
-                const page = i + 1;
-                return (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-3 py-1 rounded-lg text-sm ${
-                      currentPage === page
-                        ? "bg-slate-800 text-white"
-                        : "bg-slate-100 hover:bg-slate-200"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                );
-              })}
+              <span className="text-sm text-slate-500">
+                Pagina {currentPage} de {totalPages}
+              </span>
 
               <Button
-                size="sm"
+                type="button"
                 variant="secondary"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
                 disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => p + 1)}
               >
-                →
+                Siguiente
               </Button>
             </div>
           </div>
@@ -410,15 +408,15 @@ export default function EquipamientoLanding() {
       <ConfirmDialog
         open={showConfirm}
         title="Eliminar equipamiento"
-        message="¿Eliminar los siguientes ítems?"
-        items={selectedActiveItems.map((e) => e.denominacion || "—")}
+        message="¿Eliminar los siguientes items?"
+        items={selectedActiveItems.map((e) => e.denominacion || "-")}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
       />
 
       <SuccessToast
         open={showSuccess}
-        message={successMessage || "Eliminado con éxito!"}
+        message={successMessage || "Eliminado con exito."}
         onClose={() => setShowSuccess(false)}
       />
 
@@ -426,25 +424,26 @@ export default function EquipamientoLanding() {
         open={showError}
         message={errorMessage}
         onClose={() => setShowError(false)}
+        variant="error"
       />
 
       {showFilters && (
         <>
           <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
             onClick={() => setShowFilters(false)}
           />
 
-          <div className="fixed top-0 right-0 h-full w-[380px] bg-white z-50 shadow-2xl p-6 flex flex-col overflow-y-auto">
-            <h3 className="text-xl font-semibold mb-6">Filtros Avanzados</h3>
+          <div className="fixed top-0 right-0 z-50 flex h-full w-[380px] flex-col overflow-y-auto bg-white p-6 shadow-2xl">
+            <h3 className="mb-6 text-xl font-semibold">Filtros avanzados</h3>
 
-            <div className="space-y-5 flex-1 text-[11px]">
+            <div className="flex-1 space-y-5 text-[11px]">
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
                   Estado
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.estado}
                   onChange={(e) =>
                     setTempFilters({
@@ -460,12 +459,12 @@ export default function EquipamientoLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
-                  Monto mínimo
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
+                  Monto minimo
                 </label>
                 <input
                   type="number"
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.montoMin}
                   onChange={(e) =>
                     setTempFilters({
@@ -478,12 +477,12 @@ export default function EquipamientoLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
-                  Monto máximo
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
+                  Monto maximo
                 </label>
                 <input
                   type="number"
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.montoMax}
                   onChange={(e) =>
                     setTempFilters({
@@ -496,11 +495,11 @@ export default function EquipamientoLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
-                  Año de incorporación
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
+                  Ano de incorporacion
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.anio}
                   onChange={(e) =>
                     setTempFilters({
@@ -519,7 +518,7 @@ export default function EquipamientoLanding() {
               </div>
             </div>
 
-            <div className="flex justify-between gap-2 pt-6 border-t mt-4">
+            <div className="mt-4 flex justify-between gap-2 border-t pt-6">
               <Button
                 variant="secondary"
                 className="flex-1"
