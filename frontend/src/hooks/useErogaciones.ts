@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { getErogaciones, type Erogaciones } from "@/services/erogacionesServices";
+import { getErogaciones, type Erogacion } from "@/services/erogacionesServices";
 
 export function useErogaciones(
   activos: "true" | "false" | "all" = "true"
 ) {
-  const { data = [], isLoading, isError } = useQuery<Erogaciones[]>({
+  const { data = [], isLoading, isError } = useQuery<Erogacion[]>({
     queryKey: ["erogaciones", activos],
     queryFn: () => getErogaciones(activos),
     staleTime: 60_000,
