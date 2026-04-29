@@ -111,9 +111,6 @@ class AuthService:
         dni: str | None = None,
         es_primer_usuario: bool = False
     ) -> Usuario:
-        if not es_primer_usuario and not AuthService.es_primer_usuario():
-            raise Exception("El sistema ya ha sido inicializado. No se permiten nuevos registros abiertos.")
-
         existe = Usuario.query.filter(
             (Usuario.nombre_usuario == nombre_usuario) |
             (Usuario.mail == mail)
