@@ -24,6 +24,8 @@ from core.models.trabajo_revista import TrabajosRevistasReferato
 from core.models.transferencia_socio import TransferenciaSocioProductiva, AdoptanteTransferencia
 from core.models.visita_grupo import VisitaAcademica
 from core.models.programa_actividades import PlanificacionGrupo
+from core.models.memorias import EstadoMemoria
+from core.services.memoria_service import MemoriaService
 
 
 class ExportService:
@@ -467,6 +469,428 @@ class ExportService:
                 if participacion.directivo and participacion.directivo.deleted_at is None:
                     return participacion.directivo.nombre_apellido
         return "-"
+
+    @staticmethod
+    def _join_dict_names(items: Sequence[dict] | None, key: str, fallback: str = "-"):
+        if not items:
+            return fallback
+
+        values = []
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            value = item.get(key)
+            if value:
+                values.append(str(value))
+
+        return ", ".join(values) if values else fallback
+
+    @classmethod
+    def _build_memoria_snapshot_sources(cls, memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        if version.estado != EstadoMemoria.CERRADA:
+            raise ValueError("Solo puede exportarse una memoria con version cerrada")
+
+        return {
+            "memoria": memoria,
+            "version": version,
+            "investigadores": MemoriaService.get_investigadores_snapshot(memoria_id, memoria_version_id),
+            "becarios": MemoriaService.get_becarios_snapshot(memoria_id, memoria_version_id),
+            "personal": MemoriaService.get_personal_snapshot(memoria_id, memoria_version_id),
+            "proyectos": MemoriaService.get_proyectos_snapshot(memoria_id, memoria_version_id),
+            "actividades": MemoriaService.get_actividades_docencia_snapshot(memoria_id, memoria_version_id),
+            "participaciones": MemoriaService.get_participaciones_relevantes_snapshot(memoria_id, memoria_version_id),
+            "documentacion": MemoriaService.get_documentacion_snapshot(memoria_id, memoria_version_id),
+            "equipamiento": MemoriaService.get_equipamiento_snapshot(memoria_id, memoria_version_id),
+            "erogaciones": MemoriaService.get_erogaciones_snapshot(memoria_id, memoria_version_id),
+            "transferencias": MemoriaService.get_transferencias_snapshot(memoria_id, memoria_version_id),
+            "trabajos_reunion": MemoriaService.get_trabajos_reunion_snapshot(memoria_id, memoria_version_id),
+            "trabajos_revista": MemoriaService.get_trabajos_revista_snapshot(memoria_id, memoria_version_id),
+            "distinciones": MemoriaService.get_distinciones_snapshot(memoria_id, memoria_version_id),
+            "registros": MemoriaService.get_registros_propiedad_snapshot(memoria_id, memoria_version_id),
+            "articulos": MemoriaService.get_articulos_divulgacion_snapshot(memoria_id, memoria_version_id),
+            "visitas": MemoriaService.get_visitas_snapshot(memoria_id, memoria_version_id),
+        }
+
+    @classmethod
+    def generar_excel_memoria(cls, memoria_id: int, memoria_version_id: int):
+        snapshot_sources = cls._build_memoria_snapshot_sources(
+            memoria_id,
+            memoria_version_id
+        )
+
+        memoria = snapshot_sources["memoria"]
+        version = snapshot_sources["version"]
+
+        wb, ws = cls._build_workbook()
+
+        anio_memoria = memoria.periodo_fin.year if memoria.periodo_fin else date.today().year
+        row = 1
+        row = cls._write_title(
+            ws,
+            row,
+            f"MEMORIA {anio_memoria} - VERSION {version.numero_version}"
+        )
+        row = cls._write_section(ws, row, "I.- DATOS DE LA MEMORIA")
+        row = cls._write_label_value(ws, row, "Periodo de inicio", memoria.periodo_inicio)
+        row = cls._write_label_value(ws, row, "Periodo de fin", memoria.periodo_fin)
+        row = cls._write_label_value(ws, row, "Numero de version", version.numero_version)
+        row = cls._write_label_value(ws, row, "Estado", version.estado.value if version.estado else "-")
+        row = cls._write_label_value(ws, row, "Fecha de apertura", version.fecha_apertura)
+        row = cls._write_label_value(ws, row, "Fecha de cierre", version.fecha_cierre)
+
+        row = cls._write_section(ws, row, "II.- ELEMENTOS REGISTRADOS EN EL SNAPSHOT")
+
+        investigadores_rows = [
+            [
+                idx,
+                item.get("nombre_apellido"),
+                item.get("categoria_utn_nombre") or "-",
+                item.get("programa_incentivos_nombre") or "-",
+                item.get("tipo_dedicacion_nombre") or "-",
+                item.get("horas_semanales"),
+            ]
+            for idx, item in enumerate(snapshot_sources["investigadores"], start=1)
+        ]
+        row = cls._write_table(
+            ws,
+            row,
+            "1.- Investigadores",
+            ["Nro.", "Apellido y nombre", "Categoria UTN", "Programa de incentivos", "Tipo de dedicacion", "Carga horaria semanal"],
+            investigadores_rows,
+            merge_span=10,
+        )
+
+        becarios_rows = [
+            [
+                idx,
+                item.get("nombre_apellido"),
+                item.get("tipo_formacion_nombre") or "-",
+                item.get("becas_percibidas") or "-",
+                item.get("fuentes_financiamiento_beca") or "-",
+                item.get("horas_semanales"),
+            ]
+            for idx, item in enumerate(snapshot_sources["becarios"], start=1)
+        ]
+        row = cls._write_table(
+            ws,
+            row,
+            "2.- Becarios",
+            ["Nro.", "Apellido y nombre", "Tipo de formacion", "Becas asociadas", "Fuente de financiamiento", "Carga horaria semanal"],
+            becarios_rows,
+            merge_span=10,
+        )
+
+        personal_rows = [
+            [
+                idx,
+                item.get("nombre_apellido"),
+                item.get("tipo_personal_nombre") or "-",
+                item.get("horas_semanales"),
+            ]
+            for idx, item in enumerate(snapshot_sources["personal"], start=1)
+        ]
+        row = cls._write_table(
+            ws,
+            row,
+            "3.- Personal",
+            ["Nro.", "Apellido y nombre", "Tipo de personal", "Carga horaria semanal"],
+            personal_rows,
+            merge_span=8,
+        )
+
+        proyectos_rows = [
+            [
+                idx,
+                item.get("codigo_proyecto"),
+                item.get("nombre_proyecto"),
+                item.get("tipo_proyecto_nombre") or "-",
+                item.get("fuente_financiamiento_nombre") or "-",
+                cls._money(item.get("monto_destinado")),
+                item.get("fecha_inicio"),
+                item.get("fecha_fin"),
+            ]
+            for idx, item in enumerate(snapshot_sources["proyectos"], start=1)
+        ]
+        row = cls._write_table(
+            ws,
+            row,
+            "4.- Proyectos de investigacion",
+            ["Nro.", "Codigo", "Nombre", "Tipo de proyecto", "Fuente de financiamiento", "Monto", "Fecha de inicio", "Fecha de fin"],
+            proyectos_rows,
+            merge_span=10,
+            date_cols={7, 8},
+            money_cols={6},
+        )
+
+        actividades_rows = [
+            [
+                idx,
+                item.get("curso"),
+                item.get("institucion"),
+                item.get("investigador_nombre") or "-",
+                item.get("grado_academico_nombre") or "-",
+                item.get("rol_actividad_nombre") or "-",
+                item.get("fecha_inicio"),
+                item.get("fecha_fin"),
+            ]
+            for idx, item in enumerate(snapshot_sources["actividades"], start=1)
+        ]
+        row = cls._write_table(
+            ws,
+            row,
+            "5.- Actividades en docencia",
+            ["Nro.", "Curso", "Institucion", "Investigador", "Grado academico", "Rol", "Fecha de inicio", "Fecha de fin"],
+            actividades_rows,
+            merge_span=10,
+            date_cols={7, 8},
+        )
+
+        participaciones_rows = [
+            [
+                idx,
+                item.get("nombre_evento"),
+                item.get("forma_participacion"),
+                item.get("fecha"),
+                item.get("investigador_nombre") or "-",
+            ]
+            for idx, item in enumerate(snapshot_sources["participaciones"], start=1)
+        ]
+        row = cls._write_table(
+            ws,
+            row,
+            "6.- Participaciones relevantes",
+            ["Nro.", "Evento", "Forma de participacion", "Fecha", "Investigador"],
+            participaciones_rows,
+            merge_span=8,
+            date_cols={4},
+        )
+
+        documentacion_rows = [
+            [
+                idx,
+                item.get("titulo"),
+                cls._join_dict_names(item.get("autores"), "nombre_apellido"),
+                item.get("editorial"),
+                item.get("anio"),
+                item.get("fecha"),
+            ]
+            for idx, item in enumerate(snapshot_sources["documentacion"], start=1)
+        ]
+        row = cls._write_table(
+            ws,
+            row,
+            "7.- Documentacion bibliografica",
+            ["Nro.", "Titulo", "Autores", "Editorial", "Anio", "Fecha"],
+            documentacion_rows,
+            merge_span=10,
+            date_cols={6},
+        )
+
+        equipamiento_rows = [
+            [
+                idx,
+                item.get("denominacion"),
+                item.get("descripcion_breve"),
+                item.get("fecha_incorporacion"),
+                cls._money(item.get("monto_invertido")),
+            ]
+            for idx, item in enumerate(snapshot_sources["equipamiento"], start=1)
+        ]
+        row = cls._write_table(
+            ws,
+            row,
+            "8.- Equipamiento",
+            ["Nro.", "Denominacion", "Descripcion", "Fecha de incorporacion", "Monto invertido"],
+            equipamiento_rows,
+            merge_span=8,
+            date_cols={4},
+            money_cols={5},
+        )
+
+        erogaciones_rows = [
+            [
+                idx,
+                item.get("numero_erogacion"),
+                item.get("fecha"),
+                item.get("tipo_erogacion_nombre") or "-",
+                item.get("fuente_financiamiento_nombre") or "-",
+                cls._money(item.get("ingresos")),
+                cls._money(item.get("egresos")),
+                cls._money(item.get("ingresos")) - cls._money(item.get("egresos")),
+            ]
+            for idx, item in enumerate(snapshot_sources["erogaciones"], start=1)
+        ]
+        row = cls._write_table(
+            ws,
+            row,
+            "9.- Erogaciones",
+            ["Nro.", "Numero", "Fecha", "Tipo", "Fuente", "Ingresos", "Egresos", "Saldo"],
+            erogaciones_rows,
+            merge_span=10,
+            date_cols={3},
+            money_cols={6, 7, 8},
+        )
+
+        transferencias_rows = [
+            [
+                idx,
+                item.get("numero_transferencia"),
+                item.get("denominacion"),
+                item.get("demandante"),
+                item.get("tipo_contrato_nombre") or "-",
+                cls._join_dict_names(item.get("adoptantes"), "adoptante_nombre"),
+                cls._money(item.get("monto")),
+                item.get("fecha_inicio"),
+                item.get("fecha_fin"),
+            ]
+            for idx, item in enumerate(snapshot_sources["transferencias"], start=1)
+        ]
+        row = cls._write_table(
+            ws,
+            row,
+            "10.- Transferencias socio-productivas",
+            ["Nro.", "Numero", "Denominacion", "Demandante", "Tipo de contrato", "Adoptantes", "Monto", "Fecha de inicio", "Fecha de fin"],
+            transferencias_rows,
+            merge_span=11,
+            date_cols={8, 9},
+            money_cols={7},
+        )
+
+        trabajos_reunion_rows = [
+            [
+                idx,
+                item.get("titulo_trabajo"),
+                item.get("nombre_reunion"),
+                item.get("procedencia"),
+                item.get("tipo_reunion_nombre") or "-",
+                item.get("investigadores_participantes") or "-",
+                item.get("fecha_inicio"),
+            ]
+            for idx, item in enumerate(snapshot_sources["trabajos_reunion"], start=1)
+        ]
+        row = cls._write_table(
+            ws,
+            row,
+            "11.- Trabajos en reunion cientifica",
+            ["Nro.", "Titulo", "Reunion", "Procedencia", "Tipo", "Investigadores", "Fecha"],
+            trabajos_reunion_rows,
+            merge_span=10,
+            date_cols={7},
+        )
+
+        trabajos_revista_rows = [
+            [
+                idx,
+                item.get("titulo_trabajo"),
+                item.get("nombre_revista"),
+                item.get("editorial"),
+                item.get("issn"),
+                item.get("pais"),
+                item.get("tipo_reunion_nombre") or "-",
+                item.get("investigadores_participantes") or "-",
+                item.get("fecha"),
+            ]
+            for idx, item in enumerate(snapshot_sources["trabajos_revista"], start=1)
+        ]
+        row = cls._write_table(
+            ws,
+            row,
+            "12.- Trabajos en revistas",
+            ["Nro.", "Titulo", "Revista", "Editorial", "ISSN", "Pais", "Tipo", "Investigadores", "Fecha"],
+            trabajos_revista_rows,
+            merge_span=11,
+            date_cols={8},
+        )
+
+        distinciones_rows = [
+            [
+                idx,
+                item.get("fecha"),
+                item.get("descripcion"),
+                item.get("proyecto_nombre") or "-",
+                item.get("proyecto_codigo") or "-",
+            ]
+            for idx, item in enumerate(snapshot_sources["distinciones"], start=1)
+        ]
+        row = cls._write_table(
+            ws,
+            row,
+            "13.- Distinciones",
+            ["Nro.", "Fecha", "Descripcion", "Proyecto", "Codigo de proyecto"],
+            distinciones_rows,
+            merge_span=9,
+            date_cols={2},
+        )
+
+        registros_rows = [
+            [
+                idx,
+                item.get("nombre_articulo"),
+                item.get("organismo_registrante"),
+                item.get("tipo_registro_nombre") or "-",
+                item.get("fecha_registro"),
+            ]
+            for idx, item in enumerate(snapshot_sources["registros"], start=1)
+        ]
+        row = cls._write_table(
+            ws,
+            row,
+            "14.- Registros de propiedad",
+            ["Nro.", "Nombre", "Organismo registrante", "Tipo de registro", "Fecha de registro"],
+            registros_rows,
+            merge_span=9,
+            date_cols={5},
+        )
+
+        articulos_rows = [
+            [
+                idx,
+                item.get("titulo"),
+                item.get("descripcion"),
+                item.get("fecha_publicacion"),
+            ]
+            for idx, item in enumerate(snapshot_sources["articulos"], start=1)
+        ]
+        row = cls._write_table(
+            ws,
+            row,
+            "15.- Articulos de divulgacion",
+            ["Nro.", "Titulo", "Descripcion", "Fecha de publicacion"],
+            articulos_rows,
+            merge_span=8,
+            date_cols={4},
+        )
+
+        visitas_rows = [
+            [
+                idx,
+                item.get("razon"),
+                item.get("procedencia"),
+                item.get("tipo_visita_nombre") or "-",
+                item.get("fecha"),
+            ]
+            for idx, item in enumerate(snapshot_sources["visitas"], start=1)
+        ]
+        row = cls._write_table(
+            ws,
+            row,
+            "16.- Visitas academicas",
+            ["Nro.", "Razon", "Procedencia", "Tipo de visita", "Fecha"],
+            visitas_rows,
+            merge_span=8,
+            date_cols={5},
+        )
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        return output
 
     @classmethod
     def generar_excel_grupo(cls, grupo_id: int | None = 1):

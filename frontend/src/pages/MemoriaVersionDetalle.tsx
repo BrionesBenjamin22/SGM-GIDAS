@@ -1,8 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery } from "@tanstack/react-query";
 import Button from "@/components/Button";
+import SuccessToast from "@/components/SuccessToast";
+import { useAuth } from "@/context/AuthContext";
 import {
+  exportarExcelMemoria,
   getActividadesDocenciaSnapshot,
   getArticulosDivulgacionSnapshot,
   getBecariosSnapshot,
@@ -183,9 +186,13 @@ function getSnapshotEntityId(sectionKey: string, entry: any) {
 export default function MemoriaVersionDetalle() {
   const { id, versionId } = useParams<{ id: string; versionId: string }>();
   const navigate = useNavigate();
+  const { isAdmin, isGestor } = useAuth();
 
   const memoriaId = Number(id);
   const memoriaVersionId = Number(versionId);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [message, setMessage] = useState("");
 
   const { data: memoria, isLoading: isLoadingMemoria } = useQuery({
     queryKey: ["memoria", id],
@@ -217,6 +224,23 @@ export default function MemoriaVersionDetalle() {
   const versionCerrada = versionActual?.estado === "cerrada";
   const sectionsWithItems = sectionData.filter((section) => section.items.length > 0);
   const numeroVersionMemoria = versionActual?.numero_version ?? memoriaVersionId;
+  const puedeExportarExcel = versionCerrada && (isAdmin() || isGestor());
+
+  const { mutate: descargarExcel, isPending: isExportingExcel } = useMutation({
+    mutationFn: () => exportarExcelMemoria(memoriaId, memoriaVersionId),
+    onSuccess: (result) => {
+      setMessage(`Excel generado con exito: ${result.filename}`);
+      setShowSuccess(true);
+    },
+    onError: (error) => {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "No se pudo generar el Excel de la memoria."
+      );
+      setShowError(true);
+    },
+  });
 
   const handleNavigateToSection = (section: SnapshotSection) => {
     if (!section.homePath) return;
@@ -262,13 +286,21 @@ export default function MemoriaVersionDetalle() {
           <p className="mt-1 text-xs text-slate-500">Version {numeroVersionMemoria}</p>
         </div>
 
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => navigate(`/memorias/${memoria.id}`)}
-        >
-          Volver
-        </Button>
+        <div className="flex items-center gap-2">
+          {puedeExportarExcel && (
+            <Button size="sm" onClick={() => descargarExcel()} disabled={isExportingExcel}>
+              {isExportingExcel ? "Generando Excel..." : "Generar Excel"}
+            </Button>
+          )}
+
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => navigate(`/memorias/${memoria.id}`)}
+          >
+            Volver
+          </Button>
+        </div>
       </div>
 
       {isLoadingSnapshots ? (
@@ -375,6 +407,19 @@ export default function MemoriaVersionDetalle() {
           </div>
         </div>
       )}
+
+      <SuccessToast
+        open={showSuccess}
+        message={message}
+        onClose={() => setShowSuccess(false)}
+      />
+
+      <SuccessToast
+        open={showError}
+        message={message}
+        onClose={() => setShowError(false)}
+        variant="error"
+      />
     </section>
   );
 }

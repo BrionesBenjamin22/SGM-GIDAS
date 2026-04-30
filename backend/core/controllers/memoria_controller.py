@@ -1,6 +1,7 @@
-from flask import jsonify, request, g
+from flask import jsonify, request, g, send_file
 
 from core.services.memoria_service import MemoriaService
+from core.services.exportacion_service_impl import ExportService
 
 
 class MemoriaController:
@@ -213,6 +214,35 @@ class MemoriaController:
             ), 200
         except Exception as e:
             return jsonify({"error": str(e)}), 404
+
+    @staticmethod
+    def exportar_excel(memoria_id, memoria_version_id):
+        try:
+            archivo = ExportService.generar_excel_memoria(
+                memoria_id,
+                memoria_version_id
+            )
+            memoria = MemoriaService.get_by_id(memoria_id)
+            versiones = memoria.get("versiones", [])
+            version = next(
+                (item for item in versiones if item.get("id") == memoria_version_id),
+                None
+            )
+            anio = memoria["periodo_fin"][:4] if memoria.get("periodo_fin") else "memoria"
+            numero_version = (
+                version.get("numero_version")
+                if version and version.get("numero_version") is not None
+                else memoria_version_id
+            )
+
+            return send_file(
+                archivo,
+                as_attachment=True,
+                download_name=f"memoria_{anio}_v{numero_version}.xlsx",
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
 
     @staticmethod
     def create():
