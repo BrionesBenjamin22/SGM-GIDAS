@@ -8,7 +8,7 @@ from core.models.distinciones import (
 )
 from core.models.proyecto_investigacion import ProyectoInvestigacion
 from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
+from core.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 
 
@@ -297,11 +297,7 @@ class DistincionRecibidaService:
 
         snapshots = []
         for distincion in distinciones:
-            if not estuvo_activo_en_periodo_memoria(
-                memoria_version,
-                distincion.fecha,
-                getattr(distincion, "deleted_at", None)
-            ):
+            if not esta_en_periodo_memoria(memoria_version, distincion.fecha):
                 continue
             snapshot = DistincionRecibidaMemoriaVersion(
                 memoria_version_id=memoria_version.id,

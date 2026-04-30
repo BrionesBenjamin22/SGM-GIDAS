@@ -135,6 +135,7 @@ export default function MemoriaDetalle() {
   }
 
   const anioMemoria = new Date(`${memoria.periodo_fin}T00:00:00`).getFullYear();
+  const snapshotDisponible = versionActual.estado === "cerrada";
 
   return (
     <>
@@ -162,11 +163,12 @@ export default function MemoriaDetalle() {
             <Button
               variant="secondary"
               size="sm"
+              disabled={!snapshotDisponible}
               onClick={() =>
                 navigate(`/memorias/${memoria.id}/versiones/${versionActual.id}`)
               }
             >
-              Ver elementos registrados
+              {snapshotDisponible ? "Ver elementos registrados" : "Snapshot pendiente"}
             </Button>
 
             {puedeEditar &&
@@ -289,15 +291,21 @@ export default function MemoriaDetalle() {
                 </div>
 
                 <div className="flex justify-start md:justify-end">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() =>
-                      navigate(`/memorias/${memoria.id}/versiones/${version.id}`)
-                    }
-                  >
-                    Ver elementos
-                  </Button>
+                  {version.estado === "cerrada" ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() =>
+                        navigate(`/memorias/${memoria.id}/versiones/${version.id}`)
+                      }
+                    >
+                      Ver elementos
+                    </Button>
+                  ) : (
+                    <Button variant="secondary" size="sm" disabled>
+                      Snapshot pendiente
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}

@@ -11,7 +11,6 @@ import {
   deleteMemoria,
   getMemorias,
   type Memoria,
-  type MemoriaActivosFilter,
 } from "@/services/memoriasService";
 import { formatFecha } from "@/utils/formatFecha";
 
@@ -68,7 +67,7 @@ export default function MemoriasHome() {
   const puedeCrear = isAdmin();
   const puedeEliminar = isAdmin();
 
-  const [estadoRapido, setEstadoRapido] = useState<MemoriaActivosFilter>("true");
+  const [estadoRapido, setEstadoRapido] = useState<"activas" | "todas" | "cerradas">("activas");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectMode, setSelectMode] = useState(false);
@@ -80,8 +79,8 @@ export default function MemoriasHome() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const { data: memorias = [], isLoading, isError } = useQuery({
-    queryKey: ["memorias", estadoRapido],
-    queryFn: () => getMemorias(estadoRapido),
+    queryKey: ["memorias"],
+    queryFn: () => getMemorias("true"),
   });
 
   useEffect(() => {
@@ -96,9 +95,19 @@ export default function MemoriasHome() {
     const query = searchQuery.toLowerCase().trim();
 
     return memorias.filter((memoria) => {
+      const estadoActual = memoria.version_actual?.estado;
+
+      if (estadoRapido === "activas" && estadoActual === "cerrada") {
+        return false;
+      }
+
+      if (estadoRapido === "cerradas" && estadoActual !== "cerrada") {
+        return false;
+      }
+
       if (!query) return true;
 
-      const estado = memoria.version_actual?.estado || "";
+      const estado = estadoActual || "";
       const numeroVersion = memoria.version_actual?.numero_version || "";
 
       return [
@@ -111,7 +120,7 @@ export default function MemoriasHome() {
         .toLowerCase()
         .includes(query);
     });
-  }, [memorias, searchQuery]);
+  }, [memorias, searchQuery, estadoRapido]);
 
   const totalPages = Math.max(
     1,
@@ -193,9 +202,9 @@ export default function MemoriasHome() {
           <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
             <button
               type="button"
-              onClick={() => setEstadoRapido("true")}
+              onClick={() => setEstadoRapido("activas")}
               className={`px-3 py-1.5 text-xs transition-colors ${
-                estadoRapido === "true"
+                estadoRapido === "activas"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
               }`}
@@ -205,9 +214,9 @@ export default function MemoriasHome() {
 
             <button
               type="button"
-              onClick={() => setEstadoRapido("all")}
+              onClick={() => setEstadoRapido("todas")}
               className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
-                estadoRapido === "all"
+                estadoRapido === "todas"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
               }`}
@@ -217,14 +226,14 @@ export default function MemoriasHome() {
 
             <button
               type="button"
-              onClick={() => setEstadoRapido("false")}
+              onClick={() => setEstadoRapido("cerradas")}
               className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
-                estadoRapido === "false"
+                estadoRapido === "cerradas"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
               }`}
             >
-              Inactivas
+              Cerradas
             </button>
           </div>
 

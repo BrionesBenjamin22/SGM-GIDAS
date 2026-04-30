@@ -10,7 +10,7 @@ from core.models.trabajo_reunion import (
     TrabajoReunionCientificaMemoriaVersion,
 )
 from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
+from core.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 
 
@@ -543,11 +543,7 @@ class TrabajoReunionCientificaService:
 
         snapshots = []
         for trabajo in trabajos:
-            if not estuvo_activo_en_periodo_memoria(
-                memoria_version,
-                trabajo.fecha_inicio,
-                getattr(trabajo, "deleted_at", None)
-            ):
+            if not esta_en_periodo_memoria(memoria_version, trabajo.fecha_inicio):
                 continue
             investigadores_participantes = ", ".join(sorted([
                 investigador.nombre_apellido

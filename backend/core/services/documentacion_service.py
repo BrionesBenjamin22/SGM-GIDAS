@@ -8,7 +8,7 @@ from core.models.documentacion_autores import (
     DocumentacionBibliograficaAutorMemoriaVersion,
 )
 from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
+from core.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 
 
@@ -241,11 +241,7 @@ class DocumentacionBibliograficaService:
 
         snapshots = []
         for doc in documentos:
-            if not estuvo_activo_en_periodo_memoria(
-                memoria_version,
-                doc.fecha,
-                getattr(doc, "deleted_at", None)
-            ):
+            if not esta_en_periodo_memoria(memoria_version, doc.fecha):
                 continue
             snapshot = DocumentacionBibliograficaMemoriaVersion(
                 memoria_version_id=memoria_version.id,

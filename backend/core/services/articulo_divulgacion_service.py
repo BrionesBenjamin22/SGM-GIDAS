@@ -7,7 +7,7 @@ from core.models.articulo_divulgacion import (
 )
 from core.models.grupo import GrupoInvestigacionUtn
 from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
+from core.services.memoria_periodo_service import esta_en_periodo_memoria
 
 
 class ArticuloDivulgacionService:
@@ -276,10 +276,9 @@ class ArticuloDivulgacionService:
 
         snapshots = []
         for articulo in articulos:
-            if not estuvo_activo_en_periodo_memoria(
+            if not esta_en_periodo_memoria(
                 memoria_version,
-                articulo.fecha_publicacion,
-                getattr(articulo, "deleted_at", None)
+                articulo.fecha_publicacion
             ):
                 continue
             snapshot = ArticuloDivulgacionMemoriaVersion(

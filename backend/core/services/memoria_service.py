@@ -104,7 +104,45 @@ class MemoriaService:
                 "La fecha de inicio del periodo no puede ser mayor a la fecha de fin"
             )
 
+        if fecha_inicio.year != fecha_fin.year:
+            raise ValueError(
+                "La memoria debe corresponder a un unico anio calendario"
+            )
+
         return fecha_inicio, fecha_fin
+
+    @staticmethod
+    def _validar_unicidad_anual(periodo_fin, memoria_id_excluida: int | None = None):
+        query = Memoria.query.filter(Memoria.deleted_at.is_(None))
+
+        if memoria_id_excluida is not None:
+            query = query.filter(Memoria.id != memoria_id_excluida)
+
+        memorias = query.all()
+        for memoria in memorias:
+            if memoria.periodo_fin and memoria.periodo_fin.year == periodo_fin.year:
+                raise ValueError(
+                    f"Ya existe una memoria registrada para el anio {periodo_fin.year}"
+                )
+
+    @staticmethod
+    def _validar_unica_memoria_activa(memoria_id_excluida: int | None = None):
+        query = Memoria.query.filter(Memoria.deleted_at.is_(None))
+
+        if memoria_id_excluida is not None:
+            query = query.filter(Memoria.id != memoria_id_excluida)
+
+        memorias = query.all()
+        for memoria in memorias:
+            version_actual = memoria.version_actual
+            if (
+                version_actual
+                and version_actual.deleted_at is None
+                and version_actual.estado != EstadoMemoria.CERRADA
+            ):
+                raise ValueError(
+                    "Solo puede existir una memoria activa a la vez"
+                )
 
     @staticmethod
     def _resolver_fecha_apertura(fecha_apertura):
@@ -526,6 +564,8 @@ class MemoriaService:
             data.get("periodo_inicio"),
             data.get("periodo_fin")
         )
+        MemoriaService._validar_unicidad_anual(periodo_fin)
+        MemoriaService._validar_unica_memoria_activa()
 
         memoria = Memoria(
             periodo_inicio=periodo_inicio,
@@ -704,6 +744,8 @@ class MemoriaService:
             raise ValueError(
                 "Solo se puede crear una nueva version a partir de una memoria cerrada"
             )
+
+        MemoriaService._validar_unica_memoria_activa(memoria_id_excluida=memoria.id)
 
         # Reabrir no muta la version historica cerrada: crea una nueva version
         # editable y la convierte en la version actual de la memoria.

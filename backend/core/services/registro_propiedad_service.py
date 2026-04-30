@@ -10,7 +10,7 @@ from core.models.registro_patente import (
 )
 from core.models.grupo import GrupoInvestigacionUtn
 from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
+from core.services.memoria_periodo_service import esta_en_periodo_memoria
 
 
 class RegistrosPropiedadService:
@@ -314,10 +314,9 @@ class RegistrosPropiedadService:
 
         snapshots = []
         for registro in registros:
-            if not estuvo_activo_en_periodo_memoria(
+            if not esta_en_periodo_memoria(
                 memoria_version,
-                registro.fecha_registro,
-                getattr(registro, "deleted_at", None)
+                registro.fecha_registro
             ):
                 continue
             snapshot = RegistrosPropiedadMemoriaVersion(

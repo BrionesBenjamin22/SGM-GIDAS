@@ -146,116 +146,38 @@ const sections: SnapshotSection[] = [
   },
 ];
 
-function pickValue(item: any, keys: string[]) {
-  for (const key of keys) {
-    const value = item?.[key];
-    const isRenderable =
-      typeof value === "string" || typeof value === "number";
-
-    if (isRenderable && String(value).trim()) {
-      return String(value);
-    }
-  }
-
-  return "";
-}
-
-function getEntryPreview(sectionKey: string, item: any) {
-  switch (sectionKey) {
-    case "investigadores":
-    case "becarios":
-    case "personal":
-      return {
-        title: pickValue(item, ["nombre_apellido"]),
-        subtitle: pickValue(item, ["rol", "tipo_personal", "tipo_formacion"]),
-      };
-    case "proyectos":
-      return {
-        title: pickValue(item, ["nombre_proyecto", "codigo_proyecto"]),
-        subtitle: pickValue(item, ["codigo_proyecto", "tipo_proyecto"]),
-      };
-    case "actividades-docencia":
-      return {
-        title: pickValue(item, ["curso"]),
-        subtitle: pickValue(item, ["investigador", "institucion", "rol_actividad"]),
-      };
-    case "participaciones-relevantes":
-      return {
-        title: pickValue(item, ["nombre_evento"]),
-        subtitle: pickValue(item, ["investigador", "forma_participacion"]),
-      };
-    case "documentacion-bibliografica":
-      return {
-        title: pickValue(item, ["titulo"]),
-        subtitle: pickValue(item, ["editorial"]),
-      };
-    case "equipamiento":
-      return {
-        title: pickValue(item, ["denominacion"]),
-        subtitle: pickValue(item, ["descripcion_breve"]),
-      };
-    case "erogaciones":
-      return {
-        title: pickValue(item, ["numero_erogacion"])
-          ? `Erogacion Nro ${String(item.numero_erogacion).padStart(6, "0")}`
-          : "Erogacion",
-        subtitle:
-          pickValue(item, ["tipo_erogacion_nombre", "tipo_erogacion"]) ||
-          "Resumen financiero",
-      };
-    case "transferencias":
-      return {
-        title: pickValue(item, ["denominacion", "descripcion_actividad"]),
-        subtitle: pickValue(item, ["demandante", "tipo_contrato"]),
-      };
-    case "trabajos-reunion-cientifica":
-      return {
-        title: pickValue(item, ["titulo_trabajo"]),
-        subtitle: pickValue(item, ["nombre_reunion", "procedencia"]),
-      };
-    case "trabajos-revistas":
-      return {
-        title: pickValue(item, ["titulo_trabajo"]),
-        subtitle: pickValue(item, ["nombre_revista", "editorial"]),
-      };
-    case "distinciones":
-      return {
-        title: pickValue(item, ["descripcion"]),
-        subtitle: pickValue(item, ["proyecto_nombre", "proyecto"]),
-      };
-    case "registros-propiedad":
-      return {
-        title: pickValue(item, ["nombre_articulo"]),
-        subtitle: pickValue(item, ["tipo_registro", "organismo_registrante"]),
-      };
-    case "articulos-divulgacion":
-      return {
-        title: pickValue(item, ["titulo"]),
-        subtitle: pickValue(item, ["descripcion", "grupo_utn_nombre"]),
-      };
-    case "visitas-academicas":
-      return {
-        title: pickValue(item, ["razon", "tipo_visita"]),
-        subtitle: pickValue(item, ["procedencia", "tipo_visita"]),
-      };
-    default:
-      return {
-        title: pickValue(item, [
-          "nombre_apellido",
-          "nombre_proyecto",
-          "titulo_trabajo",
-          "titulo",
-          "denominacion",
-          "descripcion",
-        ]),
-        subtitle: "",
-      };
-  }
-}
-
 function buildMemoriaLabel(memoria: any) {
   const year = memoria?.periodo_fin ? new Date(memoria.periodo_fin).getFullYear() : "";
   return year ? `Memoria ${year}` : "Memoria";
+}
+
+const snapshotEntityIdKeys: Record<string, string> = {
+  investigadores: "investigador_id",
+  becarios: "becario_id",
+  personal: "personal_id",
+  proyectos: "proyecto_investigacion_id",
+  "actividades-docencia": "actividad_docencia_id",
+  "participaciones-relevantes": "participacion_relevante_id",
+  "documentacion-bibliografica": "documentacion_bibliografica_id",
+  equipamiento: "equipamiento_id",
+  erogaciones: "erogacion_id",
+  transferencias: "transferencia_id",
+  "trabajos-reunion-cientifica": "trabajo_reunion_id",
+  "trabajos-revistas": "trabajo_revista_id",
+  distinciones: "distincion_id",
+  "registros-propiedad": "registro_propiedad_id",
+  "articulos-divulgacion": "articulo_divulgacion_id",
+  "visitas-academicas": "visita_academica_id",
+};
+
+function getSnapshotEntityId(sectionKey: string, entry: any) {
+  const mappedKey = snapshotEntityIdKeys[sectionKey];
+
+  if (mappedKey && entry?.[mappedKey] !== undefined && entry?.[mappedKey] !== null) {
+    return entry[mappedKey];
+  }
+
+  return entry?.id;
 }
 
 export default function MemoriaVersionDetalle() {
@@ -289,13 +211,19 @@ export default function MemoriaVersionDetalle() {
       })),
     [snapshotQueries]
   );
+  const versionActual = (memoria?.versiones || []).find(
+    (version: any) => version.id === memoriaVersionId
+  );
+  const versionCerrada = versionActual?.estado === "cerrada";
+  const sectionsWithItems = sectionData.filter((section) => section.items.length > 0);
+  const numeroVersionMemoria = versionActual?.numero_version ?? memoriaVersionId;
 
   const handleNavigateToSection = (section: SnapshotSection) => {
     if (!section.homePath) return;
 
     const entries = sectionData.find((current) => current.key === section.key)?.items ?? [];
     const ids = entries
-      .map((entry: any) => entry?.id)
+      .map((entry: any) => getSnapshotEntityId(section.key, entry))
       .filter((value: unknown) => value !== undefined && value !== null);
 
     navigate(section.homePath, {
@@ -331,7 +259,7 @@ export default function MemoriaVersionDetalle() {
           <p className="mt-2 text-sm text-slate-500">
             Memoria {formatFecha(memoria.periodo_inicio)} - {formatFecha(memoria.periodo_fin)}
           </p>
-          <p className="mt-1 text-xs text-slate-500">Version {memoriaVersionId}</p>
+          <p className="mt-1 text-xs text-slate-500">Version {numeroVersionMemoria}</p>
         </div>
 
         <Button
@@ -345,10 +273,43 @@ export default function MemoriaVersionDetalle() {
 
       {isLoadingSnapshots ? (
         <p className="text-slate-500">Cargando elementos registrados...</p>
+      ) : !versionCerrada ? (
+        <div className="flex flex-col gap-6">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+            Esta version aun no fue cerrada. Los elementos registrados estaran
+            disponibles una vez generado el snapshot al cerrar la memoria.
+          </div>
+
+          <div className="flex justify-start">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate(`/memorias/${memoria.id}`)}
+            >
+              Volver
+            </Button>
+          </div>
+        </div>
+      ) : sectionsWithItems.length === 0 ? (
+        <div className="flex flex-col gap-6">
+          <div className="rounded-2xl border border-slate-200 bg-white/90 px-5 py-6 text-sm text-slate-500 shadow-sm">
+            Esta version no contiene elementos registrados.
+          </div>
+
+          <div className="flex justify-start">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate(`/memorias/${memoria.id}`)}
+            >
+              Volver
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="flex flex-col gap-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {sectionData.map((section) => (
+            {sectionsWithItems.map((section) => (
               <article
                 key={section.key}
                 className="rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm"
@@ -375,40 +336,19 @@ export default function MemoriaVersionDetalle() {
                 </div>
 
                 <div className="mt-4 rounded-xl bg-slate-50 px-4 py-3">
-                  {section.items.length === 0 ? (
-                    <p className="text-sm text-slate-500">
-                      Esta seccion no contiene registros en esta version.
+                  <div className="rounded-xl border border-slate-200 bg-white px-4 py-4">
+                    <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                      Cantidad registrada
                     </p>
-                  ) : (
-                    <ul className="space-y-2 text-sm text-slate-600">
-                      {section.items.slice(0, 3).map((entry: any, index: number) => {
-                        const preview = getEntryPreview(section.key, entry);
-                        return (
-                          <li key={`${section.key}-${index}`}>
-                            <button
-                              type="button"
-                              onClick={() => handleNavigateToSection(section)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left transition-colors hover:border-slate-300 hover:bg-slate-100"
-                            >
-                              <p className="text-sm font-medium text-slate-800">
-                                {preview.title || "Registro"}
-                              </p>
-                              {preview.subtitle && (
-                                <p className="mt-1 text-xs text-slate-500">
-                                  {preview.subtitle}
-                                </p>
-                              )}
-                            </button>
-                          </li>
-                        );
-                      })}
-                      {section.items.length > 3 && (
-                        <li className="pt-1 text-xs font-medium uppercase tracking-wider text-slate-400">
-                          Y {section.items.length - 3} mas
-                        </li>
-                      )}
-                    </ul>
-                  )}
+                    <p className="mt-2 text-3xl font-semibold text-slate-800">
+                      {section.items.length}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-500">
+                      Esta seccion aporta {section.items.length} elemento
+                      {section.items.length === 1 ? "" : "s"} al snapshot de esta
+                      version.
+                    </p>
+                  </div>
                 </div>
 
                 {section.items.length > 0 && section.homePath && (
