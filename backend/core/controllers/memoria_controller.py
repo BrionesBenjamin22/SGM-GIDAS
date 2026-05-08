@@ -1,3 +1,5 @@
+import traceback
+
 from flask import jsonify, request, g, send_file
 
 from core.services.memoria_service import MemoriaService
@@ -242,7 +244,12 @@ class MemoriaController:
                 mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
         except Exception as e:
-            return jsonify({"error": str(e)}), 400
+            trace = traceback.format_exc()
+            print(trace)
+            return jsonify({
+                "error": str(e),
+                "traceback": trace,
+            }), 400
 
     @staticmethod
     def create():
