@@ -66,12 +66,32 @@ class ErogacionService:
             registro_id=erogacion.id
         )
 
+
+    @staticmethod
+    def vaLidar_numero_erogacion(numero, grupo_id, erogacion_id=None):
+        query = Erogacion.query.filter(
+            Erogacion.numero_erogacion == numero,
+            Erogacion.grupo_utn_id == grupo_id,
+            Erogacion.deleted_at.is_(None)
+        )
+        if erogacion_id:
+            query = query.filter(Erogacion.id != erogacion_id)
+
+        existe = query.first()
+        if existe:
+            raise Exception("Ya existe una erogacion activa con ese numero en el grupo")
+        
+        numero_int = int(numero)  # Validar que sea un número entero
+        if numero_int <= 0:
+            raise Exception("El numero de erogacion debe ser un entero positivo")
+        
     @staticmethod
     def create(data: dict, user_id: int):
         if not data:
             raise Exception("El body es obligatorio")
 
         numero = data.get("numero_erogacion")
+        ErogacionService.vaLidar_numero_erogacion(numero, data.get("grupo_utn_id"))
         grupo_id = data.get("grupo_utn_id")
 
         if not numero:
