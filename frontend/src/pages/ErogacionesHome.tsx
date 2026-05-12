@@ -39,6 +39,7 @@ export default function ErogacionesLanding() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [showFilters, setShowFilters] = useState(false);
   const [filtroActivos, setFiltroActivos] = useState<"true" | "false" | "all">(
@@ -161,6 +162,7 @@ export default function ErogacionesLanding() {
   };
 
   const cancelSelection = () => {
+    if (isDeleting) return;
     setSelectMode(false);
     setSelectedIds([]);
     setShowConfirm(false);
@@ -170,6 +172,8 @@ export default function ErogacionesLanding() {
   const selectedActiveItems = selectedItems.filter((item) => !item.deleted_at);
 
   const confirmDelete = async () => {
+    if (isDeleting) return;
+
     const invalidItems = selectedItems.filter((item) => item.deleted_at);
 
     if (invalidItems.length > 0) {
@@ -184,6 +188,8 @@ export default function ErogacionesLanding() {
     }
 
     try {
+      setIsDeleting(true);
+
       for (const item of selectedActiveItems) {
         await deleteErogaciones(item.id);
       }
@@ -216,6 +222,8 @@ export default function ErogacionesLanding() {
       }
 
       setShowError(true);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -595,6 +603,8 @@ export default function ErogacionesLanding() {
         )}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
+        confirmText={isDeleting ? "Eliminando..." : "Aceptar"}
+        confirmDisabled={isDeleting}
       />
 
       <SuccessToast

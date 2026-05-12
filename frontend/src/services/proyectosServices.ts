@@ -172,7 +172,7 @@ export async function upsertProyectos(payload: any) {
     body.grupo_utn_id = payload.grupoUtnId ?? null;
   }
 
-  const url = payload.id ? `/proyectos/${payload.id}` : "/proyectos/";
+  const url = payload.id ? `/proyectos/${payload.id}` : "/proyectos";
   const method = payload.id ? "PUT" : "POST";
 
   return http(url, { method, body: JSON.stringify(body) });
