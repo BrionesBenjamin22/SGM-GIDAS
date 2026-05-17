@@ -42,7 +42,11 @@ export default function Home() {
   const location = useLocation();
 
   const grupoId = uct?.id;
-  const { data: directivos = [] } = useDirectivos(grupoId);
+  const {
+    data: directivos = [],
+    isLoading: isLoadingDirectivos,
+    isFetching: isFetchingDirectivos,
+  } = useDirectivos(grupoId);
 
   const {
     data: dashboard,
@@ -86,7 +90,8 @@ export default function Home() {
     );
   }
 
-  const faltanDirectivos = !!uct && directivos.length === 0;
+  const directivosListos = !isLoadingDirectivos && !isFetchingDirectivos;
+  const faltanDirectivos = !!uct && directivosListos && directivos.length === 0;
 
   const proyectosPorEstado: ChartItem[] = [
     {

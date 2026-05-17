@@ -456,6 +456,13 @@ class ExportService:
             .all()
         )
 
+    @classmethod
+    def _get_planificacion_memoria(cls, grupo_id: int, anio: int):
+        for planificacion in cls._get_planificaciones(grupo_id):
+            if planificacion.anio == anio:
+                return planificacion
+        return None
+
     @staticmethod
     def _get_proyectos(grupo_id: int):
         return (
@@ -1695,12 +1702,25 @@ class ExportService:
             cls._clear_rows_content(ws, range(current_row, original_section12_start))
         offset += max(0, current_row - original_section12_start)
 
+        planificacion_memoria = cls._get_planificacion_memoria(grupo.id, anio_memoria + 1)
+
         cls._write_cell(ws, 295 + offset, "A", f"VI - PROGRAMA DE ACTIVIDADES para {anio_memoria + 1}")
-        cls._set_merged_text(ws, 296 + offset, "No registra datos de planificacion en snapshots de memoria.", normalize=True)
+        cls._set_merged_text(
+            ws,
+            296 + offset,
+            planificacion_memoria.descripcion
+            if planificacion_memoria and planificacion_memoria.descripcion
+            else "No registra datos de planificacion para esta memoria.",
+            normalize=True,
+        )
         cls._apply_row_height(
             ws,
             296 + offset,
-            ["No registra datos de planificacion en snapshots de memoria."],
+            [
+                planificacion_memoria.descripcion
+                if planificacion_memoria and planificacion_memoria.descripcion
+                else "No registra datos de planificacion para esta memoria."
+            ],
             min_height=18.0,
             chars_per_line=90,
         )

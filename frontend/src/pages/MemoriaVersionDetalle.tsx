@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useMutation, useQueries, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
 import SuccessToast from "@/components/SuccessToast";
 import { useAuth } from "@/context/AuthContext";
+import { useUct } from "@/hooks/useUct";
 import {
   exportarExcelMemoria,
   getActividadesDocenciaSnapshot,
@@ -24,6 +25,12 @@ import {
   getTransferenciasSnapshot,
   getVisitasAcademicasSnapshot,
 } from "@/services/memoriasService";
+import {
+  createPlanificacion,
+  getPlanificaciones,
+  updatePlanificacion,
+  type PlanificacionGrupo,
+} from "@/services/planificacionGrupoServices";
 import { formatFecha } from "@/utils/formatFecha";
 
 type SnapshotSection = {
@@ -186,13 +193,18 @@ function getSnapshotEntityId(sectionKey: string, entry: any) {
 export default function MemoriaVersionDetalle() {
   const { id, versionId } = useParams<{ id: string; versionId: string }>();
   const navigate = useNavigate();
-  const { isAdmin, isGestor } = useAuth();
+  const queryClient = useQueryClient();
+  const { isAdmin, isGestor, canEditRecords } = useAuth();
+  const { uct, isLoading: isLoadingUct } = useUct();
 
   const memoriaId = Number(id);
   const memoriaVersionId = Number(versionId);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
   const [message, setMessage] = useState("");
+  const [showProgramaModal, setShowProgramaModal] = useState(false);
+  const [programaDescripcion, setProgramaDescripcion] = useState("");
+  const [programaError, setProgramaError] = useState("");
 
   const { data: memoria, isLoading: isLoadingMemoria } = useQuery({
     queryKey: ["memoria", id],
@@ -225,6 +237,30 @@ export default function MemoriaVersionDetalle() {
   const sectionsWithItems = sectionData.filter((section) => section.items.length > 0);
   const numeroVersionMemoria = versionActual?.numero_version ?? memoriaVersionId;
   const puedeExportarExcel = versionCerrada && (isAdmin() || isGestor());
+  const anioPrograma = memoria?.periodo_fin
+    ? new Date(`${memoria.periodo_fin}T00:00:00`).getFullYear() + 1
+    : undefined;
+  const puedeEditarPrograma = versionCerrada && canEditRecords();
+
+  const { data: planificaciones = [], isLoading: isLoadingPlanificaciones } = useQuery({
+    queryKey: ["planificaciones", "true"],
+    queryFn: () => getPlanificaciones("true"),
+    enabled: puedeEditarPrograma && !!anioPrograma && !!uct?.id,
+  });
+
+  const planificacionActual = useMemo<PlanificacionGrupo | undefined>(
+    () =>
+      planificaciones.find(
+        (item) => item.anio === anioPrograma && item.grupo_id === uct?.id && item.activo
+      ),
+    [anioPrograma, planificaciones, uct?.id]
+  );
+
+  useEffect(() => {
+    if (!showProgramaModal) return;
+    setProgramaDescripcion(planificacionActual?.descripcion ?? "");
+    setProgramaError("");
+  }, [planificacionActual, showProgramaModal]);
 
   const { mutate: descargarExcel, isPending: isExportingExcel } = useMutation({
     mutationFn: () => exportarExcelMemoria(memoriaId, memoriaVersionId),
@@ -239,6 +275,50 @@ export default function MemoriaVersionDetalle() {
           : "No se pudo generar el Excel de la memoria."
       );
       setShowError(true);
+    },
+  });
+
+  const { mutate: guardarPrograma, isPending: isSavingPrograma } = useMutation({
+    mutationFn: async () => {
+      const descripcion = programaDescripcion.trim();
+      if (!descripcion) {
+        throw new Error("Debe ingresar una descripcion para el programa de actividades.");
+      }
+      if (!anioPrograma || !uct?.id) {
+        throw new Error("No se pudo resolver el anio o el grupo de investigacion.");
+      }
+
+      if (planificacionActual) {
+        return updatePlanificacion(planificacionActual.id, {
+          descripcion,
+          anio: anioPrograma,
+          grupo_id: uct.id,
+        });
+      }
+
+      return createPlanificacion({
+        descripcion,
+        anio: anioPrograma,
+        grupo_id: uct.id,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["planificaciones"] });
+      setShowProgramaModal(false);
+      setProgramaError("");
+      setMessage(
+        planificacionActual
+          ? "Programa de actividades actualizado con exito."
+          : "Programa de actividades guardado con exito."
+      );
+      setShowSuccess(true);
+    },
+    onError: (error) => {
+      const nextMessage =
+        error instanceof Error
+          ? error.message
+          : "No se pudo guardar el programa de actividades.";
+      setProgramaError(nextMessage);
     },
   });
 
@@ -265,6 +345,24 @@ export default function MemoriaVersionDetalle() {
     });
   };
 
+  const abrirProgramaActividades = () => {
+    if (isLoadingUct) return;
+    if (!uct?.id) {
+      setMessage("No hay un grupo de investigacion configurado para guardar la planificacion.");
+      setShowError(true);
+      return;
+    }
+    setShowProgramaModal(true);
+  };
+
+  const handleGuardarPrograma = () => {
+    if (!programaDescripcion.trim()) {
+      setProgramaError("Debe ingresar una descripcion para el programa de actividades.");
+      return;
+    }
+    guardarPrograma();
+  };
+
   if (isLoadingMemoria) {
     return <p className="text-slate-500">Cargando memoria...</p>;
   }
@@ -287,6 +385,17 @@ export default function MemoriaVersionDetalle() {
         </div>
 
         <div className="flex items-center gap-2">
+          {puedeEditarPrograma && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={abrirProgramaActividades}
+              disabled={isLoadingPlanificaciones || isLoadingUct}
+            >
+              Programa Actividades
+            </Button>
+          )}
+
           {puedeExportarExcel && (
             <Button size="sm" onClick={() => descargarExcel()} disabled={isExportingExcel}>
               {isExportingExcel ? "Generando Excel..." : "Generar Excel"}
@@ -420,6 +529,73 @@ export default function MemoriaVersionDetalle() {
         onClose={() => setShowError(false)}
         variant="error"
       />
+
+      {showProgramaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            onClick={() => {
+              if (isSavingPrograma) return;
+              setShowProgramaModal(false);
+            }}
+          />
+
+          <div
+            className="relative z-10 w-full max-w-2xl rounded-2xl border border-slate-200 bg-white/95 p-6 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-slate-900">
+                Programa de Actividades {anioPrograma ?? ""}
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Registra los objetivos y actividades del grupo para la proxima memoria.
+              </p>
+            </div>
+
+            <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              <span className="font-medium text-slate-700">Periodo:</span>{" "}
+              {anioPrograma ?? "-"}
+            </div>
+
+            <label className="block text-sm font-medium text-slate-700">
+              Descripcion
+            </label>
+            <textarea
+              rows={10}
+              className={`mt-2 w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-800 outline-none transition ${
+                programaError
+                  ? "border-red-400 ring-2 ring-red-200"
+                  : "border-slate-200 focus:border-slate-400"
+              }`}
+              value={programaDescripcion}
+              placeholder="Ej: objetivos, actividades previstas, lineas de trabajo, cronograma y metas del grupo para el proximo periodo."
+              onChange={(e) => {
+                setProgramaDescripcion(e.target.value);
+                if (programaError) setProgramaError("");
+              }}
+            />
+            {programaError && (
+              <p className="mt-2 text-sm text-red-500">{programaError}</p>
+            )}
+
+            <div className="mt-6 flex justify-between gap-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowProgramaModal(false)}
+                disabled={isSavingPrograma}
+              >
+                Cancelar
+              </Button>
+
+              <Button size="sm" onClick={handleGuardarPrograma} disabled={isSavingPrograma}>
+                {isSavingPrograma ? "Guardando..." : planificacionActual ? "Actualizar" : "Guardar"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
