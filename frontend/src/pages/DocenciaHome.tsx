@@ -17,6 +17,7 @@ import {
   applyMemoriaSectionFilter,
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
+import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -406,7 +407,10 @@ export default function DocenciaLanding() {
                   selected={selectedIds.includes(d.id)}
                   onSelectChange={(checked) => toggleSelect(d.id, checked)}
                   onClick={() =>
-                    !selectMode && navigate(`/docenciaInvestigador/${d.id}`)
+                    !selectMode &&
+                    navigate(`/docenciaInvestigador/${d.id}`, {
+                      state: buildMemoriaDetailState(location),
+                    })
                   }
                 />
               ))}

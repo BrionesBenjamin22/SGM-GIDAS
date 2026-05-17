@@ -10,6 +10,10 @@ import {
 } from "@/services/distincionesServices";
 import { useAuditoria } from "@/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
+import {
+  navigateBackFromMemoriaContext,
+  stripSuccessMessageState,
+} from "@/lib/memoriaNavigation";
 
 export default function DistincionesDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -42,7 +46,10 @@ export default function DistincionesDetalle() {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      navigate(location.pathname, { replace: true });
+      navigate(location.pathname, {
+        replace: true,
+        state: stripSuccessMessageState(location.state),
+      });
     }
   }, [location.state, navigate, location.pathname]);
 
@@ -219,7 +226,9 @@ export default function DistincionesDetalle() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => navigate("/distinciones")}
+            onClick={() =>
+              navigateBackFromMemoriaContext(navigate, location, "/distinciones")
+            }
           >
             Volver
           </Button>

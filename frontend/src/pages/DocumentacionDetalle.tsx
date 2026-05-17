@@ -12,6 +12,10 @@ import {
 import { useAuditoria } from "@/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import { formatFecha } from "@/utils/formatFecha";
+import {
+  navigateBackFromMemoriaContext,
+  stripSuccessMessageState,
+} from "@/lib/memoriaNavigation";
 
 const formatTitulo = (titulo?: string | null) =>
   titulo
@@ -52,7 +56,10 @@ export default function DocumentacionDetalle() {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      navigate(location.pathname, { replace: true });
+      navigate(location.pathname, {
+        replace: true,
+        state: stripSuccessMessageState(location.state),
+      });
     }
   }, [location.state, navigate, location.pathname]);
 
@@ -165,7 +172,13 @@ export default function DocumentacionDetalle() {
         />
 
         <div className="flex justify-start pt-4">
-          <Button variant="secondary" size="sm" onClick={() => navigate("/documentacion")}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() =>
+              navigateBackFromMemoriaContext(navigate, location, "/documentacion")
+            }
+          >
             Volver
           </Button>
         </div>

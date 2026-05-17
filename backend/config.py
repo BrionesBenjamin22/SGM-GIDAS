@@ -5,9 +5,17 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 env_file = os.getenv("ENV_FILE", ".env.local")
 load_dotenv(os.path.join(basedir, env_file))
 
+
+def _parse_csv_env(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return [item.strip() for item in value.split(",") if item.strip()]
+
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY") 
-    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost") 
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    FRONTEND_URLS = _parse_csv_env(os.getenv("FRONTEND_URLS")) or [FRONTEND_URL]
+    CORS_ORIGINS = FRONTEND_URLS
 
     MAIL_SERVER = os.getenv("MAIL_SERVER")
     MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
@@ -39,6 +47,7 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
+    CORS_ORIGINS = "*"
 
 class DockerConfig(Config):
     DEBUG = True

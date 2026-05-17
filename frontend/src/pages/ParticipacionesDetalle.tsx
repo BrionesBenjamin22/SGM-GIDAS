@@ -11,6 +11,10 @@ import {
 import { useAuditoria } from "@/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import { useInvestigadores } from "@/hooks/useInvestigadores";
+import {
+  navigateBackFromMemoriaContext,
+  stripSuccessMessageState,
+} from "@/lib/memoriaNavigation";
 
 const FORMA_PARTICIPACION_LABELS: Record<string, string> = {
   jurado: "Jurado",
@@ -51,7 +55,10 @@ export default function ParticipacionesDetalle() {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      navigate(location.pathname, { replace: true });
+      navigate(location.pathname, {
+        replace: true,
+        state: stripSuccessMessageState(location.state),
+      });
     }
   }, [location.state, navigate, location.pathname]);
 
@@ -231,8 +238,10 @@ export default function ParticipacionesDetalle() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => navigate("/participaciones")}
-          >
+            onClick={() =>
+              navigateBackFromMemoriaContext(navigate, location, "/participaciones")
+            }
+            >
             Volver
           </Button>
         </div>

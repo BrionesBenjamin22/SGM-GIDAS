@@ -1,6 +1,7 @@
 import { http } from "@/lib/http";
 
 export type PersonalType =
+  | "PERSONAL"
   | "PTAA"
   | "PROFESIONAL"
   | "BECARIO"

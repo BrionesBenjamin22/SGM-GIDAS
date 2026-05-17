@@ -12,6 +12,10 @@ import {
 import { useAuditoria } from "@/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import { formatFecha } from "@/utils/formatFecha";
+import {
+  navigateBackFromMemoriaContext,
+  stripSuccessMessageState,
+} from "@/lib/memoriaNavigation";
 
 const fmtMoney = (value?: number | null) =>
   typeof value === "number"
@@ -52,7 +56,10 @@ export default function ErogacionesDetalle() {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      navigate(location.pathname, { replace: true });
+      navigate(location.pathname, {
+        replace: true,
+        state: stripSuccessMessageState(location.state),
+      });
     }
   }, [location.state, navigate, location.pathname]);
 
@@ -207,7 +214,9 @@ export default function ErogacionesDetalle() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => navigate("/erogaciones")}
+            onClick={() =>
+              navigateBackFromMemoriaContext(navigate, location, "/erogaciones")
+            }
           >
             Volver
           </Button>

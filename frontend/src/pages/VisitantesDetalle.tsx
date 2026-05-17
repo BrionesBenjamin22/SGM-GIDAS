@@ -11,6 +11,10 @@ import {
   getTiposVisita,
   getVisitanteById,
 } from "@/services/visitantesServices";
+import {
+  navigateBackFromMemoriaContext,
+  stripSuccessMessageState,
+} from "@/lib/memoriaNavigation";
 
 export default function VisitantesDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -49,7 +53,10 @@ export default function VisitantesDetalle() {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      navigate(location.pathname, { replace: true });
+      navigate(location.pathname, {
+        replace: true,
+        state: stripSuccessMessageState(location.state),
+      });
     }
   }, [location.state, navigate, location.pathname]);
 
@@ -226,8 +233,10 @@ export default function VisitantesDetalle() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => navigate("/visitantes")}
-          >
+            onClick={() =>
+              navigateBackFromMemoriaContext(navigate, location, "/visitantes")
+            }
+            >
             Volver
           </Button>
         </div>

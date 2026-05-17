@@ -46,47 +46,52 @@ def _obtener_modelo_por_rol(rol: str):
     return None
 
 
-def listar_personal_completo(activos: str = "true"):
+def listar_personal_completo(activos: str = "true", tipo: str | None = None):
+
+    tipo_normalizado = (tipo or "").strip().lower()
 
     resultado = []
 
     # --------------------
     # PERSONAL
     # --------------------
-    for p in _aplicar_filtro_activos(Personal.query, Personal, activos).all():
+    if tipo_normalizado in ("", "personal", "ptaa", "profesional"):
+        for p in _aplicar_filtro_activos(Personal.query, Personal, activos).all():
 
-        base = p.serialize()
+            base = p.serialize()
 
-        resultado.append({
-            **base,
-            "rol": "personal"
-        })
+            resultado.append({
+                **base,
+                "rol": "personal"
+            })
 
     # --------------------
     # BECARIOS
     # --------------------
-    for b in _aplicar_filtro_activos(Becario.query, Becario, activos).all():
+    if tipo_normalizado in ("", "becario"):
+        for b in _aplicar_filtro_activos(Becario.query, Becario, activos).all():
 
-        base = b.serialize()
+            base = b.serialize()
 
-        resultado.append({
-            **base,
-            "rol": "becario"
-        })
+            resultado.append({
+                **base,
+                "rol": "becario"
+            })
 
     # --------------------
     # INVESTIGADORES
     # --------------------
-    for i in _aplicar_filtro_activos(
-        Investigador.query, Investigador, activos
-    ).all():
+    if tipo_normalizado in ("", "investigador"):
+        for i in _aplicar_filtro_activos(
+            Investigador.query, Investigador, activos
+        ).all():
 
-        base = i.serialize()
+            base = i.serialize()
 
-        resultado.append({
-            **base,
-            "rol": "investigador"
-        })
+            resultado.append({
+                **base,
+                "rol": "investigador"
+            })
 
     return resultado
 

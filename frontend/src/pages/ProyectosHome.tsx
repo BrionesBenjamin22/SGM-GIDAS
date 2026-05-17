@@ -18,6 +18,7 @@ import {
   applyMemoriaSectionFilter,
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
+import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -385,7 +386,10 @@ export default function ProyectosLanding() {
                     toggleSelect(String(proyecto.id), checked)
                   }
                   onClick={() =>
-                    !selectMode && navigate(`/proyectos/${proyecto.id}`)
+                    !selectMode &&
+                    navigate(`/proyectos/${proyecto.id}`, {
+                      state: buildMemoriaDetailState(location),
+                    })
                   }
                 />
               ))}

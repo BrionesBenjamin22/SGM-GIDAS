@@ -14,6 +14,10 @@ import { useAuditoria } from "@/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import { toTitleCase } from "@/utils/format";
 import { useTiposRegistroPropiedad } from "@/hooks/useTipoRegistroPropiedad";
+import {
+  navigateBackFromMemoriaContext,
+  stripSuccessMessageState,
+} from "@/lib/memoriaNavigation";
 
 export default function RegistrosPropiedadDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -47,7 +51,10 @@ export default function RegistrosPropiedadDetalle() {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      navigate(location.pathname, { replace: true });
+      navigate(location.pathname, {
+        replace: true,
+        state: stripSuccessMessageState(location.state),
+      });
     }
   }, [location.state, navigate, location.pathname]);
 
@@ -209,8 +216,14 @@ export default function RegistrosPropiedadDetalle() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => navigate("/registros-propiedad")}
-          >
+            onClick={() =>
+              navigateBackFromMemoriaContext(
+                navigate,
+                location,
+                "/registros-propiedad"
+              )
+            }
+            >
             Volver
           </Button>
         </div>

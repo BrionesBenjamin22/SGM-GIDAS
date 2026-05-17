@@ -16,6 +16,7 @@ import {
   applyMemoriaSectionFilter,
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
+import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -406,7 +407,12 @@ export default function TransferenciasHome() {
                 selectDisabled={isTransferenciaDeleted(item)}
                 selected={selectedIds.includes(item.id)}
                 onSelectChange={(checked) => toggleSelect(item.id, checked)}
-                onClick={() => !selectMode && navigate(`/transferencias/${item.id}`)}
+                onClick={() =>
+                  !selectMode &&
+                  navigate(`/transferencias/${item.id}`, {
+                    state: buildMemoriaDetailState(location),
+                  })
+                }
               />
             ))}
           </div>

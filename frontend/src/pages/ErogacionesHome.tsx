@@ -18,6 +18,7 @@ import {
   applyMemoriaSectionFilter,
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
+import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -389,7 +390,12 @@ export default function ErogacionesLanding() {
                 selectDisabled={!!item.deleted_at}
                 selected={selectedIds.includes(item.id)}
                 onSelectChange={(checked) => toggleSelect(item.id, checked)}
-                onClick={() => !selectMode && navigate(`/erogaciones/${item.id}`)}
+                onClick={() =>
+                  !selectMode &&
+                  navigate(`/erogaciones/${item.id}`, {
+                    state: buildMemoriaDetailState(location),
+                  })
+                }
               />
             ))}
           </div>

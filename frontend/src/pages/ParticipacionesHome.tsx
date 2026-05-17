@@ -13,6 +13,7 @@ import {
   applyMemoriaSectionFilter,
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
+import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
 
 import {
   eliminarParticipacion,
@@ -423,7 +424,10 @@ export default function ParticipacionesHome() {
                   selected={selectedIds.includes(p.id)}
                   onSelectChange={(checked) => toggleSelect(p.id, checked)}
                   onClick={() =>
-                    !selectMode && navigate(`/participaciones/${p.id}`)
+                    !selectMode &&
+                    navigate(`/participaciones/${p.id}`, {
+                      state: buildMemoriaDetailState(location),
+                    })
                   }
                 />
               ))}

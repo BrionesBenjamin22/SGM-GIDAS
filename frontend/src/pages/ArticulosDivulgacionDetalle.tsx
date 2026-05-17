@@ -10,6 +10,10 @@ import {
 } from "@/services/articulosDivulgacionServices";
 import { useAuditoria } from "@/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
+import {
+  navigateBackFromMemoriaContext,
+  stripSuccessMessageState,
+} from "@/lib/memoriaNavigation";
 
 export default function ArticulosDivulgacionDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -42,7 +46,10 @@ export default function ArticulosDivulgacionDetalle() {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      navigate(location.pathname, { replace: true });
+      navigate(location.pathname, {
+        replace: true,
+        state: stripSuccessMessageState(location.state),
+      });
     }
   }, [location.state, navigate, location.pathname]);
 
@@ -194,8 +201,14 @@ export default function ArticulosDivulgacionDetalle() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => navigate("/articulos-divulgacion")}
-          >
+            onClick={() =>
+              navigateBackFromMemoriaContext(
+                navigate,
+                location,
+                "/articulos-divulgacion"
+              )
+            }
+            >
             Volver
           </Button>
         </div>

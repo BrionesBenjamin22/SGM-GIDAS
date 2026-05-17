@@ -12,6 +12,10 @@ import {
 import { formatFecha } from "@/utils/formatFecha";
 import { useAuditoria } from "@/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
+import {
+  navigateBackFromMemoriaContext,
+  stripSuccessMessageState,
+} from "@/lib/memoriaNavigation";
 
 const fmtMoney = (n?: number) =>
   typeof n === "number"
@@ -52,7 +56,10 @@ export default function EquipamientoDetalle() {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      navigate(location.pathname, { replace: true });
+      navigate(location.pathname, {
+        replace: true,
+        state: stripSuccessMessageState(location.state),
+      });
     }
   }, [location.state, navigate, location.pathname]);
 
@@ -187,7 +194,9 @@ export default function EquipamientoDetalle() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => navigate("/equipamiento")}
+            onClick={() =>
+              navigateBackFromMemoriaContext(navigate, location, "/equipamiento")
+            }
           >
             Volver
           </Button>

@@ -16,6 +16,7 @@ import {
   applyMemoriaSectionFilter,
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
+import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -384,7 +385,12 @@ export default function DistincionesHome() {
                   selectDisabled={!!d.deleted_at}
                   selected={selectedIds.includes(d.id)}
                   onSelectChange={(checked) => toggleSelect(d.id, checked)}
-                  onClick={() => !selectMode && navigate(`/distinciones/${d.id}`)}
+                  onClick={() =>
+                    !selectMode &&
+                    navigate(`/distinciones/${d.id}`, {
+                      state: buildMemoriaDetailState(location),
+                    })
+                  }
                 />
               ))}
             </div>

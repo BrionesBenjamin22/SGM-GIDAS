@@ -13,6 +13,10 @@ import { useRolesActividadDocencia } from "@/hooks/useActividadDocenciaRol";
 import { useAuditoria } from "@/hooks/useAuditoria";
 import { toTitleCase } from "@/utils/format";
 import { useAuth } from "@/context/AuthContext";
+import {
+  navigateBackFromMemoriaContext,
+  stripSuccessMessageState,
+} from "@/lib/memoriaNavigation";
 
 export default function ActividadDocenciaDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -44,7 +48,10 @@ export default function ActividadDocenciaDetalle() {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      navigate(location.pathname, { replace: true });
+      navigate(location.pathname, {
+        replace: true,
+        state: stripSuccessMessageState(location.state),
+      });
     }
   }, [location.state, navigate, location.pathname]);
 
@@ -257,7 +264,13 @@ export default function ActividadDocenciaDetalle() {
         <Button
           variant="secondary"
           size="sm"
-          onClick={() => navigate("/docenciaInvestigador")}
+          onClick={() =>
+            navigateBackFromMemoriaContext(
+              navigate,
+              location,
+              "/docenciaInvestigador"
+            )
+          }
         >
           Volver
         </Button>

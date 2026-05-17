@@ -14,6 +14,10 @@ import {
 } from "@/services/trabajosRevistasServices";
 import { useAuth } from "@/context/AuthContext";
 import { useTiposReunion } from "@/hooks/useTiposReunion";
+import {
+  navigateBackFromMemoriaContext,
+  stripSuccessMessageState,
+} from "@/lib/memoriaNavigation";
 
 export default function TrabajoRevistaDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -48,7 +52,10 @@ export default function TrabajoRevistaDetalle() {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      navigate(location.pathname, { replace: true });
+      navigate(location.pathname, {
+        replace: true,
+        state: stripSuccessMessageState(location.state),
+      });
     }
   }, [location.state, navigate, location.pathname]);
 
@@ -222,7 +229,9 @@ export default function TrabajoRevistaDetalle() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => navigate("/trabajos-revistas")}
+            onClick={() =>
+              navigateBackFromMemoriaContext(navigate, location, "/trabajos-revistas")
+            }
           >
             Volver
           </Button>

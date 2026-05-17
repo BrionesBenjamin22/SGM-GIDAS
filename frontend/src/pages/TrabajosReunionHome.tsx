@@ -23,6 +23,7 @@ import {
   applyMemoriaSectionFilter,
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
+import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -403,7 +404,12 @@ export default function TrabajosReunionLanding() {
                   selectDisabled={!!t.deleted_at}
                   selected={selectedIds.includes(t.id)}
                   onSelectChange={(checked) => toggleSelect(t.id, checked)}
-                  onClick={() => !selectMode && navigate(`/trabajos-reunion/${t.id}`)}
+                  onClick={() =>
+                    !selectMode &&
+                    navigate(`/trabajos-reunion/${t.id}`, {
+                      state: buildMemoriaDetailState(location),
+                    })
+                  }
                 />
               ))}
             </div>

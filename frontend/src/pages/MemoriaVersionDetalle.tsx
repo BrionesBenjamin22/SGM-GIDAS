@@ -54,7 +54,7 @@ const sections: SnapshotSection[] = [
     label: "Personal",
     queryKey: "memoria-snapshot-personal",
     queryFn: getPersonalSnapshot,
-    homePath: "/personal",
+    homePath: "/personal?tipo=PERSONAL",
   },
   {
     key: "proyectos",

@@ -19,6 +19,7 @@ import {
   applyMemoriaSectionFilter,
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
+import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -410,7 +411,9 @@ export default function RegistrosPropiedadLanding() {
                     }
                     onClick={() =>
                       !selectMode &&
-                      navigate(`/registros-propiedad/${registro.id}`)
+                      navigate(`/registros-propiedad/${registro.id}`, {
+                        state: buildMemoriaDetailState(location),
+                      })
                     }
                   />
                 ))}

@@ -16,6 +16,10 @@ import { useDedicaciones } from "@/hooks/useDedicaciones";
 import { useCategoriasUtn } from "@/hooks/useCategoriasUtn";
 import { useProgramasIncentivos } from "@/hooks/useProgramasIncentivos";
 import { useTiposPersonal } from "@/hooks/useTiposPersonal";
+import {
+  navigateBackFromMemoriaContext,
+  stripSuccessMessageState,
+} from "@/lib/memoriaNavigation";
 
 export default function PersonalDetalle() {
   const { rol: paramRol, id } = useParams();
@@ -48,9 +52,12 @@ export default function PersonalDetalle() {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      window.history.replaceState({}, document.title);
+      navigate(location.pathname, {
+        replace: true,
+        state: stripSuccessMessageState(location.state),
+      });
     }
-  }, [location.state]);
+  }, [location.state, navigate, location.pathname]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["personal-detalle", rol, id],
@@ -455,7 +462,13 @@ export default function PersonalDetalle() {
         />
 
         <div className="flex justify-start pt-4">
-          <Button variant="secondary" size="sm" onClick={() => navigate(-1)}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() =>
+              navigateBackFromMemoriaContext(navigate, location, "/personal")
+            }
+          >
             Volver
           </Button>
         </div>

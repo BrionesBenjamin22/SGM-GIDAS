@@ -16,6 +16,7 @@ import {
   applyMemoriaSectionFilter,
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
+import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -385,7 +386,10 @@ export default function ArticulosDivulgacionHome() {
                   selected={selectedIds.includes(a.id)}
                   onSelectChange={(checked) => toggleSelect(a.id, checked)}
                   onClick={() =>
-                    !selectMode && navigate(`/articulos-divulgacion/${a.id}`)
+                    !selectMode &&
+                    navigate(`/articulos-divulgacion/${a.id}`, {
+                      state: buildMemoriaDetailState(location),
+                    })
                   }
                 />
               ))}

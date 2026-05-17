@@ -12,6 +12,10 @@ import {
 import { useAuditoria } from "@/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import { formatFecha } from "@/utils/formatFecha";
+import {
+  navigateBackFromMemoriaContext,
+  stripSuccessMessageState,
+} from "@/lib/memoriaNavigation";
 
 const formatMonto = (monto?: number | null) =>
   typeof monto === "number"
@@ -51,7 +55,10 @@ export default function TransferenciasDetalle() {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      navigate(location.pathname, { replace: true });
+      navigate(location.pathname, {
+        replace: true,
+        state: stripSuccessMessageState(location.state),
+      });
     }
   }, [location.state, navigate, location.pathname]);
 
@@ -262,7 +269,13 @@ export default function TransferenciasDetalle() {
         />
 
         <div className="flex justify-start pt-4">
-          <Button variant="secondary" size="sm" onClick={() => navigate("/transferencias")}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() =>
+              navigateBackFromMemoriaContext(navigate, location, "/transferencias")
+            }
+          >
             Volver
           </Button>
         </div>

@@ -14,6 +14,10 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { toTitleCase } from "@/utils/format";
 import { useTiposReunion } from "@/hooks/useTiposReunion";
+import {
+  navigateBackFromMemoriaContext,
+  stripSuccessMessageState,
+} from "@/lib/memoriaNavigation";
 
 export default function TrabajoReunionDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -48,7 +52,10 @@ export default function TrabajoReunionDetalle() {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      navigate(location.pathname, { replace: true });
+      navigate(location.pathname, {
+        replace: true,
+        state: stripSuccessMessageState(location.state),
+      });
     }
   }, [location.state, navigate, location.pathname]);
 
@@ -210,7 +217,9 @@ export default function TrabajoReunionDetalle() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => navigate("/trabajos-reunion")}
+            onClick={() =>
+              navigateBackFromMemoriaContext(navigate, location, "/trabajos-reunion")
+            }
           >
             Volver
           </Button>

@@ -19,6 +19,7 @@ import {
   applyMemoriaSectionFilter,
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
+import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -388,7 +389,12 @@ export default function VisitantesHome() {
                   selectDisabled={!!v.deleted_at}
                   selected={selectedIds.includes(v.id)}
                   onSelectChange={(checked) => toggleSelect(v.id, checked)}
-                  onClick={() => !selectMode && navigate(`/visitantes/${v.id}`)}
+                  onClick={() =>
+                    !selectMode &&
+                    navigate(`/visitantes/${v.id}`, {
+                      state: buildMemoriaDetailState(location),
+                    })
+                  }
                 />
               ))}
             </div>

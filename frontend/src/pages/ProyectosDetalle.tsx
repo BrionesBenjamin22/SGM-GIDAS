@@ -14,6 +14,10 @@ import { useAuditoria } from "@/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import { useTiposProyecto } from "@/hooks/useTiposProyecto";
 import { useFuentesFinanciamiento } from "@/hooks/useFuenteFinanciamiento";
+import {
+  navigateBackFromMemoriaContext,
+  stripSuccessMessageState,
+} from "@/lib/memoriaNavigation";
 
 export default function ProyectoDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -48,7 +52,10 @@ export default function ProyectoDetalle() {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      navigate(location.pathname, { replace: true });
+      navigate(location.pathname, {
+        replace: true,
+        state: stripSuccessMessageState(location.state),
+      });
     }
   }, [location.state, navigate, location.pathname]);
 
@@ -265,7 +272,11 @@ export default function ProyectoDetalle() {
       />
 
       <div className="flex justify-start pt-4">
-        <Button variant="secondary" size="sm" onClick={() => navigate(-1)}>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => navigateBackFromMemoriaContext(navigate, location, "/proyectos")}
+        >
           Volver
         </Button>
       </div>

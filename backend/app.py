@@ -20,7 +20,7 @@ def create_app():
     CORS(
         app,
         resources={r"/*": {
-            "origins": [app.config["FRONTEND_URL"]],
+            "origins": app.config["CORS_ORIGINS"],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"]
         }},

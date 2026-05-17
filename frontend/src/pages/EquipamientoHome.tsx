@@ -14,6 +14,7 @@ import {
   applyMemoriaSectionFilter,
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
+import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -382,7 +383,12 @@ export default function EquipamientoLanding() {
                 selectDisabled={!!e.deleted_at}
                 selected={selectedIds.includes(e.id)}
                 onSelectChange={(checked) => toggleSelect(e.id, checked)}
-                onClick={() => !selectMode && navigate(`/equipamiento/${e.id}`)}
+                onClick={() =>
+                  !selectMode &&
+                  navigate(`/equipamiento/${e.id}`, {
+                    state: buildMemoriaDetailState(location),
+                  })
+                }
               />
             ))}
           </div>
