@@ -644,6 +644,10 @@ class ExportService:
         if clear_rows:
             cls._clear_merged_rows(ws, clear_rows)
 
+    @staticmethod
+    def _body_row_count(rows: Sequence[Sequence]) -> int:
+        return max(1, len(rows))
+
     @classmethod
     def _write_section_table(
         cls,
@@ -1248,22 +1252,19 @@ class ExportService:
             ]
             for idx, item in enumerate(snapshot_sources["proyectos"], start=1)
         ]
+        body_count = cls._body_row_count(proyectos_rows)
+        proyectos_title_row = 138 + offset
+        proyectos_header_row = proyectos_title_row + 1
+        proyectos_end_row = proyectos_header_row + body_count
         cls._write_section_table(
             ws,
-            138 + offset,
-            139 + offset,
-            143 + offset,
+            proyectos_title_row,
+            proyectos_header_row,
+            proyectos_end_row,
             "5.- Proyectos en curso",
             ["Nro.", "Tipo", "Codigo", "Periodo", "Monto destinado", "Proyecto", "Descripcion", "Logros", "Dificultades", "Fuente"],
             proyectos_rows,
             chars_per_line=28,
-        )
-        cls._write_total_row(
-            ws,
-            143 + offset,
-            "Total monto proyectos",
-            [(5, sum(cls._money(item.get("monto_destinado")) for item in snapshot_sources["proyectos"]))],
-            label_end_col=4,
         )
 
         distinciones_rows = [
@@ -1275,11 +1276,17 @@ class ExportService:
             ]
             for idx, item in enumerate(snapshot_sources["distinciones"], start=1)
         ]
+        section6_cursor = proyectos_end_row + 1
+
+        body_count = cls._body_row_count(distinciones_rows)
+        distinciones_title_row = section6_cursor
+        distinciones_header_row = distinciones_title_row + 1
+        distinciones_end_row = distinciones_header_row + body_count
         cls._write_section_table(
             ws,
-            144 + offset,
-            145 + offset,
-            148 + offset,
+            distinciones_title_row,
+            distinciones_header_row,
+            distinciones_end_row,
             "6.1.- Distinciones recibidas",
             ["Nro.", "Distincion / Premio", "Fecha", "Observaciones"],
             distinciones_rows,
@@ -1294,11 +1301,17 @@ class ExportService:
             ]
             for idx, item in enumerate(snapshot_sources["participaciones"], start=1)
         ]
+        section6_cursor = distinciones_end_row + 1
+
+        body_count = cls._body_row_count(participaciones_rows)
+        participaciones_title_row = section6_cursor
+        participaciones_header_row = participaciones_title_row + 1
+        participaciones_end_row = participaciones_header_row + body_count
         cls._write_section_table(
             ws,
-            149 + offset,
-            150 + offset,
-            154 + offset,
+            participaciones_title_row,
+            participaciones_header_row,
+            participaciones_end_row,
             "6.2.- Participaciones",
             ["Nro.", "Evento", "Rol / Participacion"],
             participaciones_rows,
@@ -1314,18 +1327,28 @@ class ExportService:
             ]
             for idx, item in enumerate(snapshot_sources["visitas"], start=1)
         ]
+        section6_cursor = participaciones_end_row + 1
+
+        body_count = cls._body_row_count(visitas_rows)
+        visitas_title_row = section6_cursor
+        visitas_header_row = visitas_title_row + 1
+        visitas_end_row = visitas_header_row + body_count
         cls._write_section_table(
             ws,
-            155 + offset,
-            156 + offset,
-            160 + offset,
+            visitas_title_row,
+            visitas_header_row,
+            visitas_end_row,
             "6.3.- Visitantes del pais y del extranjero",
             ["Nro.", "Institucion / Procedencia", "Nombre o descripcion", "Tipo"],
             visitas_rows,
             chars_per_line=36,
         )
 
-        cls._clear_rows_content(ws, [row_number + offset for row_number in range(161, 185)])
+        original_section7_start = 187 + offset
+        current_row = visitas_end_row + 1
+        if current_row < original_section7_start:
+            cls._clear_rows_content(ws, range(current_row, original_section7_start))
+        offset += max(0, current_row - original_section7_start)
 
         reuniones_nacionales = []
         reuniones_internacionales = []
@@ -1343,26 +1366,41 @@ class ExportService:
             else:
                 reuniones_nacionales.append(row_data)
 
+        body_count = cls._body_row_count(reuniones_nacionales)
+        reuniones_nacionales_title_row = 187 + offset
+        reuniones_nacionales_header_row = reuniones_nacionales_title_row + 1
+        reuniones_nacionales_end_row = reuniones_nacionales_header_row + body_count
         cls._write_section_table(
             ws,
-            187 + offset,
-            188 + offset,
-            201 + offset,
+            reuniones_nacionales_title_row,
+            reuniones_nacionales_header_row,
+            reuniones_nacionales_end_row,
             "7.1.- Reunion Cientifica Nacional con Referato",
             ["Nro.", "Nombre reunion", "Ciudad / Pais", "Fecha inicio", "Expositor", "Titulo trabajo"],
             reuniones_nacionales,
             chars_per_line=32,
         )
+
+        body_count = cls._body_row_count(reuniones_internacionales)
+        reuniones_internacionales_title_row = reuniones_nacionales_end_row + 1
+        reuniones_internacionales_header_row = reuniones_internacionales_title_row + 1
+        reuniones_internacionales_end_row = reuniones_internacionales_header_row + body_count
         cls._write_section_table(
             ws,
-            202 + offset,
-            203 + offset,
-            205 + offset,
+            reuniones_internacionales_title_row,
+            reuniones_internacionales_header_row,
+            reuniones_internacionales_end_row,
             "7.2.- Reunion Cientifica Internacional",
             ["Nro.", "Nombre reunion", "Ciudad / Pais", "Fecha inicio", "Expositor", "Titulo trabajo"],
             reuniones_internacionales,
             chars_per_line=32,
         )
+
+        original_section8_start = 207 + offset
+        current_row = reuniones_internacionales_end_row + 1
+        if current_row < original_section8_start:
+            cls._clear_rows_content(ws, range(current_row, original_section8_start))
+        offset += max(0, current_row - original_section8_start)
 
         trabajos_revista_rows = [
             [
@@ -1375,11 +1413,15 @@ class ExportService:
             ]
             for idx, item in enumerate(snapshot_sources["trabajos_revista"], start=1)
         ]
+        body_count = cls._body_row_count(trabajos_revista_rows)
+        trabajos_revista_title_row = 207 + offset
+        trabajos_revista_header_row = trabajos_revista_title_row + 1
+        trabajos_revista_end_row = trabajos_revista_header_row + body_count
         cls._write_section_table(
             ws,
-            207 + offset,
-            208 + offset,
-            214 + offset,
+            trabajos_revista_title_row,
+            trabajos_revista_header_row,
+            trabajos_revista_end_row,
             "8.1.- Trabajos publicados en revistas con referato",
             ["Nro.", "Revista", "Pais", "Editorial", "ISSN", "Titulo trabajo"],
             trabajos_revista_rows,
@@ -1395,17 +1437,27 @@ class ExportService:
             ]
             for idx, item in enumerate(snapshot_sources["articulos"], start=1)
         ]
+        body_count = cls._body_row_count(articulos_rows)
+        articulos_title_row = max(221 + offset, trabajos_revista_end_row + 2)
+        articulos_header_row = articulos_title_row + 1
+        articulos_end_row = articulos_header_row + body_count
         cls._write_section_table(
             ws,
-            221 + offset,
-            222 + offset,
-            228 + offset,
+            articulos_title_row,
+            articulos_header_row,
+            articulos_end_row,
             "8.4.- Articulos de divulgacion, informes y memorias tecnicas",
             ["Nro.", "Titulo", "Descripcion", "Fecha"],
             articulos_rows,
             chars_per_line=42,
         )
-        cls._clear_rows_content(ws, [215 + offset, 216 + offset, 229 + offset])
+        cls._clear_rows_content(ws, [215 + offset, 216 + offset])
+
+        original_section9_start = 231 + offset
+        current_row = articulos_end_row + 2
+        if current_row < original_section9_start:
+            cls._clear_rows_content(ws, range(current_row, original_section9_start))
+        offset += max(0, current_row - original_section9_start)
 
         registros_intelectuales = [
             item for item in snapshot_sources["registros"]
@@ -1424,11 +1476,15 @@ class ExportService:
             ]
             for idx, item in enumerate(registros_intelectuales, start=1)
         ]
+        body_count = cls._body_row_count(registros_intelectuales_rows)
+        registros_intelectuales_title_row = 231 + offset
+        registros_intelectuales_header_row = registros_intelectuales_title_row + 1
+        registros_intelectuales_end_row = registros_intelectuales_header_row + body_count
         cls._write_section_table(
             ws,
-            231 + offset,
-            232 + offset,
-            234 + offset,
+            registros_intelectuales_title_row,
+            registros_intelectuales_header_row,
+            registros_intelectuales_end_row,
             "9.1.- Registro de Propiedad Intelectual",
             ["Nro.", "Registro", "Organismo", "Fecha"],
             registros_intelectuales_rows,
@@ -1443,11 +1499,15 @@ class ExportService:
             ]
             for idx, item in enumerate(registros_industriales, start=1)
         ]
+        body_count = cls._body_row_count(registros_industriales_rows)
+        registros_industriales_title_row = registros_intelectuales_end_row + 1
+        registros_industriales_header_row = registros_industriales_title_row + 1
+        registros_industriales_end_row = registros_industriales_header_row + body_count
         cls._write_section_table(
             ws,
-            235 + offset,
-            236 + offset,
-            238 + offset,
+            registros_industriales_title_row,
+            registros_industriales_header_row,
+            registros_industriales_end_row,
             "9.2.- Registro de Propiedad Industrial",
             ["Nro.", "Registro", "Organismo", "Fecha"],
             registros_industriales_rows,
@@ -1463,17 +1523,26 @@ class ExportService:
             ]
             for idx, item in enumerate(snapshot_sources["actividades"], start=1)
         ]
+        body_count = cls._body_row_count(actividades_rows)
+        actividades_title_row = max(239 + offset, registros_industriales_end_row + 1)
+        actividades_header_row = actividades_title_row + 1
+        actividades_end_row = actividades_header_row + body_count
         cls._write_section_table(
             ws,
-            239 + offset,
-            240 + offset,
-            247 + offset,
+            actividades_title_row,
+            actividades_header_row,
+            actividades_end_row,
             "III.- Actividades en docencia",
             ["Nro.", "Investigador", "Grado", "Actividades y catedras de posgrado"],
             actividades_rows,
             chars_per_line=30,
         )
-        cls._clear_rows_content(ws, [248 + offset])
+
+        original_section10_start = 250 + offset
+        current_row = actividades_end_row + 1
+        if current_row < original_section10_start:
+            cls._clear_rows_content(ws, range(current_row, original_section10_start))
+        offset += max(0, current_row - original_section10_start)
 
         transferencias_por_tipo = {
             "tecnologia": [],
@@ -1500,19 +1569,44 @@ class ExportService:
             ]
 
         transfer_headers = ["Nro.", "Denominacion", "Adoptante", "Demandante", "Monto comprometido", "Breve descripcion"]
-        cls._write_section_table(ws, 250 + offset, 251 + offset, 255 + offset, "10.1.- Contrato de transferencia de tecnologia", transfer_headers, transfer_rows(transferencias_por_tipo["tecnologia"]), chars_per_line=30)
-        cls._write_section_table(ws, 256 + offset, 257 + offset, 260 + offset, "10.2.- Contrato de I+D+i", transfer_headers, transfer_rows(transferencias_por_tipo["idi"]), chars_per_line=30)
-        cls._write_section_table(ws, 261 + offset, 262 + offset, 264 + offset, "10.3.- Contrato/Acuerdo de Transferencia de conocimientos", transfer_headers, transfer_rows(transferencias_por_tipo["conocimientos"]), chars_per_line=30)
-        cls._write_section_table(ws, 265 + offset, 266 + offset, 269 + offset, "10.4.- Contrato de Asistencia Tecnica o Consultoria", transfer_headers, transfer_rows(transferencias_por_tipo["asistencia"]), chars_per_line=30)
-        cls._write_section_table(ws, 270 + offset, 271 + offset, 273 + offset, "10.5.- Servicios tecnicos/de apoyo/supervision y/o ensayos de laboratorio", transfer_headers, transfer_rows(transferencias_por_tipo["servicios"]), chars_per_line=30)
-        cls._write_section_table(ws, 274 + offset, 275 + offset, 278 + offset, "10.6.- Difusion a la comunidad academica y en general", transfer_headers, transfer_rows(transferencias_por_tipo["difusion"]), chars_per_line=30)
+        transfer_sections = [
+            ("10.1.- Contrato de transferencia de tecnologia", transfer_rows(transferencias_por_tipo["tecnologia"])),
+            ("10.2.- Contrato de I+D+i", transfer_rows(transferencias_por_tipo["idi"])),
+            ("10.3.- Contrato/Acuerdo de Transferencia de conocimientos", transfer_rows(transferencias_por_tipo["conocimientos"])),
+            ("10.4.- Contrato de Asistencia Tecnica o Consultoria", transfer_rows(transferencias_por_tipo["asistencia"])),
+            ("10.5.- Servicios tecnicos/de apoyo/supervision y/o ensayos de laboratorio", transfer_rows(transferencias_por_tipo["servicios"])),
+            ("10.6.- Difusion a la comunidad academica y en general", transfer_rows(transferencias_por_tipo["difusion"])),
+        ]
+        transfer_cursor = 250 + offset
+        for title, transfer_section_rows in transfer_sections:
+            body_count = cls._body_row_count(transfer_section_rows)
+            title_row = transfer_cursor
+            header_row = title_row + 1
+            end_row = header_row + body_count
+            cls._write_section_table(
+                ws,
+                title_row,
+                header_row,
+                end_row,
+                title,
+                transfer_headers,
+                transfer_section_rows,
+                chars_per_line=30,
+            )
+            transfer_cursor = end_row + 1
         cls._write_total_row(
             ws,
-            278 + offset,
+            transfer_cursor,
             "Total monto transferencias",
             [(5, sum(cls._money(item.get("monto")) for item in snapshot_sources["transferencias"]))],
             label_end_col=4,
         )
+
+        original_section11_start = 281 + offset
+        current_row = transfer_cursor + 1
+        if current_row < original_section11_start:
+            cls._clear_rows_content(ws, range(current_row, original_section11_start))
+        offset += max(0, current_row - original_section11_start)
 
         erogaciones_corrientes = [
             item for item in snapshot_sources["erogaciones"]
@@ -1532,19 +1626,24 @@ class ExportService:
             ]
             for idx, item in enumerate(erogaciones_corrientes, start=1)
         ]
+        body_count = cls._body_row_count(erogaciones_corrientes_rows)
+        erogaciones_corrientes_title_row = 281 + offset
+        erogaciones_corrientes_header_row = erogaciones_corrientes_title_row + 1
+        erogaciones_corrientes_end_row = erogaciones_corrientes_header_row + body_count
         cls._write_section_table(
             ws,
-            281 + offset,
-            282 + offset,
-            289 + offset,
+            erogaciones_corrientes_title_row,
+            erogaciones_corrientes_header_row,
+            erogaciones_corrientes_end_row,
             "11.1.- Erogaciones Corrientes",
             ["Nro.", "Fuente de financiamiento", "Ingresos", "Egresos", "Saldo resultante"],
             erogaciones_corrientes_rows,
             chars_per_line=30,
         )
+        erogaciones_corrientes_total_row = erogaciones_corrientes_end_row + 1
         cls._write_total_row(
             ws,
-            289 + offset,
+            erogaciones_corrientes_total_row,
             "Totales erogaciones",
             [
                 (3, sum(cls._money(item.get("ingresos")) for item in erogaciones_corrientes)),
@@ -1563,19 +1662,24 @@ class ExportService:
             ]
             for idx, item in enumerate(erogaciones_capital, start=1)
         ]
+        body_count = cls._body_row_count(erogaciones_capital_rows)
+        erogaciones_capital_title_row = erogaciones_corrientes_total_row + 1
+        erogaciones_capital_header_row = erogaciones_capital_title_row + 1
+        erogaciones_capital_end_row = erogaciones_capital_header_row + body_count
         cls._write_section_table(
             ws,
-            290 + offset,
-            291 + offset,
-            294 + offset,
+            erogaciones_capital_title_row,
+            erogaciones_capital_header_row,
+            erogaciones_capital_end_row,
             "11.2.- Erogaciones de Capital",
             ["Nro.", "Fuente de financiamiento", "Ingresos", "Egresos", "Saldo resultante"],
             erogaciones_capital_rows,
             chars_per_line=30,
         )
+        erogaciones_capital_total_row = erogaciones_capital_end_row + 1
         cls._write_total_row(
             ws,
-            294 + offset,
+            erogaciones_capital_total_row,
             "Totales erogaciones",
             [
                 (3, sum(cls._money(item.get("ingresos")) for item in erogaciones_capital)),
@@ -1584,6 +1688,12 @@ class ExportService:
             ],
             label_end_col=2,
         )
+
+        original_section12_start = 295 + offset
+        current_row = erogaciones_capital_total_row + 1
+        if current_row < original_section12_start:
+            cls._clear_rows_content(ws, range(current_row, original_section12_start))
+        offset += max(0, current_row - original_section12_start)
 
         cls._write_cell(ws, 295 + offset, "A", f"VI - PROGRAMA DE ACTIVIDADES para {anio_memoria + 1}")
         cls._set_merged_text(ws, 296 + offset, "No registra datos de planificacion en snapshots de memoria.", normalize=True)
