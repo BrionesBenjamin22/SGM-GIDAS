@@ -8,7 +8,7 @@ El proyecto permite registrar, consultar, auditar y versionar información acad�
 
 ## Propósito del sistema
 
-GIDAS no es solo un sistema CRUD de entidades aisladas. Su objetivo principal es:
+SGM no es solo un sistema CRUD de entidades aisladas. Su objetivo principal es:
 
 - centralizar la información del grupo de investigación
 - mantener trazabilidad y auditoría sobre los cambios
