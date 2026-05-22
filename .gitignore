@@ -1,2 +1,6 @@
 .env*
 !.env.example
+skills-lock.json
+
+# Ignore the agents directory
+/.agents/
