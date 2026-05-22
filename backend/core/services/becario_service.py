@@ -1,9 +1,14 @@
 from datetime import date
 
 from extension import db
-from core.models.personal import Becario, TipoFormacion, BecarioHorasHistorial
+from core.models.personal import Becario, TipoFormacion, BecarioHorasHistorial, BecarioMemoriaVersion
 from core.models.grupo import GrupoInvestigacionUtn
 from core.models.proyecto_investigacion import ProyectoInvestigacion
+from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import (
+    validar_fecha_alta_grupo,
+    estuvo_activo_en_periodo_memoria,
+)
 
 
 # =====================================================
@@ -104,6 +109,52 @@ def _obtener_historial_activo_unico(becario):
     return historiales_activos[0] if historiales_activos else None
 
 
+def _resolver_horas_activas(becario):
+    historial_activo = _obtener_historial_activo_unico(becario)
+    return (
+        historial_activo.horas_semanales
+        if historial_activo else becario.horas_semanales
+    )
+
+
+def _resolver_becas_percibidas(becario, memoria_version=None):
+    relaciones_activas = []
+    for relacion in getattr(becario, "becas", []):
+        beca = getattr(relacion, "beca", None)
+        if beca is None:
+            continue
+
+        if memoria_version is not None:
+            if not estuvo_activo_en_periodo_memoria(
+                memoria_version,
+                getattr(relacion, "fecha_inicio", None),
+                getattr(relacion, "fecha_fin", None)
+                or getattr(relacion, "deleted_at", None)
+            ):
+                continue
+        elif getattr(relacion, "deleted_at", None) is not None:
+            continue
+
+        relaciones_activas.append(relacion)
+
+    nombres_becas = sorted({
+        relacion.beca.nombre_beca
+        for relacion in relaciones_activas
+        if getattr(relacion.beca, "nombre_beca", None)
+    })
+    fuentes = sorted({
+        relacion.beca.fuente_financiamiento.nombre
+        for relacion in relaciones_activas
+        if getattr(relacion.beca, "fuente_financiamiento", None) is not None
+        and getattr(relacion.beca.fuente_financiamiento, "nombre", None)
+    })
+
+    return {
+        "becas_percibidas": ", ".join(nombres_becas),
+        "fuentes_financiamiento_beca": ", ".join(fuentes)
+    }
+
+
 def _cerrar_historial(historial_activo):
     if historial_activo.fecha_inicio > date.today():
         raise ValueError("El historial activo tiene una fecha de inicio invalida.")
@@ -148,6 +199,9 @@ def crear_becario(data: dict, user_id: int):
     becario = Becario(
         nombre_apellido=nombre,
         horas_semanales=horas,
+        fecha_alta_grupo=validar_fecha_alta_grupo(
+            data.get("fecha_alta_grupo")
+        ),
         tipo_formacion_id=tipo_formacion_id,
         grupo_utn_id=grupo_utn_id,
         activo=True,
@@ -188,6 +242,7 @@ def actualizar_becario(id: int, data: dict, user_id: int):
     _validar_user_id(user_id)
 
     becario = _get_activo_or_404(id)
+    cambios = {}
 
     if "activo" in data:
         if not isinstance(data["activo"], bool):
@@ -199,11 +254,22 @@ def actualizar_becario(id: int, data: dict, user_id: int):
         becario.activo = data["activo"]
 
     if "nombre_apellido" in data:
-        becario.nombre_apellido = _validar_nombre(data["nombre_apellido"])
+        nuevo_valor = _validar_nombre(data["nombre_apellido"])
+        cambio = AuditoriaService.construir_cambio(
+            becario.nombre_apellido,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["nombre_apellido"] = cambio
+            becario.nombre_apellido = nuevo_valor
 
     if "horas_semanales" in data:
         horas = _validar_horas(data["horas_semanales"])
         historial_activo = _obtener_historial_activo_unico(becario)
+        cambio = AuditoriaService.construir_cambio(
+            becario.horas_semanales,
+            horas
+        )
 
         if not historial_activo:
             nuevo_historial = BecarioHorasHistorial(
@@ -227,7 +293,9 @@ def actualizar_becario(id: int, data: dict, user_id: int):
 
             db.session.add(nuevo_historial)
 
-        becario.horas_semanales = horas
+        if cambio:
+            cambios["horas_semanales"] = cambio
+            becario.horas_semanales = horas
 
     if "tipo_formacion_id" in data:
         tipo_formacion_id = _validar_id_positivo(
@@ -235,7 +303,13 @@ def actualizar_becario(id: int, data: dict, user_id: int):
         )
         if not TipoFormacion.query.get(tipo_formacion_id):
             raise ValueError("Tipo de formacion invalido.")
-        becario.tipo_formacion_id = tipo_formacion_id
+        cambio = AuditoriaService.construir_cambio(
+            becario.tipo_formacion_id,
+            tipo_formacion_id
+        )
+        if cambio:
+            cambios["tipo_formacion_id"] = cambio
+            becario.tipo_formacion_id = tipo_formacion_id
 
     if "grupo_utn_id" in data:
         grupo_utn_id = _validar_id_positivo(
@@ -243,12 +317,37 @@ def actualizar_becario(id: int, data: dict, user_id: int):
         )
         if grupo_utn_id and not GrupoInvestigacionUtn.query.get(grupo_utn_id):
             raise ValueError("Grupo UTN invalido.")
-        becario.grupo_utn_id = grupo_utn_id
+        cambio = AuditoriaService.construir_cambio(
+            becario.grupo_utn_id,
+            grupo_utn_id
+        )
+        if cambio:
+            cambios["grupo_utn_id"] = cambio
+            becario.grupo_utn_id = grupo_utn_id
+
+    if "fecha_alta_grupo" in data:
+        nuevo_valor = validar_fecha_alta_grupo(data["fecha_alta_grupo"])
+        cambio = AuditoriaService.construir_cambio(
+            becario.fecha_alta_grupo,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["fecha_alta_grupo"] = cambio
+            becario.fecha_alta_grupo = nuevo_valor
 
     if "proyectos" in data:
         proyectos_ids = _validar_proyectos_ids(data["proyectos"])
         proyectos = _obtener_proyectos_validos(proyectos_ids)
         becario.participaciones_proyecto = proyectos
+
+    if cambios:
+        becario.mark_updated(user_id)
+        AuditoriaService.registrar_cambios(
+            entidad="becario",
+            registro_id=becario.id,
+            cambios=cambios,
+            user_id=user_id
+        )
 
     try:
         db.session.commit()
@@ -326,3 +425,62 @@ def obtener_becario_por_id(id: int):
         raise ValueError("Becario no encontrado.")
 
     return becario
+
+
+def obtener_historial_becario(id: int):
+    becario = obtener_becario_por_id(id)
+    return AuditoriaService.obtener_historial_entidad(
+        entidad="becario",
+        registro_id=becario.id
+    )
+
+
+def snapshot_becarios_para_memoria_version(memoria_version, user_id):
+    becarios = Becario.query.filter().all()
+
+    snapshots = []
+    for becario in becarios:
+        if not estuvo_activo_en_periodo_memoria(
+            memoria_version,
+            becario.fecha_alta_grupo,
+            getattr(becario, "deleted_at", None)
+        ):
+            continue
+        resumen_becas = _resolver_becas_percibidas(becario, memoria_version)
+        snapshot = BecarioMemoriaVersion(
+            memoria_version_id=memoria_version.id,
+            becario_id=becario.id,
+            nombre_apellido=becario.nombre_apellido,
+            horas_semanales=_resolver_horas_activas(becario),
+            tipo_formacion_id=becario.tipo_formacion_id,
+            tipo_formacion_nombre=(
+                becario.tipo_formacion.nombre
+                if becario.tipo_formacion else None
+            ),
+            grupo_utn_id=becario.grupo_utn_id,
+            grupo_utn_nombre=(
+                becario.grupo_utn.nombre_sigla_grupo
+                if becario.grupo_utn else None
+            ),
+            becas_percibidas=resumen_becas["becas_percibidas"],
+            fuentes_financiamiento_beca=resumen_becas["fuentes_financiamiento_beca"],
+            created_by=user_id
+        )
+        db.session.add(snapshot)
+        snapshots.append(snapshot)
+
+    return snapshots
+
+
+def obtener_snapshots_becarios_por_memoria_version(memoria_version_id):
+    snapshots = (
+        BecarioMemoriaVersion.query
+        .filter(
+            BecarioMemoriaVersion.memoria_version_id == memoria_version_id,
+            BecarioMemoriaVersion.deleted_at.is_(None)
+        )
+        .order_by(BecarioMemoriaVersion.nombre_apellido.asc())
+        .all()
+    )
+
+    return [snapshot.serialize() for snapshot in snapshots]

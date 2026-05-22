@@ -2,8 +2,13 @@ from datetime import date, datetime
 
 from sqlalchemy import or_
 
-from core.models.distinciones import DistincionRecibida
+from core.models.distinciones import (
+    DistincionRecibida,
+    DistincionRecibidaMemoriaVersion,
+)
 from core.models.proyecto_investigacion import ProyectoInvestigacion
+from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 
 
@@ -164,6 +169,14 @@ class DistincionRecibidaService:
         return DistincionRecibidaService._get_or_404(distincion_id).serialize()
 
     @staticmethod
+    def get_historial(distincion_id: int):
+        distincion = DistincionRecibidaService._get_or_404(distincion_id)
+        return AuditoriaService.obtener_historial_entidad(
+            entidad="distincion_recibida",
+            registro_id=distincion.id
+        )
+
+    @staticmethod
     def create(data: dict, user_id: int):
         DistincionRecibidaService._validar_payload(data)
         DistincionRecibidaService._validar_user_id(user_id)
@@ -199,9 +212,11 @@ class DistincionRecibidaService:
         return dist.serialize()
 
     @staticmethod
-    def update(distincion_id: int, data: dict):
+    def update(distincion_id: int, data: dict, user_id: int):
         DistincionRecibidaService._validar_payload(data)
+        DistincionRecibidaService._validar_user_id(user_id)
         dist = DistincionRecibidaService._get_activa_or_404(distincion_id)
+        cambios = {}
 
         fecha = dist.fecha
         if "fecha" in data:
@@ -226,9 +241,32 @@ class DistincionRecibidaService:
             dist.id
         )
 
-        dist.fecha = fecha
-        dist.descripcion = descripcion
-        dist.proyecto_investigacion_id = proyecto_id
+        cambio = AuditoriaService.construir_cambio(dist.fecha, fecha)
+        if cambio:
+            cambios["fecha"] = cambio
+            dist.fecha = fecha
+
+        cambio = AuditoriaService.construir_cambio(dist.descripcion, descripcion)
+        if cambio:
+            cambios["descripcion"] = cambio
+            dist.descripcion = descripcion
+
+        cambio = AuditoriaService.construir_cambio(
+            dist.proyecto_investigacion_id,
+            proyecto_id
+        )
+        if cambio:
+            cambios["proyecto_investigacion_id"] = cambio
+            dist.proyecto_investigacion_id = proyecto_id
+
+        if cambios:
+            dist.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="distincion_recibida",
+                registro_id=dist.id,
+                cambios=cambios,
+                user_id=user_id
+            )
 
         try:
             db.session.commit()
@@ -252,3 +290,49 @@ class DistincionRecibidaService:
             raise
 
         return {"message": "Distincion eliminada correctamente"}
+
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        distinciones = DistincionRecibida.query.filter().all()
+
+        snapshots = []
+        for distincion in distinciones:
+            if not esta_en_periodo_memoria(memoria_version, distincion.fecha):
+                continue
+            snapshot = DistincionRecibidaMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                distincion_id=distincion.id,
+                fecha=distincion.fecha,
+                descripcion=distincion.descripcion,
+                proyecto_investigacion_id=distincion.proyecto_investigacion_id,
+                proyecto_codigo=(
+                    distincion.proyecto_investigacion.codigo_proyecto
+                    if distincion.proyecto_investigacion else None
+                ),
+                proyecto_nombre=(
+                    distincion.proyecto_investigacion.nombre_proyecto
+                    if distincion.proyecto_investigacion else None
+                ),
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            DistincionRecibidaMemoriaVersion.query
+            .filter(
+                DistincionRecibidaMemoriaVersion.memoria_version_id == memoria_version_id,
+                DistincionRecibidaMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(
+                DistincionRecibidaMemoriaVersion.fecha.desc(),
+                DistincionRecibidaMemoriaVersion.id.desc()
+            )
+            .all()
+        )
+
+        return [snapshot.serialize() for snapshot in snapshots]

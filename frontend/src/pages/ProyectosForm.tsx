@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -6,21 +6,20 @@ import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
 import PersonalProyectoField from "@/components/PersonalProyectoField";
-
+import SuccessToast from "@/components/SuccessToast";
+import { useBecarios } from "@/hooks/useBecarios";
+import { useFuentesFinanciamiento } from "@/hooks/useFuenteFinanciamiento";
+import { useInvestigadores } from "@/hooks/useInvestigadores";
+import { useTiposProyecto } from "@/hooks/useTiposProyecto";
+import { useUct } from "@/hooks/useUct";
+import { HttpError } from "@/lib/http";
 import {
-  upsertProyectos,
   getProyectoById,
   type Proyecto,
+  upsertProyectos,
   vincularBecarios,
   vincularInvestigadores,
 } from "@/services/proyectosServices";
-
-import { useTiposProyecto } from "@/hooks/useTiposProyecto";
-import { useFuentesFinanciamiento } from "@/hooks/useFuenteFinanciamiento";
-import { useInvestigadores } from "@/hooks/useInvestigadores";
-import { useBecarios } from "@/hooks/useBecarios";
-import { usePlanificaciones } from "@/hooks/usePlanificacionesGrupo";
-import { useUct } from "@/hooks/useUct";
 
 export default function ProyectosForm() {
   const { id } = useParams<{ id: string }>();
@@ -32,16 +31,10 @@ export default function ProyectosForm() {
   const fuentesQuery = useFuentesFinanciamiento();
   const { data: investigadores = [] } = useInvestigadores();
   const { data: becarios = [] } = useBecarios();
-  const { list: planificaciones = [] } = usePlanificaciones();
   const { uct } = useUct();
 
   const tipos = tiposQuery.data || [];
   const { fuentes = [] } = fuentesQuery;
-
-  const planificacionesDelGrupo = useMemo(() => {
-    if (!uct?.id) return [];
-    return planificaciones.filter((p) => p.grupo_id === uct.id);
-  }, [planificaciones, uct]);
 
   const { data: initialData, isLoading } = useQuery<Proyecto | null>({
     queryKey: ["proyecto", id],
@@ -55,7 +48,6 @@ export default function ProyectosForm() {
   const [descripcionProyecto, setDescripcionProyecto] = useState("");
   const [dificultadesProyecto, setDificultadesProyecto] = useState("");
   const [montoDestinado, setMontoDestinado] = useState("");
-  const [planificacionId, setPlanificacionId] = useState<number | null>(null);
 
   const [fechaInicio, setFechaInicio] = useState<Date | null>(null);
   const [fechaFin, setFechaFin] = useState<Date | null>(null);
@@ -67,6 +59,8 @@ export default function ProyectosForm() {
   const [becariosIds, setBecariosIds] = useState<number[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const proyectoCerrado = initialData?.cerrado === true;
 
@@ -84,76 +78,139 @@ export default function ProyectosForm() {
         : ""
     );
 
-    if (initialData.fechaInicio) {
-      setFechaInicio(new Date(initialData.fechaInicio));
-    }
-
-    if (initialData.fechaFinalizacion) {
-      setFechaFin(new Date(initialData.fechaFinalizacion));
-    }
+    setFechaInicio(
+      initialData.fechaInicio ? new Date(initialData.fechaInicio) : null
+    );
+    setFechaFin(
+      initialData.fechaFinalizacion
+        ? new Date(initialData.fechaFinalizacion)
+        : null
+    );
 
     setTipoProyectoId(initialData.tipoProyectoId ?? null);
     setFuenteId(initialData.fuenteFinanciamientoId ?? null);
-    setPlanificacionId(initialData.planificacionId ?? null);
 
     const investigadoresIniciales =
-      initialData.investigadores?.map((i) => i.id) ?? [];
+      initialData.investigadores?.map((investigador) => investigador.id) ?? [];
     setInvestigadoresIds(investigadoresIniciales);
 
     const coordinadorInicial =
-      initialData.investigadores?.find((i) => i.es_coordinador)?.id ?? null;
+      initialData.investigadores?.find(
+        (investigador) => investigador.es_coordinador
+      )?.id ?? null;
     setCoordinadorId(coordinadorInicial);
 
-    setBecariosIds(initialData.becarios?.map((b) => b.id) ?? []);
+    setBecariosIds(initialData.becarios?.map((becario) => becario.id) ?? []);
   }, [initialData]);
 
   useEffect(() => {
-    if (
-      coordinadorId !== null &&
-      !investigadoresIds.includes(coordinadorId)
-    ) {
+    if (coordinadorId !== null && !investigadoresIds.includes(coordinadorId)) {
       setCoordinadorId(null);
     }
-  }, [investigadoresIds, coordinadorId]);
+  }, [coordinadorId, investigadoresIds]);
 
   const investigadoresSeleccionados = useMemo(() => {
-    return investigadores.filter((inv) =>
-      investigadoresIds.includes(inv.id)
+    return investigadores.filter((investigador) =>
+      investigadoresIds.includes(investigador.id)
     );
   }, [investigadores, investigadoresIds]);
 
+  const investigadoresInicialesIds = useMemo(
+    () => initialData?.investigadores?.map((investigador) => investigador.id) ?? [],
+    [initialData]
+  );
+
+  const becariosInicialesIds = useMemo(
+    () => initialData?.becarios?.map((becario) => becario.id) ?? [],
+    [initialData]
+  );
+
   const mutation = useMutation({
     mutationFn: async (payload: any) => {
-      const proyecto: any = await upsertProyectos(payload);
+      const shouldSkipUpsert = payload._skipUpsert === true;
+      const proyecto: any = shouldSkipUpsert
+        ? { id: payload.id }
+        : await upsertProyectos(payload);
       const proyectoId = Number(proyecto?.id ?? payload.id);
+      const fechaInicioVinculacion =
+        payload.fechaInicio ?? initialData?.fechaInicio;
 
-      if (investigadoresIds.length > 0) {
+      const investigadoresAAgregar = isEdit
+        ? investigadoresIds.filter(
+            (idInvestigador) =>
+              !investigadoresInicialesIds.includes(idInvestigador)
+          )
+        : investigadoresIds;
+
+      const becariosAAgregar = isEdit
+        ? becariosIds.filter(
+            (idBecario) => !becariosInicialesIds.includes(idBecario)
+          )
+        : becariosIds;
+
+      if (investigadoresAAgregar.length > 0) {
         await vincularInvestigadores(
           proyectoId,
-          investigadoresIds.map((idInvestigador) => ({
+          investigadoresAAgregar.map((idInvestigador) => ({
             id_investigador: idInvestigador,
-            fecha_inicio: payload.fechaInicio,
+            fecha_inicio: fechaInicioVinculacion,
             fecha_fin: null,
             es_coordinador: coordinadorId === idInvestigador,
           }))
         );
       }
 
-      if (becariosIds.length > 0) {
+      if (becariosAAgregar.length > 0) {
         await vincularBecarios(
           proyectoId,
-          becariosIds,
-          payload.fechaInicio
+          becariosAAgregar,
+          fechaInicioVinculacion
         );
       }
 
       return proyecto;
     },
-
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["proyectos"] });
       qc.invalidateQueries({ queryKey: ["proyecto", id] });
-      navigate("/proyectos");
+      qc.invalidateQueries({ queryKey: ["proyecto-historial", id] });
+
+      if (isEdit && id) {
+        navigate(`/proyectos/${id}`, {
+          replace: true,
+          state: {
+            successMessage: "Proyecto actualizado con exito.",
+          },
+        });
+        return;
+      }
+
+      navigate("/proyectos", {
+        state: {
+          successMessage: "Proyecto creado con exito.",
+        },
+      });
+    },
+    onError: (error) => {
+      const defaultMessage = isEdit
+        ? "No se pudo actualizar el proyecto."
+        : "No se pudo crear el proyecto.";
+
+      if (error instanceof HttpError && error.body && typeof error.body === "object") {
+        const body = error.body as Record<string, unknown>;
+        const backendMessage =
+          typeof body.error === "string"
+            ? body.error
+            : typeof body.message === "string"
+              ? body.message
+              : null;
+
+        setErrorMessage(backendMessage ?? defaultMessage);
+      } else {
+        setErrorMessage(defaultMessage);
+      }
+
+      setShowError(true);
     },
   });
 
@@ -169,7 +226,7 @@ export default function ProyectosForm() {
     const newErrors: Record<string, string> = {};
 
     if (!codigoProyecto.trim()) {
-      newErrors.codigoProyecto = "Debe ingresar código de proyecto";
+      newErrors.codigoProyecto = "Debe ingresar codigo de proyecto";
     }
 
     if (!nombreProyecto.trim()) {
@@ -204,13 +261,10 @@ export default function ProyectosForm() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (proyectoCerrado) {
-      return;
-    }
-
+    if (proyectoCerrado) return;
     if (!validate()) return;
 
-    mutation.mutate({
+    const payload = {
       id: id ?? undefined,
       nombreProyecto,
       codigoProyecto: Number(codigoProyecto),
@@ -221,18 +275,75 @@ export default function ProyectosForm() {
           ? Number(montoDestinado)
           : undefined,
       grupoUtnId: uct?.id ?? undefined,
-      planificacionId: planificacionId ?? undefined,
-      fechaInicio: fechaInicio!.toISOString().split("T")[0],
+      fechaInicio: fechaInicio?.toISOString().split("T")[0],
       fechaFinalizacion: fechaFin
         ? fechaFin.toISOString().split("T")[0]
         : undefined,
-      tipoProyectoId: tipoProyectoId!,
+      tipoProyectoId,
       fuenteFinanciamientoId: fuenteId ?? undefined,
-    });
+    };
+
+    if (!isEdit) {
+      mutation.mutate(payload);
+      return;
+    }
+
+    const initialPayload = {
+      nombreProyecto: initialData?.nombreProyecto ?? "",
+      codigoProyecto: Number(initialData?.codigoProyecto ?? 0),
+      descripcionProyecto: initialData?.descripcionProyecto ?? "",
+      dificultadesProyecto: initialData?.dificultadesProyecto ?? "",
+      montoDestinado:
+        initialData?.montoDestinado !== undefined &&
+        initialData?.montoDestinado !== null
+          ? Number(initialData.montoDestinado)
+          : undefined,
+      grupoUtnId: initialData?.grupoUtnId ?? uct?.id ?? undefined,
+      fechaInicio: initialData?.fechaInicio ?? undefined,
+      fechaFinalizacion: initialData?.fechaFinalizacion ?? undefined,
+      tipoProyectoId: initialData?.tipoProyectoId ?? null,
+      fuenteFinanciamientoId: initialData?.fuenteFinanciamientoId ?? undefined,
+    };
+
+    const changedPayload = Object.fromEntries(
+      Object.entries(payload).filter(([key, value]) => {
+        return initialPayload[key as keyof typeof initialPayload] !== value;
+      })
+    );
+
+    const hayNuevosInvestigadores = investigadoresIds.some(
+      (idInvestigador) => !investigadoresInicialesIds.includes(idInvestigador)
+    );
+    const hayNuevosBecarios = becariosIds.some(
+      (idBecario) => !becariosInicialesIds.includes(idBecario)
+    );
+
+    if (
+      Object.keys(changedPayload).length === 0 &&
+      !hayNuevosInvestigadores &&
+      !hayNuevosBecarios
+    ) {
+      navigate(`/proyectos/${id}`, {
+        replace: true,
+        state: {
+          successMessage: "No hubo cambios para actualizar.",
+        },
+      });
+      return;
+    }
+
+    mutation.mutate(
+      Object.keys(changedPayload).length === 0
+        ? {
+            id,
+            _skipUpsert: true,
+          }
+        : changedPayload
+    );
   };
 
   if (isEdit && isLoading) {
-    return <p>Cargando proyecto…</p>;
+    return <p>Cargando proyecto...</p>;
   }
 
   const inputClass = (field: string) =>
@@ -246,16 +357,17 @@ export default function ProyectosForm() {
 
       {proyectoCerrado && (
         <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Este proyecto se encuentra cerrado. Para modificar investigadores, becarios
-          o volver a editarlo, primero debés reabrirlo desde el detalle.
+          Este proyecto se encuentra cerrado. Para modificar investigadores,
+          becarios o volver a editarlo, primero debes reabrirlo desde el
+          detalle.
         </div>
       )}
 
       <form
         onSubmit={submit}
-        className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 space-y-6"
+        className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Código del proyecto">
+        <Field label="Codigo del proyecto">
           <>
             <input
               className={inputClass("codigoProyecto")}
@@ -268,7 +380,7 @@ export default function ProyectosForm() {
               disabled={proyectoCerrado}
             />
             {errors.codigoProyecto && (
-              <p className="text-red-500 text-sm mt-1">
+              <p className="mt-1 text-sm text-red-500">
                 {errors.codigoProyecto}
               </p>
             )}
@@ -288,19 +400,19 @@ export default function ProyectosForm() {
               disabled={proyectoCerrado}
             />
             {errors.nombreProyecto && (
-              <p className="text-red-500 text-sm mt-1">
+              <p className="mt-1 text-sm text-red-500">
                 {errors.nombreProyecto}
               </p>
             )}
           </>
         </Field>
 
-        <Field label="Descripción del proyecto">
+        <Field label="Descripcion del proyecto">
           <textarea
             className="input min-h-[100px]"
-            value={descripcionProyecto ?? ""}
+            value={descripcionProyecto}
             onChange={(e) => setDescripcionProyecto(e.target.value)}
-            placeholder="Describe detalladamente los objetivos, metodología y alcance del proyecto."
+            placeholder="Describe detalladamente los objetivos, metodologia y alcance del proyecto."
             required
             disabled={proyectoCerrado}
           />
@@ -309,14 +421,14 @@ export default function ProyectosForm() {
         <Field label="Dificultades del proyecto">
           <textarea
             className="input min-h-[100px]"
-            value={dificultadesProyecto ?? ""}
+            value={dificultadesProyecto}
             onChange={(e) => setDificultadesProyecto(e.target.value)}
             placeholder="Describe dificultades, riesgos o bloqueos del proyecto."
             disabled={proyectoCerrado}
           />
         </Field>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Field label="Tipo de proyecto">
             <>
               <select
@@ -332,14 +444,14 @@ export default function ProyectosForm() {
                 <option value="" disabled>
                   Seleccionar tipo
                 </option>
-                {tipos.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.nombre}
+                {tipos.map((tipo) => (
+                  <option key={tipo.id} value={tipo.id}>
+                    {tipo.nombre}
                   </option>
                 ))}
               </select>
               {errors.tipoProyectoId && (
-                <p className="text-red-500 text-sm mt-1">
+                <p className="mt-1 text-sm text-red-500">
                   {errors.tipoProyectoId}
                 </p>
               )}
@@ -351,43 +463,21 @@ export default function ProyectosForm() {
               className="input"
               value={fuenteId ?? ""}
               onChange={(e) =>
-                setFuenteId(
-                  e.target.value ? Number(e.target.value) : null
-                )
+                setFuenteId(e.target.value ? Number(e.target.value) : null)
               }
               disabled={proyectoCerrado}
             >
               <option value="">Sin fuente</option>
-              {fuentes.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.nombre}
+              {fuentes.map((fuente) => (
+                <option key={fuente.id} value={fuente.id}>
+                  {fuente.nombre}
                 </option>
               ))}
             </select>
           </Field>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Field label="Planificación">
-            <select
-              className="input"
-              value={planificacionId ?? ""}
-              onChange={(e) =>
-                setPlanificacionId(
-                  e.target.value ? Number(e.target.value) : null
-                )
-              }
-              disabled={proyectoCerrado}
-            >
-              <option value="">Sin planificación</option>
-              {planificacionesDelGrupo.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.descripcion} ({p.anio})
-                </option>
-              ))}
-            </select>
-          </Field>
-
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Field label="Monto destinado">
             <input
               type="number"
@@ -416,44 +506,46 @@ export default function ProyectosForm() {
 
             {investigadoresSeleccionados.length > 0 && (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm font-medium text-slate-800 mb-3">
+                <p className="mb-3 text-sm font-medium text-slate-800">
                   Seleccionar coordinador
                 </p>
 
                 <div className="space-y-2">
-                  {investigadoresSeleccionados.map((inv) => (
+                  {investigadoresSeleccionados.map((investigador) => (
                     <label
-                      key={inv.id}
+                      key={investigador.id}
                       className={`flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 ${
-                        proyectoCerrado ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+                        proyectoCerrado
+                          ? "cursor-not-allowed opacity-60"
+                          : "cursor-pointer"
                       }`}
                     >
                       <input
                         type="radio"
                         name="coordinador"
-                        checked={coordinadorId === inv.id}
+                        checked={coordinadorId === investigador.id}
                         onChange={() => {
                           if (proyectoCerrado) return;
-                          setCoordinadorId(inv.id);
+                          setCoordinadorId(investigador.id);
                           clearError("coordinadorId");
                         }}
                         disabled={proyectoCerrado}
                       />
                       <span className="text-sm text-slate-700">
-                        {inv.nombre_apellido}
+                        {investigador.nombre_apellido}
                       </span>
                     </label>
                   ))}
                 </div>
 
-                <p className="text-xs text-slate-500 mt-3">
+                <p className="mt-3 text-xs text-slate-500">
                   Solo un investigador puede quedar marcado como coordinador.
                 </p>
               </div>
             )}
 
             {errors.coordinadorId && (
-              <p className="text-red-500 text-sm mt-1">
+              <p className="mt-1 text-sm text-red-500">
                 {errors.coordinadorId}
               </p>
             )}
@@ -471,20 +563,18 @@ export default function ProyectosForm() {
           />
         </Field>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Field label="Fecha inicio">
-            <>
-              <Calendar
-                value={fechaInicio}
-                onChange={(date) => {
-                  if (proyectoCerrado) return;
-                  setFechaInicio(date);
-                  if (date) clearError("fechaInicio");
-                }}
-                className={inputClass("fechaInicio")}
-                helperText={errors.fechaInicio ?? "DD/MM/AAAA"}
-              />
-            </>
+            <Calendar
+              value={fechaInicio}
+              onChange={(date) => {
+                if (proyectoCerrado) return;
+                setFechaInicio(date);
+                if (date) clearError("fechaInicio");
+              }}
+              className={inputClass("fechaInicio")}
+              helperText={errors.fechaInicio ?? "DD/MM/AAAA"}
+            />
           </Field>
 
           <Field label="Fecha fin">
@@ -511,13 +601,9 @@ export default function ProyectosForm() {
           </Button>
 
           {!proyectoCerrado && (
-            <Button
-              type="submit"
-              size="sm"
-              disabled={mutation.isPending}
-            >
+            <Button type="submit" size="sm" disabled={mutation.isPending}>
               {mutation.isPending
-                ? "Guardando…"
+                ? "Guardando..."
                 : isEdit
                   ? "Actualizar"
                   : "Guardar"}
@@ -525,6 +611,13 @@ export default function ProyectosForm() {
           )}
         </div>
       </form>
+
+      <SuccessToast
+        open={showError}
+        message={errorMessage}
+        onClose={() => setShowError(false)}
+        variant="error"
+      />
     </section>
   );
 }

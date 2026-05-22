@@ -1,4 +1,5 @@
 from extension import db
+from datetime import date
 from core.models.trabajo_reunion import investigador_x_trabajo_reunion
 from core.models.trabajo_revista import investigador_x_trabajo_revista
 from core.models.audit_mixin import AuditMixin
@@ -13,6 +14,7 @@ class Personal(db.Model, AuditMixin):
     nombre_apellido = db.Column(db.String(120), nullable=False)
     horas_semanales = db.Column(db.Integer, nullable=False)
     activo = db.Column(db.Boolean, default=True, nullable=False)
+    fecha_alta_grupo = db.Column(db.Date, nullable=True)
 
     tipo_personal_id = db.Column(db.Integer, db.ForeignKey('tipo_personal.id'), nullable=False)
     grupo_utn_id = db.Column(db.Integer, db.ForeignKey('grupo_utn.id'), nullable=False)
@@ -36,6 +38,10 @@ class Personal(db.Model, AuditMixin):
         )
         data.update({
             "horas_semanales": horas_activas,
+            "fecha_alta_grupo": (
+                self.fecha_alta_grupo.isoformat()
+                if self.fecha_alta_grupo else None
+            ),
             "tipo_personal": self.tipo_personal.nombre if self.tipo_personal else None,
             "grupo": self.grupo_utn.nombre_sigla_grupo if self.grupo_utn else None,
             "historial_horas": [
@@ -51,6 +57,56 @@ class Personal(db.Model, AuditMixin):
         return data
 
 
+class PersonalMemoriaVersion(db.Model, AuditMixin):
+    __tablename__ = "personal_memoria_version"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    memoria_version_id = db.Column(
+        db.Integer,
+        db.ForeignKey("memoria_version.id"),
+        nullable=False
+    )
+    personal_id = db.Column(
+        db.Integer,
+        db.ForeignKey("personal.id"),
+        nullable=False
+    )
+
+    nombre_apellido = db.Column(db.String(120), nullable=False)
+    horas_semanales = db.Column(db.Integer, nullable=False)
+
+    tipo_personal_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tipo_personal.id"),
+        nullable=False
+    )
+    tipo_personal_nombre = db.Column(db.String(100), nullable=True)
+
+    grupo_utn_id = db.Column(
+        db.Integer,
+        db.ForeignKey("grupo_utn.id"),
+        nullable=False
+    )
+    grupo_utn_nombre = db.Column(db.String(255), nullable=True)
+
+    memoria_version = db.relationship("MemoriaVersion", lazy="joined")
+    personal = db.relationship("Personal", lazy="joined")
+    tipo_personal = db.relationship("TipoPersonal", lazy="joined")
+    grupo_utn = db.relationship("GrupoInvestigacionUtn", lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "memoria_version_id",
+            "personal_id",
+            name="uq_personal_memoria_version"
+        ),
+    )
+
+    def serialize(self):
+        return self.to_dict()
+
+
 # =====================================================
 # BECARIO
 # =====================================================
@@ -61,6 +117,7 @@ class Becario(db.Model, AuditMixin):
     nombre_apellido = db.Column(db.String(120), nullable=False)
     horas_semanales = db.Column(db.Integer, nullable=False)
     activo = db.Column(db.Boolean, default=True, nullable=False)
+    fecha_alta_grupo = db.Column(db.Date, nullable=True)
 
     tipo_formacion_id = db.Column(
         db.Integer,
@@ -108,6 +165,10 @@ class Becario(db.Model, AuditMixin):
 
         data.update({
             "horas_semanales": horas_activas,
+            "fecha_alta_grupo": (
+                self.fecha_alta_grupo.isoformat()
+                if self.fecha_alta_grupo else None
+            ),
             "tipo_formacion": self.tipo_formacion.nombre if self.tipo_formacion else None,
             "grupo": self.grupo_utn.nombre_sigla_grupo if self.grupo_utn else None,
             "historial_horas": [
@@ -174,6 +235,7 @@ class Investigador(db.Model, AuditMixin):
     nombre_apellido = db.Column(db.String(120), nullable=False)
     horas_semanales = db.Column(db.Integer, nullable=False)
     activo = db.Column(db.Boolean, default=True, nullable=False)
+    fecha_alta_grupo = db.Column(db.Date, nullable=True)
 
     tipo_dedicacion_id = db.Column(db.Integer, db.ForeignKey('tipo_dedicacion.id'))
     categoria_utn_id = db.Column(db.Integer, db.ForeignKey('categoria_utn.id'), nullable=True)
@@ -240,6 +302,10 @@ class Investigador(db.Model, AuditMixin):
 
         data.update({
             "horas_semanales": horas_activas,
+            "fecha_alta_grupo": (
+                self.fecha_alta_grupo.isoformat()
+                if self.fecha_alta_grupo else None
+            ),
             "categoria_utn": self.categoria_utn.nombre if self.categoria_utn else None,
             "programa_incentivos": self.programa_incentivos.nombre if self.programa_incentivos else None,
             "tipo_dedicacion": self.tipo_dedicacion.nombre if self.tipo_dedicacion else None,
@@ -275,6 +341,129 @@ class Investigador(db.Model, AuditMixin):
         })
 
         return data
+
+
+class BecarioMemoriaVersion(db.Model, AuditMixin):
+    __tablename__ = "becario_memoria_version"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    memoria_version_id = db.Column(
+        db.Integer,
+        db.ForeignKey("memoria_version.id"),
+        nullable=False
+    )
+    becario_id = db.Column(
+        db.Integer,
+        db.ForeignKey("becario.id"),
+        nullable=False
+    )
+
+    nombre_apellido = db.Column(db.String(120), nullable=False)
+    horas_semanales = db.Column(db.Integer, nullable=False)
+
+    tipo_formacion_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tipo_formacion_becario.id"),
+        nullable=False
+    )
+    tipo_formacion_nombre = db.Column(db.String(100), nullable=True)
+
+    grupo_utn_id = db.Column(
+        db.Integer,
+        db.ForeignKey("grupo_utn.id"),
+        nullable=True
+    )
+    grupo_utn_nombre = db.Column(db.String(255), nullable=True)
+    becas_percibidas = db.Column(db.Text, nullable=True)
+    fuentes_financiamiento_beca = db.Column(db.Text, nullable=True)
+
+    memoria_version = db.relationship("MemoriaVersion", lazy="joined")
+    becario = db.relationship("Becario", lazy="joined")
+    tipo_formacion = db.relationship("TipoFormacion", lazy="joined")
+    grupo_utn = db.relationship("GrupoInvestigacionUtn", lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "memoria_version_id",
+            "becario_id",
+            name="uq_becario_memoria_version"
+        ),
+    )
+
+    def serialize(self):
+        data = self.to_dict()
+        data.update({
+            "becas_percibidas": self.becas_percibidas or "",
+            "fuentes_financiamiento_beca": self.fuentes_financiamiento_beca or ""
+        })
+        return data
+
+
+class InvestigadorMemoriaVersion(db.Model, AuditMixin):
+    __tablename__ = "investigador_memoria_version"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    memoria_version_id = db.Column(
+        db.Integer,
+        db.ForeignKey("memoria_version.id"),
+        nullable=False
+    )
+    investigador_id = db.Column(
+        db.Integer,
+        db.ForeignKey("investigador.id"),
+        nullable=False
+    )
+
+    nombre_apellido = db.Column(db.String(120), nullable=False)
+    horas_semanales = db.Column(db.Integer, nullable=False)
+
+    tipo_dedicacion_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tipo_dedicacion.id"),
+        nullable=True
+    )
+    tipo_dedicacion_nombre = db.Column(db.String(100), nullable=True)
+
+    categoria_utn_id = db.Column(
+        db.Integer,
+        db.ForeignKey("categoria_utn.id"),
+        nullable=True
+    )
+    categoria_utn_nombre = db.Column(db.String(100), nullable=True)
+
+    programa_incentivos_id = db.Column(
+        db.Integer,
+        db.ForeignKey("programa_incentivos_investigador.id"),
+        nullable=True
+    )
+    programa_incentivos_nombre = db.Column(db.String(100), nullable=True)
+
+    grupo_utn_id = db.Column(
+        db.Integer,
+        db.ForeignKey("grupo_utn.id"),
+        nullable=True
+    )
+    grupo_utn_nombre = db.Column(db.String(255), nullable=True)
+
+    memoria_version = db.relationship("MemoriaVersion", lazy="joined")
+    investigador = db.relationship("Investigador", lazy="joined")
+    tipo_dedicacion = db.relationship("TipoDedicacion", lazy="joined")
+    categoria_utn = db.relationship("CategoriaUtn", lazy="joined")
+    programa_incentivos = db.relationship("ProgramaIncentivos", lazy="joined")
+    grupo_utn = db.relationship("GrupoInvestigacionUtn", lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "memoria_version_id",
+            "investigador_id",
+            name="uq_investigador_memoria_version"
+        ),
+    )
+
+    def serialize(self):
+        return self.to_dict()
 
     
     

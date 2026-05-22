@@ -23,3 +23,46 @@ class DistincionRecibida(db.Model, AuditMixin):
         } if self.proyecto_investigacion else None
 
         return data
+
+
+class DistincionRecibidaMemoriaVersion(db.Model, AuditMixin):
+    __tablename__ = "distincion_recibida_memoria_version"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
+
+    memoria_version_id = db.Column(
+        db.Integer,
+        db.ForeignKey("memoria_version.id"),
+        nullable=False
+    )
+    distincion_id = db.Column(
+        db.Integer,
+        db.ForeignKey("distincion_recibida.id"),
+        nullable=False
+    )
+
+    fecha = db.Column(db.Date, nullable=False)
+    descripcion = db.Column(db.Text, nullable=False)
+
+    proyecto_investigacion_id = db.Column(
+        db.Integer,
+        db.ForeignKey("proyecto_investigacion.id"),
+        nullable=True
+    )
+    proyecto_codigo = db.Column(db.Integer, nullable=True)
+    proyecto_nombre = db.Column(db.Text, nullable=True)
+
+    memoria_version = db.relationship("MemoriaVersion", lazy="joined")
+    distincion = db.relationship("DistincionRecibida", lazy="joined")
+    proyecto_investigacion = db.relationship("ProyectoInvestigacion", lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "memoria_version_id",
+            "distincion_id",
+            name="uq_distincion_memoria_version"
+        ),
+    )
+
+    def serialize(self):
+        return self.to_dict()

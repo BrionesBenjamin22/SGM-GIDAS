@@ -2,11 +2,15 @@ from datetime import date, datetime
 
 from core.models.actividad_docencia import (
     ActividadDocencia,
+    ActividadDocenciaGradoMemoriaVersion,
+    ActividadDocenciaMemoriaVersion,
     GradoAcademico,
     InvestigadorActividadGrado,
     RolActividad,
 )
 from core.models.personal import Investigador
+from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
 
 
@@ -115,6 +119,17 @@ class ActividadDocenciaService:
         return historiales[0] if historiales else None
 
     @staticmethod
+    def _obtener_grado_activo_desde_actividad(actividad):
+        historial_activo = next(
+            (
+                item for item in getattr(actividad, "investigadores_grado", [])
+                if item.fecha_fin is None
+            ),
+            None
+        )
+        return historial_activo.grado_academico if historial_activo else None
+
+    @staticmethod
     def _validar_grado(grado_id):
         grado_id = ActividadDocenciaService._validar_id(
             grado_id, "grado_academico_id"
@@ -211,6 +226,91 @@ class ActividadDocenciaService:
         ).serialize()
 
     @staticmethod
+    def get_historial(actividad_id: int):
+        actividad = ActividadDocenciaService._obtener_actividad(
+            actividad_id,
+            permitir_eliminado=True
+        )
+        historial = AuditoriaService.obtener_historial_entidad(
+            entidad="actividad_y_catedra_posgrado",
+            registro_id=actividad.id
+        )
+        historial_filtrado = [
+            item for item in historial
+            if item.get("campo") != "grado_academico_id"
+        ]
+        historial_filtrado.extend(
+            ActividadDocenciaService._construir_historial_grados(actividad)
+        )
+        historial_filtrado.sort(
+            key=lambda item: (
+                item.get("fecha_cambio") or "",
+                item.get("orden_historial") or 0
+            ),
+            reverse=True
+        )
+
+        for item in historial_filtrado:
+            item.pop("orden_historial", None)
+
+        return historial_filtrado
+
+    @staticmethod
+    def _serializar_grado(grado):
+        if not grado:
+            return None
+
+        return {
+            "id": grado.id,
+            "nombre": grado.nombre
+        }
+
+    @staticmethod
+    def _construir_historial_grados(actividad):
+        historial = sorted(
+            getattr(actividad, "investigadores_grado", []),
+            key=lambda item: (
+                item.fecha_inicio or date.min,
+                item.id or 0
+            )
+        )
+
+        eventos = []
+        grado_anterior = None
+
+        for orden, item in enumerate(historial, start=1):
+            eventos.append({
+                "id": f"historial-grado-{item.id}",
+                "tipo": "historial_grado",
+                "entidad": "actividad_y_catedra_posgrado",
+                "registro_id": getattr(actividad, "id", None),
+                "campo": "grado_academico_id",
+                "valor_anterior": grado_anterior,
+                "valor_nuevo": ActividadDocenciaService._serializar_grado(
+                    item.grado_academico
+                ),
+                "fecha_cambio": item.fecha_inicio.isoformat(),
+                "usuario_id": item.created_by,
+                "usuario_nombre": (
+                    item.created_by_user.nombre_usuario
+                    if item.created_by_user else None
+                ),
+                "activo": item.fecha_fin is None,
+                "fecha_fin": (
+                    item.fecha_fin.isoformat()
+                    if item.fecha_fin else None
+                ),
+                # Se usa solo para ordenar eventos de igual fecha y luego se oculta.
+                "orden_historial": orden,
+                "detalle": item.serialize()
+            })
+            grado_anterior = ActividadDocenciaService._serializar_grado(
+                item.grado_academico
+            )
+
+        return eventos
+
+    @staticmethod
     def create(data: dict, user_id: int):
         ActividadDocenciaService._validar_payload(data)
         ActividadDocenciaService._validar_user_id(user_id)
@@ -287,6 +387,7 @@ class ActividadDocenciaService:
             actividad_id,
             permitir_eliminado=False
         )
+        cambios = {}
 
         if "investigador_id" in data and "grado_academico_id" in data:
             raise ValueError(
@@ -343,11 +444,20 @@ class ActividadDocenciaService:
             actividad.id,
         )
 
-        actividad.fecha_inicio = fecha_inicio
-        actividad.fecha_fin = fecha_fin
-        actividad.curso = curso
-        actividad.institucion = institucion
-        actividad.rol_actividad_id = rol_actividad_id
+        for campo, nuevo_valor in (
+            ("fecha_inicio", fecha_inicio),
+            ("fecha_fin", fecha_fin),
+            ("curso", curso),
+            ("institucion", institucion),
+            ("rol_actividad_id", rol_actividad_id),
+        ):
+            cambio = AuditoriaService.construir_cambio(
+                getattr(actividad, campo),
+                nuevo_valor
+            )
+            if cambio:
+                cambios[campo] = cambio
+                setattr(actividad, campo, nuevo_valor)
 
         historial_activo = ActividadDocenciaService._obtener_historial_activo_unico(
             actividad.id
@@ -361,6 +471,10 @@ class ActividadDocenciaService:
         if "grado_academico_id" in data:
             nuevo_grado = ActividadDocenciaService._validar_grado(
                 data["grado_academico_id"]
+            )
+            cambio = AuditoriaService.construir_cambio(
+                historial_activo.grado_academico_id if historial_activo else None,
+                nuevo_grado.id
             )
 
             if not historial_activo:
@@ -391,6 +505,18 @@ class ActividadDocenciaService:
                 )
                 db.session.add(nuevo_historial)
 
+            if cambio:
+                cambios["grado_academico_id"] = cambio
+
+        if cambios and user_id is not None:
+            actividad.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="actividad_y_catedra_posgrado",
+                registro_id=actividad.id,
+                cambios=cambios,
+                user_id=user_id
+            )
+
         try:
             db.session.commit()
         except Exception:
@@ -416,3 +542,83 @@ class ActividadDocenciaService:
             raise
 
         return {"message": "Actividad de docencia eliminada correctamente"}
+
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        actividades = ActividadDocencia.query.filter().all()
+
+        snapshots = []
+        for actividad in actividades:
+            if not estuvo_activo_en_periodo_memoria(
+                memoria_version,
+                actividad.fecha_inicio,
+                getattr(actividad, "fecha_fin", None)
+                or getattr(actividad, "deleted_at", None)
+            ):
+                continue
+            grado_activo = (
+                ActividadDocenciaService._obtener_grado_activo_desde_actividad(
+                    actividad
+                )
+            )
+            snapshot = ActividadDocenciaMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                actividad_docencia_id=actividad.id,
+                curso=actividad.curso,
+                institucion=actividad.institucion,
+                fecha_inicio=actividad.fecha_inicio,
+                fecha_fin=actividad.fecha_fin,
+                investigador_id=actividad.investigador_id,
+                investigador_nombre=(
+                    actividad.investigador.nombre_apellido
+                    if actividad.investigador else None
+                ),
+                rol_actividad_id=actividad.rol_actividad_id,
+                rol_actividad_nombre=(
+                    actividad.rol_actividad.nombre
+                    if actividad.rol_actividad else None
+                ),
+                grado_academico_id=(
+                    grado_activo.id if grado_activo else None
+                ),
+                grado_academico_nombre=(
+                    grado_activo.nombre if grado_activo else None
+                ),
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            db.session.flush()
+
+            for historial in getattr(actividad, "investigadores_grado", []):
+                historial_snapshot = ActividadDocenciaGradoMemoriaVersion(
+                    actividad_docencia_memoria_version=snapshot,
+                    investigador_actividad_grado_id=historial.id,
+                    investigador_id=historial.investigador_id,
+                    grado_academico_id=historial.grado_academico_id,
+                    grado_academico_nombre=(
+                        historial.grado_academico.nombre
+                        if historial.grado_academico else None
+                    ),
+                    fecha_inicio=historial.fecha_inicio,
+                    fecha_fin=historial.fecha_fin,
+                    created_by=user_id
+                )
+                db.session.add(historial_snapshot)
+
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            ActividadDocenciaMemoriaVersion.query
+            .filter(
+                ActividadDocenciaMemoriaVersion.memoria_version_id == memoria_version_id,
+                ActividadDocenciaMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(ActividadDocenciaMemoriaVersion.curso.asc())
+            .all()
+        )
+
+        return [snapshot.serialize() for snapshot in snapshots]

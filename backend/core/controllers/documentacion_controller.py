@@ -28,6 +28,15 @@ class DocumentacionBibliograficaController:
         except Exception as e:
             return jsonify({"error": str(e)}), 404
 
+    @staticmethod
+    def get_historial(doc_id):
+        try:
+            return jsonify(
+                DocumentacionBibliograficaService.get_historial(doc_id)
+            ), 200
+        except Exception as e:
+            return jsonify({"error": str(e)}), 404
+
 
     @staticmethod
     def create():
@@ -47,9 +56,10 @@ class DocumentacionBibliograficaController:
     def update(doc_id):
         try:
             data = request.get_json()
+            user_id = g.current_user_id
 
             return jsonify(
-                DocumentacionBibliograficaService.update(doc_id, data)
+                DocumentacionBibliograficaService.update(doc_id, data, user_id)
             ), 200
 
         except Exception as e:

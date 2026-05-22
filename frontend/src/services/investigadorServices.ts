@@ -3,6 +3,7 @@ import { http } from "@/lib/http";
 export interface InvestigadorPayload {
   nombre_apellido: string;
   horas_semanales: number;
+  fecha_alta_grupo: string;
   created_by?: number | null;
   deleted_by?: number | null;
   created_at?: string | null | undefined;

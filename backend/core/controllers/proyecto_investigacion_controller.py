@@ -47,6 +47,16 @@ class ProyectoInvestigacionController:
         except Exception as e:
             return jsonify({"error": str(e)}), 404
 
+    @staticmethod
+    def get_historial(proyecto_id):
+        try:
+            return jsonify(
+                ProyectoInvestigacionService.obtener_historial(proyecto_id)
+            ), 200
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 404
+
     # =========================
     # CREATE
     # =========================

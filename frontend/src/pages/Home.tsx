@@ -6,7 +6,6 @@ import { useDashboardResumen } from "@/hooks/useDashboardGeneral";
 import Button from "@/components/Button";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
-import { useExportarExcelGrupo } from "@/hooks/useExportacion";
 import { useAuth } from "@/context/AuthContext";
 import {
   ResponsiveContainer,
@@ -41,10 +40,13 @@ export default function Home() {
   const { isAdmin, isGestor } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { mutate: exportarExcel, isPending } = useExportarExcelGrupo();
 
   const grupoId = uct?.id;
-  const { data: directivos = [] } = useDirectivos(grupoId);
+  const {
+    data: directivos = [],
+    isLoading: isLoadingDirectivos,
+    isFetching: isFetchingDirectivos,
+  } = useDirectivos(grupoId);
 
   const {
     data: dashboard,
@@ -55,7 +57,6 @@ export default function Home() {
   const director = directivos.find((d) => d.cargo === "Director");
   const vicedirector = directivos.find((d) => d.cargo === "Vicedirector");
   const canEditUct = isAdmin() || isGestor();
-  const canExportExcel = isAdmin() || isGestor();
   const canDeleteUct = isAdmin();
 
   const [showConfirm, setShowConfirm] = useState(false);
@@ -89,7 +90,8 @@ export default function Home() {
     );
   }
 
-  const faltanDirectivos = !!uct && directivos.length === 0;
+  const directivosListos = !isLoadingDirectivos && !isFetchingDirectivos;
+  const faltanDirectivos = !!uct && directivosListos && directivos.length === 0;
 
   const proyectosPorEstado: ChartItem[] = [
     {
@@ -144,32 +146,6 @@ export default function Home() {
 
           {uct && (
             <div className="flex gap-2">
-              {canExportExcel && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() =>
-                    exportarExcel(undefined, {
-                      onSuccess: (result) => {
-                        setSuccessMessage(
-                          `Excel generado correctamente: ${result.filename}`
-                        );
-                        setShowSuccess(true);
-                      },
-                      onError: (error: any) => {
-                        setSuccessMessage(
-                          error?.message || "No se pudo exportar el archivo Excel."
-                        );
-                        setShowSuccess(true);
-                      },
-                    })
-                  }
-                  disabled={isPending}
-                >
-                  {isPending ? "Generando..." : "Exportar Excel"}
-                </Button>
-              )}
-              
               {canEditUct && (
                 <Button
                   variant="secondary"

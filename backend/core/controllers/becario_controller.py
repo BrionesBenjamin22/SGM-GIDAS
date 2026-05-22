@@ -4,7 +4,8 @@ from core.services.becario_service import (
     actualizar_becario,
     eliminar_becario,
     listar_becarios,
-    obtener_becario_por_id
+    obtener_becario_por_id,
+    obtener_historial_becario
 )
 
 
@@ -59,6 +60,18 @@ class BecarioController:
         try:
             becario = obtener_becario_por_id(id)
             return jsonify(becario.serialize()), 200
+
+        except ValueError as ve:
+            return jsonify({"error": str(ve)}), 404
+
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
+
+    @staticmethod
+    def obtener_historial(req: Request, id: int) -> Response:
+        try:
+            historial = obtener_historial_becario(id)
+            return jsonify(historial), 200
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 404

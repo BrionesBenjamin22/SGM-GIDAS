@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "@/components/Button";
 import Field from "@/components/Field";
+import Calendar from "@/components/Calendar";
 import { useUct } from "@/hooks/useUct";
 import { useDedicaciones } from "@/hooks/useDedicaciones";
 import { useCategoriasUtn } from "@/hooks/useCategoriasUtn";
@@ -33,24 +34,45 @@ export default function FormInvestigador({
   const [dedicacionId, setDedicacionId] = useState<number | "">("");
   const [categoriaId, setCategoriaId] = useState<number | "">("");
   const [programaId, setProgramaId] = useState<number | "">("");
+  const [fechaAltaGrupo, setFechaAltaGrupo] = useState<Date | null>(null);
   const [activo, setActivo] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (!initialData) return;
+    if (!initialData) {
+      setNombre("");
+      setHoras("");
+      setDedicacionId("");
+      setCategoriaId("");
+      setProgramaId("");
+      setFechaAltaGrupo(null);
+      setActivo(true);
+      return;
+    }
 
-    setNombre(initialData.nombre_apellido);
-    setHoras(initialData.horas_semanales);
+    setNombre(initialData.nombre_apellido ?? "");
+    setHoras(initialData.horas_semanales ?? "");
     setActivo(initialData.activo ?? true);
-
-    if (initialData.relaciones?.tipo_dedicacion)
-      setDedicacionId(initialData.relaciones.tipo_dedicacion.id);
-
-    if (initialData.relaciones?.categoria_utn)
-      setCategoriaId(initialData.relaciones.categoria_utn.id);
-
-    if (initialData.relaciones?.programa_incentivos)
-      setProgramaId(initialData.relaciones.programa_incentivos.id);
+    setFechaAltaGrupo(
+      initialData.fecha_alta_grupo
+        ? new Date(`${initialData.fecha_alta_grupo}T00:00:00`)
+        : null
+    );
+    setDedicacionId(
+      initialData.relaciones?.tipo_dedicacion?.id ??
+        initialData.tipo_dedicacion_id ??
+        ""
+    );
+    setCategoriaId(
+      initialData.relaciones?.categoria_utn?.id ??
+        initialData.categoria_utn_id ??
+        ""
+    );
+    setProgramaId(
+      initialData.relaciones?.programa_incentivos?.id ??
+        initialData.programa_incentivos_id ??
+        ""
+    );
   }, [initialData]);
 
   const clearError = (field: string) => {
@@ -61,23 +83,40 @@ export default function FormInvestigador({
     });
   };
 
+  const formatDateStr = (d: Date | null) => {
+    if (!d) return "";
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${dd}`;
+  };
+
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!nombreApellido.trim())
+    if (!nombreApellido.trim()) {
       newErrors.nombre = "Debe ingresar nombre y apellido";
+    }
 
-    if (!horasSemanales || Number(horasSemanales) <= 0)
-      newErrors.horas = "Debe ingresar horas válidas";
+    if (!horasSemanales || Number(horasSemanales) <= 0) {
+      newErrors.horas = "Debe ingresar horas validas";
+    }
 
-    if (!dedicacionId)
-      newErrors.dedicacion = "Debe seleccionar dedicación";
+    if (!dedicacionId) {
+      newErrors.dedicacion = "Debe seleccionar dedicacion";
+    }
 
-    if (!categoriaId)
-      newErrors.categoria = "Debe seleccionar categoría UTN";
+    if (!categoriaId) {
+      newErrors.categoria = "Debe seleccionar categoria UTN";
+    }
 
-    if (!programaId)
+    if (!programaId) {
       newErrors.programa = "Debe seleccionar programa";
+    }
+
+    if (!fechaAltaGrupo) {
+      newErrors.fechaAltaGrupo = "Debe ingresar la fecha de alta en el grupo";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -93,19 +132,17 @@ export default function FormInvestigador({
       tipo_dedicacion_id: Number(dedicacionId),
       categoria_utn_id: Number(categoriaId),
       programa_incentivos_id: Number(programaId),
+      fecha_alta_grupo: formatDateStr(fechaAltaGrupo),
       grupo_utn_id: uct!.id,
       activo,
     };
 
     if (isEdit && initialData?.id) {
-      await actualizarInvestigador(
-        initialData.id,
-        payload,
-        "investigador"
-      );
+      await actualizarInvestigador(initialData.id, payload, "investigador");
 
       navigate(`/personal/investigador/${initialData.id}`, {
-        state: { successMessage: "Actualizado con éxito!" },
+        replace: true,
+        state: { successMessage: "Actualizado con exito!" },
       });
 
       return;
@@ -114,87 +151,68 @@ export default function FormInvestigador({
     await crearInvestigador(payload);
 
     navigate("/personal", {
-      state: { successMessage: "Creado con éxito!" },
+      state: { successMessage: "Creado con exito!" },
     });
   };
 
   return (
     <form
       onSubmit={submit}
-      className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 space-y-6"
+      className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
     >
-      {/* Nombre */}
       <Field label="Nombre y apellido">
         <>
           <input
-            className={`input ${errors.nombre
-                ? "!border-red-500 !ring-2 !ring-red-500"
-                : ""
-              }`}
+            className={`input ${
+              errors.nombre ? "!border-red-500 !ring-2 !ring-red-500" : ""
+            }`}
             value={nombreApellido}
             onChange={(e) => {
               setNombre(e.target.value);
-              if (e.target.value.trim())
-                clearError("nombre");
+              if (e.target.value.trim()) clearError("nombre");
             }}
           />
           {errors.nombre && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.nombre}
-            </p>
+            <p className="mt-1 text-sm text-red-500">{errors.nombre}</p>
           )}
         </>
       </Field>
 
-      {/* Horas */}
       <Field label="Horas semanales">
         <>
           <input
             type="number"
-            className={`input ${errors.horas
-                ? "!border-red-500 !ring-2 !ring-red-500"
-                : ""
-              }`}
+            className={`input ${
+              errors.horas ? "!border-red-500 !ring-2 !ring-red-500" : ""
+            }`}
             value={horasSemanales}
             onChange={(e) => {
-              const value =
-                e.target.value === ""
-                  ? ""
-                  : +e.target.value;
+              const value = e.target.value === "" ? "" : +e.target.value;
               setHoras(value);
               if (value) clearError("horas");
             }}
           />
           {errors.horas && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.horas}
-            </p>
+            <p className="mt-1 text-sm text-red-500">{errors.horas}</p>
           )}
         </>
       </Field>
 
-      {/* Dedicación */}
-      <Field label="Dedicación">
+      <Field label="Dedicacion">
         <>
           <select
-            className={`input ${errors.dedicacion
-                ? "!border-red-500 !ring-2 !ring-red-500"
-                : ""
-              } ${!dedicacionId
-                ? "text-slate-400"
-                : "text-slate-900"
-              }`}
+            className={`input ${
+              errors.dedicacion ? "!border-red-500 !ring-2 !ring-red-500" : ""
+            } ${!dedicacionId ? "text-slate-400" : "text-slate-900"}`}
             value={dedicacionId}
             onChange={(e) => {
-              const value = e.target.value
-                ? +e.target.value
-                : "";
+              const value = e.target.value ? +e.target.value : "";
               setDedicacionId(value);
               if (value) clearError("dedicacion");
             }}
           >
             <option value="" disabled>
-              Seleccionar dedicación
+              Seleccionar dedicacion
             </option>
             {dedicaciones.map((d) => (
               <option key={d.id} value={d.id}>
@@ -203,35 +221,26 @@ export default function FormInvestigador({
             ))}
           </select>
           {errors.dedicacion && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.dedicacion}
-            </p>
+            <p className="mt-1 text-sm text-red-500">{errors.dedicacion}</p>
           )}
         </>
       </Field>
 
-      {/* Categoría */}
-      <Field label="Categoría UTN">
+      <Field label="Categoria UTN">
         <>
           <select
-            className={`input ${errors.categoria
-                ? "!border-red-500 !ring-2 !ring-red-500"
-                : ""
-              } ${!categoriaId
-                ? "text-slate-400"
-                : "text-slate-900"
-              }`}
+            className={`input ${
+              errors.categoria ? "!border-red-500 !ring-2 !ring-red-500" : ""
+            } ${!categoriaId ? "text-slate-400" : "text-slate-900"}`}
             value={categoriaId}
             onChange={(e) => {
-              const value = e.target.value
-                ? +e.target.value
-                : "";
+              const value = e.target.value ? +e.target.value : "";
               setCategoriaId(value);
               if (value) clearError("categoria");
             }}
           >
             <option value="" disabled>
-              Seleccionar categoría
+              Seleccionar categoria
             </option>
             {categorias.map((c) => (
               <option key={c.id} value={c.id}>
@@ -240,29 +249,20 @@ export default function FormInvestigador({
             ))}
           </select>
           {errors.categoria && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.categoria}
-            </p>
+            <p className="mt-1 text-sm text-red-500">{errors.categoria}</p>
           )}
         </>
       </Field>
 
-      {/* Programa */}
       <Field label="Programa de incentivos">
         <>
           <select
-            className={`input ${errors.programa
-                ? "!border-red-500 !ring-2 !ring-red-500"
-                : ""
-              } ${!programaId
-                ? "text-slate-400"
-                : "text-slate-900"
-              }`}
+            className={`input ${
+              errors.programa ? "!border-red-500 !ring-2 !ring-red-500" : ""
+            } ${!programaId ? "text-slate-400" : "text-slate-900"}`}
             value={programaId}
             onChange={(e) => {
-              const value = e.target.value
-                ? +e.target.value
-                : "";
+              const value = e.target.value ? +e.target.value : "";
               setProgramaId(value);
               if (value) clearError("programa");
             }}
@@ -277,14 +277,25 @@ export default function FormInvestigador({
             ))}
           </select>
           {errors.programa && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.programa}
-            </p>
+            <p className="mt-1 text-sm text-red-500">{errors.programa}</p>
           )}
         </>
       </Field>
 
-      {/* Botones */}
+      <Field label="Fecha de alta en el grupo">
+        <Calendar
+          value={fechaAltaGrupo}
+          onChange={(date) => {
+            setFechaAltaGrupo(date);
+            if (date) clearError("fechaAltaGrupo");
+          }}
+          className={`input ${
+            errors.fechaAltaGrupo ? "!border-red-500 !ring-2 !ring-red-500" : ""
+          }`}
+          helperText={errors.fechaAltaGrupo ?? "DD/MM/AAAA"}
+        />
+      </Field>
+
       <div className="flex justify-between pt-6">
         <Button
           type="button"

@@ -22,6 +22,12 @@ actividad_docencia_bp.route("/<int:actividad_id>", methods=["GET"])(
     )
 )
 
+actividad_docencia_bp.route("/<int:actividad_id>/historial", methods=["GET"])(
+    requiere_rol("ADMIN", "GESTOR", "LECTURA")(
+        ActividadDocenciaController.get_historial
+    )
+)
+
 actividad_docencia_bp.route("/", methods=["POST"])(
     requiere_rol("ADMIN", "GESTOR")(
         ActividadDocenciaController.create

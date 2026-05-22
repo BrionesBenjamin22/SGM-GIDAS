@@ -1,6 +1,7 @@
 import { http } from "@/lib/http";
 
 export type PersonalType =
+  | "PERSONAL"
   | "PTAA"
   | "PROFESIONAL"
   | "BECARIO"
@@ -21,6 +22,7 @@ export interface PersonalItem {
 export interface PersonalPayload {
   nombre_apellido: string;
   horas_semanales: number;
+  fecha_alta_grupo: string;
   grupo_utn_id: number;
   tipo_personal_id: number;
   activo: boolean;

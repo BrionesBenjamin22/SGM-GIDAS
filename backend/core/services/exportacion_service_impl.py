@@ -1,8 +1,12 @@
+from copy import copy
 from io import BytesIO
+from pathlib import Path
 from datetime import date
 from typing import Iterable, Sequence
 
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
+from openpyxl.cell.cell import MergedCell
+from openpyxl.utils import column_index_from_string
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -24,9 +28,12 @@ from core.models.trabajo_revista import TrabajosRevistasReferato
 from core.models.transferencia_socio import TransferenciaSocioProductiva, AdoptanteTransferencia
 from core.models.visita_grupo import VisitaAcademica
 from core.models.programa_actividades import PlanificacionGrupo
+from core.models.memorias import EstadoMemoria
+from core.services.memoria_service import MemoriaService
 
 
 class ExportService:
+    MEMORIA_TEMPLATE_PATH = Path(__file__).resolve().parents[2] / "assets" / "DS2025 - UTN - PLANTILLA MEMORIAS.xlsx"
     TITLE_FILL = PatternFill(fill_type="solid", fgColor="FBE4D5")
     SECTION_FILL = PatternFill(fill_type="solid", fgColor="FBE4D5")
     SUBSECTION_FILL = PatternFill(fill_type="solid", fgColor="FFFF00")
@@ -38,6 +45,7 @@ class ExportService:
     TITLE_FONT = Font(name="Calibri", size=15, bold=True)
     BODY_FONT = Font(name="Calibri", size=11)
     CENTER = Alignment(horizontal="center", vertical="center")
+    LEFT_MIDDLE = Alignment(horizontal="left", vertical="center", wrap_text=True)
     LEFT_TOP = Alignment(horizontal="left", vertical="top", wrap_text=True)
     COLUMN_WIDTHS = {
         "A": 23.14, "B": 40.57, "C": 36.43, "D": 23.14,
@@ -448,6 +456,13 @@ class ExportService:
             .all()
         )
 
+    @classmethod
+    def _get_planificacion_memoria(cls, grupo_id: int, anio: int):
+        for planificacion in cls._get_planificaciones(grupo_id):
+            if planificacion.anio == anio:
+                return planificacion
+        return None
+
     @staticmethod
     def _get_proyectos(grupo_id: int):
         return (
@@ -467,6 +482,1257 @@ class ExportService:
                 if participacion.directivo and participacion.directivo.deleted_at is None:
                     return participacion.directivo.nombre_apellido
         return "-"
+
+    @staticmethod
+    def _join_dict_names(items: Sequence[dict] | None, key: str, fallback: str = "-"):
+        if not items:
+            return fallback
+
+        values = []
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            value = item.get(key)
+            if value:
+                values.append(str(value))
+
+        return ", ".join(values) if values else fallback
+
+    @staticmethod
+    def _format_date(value, fallback="-"):
+        if not value:
+            return fallback
+        if hasattr(value, "strftime"):
+            return value.strftime("%d/%m/%Y")
+        return str(value)
+
+    @classmethod
+    def _format_period(cls, fecha_inicio, fecha_fin):
+        if not fecha_inicio and not fecha_fin:
+            return "-"
+        if fecha_inicio and fecha_fin:
+            return f"{cls._format_date(fecha_inicio)} al {cls._format_date(fecha_fin)}"
+        if fecha_inicio:
+            return f"Desde {cls._format_date(fecha_inicio)}"
+        return f"Hasta {cls._format_date(fecha_fin)}"
+
+    @classmethod
+    def _load_memoria_template(cls):
+        return load_workbook(cls.MEMORIA_TEMPLATE_PATH)
+
+    @staticmethod
+    def _copy_cell_style(source, target):
+        if source.has_style:
+            target.font = copy(source.font)
+            target.fill = copy(source.fill)
+            target.border = copy(source.border)
+            target.alignment = copy(source.alignment)
+            target.number_format = source.number_format
+            target.protection = copy(source.protection)
+        if source._style is not None:
+            target._style = copy(source._style)
+
+    @classmethod
+    def _copy_row_style(cls, ws, source_row: int, target_row: int):
+        for col_idx in range(1, ws.max_column + 1):
+            source_cell = ws.cell(row=source_row, column=col_idx)
+            target_cell = ws.cell(row=target_row, column=col_idx)
+            cls._copy_cell_style(source_cell, target_cell)
+        if ws.row_dimensions[source_row].height is not None:
+            ws.row_dimensions[target_row].height = ws.row_dimensions[source_row].height
+
+    @classmethod
+    def _insert_styled_rows(cls, ws, insert_at: int, amount: int, source_row: int):
+        if amount <= 0:
+            return
+        ws.insert_rows(insert_at, amount)
+        for offset in range(amount):
+            cls._copy_row_style(ws, source_row, insert_at + offset)
+
+    @staticmethod
+    def _resolve_write_cell(ws, row: int, column: str):
+        col_idx = column_index_from_string(column)
+        cell = ws.cell(row=row, column=col_idx)
+        if not isinstance(cell, MergedCell):
+            return cell
+
+        for merged_range in ws.merged_cells.ranges:
+            if (
+                merged_range.min_row <= row <= merged_range.max_row
+                and merged_range.min_col <= col_idx <= merged_range.max_col
+            ):
+                return ws.cell(row=merged_range.min_row, column=merged_range.min_col)
+
+        return ws.cell(row=row, column=col_idx)
+
+    @classmethod
+    def _write_cell(cls, ws, row: int, column: str, value):
+        target_cell = cls._resolve_write_cell(ws, row, column)
+        target_cell.value = value
+        return target_cell
+
+    @classmethod
+    def _normalize_generated_font(cls, cell, *, bold: bool = False):
+        font = copy(cell.font) if cell.font is not None else copy(cls.BODY_FONT)
+        font.name = font.name or cls.BODY_FONT.name
+        font.size = font.size or cls.BODY_FONT.size
+        font.bold = bold
+        font.underline = None
+        font.color = "FF000000"
+        cell.font = font
+
+    @classmethod
+    def _write_body_cell(cls, ws, row: int, column: str, value):
+        target_cell = cls._write_cell(ws, row, column, value)
+        cls._normalize_generated_font(target_cell, bold=False)
+        return target_cell
+
+    @classmethod
+    def _write_message_cell(cls, ws, row: int, column: str, value):
+        target_cell = cls._write_cell(ws, row, column, value)
+        cls._normalize_generated_font(target_cell, bold=False)
+        return target_cell
+
+    @classmethod
+    def _clear_row_columns(cls, ws, row: int, columns: Sequence[str]):
+        for column in columns:
+            cls._write_cell(ws, row, column, None)
+
+    @classmethod
+    def _estimate_row_height(cls, values: Sequence, min_height: float = 18.0, chars_per_line: int = 48):
+        text_lengths = [
+            len(str(value).strip())
+            for value in values
+            if value not in (None, "")
+        ]
+        if not text_lengths:
+            return min_height
+
+        longest = max(text_lengths)
+        lines = max(1, (longest // chars_per_line) + (1 if longest % chars_per_line else 0))
+        return max(min_height, min(90.0, min_height * lines))
+
+    @classmethod
+    def _apply_row_height(cls, ws, row: int, values: Sequence, min_height: float = 18.0, chars_per_line: int = 48):
+        ws.row_dimensions[row].height = cls._estimate_row_height(
+            values,
+            min_height=min_height,
+            chars_per_line=chars_per_line,
+        )
+
+    @classmethod
+    def _clear_merged_rows(cls, ws, rows: Sequence[int]):
+        for row in rows:
+            cls._set_merged_text(ws, row, "", normalize=False)
+            ws.row_dimensions[row].height = 18.0
+
+    @classmethod
+    def _clear_rows_content(cls, ws, rows: Sequence[int]):
+        for row in rows:
+            for col_idx in range(1, ws.max_column + 1):
+                cell = ws.cell(row=row, column=col_idx)
+                if isinstance(cell, MergedCell):
+                    continue
+                cell.value = None
+                cell.border = Border()
+                cell.fill = PatternFill(fill_type=None)
+            ws.row_dimensions[row].height = 18.0
+
+    @classmethod
+    def _unmerge_rows(cls, ws, start_row: int, end_row: int):
+        for merged_range in list(ws.merged_cells.ranges):
+            if merged_range.min_row <= end_row and merged_range.max_row >= start_row:
+                ws.unmerge_cells(str(merged_range))
+
+    @classmethod
+    def _write_single_merged_message(cls, ws, row: int, text: str, clear_rows: Sequence[int] | None = None):
+        cls._set_merged_text(ws, row, text, normalize=True)
+        cls._apply_row_height(ws, row, [text], min_height=18.0, chars_per_line=90)
+        if clear_rows:
+            cls._clear_merged_rows(ws, clear_rows)
+
+    @staticmethod
+    def _body_row_count(rows: Sequence[Sequence]) -> int:
+        return max(1, len(rows))
+
+    @classmethod
+    def _write_section_table(
+        cls,
+        ws,
+        title_row: int,
+        data_start_row: int,
+        data_end_row: int,
+        title: str,
+        headers: Sequence[str],
+        rows: Sequence[Sequence],
+        *,
+        min_height: float = 18.0,
+        chars_per_line: int = 42,
+    ):
+        last_col = len(headers)
+        cls._unmerge_rows(ws, title_row, data_end_row)
+        cls._clear_rows_content(ws, range(title_row, data_end_row + 1))
+
+        ws.merge_cells(start_row=title_row, start_column=1, end_row=title_row, end_column=last_col)
+        title_cell = ws.cell(row=title_row, column=1, value=title)
+        cls._style_cell(
+            title_cell,
+            font=cls.HEADER_FONT,
+            fill=cls.ACCENT_FILL,
+            border=cls.THIN_BORDER,
+            alignment=cls.LEFT_TOP,
+        )
+
+        header_row = data_start_row
+        for col_idx, header in enumerate(headers, start=1):
+            cell = ws.cell(row=header_row, column=col_idx, value=header)
+            cls._style_cell(
+                cell,
+                font=cls.HEADER_FONT,
+                fill=cls.ACCENT_FILL,
+                border=cls.THIN_BORDER,
+                alignment=cls.CENTER,
+            )
+        ws.row_dimensions[header_row].height = 22.0
+
+        body_rows = list(rows[: max(0, data_end_row - data_start_row)])
+        current_row = header_row + 1
+        if not body_rows:
+            ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=last_col)
+            message_cell = ws.cell(row=current_row, column=1, value="No registra datos en esta memoria.")
+            cls._style_cell(
+                message_cell,
+                font=cls.BODY_FONT,
+                border=cls.THIN_BORDER,
+                alignment=cls.LEFT_TOP,
+            )
+            cls._normalize_generated_font(message_cell, bold=False)
+            cls._apply_row_height(ws, current_row, ["No registra datos en esta memoria."], min_height=min_height, chars_per_line=90)
+            cls._clear_rows_content(ws, range(current_row + 1, data_end_row + 1))
+            return
+
+        for row_values in body_rows:
+            for col_idx in range(1, last_col + 1):
+                value = row_values[col_idx - 1] if col_idx - 1 < len(row_values) else ""
+                cell = ws.cell(row=current_row, column=col_idx, value=value)
+                cls._style_cell(
+                    cell,
+                    font=cls.BODY_FONT,
+                    border=cls.THIN_BORDER,
+                    alignment=cls.LEFT_MIDDLE if col_idx != 1 else cls.CENTER,
+                )
+                cls._normalize_generated_font(cell, bold=False)
+            cls._apply_row_height(ws, current_row, row_values, min_height=min_height, chars_per_line=chars_per_line)
+            current_row += 1
+
+        cls._clear_rows_content(ws, range(current_row, data_end_row + 1))
+
+    @classmethod
+    def _write_total_row(
+        cls,
+        ws,
+        row: int,
+        label: str,
+        total_columns: Sequence[tuple[int, float]],
+        *,
+        label_end_col: int,
+    ):
+        cls._unmerge_rows(ws, row, row)
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=label_end_col)
+        label_cell = ws.cell(row=row, column=1, value=label)
+        cls._style_cell(
+            label_cell,
+            font=cls.HEADER_FONT,
+            fill=cls.TOTAL_FILL,
+            border=cls.THIN_BORDER,
+            alignment=cls.LEFT_MIDDLE,
+        )
+        cls._normalize_generated_font(label_cell, bold=True)
+
+        for col_idx, value in total_columns:
+            total_cell = ws.cell(row=row, column=col_idx, value=value)
+            cls._style_cell(
+                total_cell,
+                font=cls.HEADER_FONT,
+                fill=cls.TOTAL_FILL,
+                border=cls.THIN_BORDER,
+                alignment=cls.CENTER,
+                number_format='"$"#,##0.00',
+            )
+            cls._normalize_generated_font(total_cell, bold=True)
+
+    @classmethod
+    def _write_template_table(
+        cls,
+        ws,
+        base_start: int,
+        next_base: int,
+        rows: Sequence[Sequence],
+        columns: Sequence[str],
+        offset: int,
+        style_row: int | None = None,
+        min_height: float = 18.0,
+        chars_per_line: int = 48,
+        empty_message: str = "No registra datos en esta memoria.",
+    ):
+        start_row = base_start + offset
+        reserved_rows = max(next_base - base_start, 1)
+        rows = list(rows)
+        if len(rows) > reserved_rows:
+            rows = rows[:reserved_rows]
+        min_col_idx = min(column_index_from_string(column) for column in columns)
+        max_col_idx = max(column_index_from_string(column) for column in columns)
+
+        total_rows = reserved_rows
+        for row_index in range(total_rows):
+            current_row = start_row + row_index
+            cls._clear_row_columns(ws, current_row, columns)
+            if rows:
+                if row_index < len(rows):
+                    row_values = rows[row_index]
+                    for column, value in zip(columns, row_values):
+                        cls._write_body_cell(ws, current_row, column, value)
+                    cls._apply_row_height(ws, current_row, row_values, min_height=min_height, chars_per_line=chars_per_line)
+                else:
+                    cls._clear_rows_content(ws, [current_row])
+            elif row_index == 0:
+                cls._unmerge_rows(ws, current_row, current_row)
+                ws.merge_cells(start_row=current_row, start_column=min_col_idx, end_row=current_row, end_column=max_col_idx)
+                message_cell = ws.cell(row=current_row, column=min_col_idx, value=empty_message)
+                cls._style_cell(
+                    message_cell,
+                    font=cls.BODY_FONT,
+                    border=cls.THIN_BORDER,
+                    alignment=cls.LEFT_MIDDLE,
+                )
+                cls._normalize_generated_font(message_cell, bold=False)
+                cls._apply_row_height(ws, current_row, [empty_message], min_height=min_height, chars_per_line=90)
+            else:
+                cls._clear_rows_content(ws, [current_row])
+        return offset
+
+    @classmethod
+    def _set_merged_text(cls, ws, row: int, text: str, normalize: bool = False):
+        target_cell = cls._write_cell(ws, row, "A", text)
+        if normalize:
+            cls._normalize_generated_font(target_cell, bold=False)
+
+    @staticmethod
+    def _infer_snapshot_grupo_id(snapshot_sources: dict):
+        for key in (
+            "investigadores",
+            "becarios",
+            "personal",
+            "proyectos",
+            "documentacion",
+            "equipamiento",
+            "erogaciones",
+            "transferencias",
+            "trabajos_reunion",
+            "trabajos_revista",
+            "articulos",
+            "visitas",
+            "registros",
+        ):
+            for item in snapshot_sources.get(key, []):
+                grupo_id = item.get("grupo_utn_id") or item.get("grupo_id")
+                if grupo_id:
+                    return grupo_id
+        return None
+
+    @staticmethod
+    def _summarize_text_items(items: Sequence[str], fallback="No registra datos en esta memoria."):
+        clean_items = [str(item).strip() for item in items if item and str(item).strip()]
+        if not clean_items:
+            return fallback
+        return " | ".join(clean_items)
+
+    @classmethod
+    def _build_text_lines(cls, rows: Sequence[dict], formatter, fallback="No registra datos en esta memoria."):
+        lines = []
+        for index, item in enumerate(rows, start=1):
+            text = formatter(index, item)
+            if text:
+                lines.append(text)
+        return cls._summarize_text_items(lines, fallback=fallback)
+
+    @staticmethod
+    def _clasificar_becario(tipo_formacion_nombre: str | None):
+        tipo = (tipo_formacion_nombre or "").strip().lower()
+        if "doctor" in tipo:
+            return "doctorado"
+        if "maestr" in tipo or "especial" in tipo:
+            return "maestria"
+        if "graduad" in tipo:
+            return "graduado"
+        if "pasant" in tipo:
+            return "pasante"
+        if "tesina" in tipo or "tesis" in tipo or "proyecto final" in tipo or "trabajo final" in tipo:
+            return "tesina"
+        return "alumno"
+
+    @staticmethod
+    def _clasificar_personal(tipo_personal_nombre: str | None):
+        tipo = (tipo_personal_nombre or "").strip().lower()
+        if "profes" in tipo:
+            return "profesional"
+        return "apoyo"
+
+    @staticmethod
+    def _clasificar_trabajo_reunion(tipo_reunion_nombre: str | None):
+        tipo = (tipo_reunion_nombre or "").strip().lower()
+        if "intern" in tipo:
+            return "internacional"
+        return "nacional"
+
+    @staticmethod
+    def _clasificar_transferencia(tipo_contrato_nombre: str | None):
+        tipo = (tipo_contrato_nombre or "").strip().lower()
+        if "tecnolog" in tipo:
+            return "tecnologia"
+        if "i+d" in tipo or "investig" in tipo:
+            return "idi"
+        if "conocimiento" in tipo:
+            return "conocimientos"
+        if "consult" in tipo or "asistencia" in tipo:
+            return "asistencia"
+        if "servicio" in tipo or "ensayo" in tipo or "laboratorio" in tipo or "supervisi" in tipo or "apoyo" in tipo:
+            return "servicios"
+        if "difusi" in tipo or "comunidad" in tipo:
+            return "difusion"
+        return "conocimientos"
+
+    @staticmethod
+    def _clasificar_erogacion(tipo_erogacion_nombre: str | None):
+        tipo = (tipo_erogacion_nombre or "").strip().lower()
+        if "capital" in tipo:
+            return "capital"
+        return "corriente"
+
+    @staticmethod
+    def _clasificar_registro(tipo_registro_nombre: str | None):
+        tipo = (tipo_registro_nombre or "").strip().lower()
+        if "industrial" in tipo:
+            return "industrial"
+        return "intelectual"
+
+    @classmethod
+    def _cleanup_template_placeholders(cls, ws):
+        placeholder_exact = {
+            "NOMBRE Y APELLIDO",
+            "APELLIDO Y NOMBRE",
+            "EJEMPLO",
+            "999",
+            "No aplica.",
+        }
+        placeholder_contains = (
+            "Lorem ipsum",
+            "NNNN/YYYY",
+        )
+
+        for row in ws.iter_rows():
+            for cell in row:
+                if isinstance(cell, MergedCell):
+                    continue
+                if not isinstance(cell.value, str):
+                    continue
+                value = " ".join(cell.value.replace("\xa0", " ").split())
+                if value in placeholder_exact:
+                    cls._write_message_cell(ws, cell.row, cell.column_letter, "-")
+                    continue
+                if any(token in value for token in placeholder_contains):
+                    cls._write_message_cell(ws, cell.row, cell.column_letter, "No registra datos en esta memoria.")
+
+    @classmethod
+    def _normalize_final_sheet(cls, ws):
+        for row in ws.iter_rows():
+            for cell in row:
+                if isinstance(cell, MergedCell):
+                    continue
+                if cell.value in (None, ""):
+                    continue
+
+                font = copy(cell.font) if cell.font is not None else copy(cls.BODY_FONT)
+                font.name = cls.BODY_FONT.name
+                font.color = "FF000000"
+                font.underline = None
+                font.size = cls.TITLE_FONT.size if cell.row == 1 else cls.BODY_FONT.size
+                if cell.row == 1:
+                    font.bold = True
+                elif cell.row == 2:
+                    font.bold = True
+                else:
+                    font.bold = bool(font.bold)
+                cell.font = font
+
+                alignment = copy(cell.alignment) if cell.alignment is not None else copy(cls.LEFT_TOP)
+                if alignment.wrap_text is None:
+                    alignment.wrap_text = True
+                if alignment.vertical is None:
+                    alignment.vertical = "top"
+                cell.alignment = alignment
+
+    @staticmethod
+    def _sheet_has_content(ws):
+        for row in ws.iter_rows():
+            for cell in row:
+                if cell.value not in (None, ""):
+                    return True
+        return False
+
+    @classmethod
+    def _remove_empty_sheets(cls, wb):
+        for ws in list(wb.worksheets):
+            if ws.title != "Hoja1" and not cls._sheet_has_content(ws):
+                wb.remove(ws)
+
+    @classmethod
+    def _build_memoria_snapshot_sources(cls, memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        if version.estado != EstadoMemoria.CERRADA:
+            raise ValueError("Solo puede exportarse una memoria con version cerrada")
+
+        return {
+            "memoria": memoria,
+            "version": version,
+            "investigadores": MemoriaService.get_investigadores_snapshot(memoria_id, memoria_version_id),
+            "becarios": MemoriaService.get_becarios_snapshot(memoria_id, memoria_version_id),
+            "personal": MemoriaService.get_personal_snapshot(memoria_id, memoria_version_id),
+            "proyectos": MemoriaService.get_proyectos_snapshot(memoria_id, memoria_version_id),
+            "actividades": MemoriaService.get_actividades_docencia_snapshot(memoria_id, memoria_version_id),
+            "participaciones": MemoriaService.get_participaciones_relevantes_snapshot(memoria_id, memoria_version_id),
+            "documentacion": MemoriaService.get_documentacion_snapshot(memoria_id, memoria_version_id),
+            "equipamiento": MemoriaService.get_equipamiento_snapshot(memoria_id, memoria_version_id),
+            "erogaciones": MemoriaService.get_erogaciones_snapshot(memoria_id, memoria_version_id),
+            "transferencias": MemoriaService.get_transferencias_snapshot(memoria_id, memoria_version_id),
+            "trabajos_reunion": MemoriaService.get_trabajos_reunion_snapshot(memoria_id, memoria_version_id),
+            "trabajos_revista": MemoriaService.get_trabajos_revista_snapshot(memoria_id, memoria_version_id),
+            "distinciones": MemoriaService.get_distinciones_snapshot(memoria_id, memoria_version_id),
+            "registros": MemoriaService.get_registros_propiedad_snapshot(memoria_id, memoria_version_id),
+            "articulos": MemoriaService.get_articulos_divulgacion_snapshot(memoria_id, memoria_version_id),
+            "visitas": MemoriaService.get_visitas_snapshot(memoria_id, memoria_version_id),
+        }
+
+    @classmethod
+    def generar_excel_memoria(cls, memoria_id: int, memoria_version_id: int):
+        snapshot_sources = cls._build_memoria_snapshot_sources(
+            memoria_id,
+            memoria_version_id
+        )
+
+        memoria = snapshot_sources["memoria"]
+        version = snapshot_sources["version"]
+        grupo_id = cls._infer_snapshot_grupo_id(snapshot_sources)
+        grupo = cls._get_grupo(grupo_id)
+        directivos = cls._get_directivos(grupo.id)
+        wb = cls._load_memoria_template()
+        ws = wb["Hoja1"]
+
+        anio_memoria = memoria.periodo_fin.year if memoria.periodo_fin else date.today().year
+        cls._write_cell(ws, 1, "A", f"MEMORIAS {anio_memoria} DEL GRUPO UTN - {grupo.nombre_sigla_grupo}")
+        cls._write_cell(ws, 2, "A", (
+            f"Memoria {anio_memoria} - Version {version.numero_version} - "
+            f"Periodo {cls._format_date(memoria.periodo_inicio)} al {cls._format_date(memoria.periodo_fin)}"
+        ))
+
+        cls._set_merged_text(ws, 5, f"1.1.- Facultad Regional: {grupo.nombre_unidad_academica}")
+        cls._set_merged_text(ws, 6, f"1.2.- Nombre y Sigla: {grupo.nombre_sigla_grupo}")
+        cls._set_merged_text(ws, 7, f"1.3.- Directora: {cls._find_directivo_nombre(directivos, ['director'])}")
+        cls._set_merged_text(ws, 8, f"1.4.- Vicedirector/a: {cls._find_directivo_nombre(directivos, ['vicedirector', 'vice director'])}")
+        cls._set_merged_text(ws, 9, f"1.5.- Direccion de Email: {grupo.mail}")
+
+        offset = 0
+
+        directivos_rows = [
+            [idx, p.directivo.nombre_apellido, p.cargo.nombre if p.cargo else "-"]
+            for idx, p in enumerate(directivos, start=1)
+            if p.deleted_at is None and p.directivo and p.directivo.deleted_at is None
+        ]
+        offset = cls._write_template_table(ws, 12, 18, directivos_rows, ["A", "B", "D"], offset)
+
+        cls._set_merged_text(ws, 18 + offset, "1.7.- Objetivos y desarrollo")
+        cls._set_merged_text(
+            ws,
+            19 + offset,
+            grupo.objetivo_desarrollo or "No registra datos institucionales adicionales para esta memoria."
+        )
+        cls._clear_merged_rows(
+            ws,
+            [row_number + offset for row_number in (20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 33, 34, 35, 36, 37, 43)]
+        )
+
+        investigadores_rows = [
+            [
+                idx,
+                item.get("nombre_apellido") or "-",
+                item.get("categoria_utn_nombre") or "-",
+                item.get("programa_incentivos_nombre") or "-",
+                item.get("tipo_dedicacion_nombre") or "-",
+                item.get("horas_semanales") or "-",
+            ]
+            for idx, item in enumerate(snapshot_sources["investigadores"], start=1)
+        ]
+        offset = cls._write_template_table(ws, 63, 72, investigadores_rows, ["A", "B", "C", "D", "E", "F"], offset)
+
+        personal_profesional = [
+            item for item in snapshot_sources["personal"]
+            if cls._clasificar_personal(item.get("tipo_personal_nombre")) == "profesional"
+        ]
+        personal_apoyo = [
+            item for item in snapshot_sources["personal"]
+            if cls._clasificar_personal(item.get("tipo_personal_nombre")) != "profesional"
+        ]
+        offset = cls._write_template_table(
+            ws,
+            74,
+            77,
+            [[idx, item.get("nombre_apellido") or "-", item.get("horas_semanales") or "-"] for idx, item in enumerate(personal_profesional, start=1)],
+            ["A", "B", "C"],
+            offset
+        )
+        offset = cls._write_template_table(
+            ws,
+            79,
+            81,
+            [[idx, item.get("nombre_apellido") or "-", item.get("horas_semanales") or "-"] for idx, item in enumerate(personal_apoyo, start=1)],
+            ["A", "B", "C"],
+            offset
+        )
+
+        becarios_por_categoria = {
+            "doctorado": [],
+            "maestria": [],
+            "graduado": [],
+            "alumno": [],
+            "pasante": [],
+            "tesina": [],
+        }
+        for item in snapshot_sources["becarios"]:
+            categoria = cls._clasificar_becario(item.get("tipo_formacion_nombre"))
+            becarios_por_categoria[categoria].append(item)
+
+        if becarios_por_categoria["doctorado"]:
+            cls._set_merged_text(ws, 84 + offset, "")
+        else:
+            cls._set_merged_text(ws, 84 + offset, "No aplica.")
+        offset = cls._write_template_table(
+            ws,
+            88,
+            93,
+            [
+                [
+                    idx,
+                    item.get("nombre_apellido") or "-",
+                    item.get("fuentes_financiamiento_beca") or "-",
+                    item.get("horas_semanales") or "-",
+                ]
+                for idx, item in enumerate(becarios_por_categoria["maestria"], start=1)
+            ],
+            ["A", "B", "C", "D"],
+            offset
+        )
+        offset = cls._write_template_table(
+            ws,
+            95,
+            97,
+            [
+                [
+                    idx,
+                    item.get("nombre_apellido") or "-",
+                    item.get("fuentes_financiamiento_beca") or "-",
+                    item.get("horas_semanales") or "-",
+                ]
+                for idx, item in enumerate(becarios_por_categoria["graduado"], start=1)
+            ],
+            ["A", "B", "C", "D"],
+            offset
+        )
+        offset = cls._write_template_table(
+            ws,
+            99,
+            109,
+            [
+                [
+                    idx,
+                    item.get("nombre_apellido") or "-",
+                    item.get("fuentes_financiamiento_beca") or "-",
+                    item.get("horas_semanales") or "-",
+                ]
+                for idx, item in enumerate(becarios_por_categoria["alumno"], start=1)
+            ],
+            ["A", "B", "C", "D"],
+            offset
+        )
+        offset = cls._write_template_table(
+            ws,
+            111,
+            117,
+            [
+                [
+                    idx,
+                    item.get("nombre_apellido") or "-",
+                    item.get("fuentes_financiamiento_beca") or "-",
+                    item.get("horas_semanales") or "-",
+                ]
+                for idx, item in enumerate(becarios_por_categoria["pasante"], start=1)
+            ],
+            ["A", "B", "C", "D"],
+            offset
+        )
+        offset = cls._write_template_table(
+            ws,
+            120,
+            126,
+            [
+                [
+                    idx,
+                    item.get("nombre_apellido") or "-",
+                    item.get("fuentes_financiamiento_beca") or "Sin financiamiento",
+                    item.get("horas_semanales") or "-",
+                ]
+                for idx, item in enumerate(becarios_por_categoria["tesina"], start=1)
+            ],
+            ["A", "B", "C", "D"],
+            offset
+        )
+
+        equipamiento_rows = [
+            [
+                idx,
+                item.get("denominacion") or "-",
+                cls._format_date(item.get("fecha_incorporacion")),
+                cls._money(item.get("monto_invertido")),
+                item.get("descripcion_breve") or "-",
+            ]
+            for idx, item in enumerate(snapshot_sources["equipamiento"], start=1)
+        ]
+        offset = cls._write_template_table(
+            ws,
+            128,
+            131,
+            equipamiento_rows,
+            ["A", "B", "C", "D", "E"],
+            offset,
+            min_height=18.0,
+            chars_per_line=55,
+        )
+
+        documentacion_rows = [
+            [
+                idx,
+                item.get("titulo") or "-",
+                cls._join_dict_names(item.get("autores"), "nombre_apellido"),
+                item.get("editorial") or "-",
+                item.get("anio") or "-",
+                cls._format_date(item.get("fecha")),
+            ]
+            for idx, item in enumerate(snapshot_sources["documentacion"], start=1)
+        ]
+        offset = cls._write_template_table(
+            ws,
+            133,
+            136,
+            documentacion_rows,
+            ["A", "B", "C", "D", "E", "F"],
+            offset,
+            min_height=18.0,
+            chars_per_line=60,
+        )
+
+        proyectos_rows = [
+            [
+                idx,
+                item.get("tipo_proyecto_nombre") or "-",
+                item.get("codigo_proyecto") or "-",
+                cls._format_period(item.get("fecha_inicio"), item.get("fecha_fin")),
+                cls._money(item.get("monto_destinado")),
+                item.get("nombre_proyecto") or "-",
+                item.get("descripcion_proyecto") or "-",
+                "Sin registro especifico en snapshot.",
+                item.get("dificultades_proyecto") or "-",
+                item.get("fuente_financiamiento_nombre") or "-",
+            ]
+            for idx, item in enumerate(snapshot_sources["proyectos"], start=1)
+        ]
+        body_count = cls._body_row_count(proyectos_rows)
+        proyectos_title_row = 138 + offset
+        proyectos_header_row = proyectos_title_row + 1
+        proyectos_end_row = proyectos_header_row + body_count
+        cls._write_section_table(
+            ws,
+            proyectos_title_row,
+            proyectos_header_row,
+            proyectos_end_row,
+            "5.- Proyectos en curso",
+            ["Nro.", "Tipo", "Codigo", "Periodo", "Monto destinado", "Proyecto", "Descripcion", "Logros", "Dificultades", "Fuente"],
+            proyectos_rows,
+            chars_per_line=28,
+        )
+
+        distinciones_rows = [
+            [
+                idx,
+                item.get("descripcion") or "-",
+                cls._format_date(item.get("fecha")),
+                item.get("proyecto_nombre") or item.get("proyecto_investigacion_nombre") or "-",
+            ]
+            for idx, item in enumerate(snapshot_sources["distinciones"], start=1)
+        ]
+        section6_cursor = proyectos_end_row + 1
+
+        body_count = cls._body_row_count(distinciones_rows)
+        distinciones_title_row = section6_cursor
+        distinciones_header_row = distinciones_title_row + 1
+        distinciones_end_row = distinciones_header_row + body_count
+        cls._write_section_table(
+            ws,
+            distinciones_title_row,
+            distinciones_header_row,
+            distinciones_end_row,
+            "6.1.- Distinciones recibidas",
+            ["Nro.", "Distincion / Premio", "Fecha", "Observaciones"],
+            distinciones_rows,
+            chars_per_line=38,
+        )
+
+        participaciones_rows = [
+            [
+                idx,
+                item.get("nombre_evento") or "-",
+                item.get("forma_participacion") or "-",
+            ]
+            for idx, item in enumerate(snapshot_sources["participaciones"], start=1)
+        ]
+        section6_cursor = distinciones_end_row + 1
+
+        body_count = cls._body_row_count(participaciones_rows)
+        participaciones_title_row = section6_cursor
+        participaciones_header_row = participaciones_title_row + 1
+        participaciones_end_row = participaciones_header_row + body_count
+        cls._write_section_table(
+            ws,
+            participaciones_title_row,
+            participaciones_header_row,
+            participaciones_end_row,
+            "6.2.- Participaciones",
+            ["Nro.", "Evento", "Rol / Participacion"],
+            participaciones_rows,
+            chars_per_line=42,
+        )
+
+        visitas_rows = [
+            [
+                idx,
+                item.get("procedencia") or "-",
+                item.get("razon") or "-",
+                item.get("tipo_visita_nombre") or "-",
+            ]
+            for idx, item in enumerate(snapshot_sources["visitas"], start=1)
+        ]
+        section6_cursor = participaciones_end_row + 1
+
+        body_count = cls._body_row_count(visitas_rows)
+        visitas_title_row = section6_cursor
+        visitas_header_row = visitas_title_row + 1
+        visitas_end_row = visitas_header_row + body_count
+        cls._write_section_table(
+            ws,
+            visitas_title_row,
+            visitas_header_row,
+            visitas_end_row,
+            "6.3.- Visitantes del pais y del extranjero",
+            ["Nro.", "Institucion / Procedencia", "Nombre o descripcion", "Tipo"],
+            visitas_rows,
+            chars_per_line=36,
+        )
+
+        original_section7_start = 187 + offset
+        current_row = visitas_end_row + 1
+        if current_row < original_section7_start:
+            cls._clear_rows_content(ws, range(current_row, original_section7_start))
+        offset += max(0, current_row - original_section7_start)
+
+        reuniones_nacionales = []
+        reuniones_internacionales = []
+        for idx, item in enumerate(snapshot_sources["trabajos_reunion"], start=1):
+            row_data = [
+                idx,
+                item.get("nombre_reunion") or "-",
+                item.get("procedencia") or "-",
+                cls._format_date(item.get("fecha_inicio")),
+                item.get("investigadores_participantes") or "-",
+                item.get("titulo_trabajo") or "-",
+            ]
+            if cls._clasificar_trabajo_reunion(item.get("tipo_reunion_nombre")) == "internacional":
+                reuniones_internacionales.append(row_data)
+            else:
+                reuniones_nacionales.append(row_data)
+
+        body_count = cls._body_row_count(reuniones_nacionales)
+        reuniones_nacionales_title_row = 187 + offset
+        reuniones_nacionales_header_row = reuniones_nacionales_title_row + 1
+        reuniones_nacionales_end_row = reuniones_nacionales_header_row + body_count
+        cls._write_section_table(
+            ws,
+            reuniones_nacionales_title_row,
+            reuniones_nacionales_header_row,
+            reuniones_nacionales_end_row,
+            "7.1.- Reunion Cientifica Nacional con Referato",
+            ["Nro.", "Nombre reunion", "Ciudad / Pais", "Fecha inicio", "Expositor", "Titulo trabajo"],
+            reuniones_nacionales,
+            chars_per_line=32,
+        )
+
+        body_count = cls._body_row_count(reuniones_internacionales)
+        reuniones_internacionales_title_row = reuniones_nacionales_end_row + 1
+        reuniones_internacionales_header_row = reuniones_internacionales_title_row + 1
+        reuniones_internacionales_end_row = reuniones_internacionales_header_row + body_count
+        cls._write_section_table(
+            ws,
+            reuniones_internacionales_title_row,
+            reuniones_internacionales_header_row,
+            reuniones_internacionales_end_row,
+            "7.2.- Reunion Cientifica Internacional",
+            ["Nro.", "Nombre reunion", "Ciudad / Pais", "Fecha inicio", "Expositor", "Titulo trabajo"],
+            reuniones_internacionales,
+            chars_per_line=32,
+        )
+
+        original_section8_start = 207 + offset
+        current_row = reuniones_internacionales_end_row + 1
+        if current_row < original_section8_start:
+            cls._clear_rows_content(ws, range(current_row, original_section8_start))
+        offset += max(0, current_row - original_section8_start)
+
+        trabajos_revista_rows = [
+            [
+                idx,
+                item.get("nombre_revista") or "-",
+                item.get("pais") or "-",
+                item.get("editorial") or "-",
+                item.get("issn") or "-",
+                item.get("titulo_trabajo") or "-",
+            ]
+            for idx, item in enumerate(snapshot_sources["trabajos_revista"], start=1)
+        ]
+        body_count = cls._body_row_count(trabajos_revista_rows)
+        trabajos_revista_title_row = 207 + offset
+        trabajos_revista_header_row = trabajos_revista_title_row + 1
+        trabajos_revista_end_row = trabajos_revista_header_row + body_count
+        cls._write_section_table(
+            ws,
+            trabajos_revista_title_row,
+            trabajos_revista_header_row,
+            trabajos_revista_end_row,
+            "8.1.- Trabajos publicados en revistas con referato",
+            ["Nro.", "Revista", "Pais", "Editorial", "ISSN", "Titulo trabajo"],
+            trabajos_revista_rows,
+            chars_per_line=34,
+        )
+
+        articulos_rows = [
+            [
+                idx,
+                item.get("titulo") or "-",
+                item.get("descripcion") or "-",
+                cls._format_date(item.get("fecha_publicacion")),
+            ]
+            for idx, item in enumerate(snapshot_sources["articulos"], start=1)
+        ]
+        body_count = cls._body_row_count(articulos_rows)
+        articulos_title_row = max(221 + offset, trabajos_revista_end_row + 2)
+        articulos_header_row = articulos_title_row + 1
+        articulos_end_row = articulos_header_row + body_count
+        cls._write_section_table(
+            ws,
+            articulos_title_row,
+            articulos_header_row,
+            articulos_end_row,
+            "8.4.- Articulos de divulgacion, informes y memorias tecnicas",
+            ["Nro.", "Titulo", "Descripcion", "Fecha"],
+            articulos_rows,
+            chars_per_line=42,
+        )
+        cls._clear_rows_content(ws, [215 + offset, 216 + offset])
+
+        original_section9_start = 231 + offset
+        current_row = articulos_end_row + 2
+        if current_row < original_section9_start:
+            cls._clear_rows_content(ws, range(current_row, original_section9_start))
+        offset += max(0, current_row - original_section9_start)
+
+        registros_intelectuales = [
+            item for item in snapshot_sources["registros"]
+            if cls._clasificar_registro(item.get("tipo_registro_nombre")) == "intelectual"
+        ]
+        registros_industriales = [
+            item for item in snapshot_sources["registros"]
+            if cls._clasificar_registro(item.get("tipo_registro_nombre")) == "industrial"
+        ]
+        registros_intelectuales_rows = [
+            [
+                idx,
+                item.get("nombre_articulo") or "-",
+                item.get("organismo_registrante") or "-",
+                cls._format_date(item.get("fecha_registro")),
+            ]
+            for idx, item in enumerate(registros_intelectuales, start=1)
+        ]
+        body_count = cls._body_row_count(registros_intelectuales_rows)
+        registros_intelectuales_title_row = 231 + offset
+        registros_intelectuales_header_row = registros_intelectuales_title_row + 1
+        registros_intelectuales_end_row = registros_intelectuales_header_row + body_count
+        cls._write_section_table(
+            ws,
+            registros_intelectuales_title_row,
+            registros_intelectuales_header_row,
+            registros_intelectuales_end_row,
+            "9.1.- Registro de Propiedad Intelectual",
+            ["Nro.", "Registro", "Organismo", "Fecha"],
+            registros_intelectuales_rows,
+            chars_per_line=34,
+        )
+        registros_industriales_rows = [
+            [
+                idx,
+                item.get("nombre_articulo") or "-",
+                item.get("organismo_registrante") or "-",
+                cls._format_date(item.get("fecha_registro")),
+            ]
+            for idx, item in enumerate(registros_industriales, start=1)
+        ]
+        body_count = cls._body_row_count(registros_industriales_rows)
+        registros_industriales_title_row = registros_intelectuales_end_row + 1
+        registros_industriales_header_row = registros_industriales_title_row + 1
+        registros_industriales_end_row = registros_industriales_header_row + body_count
+        cls._write_section_table(
+            ws,
+            registros_industriales_title_row,
+            registros_industriales_header_row,
+            registros_industriales_end_row,
+            "9.2.- Registro de Propiedad Industrial",
+            ["Nro.", "Registro", "Organismo", "Fecha"],
+            registros_industriales_rows,
+            chars_per_line=34,
+        )
+
+        actividades_rows = [
+            [
+                idx,
+                item.get("investigador_nombre") or "-",
+                item.get("grado_academico_nombre") or "-",
+                f"{item.get('curso') or '-'} - {item.get('institucion') or '-'}",
+            ]
+            for idx, item in enumerate(snapshot_sources["actividades"], start=1)
+        ]
+        body_count = cls._body_row_count(actividades_rows)
+        actividades_title_row = max(239 + offset, registros_industriales_end_row + 1)
+        actividades_header_row = actividades_title_row + 1
+        actividades_end_row = actividades_header_row + body_count
+        cls._write_section_table(
+            ws,
+            actividades_title_row,
+            actividades_header_row,
+            actividades_end_row,
+            "III.- Actividades en docencia",
+            ["Nro.", "Investigador", "Grado", "Actividades y catedras de posgrado"],
+            actividades_rows,
+            chars_per_line=30,
+        )
+
+        original_section10_start = 250 + offset
+        current_row = actividades_end_row + 1
+        if current_row < original_section10_start:
+            cls._clear_rows_content(ws, range(current_row, original_section10_start))
+        offset += max(0, current_row - original_section10_start)
+
+        transferencias_por_tipo = {
+            "tecnologia": [],
+            "idi": [],
+            "conocimientos": [],
+            "asistencia": [],
+            "servicios": [],
+            "difusion": [],
+        }
+        for item in snapshot_sources["transferencias"]:
+            transferencias_por_tipo[cls._clasificar_transferencia(item.get("tipo_contrato_nombre"))].append(item)
+
+        def transfer_rows(items):
+            return [
+                [
+                    idx,
+                    item.get("denominacion") or "-",
+                    cls._join_dict_names(item.get("adoptantes"), "adoptante_nombre"),
+                    item.get("demandante") or "-",
+                    cls._money(item.get("monto")),
+                    item.get("descripcion_actividad") or "-",
+                ]
+                for idx, item in enumerate(items, start=1)
+            ]
+
+        transfer_headers = ["Nro.", "Denominacion", "Adoptante", "Demandante", "Monto comprometido", "Breve descripcion"]
+        transfer_sections = [
+            ("10.1.- Contrato de transferencia de tecnologia", transfer_rows(transferencias_por_tipo["tecnologia"])),
+            ("10.2.- Contrato de I+D+i", transfer_rows(transferencias_por_tipo["idi"])),
+            ("10.3.- Contrato/Acuerdo de Transferencia de conocimientos", transfer_rows(transferencias_por_tipo["conocimientos"])),
+            ("10.4.- Contrato de Asistencia Tecnica o Consultoria", transfer_rows(transferencias_por_tipo["asistencia"])),
+            ("10.5.- Servicios tecnicos/de apoyo/supervision y/o ensayos de laboratorio", transfer_rows(transferencias_por_tipo["servicios"])),
+            ("10.6.- Difusion a la comunidad academica y en general", transfer_rows(transferencias_por_tipo["difusion"])),
+        ]
+        transfer_cursor = 250 + offset
+        for title, transfer_section_rows in transfer_sections:
+            body_count = cls._body_row_count(transfer_section_rows)
+            title_row = transfer_cursor
+            header_row = title_row + 1
+            end_row = header_row + body_count
+            cls._write_section_table(
+                ws,
+                title_row,
+                header_row,
+                end_row,
+                title,
+                transfer_headers,
+                transfer_section_rows,
+                chars_per_line=30,
+            )
+            transfer_cursor = end_row + 1
+        cls._write_total_row(
+            ws,
+            transfer_cursor,
+            "Total monto transferencias",
+            [(5, sum(cls._money(item.get("monto")) for item in snapshot_sources["transferencias"]))],
+            label_end_col=4,
+        )
+
+        original_section11_start = 281 + offset
+        current_row = transfer_cursor + 1
+        if current_row < original_section11_start:
+            cls._clear_rows_content(ws, range(current_row, original_section11_start))
+        offset += max(0, current_row - original_section11_start)
+
+        erogaciones_corrientes = [
+            item for item in snapshot_sources["erogaciones"]
+            if cls._clasificar_erogacion(item.get("tipo_erogacion_nombre")) == "corriente"
+        ]
+        erogaciones_capital = [
+            item for item in snapshot_sources["erogaciones"]
+            if cls._clasificar_erogacion(item.get("tipo_erogacion_nombre")) == "capital"
+        ]
+        erogaciones_corrientes_rows = [
+            [
+                idx,
+                item.get("fuente_financiamiento_nombre") or "-",
+                cls._money(item.get("ingresos")),
+                cls._money(item.get("egresos")),
+                cls._money(item.get("ingresos")) - cls._money(item.get("egresos")),
+            ]
+            for idx, item in enumerate(erogaciones_corrientes, start=1)
+        ]
+        body_count = cls._body_row_count(erogaciones_corrientes_rows)
+        erogaciones_corrientes_title_row = 281 + offset
+        erogaciones_corrientes_header_row = erogaciones_corrientes_title_row + 1
+        erogaciones_corrientes_end_row = erogaciones_corrientes_header_row + body_count
+        cls._write_section_table(
+            ws,
+            erogaciones_corrientes_title_row,
+            erogaciones_corrientes_header_row,
+            erogaciones_corrientes_end_row,
+            "11.1.- Erogaciones Corrientes",
+            ["Nro.", "Fuente de financiamiento", "Ingresos", "Egresos", "Saldo resultante"],
+            erogaciones_corrientes_rows,
+            chars_per_line=30,
+        )
+        erogaciones_corrientes_total_row = erogaciones_corrientes_end_row + 1
+        cls._write_total_row(
+            ws,
+            erogaciones_corrientes_total_row,
+            "Totales erogaciones",
+            [
+                (3, sum(cls._money(item.get("ingresos")) for item in erogaciones_corrientes)),
+                (4, sum(cls._money(item.get("egresos")) for item in erogaciones_corrientes)),
+                (5, sum(cls._money(item.get("ingresos")) - cls._money(item.get("egresos")) for item in erogaciones_corrientes)),
+            ],
+            label_end_col=2,
+        )
+        erogaciones_capital_rows = [
+            [
+                idx,
+                item.get("fuente_financiamiento_nombre") or "-",
+                cls._money(item.get("ingresos")),
+                cls._money(item.get("egresos")),
+                cls._money(item.get("ingresos")) - cls._money(item.get("egresos")),
+            ]
+            for idx, item in enumerate(erogaciones_capital, start=1)
+        ]
+        body_count = cls._body_row_count(erogaciones_capital_rows)
+        erogaciones_capital_title_row = erogaciones_corrientes_total_row + 1
+        erogaciones_capital_header_row = erogaciones_capital_title_row + 1
+        erogaciones_capital_end_row = erogaciones_capital_header_row + body_count
+        cls._write_section_table(
+            ws,
+            erogaciones_capital_title_row,
+            erogaciones_capital_header_row,
+            erogaciones_capital_end_row,
+            "11.2.- Erogaciones de Capital",
+            ["Nro.", "Fuente de financiamiento", "Ingresos", "Egresos", "Saldo resultante"],
+            erogaciones_capital_rows,
+            chars_per_line=30,
+        )
+        erogaciones_capital_total_row = erogaciones_capital_end_row + 1
+        cls._write_total_row(
+            ws,
+            erogaciones_capital_total_row,
+            "Totales erogaciones",
+            [
+                (3, sum(cls._money(item.get("ingresos")) for item in erogaciones_capital)),
+                (4, sum(cls._money(item.get("egresos")) for item in erogaciones_capital)),
+                (5, sum(cls._money(item.get("ingresos")) - cls._money(item.get("egresos")) for item in erogaciones_capital)),
+            ],
+            label_end_col=2,
+        )
+
+        original_section12_start = 295 + offset
+        current_row = erogaciones_capital_total_row + 1
+        if current_row < original_section12_start:
+            cls._clear_rows_content(ws, range(current_row, original_section12_start))
+        offset += max(0, current_row - original_section12_start)
+
+        planificacion_memoria = cls._get_planificacion_memoria(grupo.id, anio_memoria + 1)
+
+        cls._write_cell(ws, 295 + offset, "A", f"VI - PROGRAMA DE ACTIVIDADES para {anio_memoria + 1}")
+        cls._set_merged_text(
+            ws,
+            296 + offset,
+            planificacion_memoria.descripcion
+            if planificacion_memoria and planificacion_memoria.descripcion
+            else "No registra datos de planificacion para esta memoria.",
+            normalize=True,
+        )
+        cls._apply_row_height(
+            ws,
+            296 + offset,
+            [
+                planificacion_memoria.descripcion
+                if planificacion_memoria and planificacion_memoria.descripcion
+                else "No registra datos de planificacion para esta memoria."
+            ],
+            min_height=18.0,
+            chars_per_line=90,
+        )
+
+        cls._cleanup_template_placeholders(ws)
+        cls._normalize_final_sheet(ws)
+        cls._remove_empty_sheets(wb)
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        return output
 
     @classmethod
     def generar_excel_grupo(cls, grupo_id: int | None = 1):
@@ -597,3 +1863,6 @@ class ExportService:
         wb.save(output)
         output.seek(0)
         return output
+
+
+

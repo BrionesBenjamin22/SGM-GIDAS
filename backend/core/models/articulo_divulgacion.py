@@ -18,5 +18,48 @@ class ArticuloDivulgacion(db.Model, AuditMixin):
         } if self.grupo_utn else None
         return data
 
+
+class ArticuloDivulgacionMemoriaVersion(db.Model, AuditMixin):
+    __tablename__ = "articulo_divulgacion_memoria_version"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
+
+    memoria_version_id = db.Column(
+        db.Integer,
+        db.ForeignKey("memoria_version.id"),
+        nullable=False
+    )
+    articulo_divulgacion_id = db.Column(
+        db.Integer,
+        db.ForeignKey("articulo_divulgacion.id"),
+        nullable=False
+    )
+
+    titulo = db.Column(db.Text, nullable=False)
+    descripcion = db.Column(db.Text, nullable=False)
+    fecha_publicacion = db.Column(db.Date, nullable=False)
+
+    grupo_utn_id = db.Column(
+        db.Integer,
+        db.ForeignKey("grupo_utn.id"),
+        nullable=False
+    )
+    grupo_utn_nombre = db.Column(db.String(255), nullable=True)
+
+    memoria_version = db.relationship("MemoriaVersion", lazy="joined")
+    articulo_divulgacion = db.relationship("ArticuloDivulgacion", lazy="joined")
+    grupo_utn = db.relationship("GrupoInvestigacionUtn", lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "memoria_version_id",
+            "articulo_divulgacion_id",
+            name="uq_articulo_divulgacion_memoria_version"
+        ),
+    )
+
+    def serialize(self):
+        return self.to_dict()
+
     
     

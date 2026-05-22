@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "@/components/Button";
+import Calendar from "@/components/Calendar";
 import { useUct } from "@/hooks/useUct";
 import { useTiposPersonal } from "@/hooks/useTiposPersonal";
 import {
@@ -32,39 +33,62 @@ export default function FormPTAAProfesional({
   const tiposPersonalParaPTAA = tiposPersonal.filter(
     (t) => !t.nombre?.trim().toLowerCase().includes("profesional")
   );
+
   const [nombreApellido, setNombre] = useState("");
   const [horasSemanales, setHoras] = useState<number | "">("");
   const [tipoPersonalId, setTipoPersonalId] = useState<number | "">("");
+  const [fechaAltaGrupo, setFechaAltaGrupo] = useState<Date | null>(null);
   const [activo, setActivo] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (!initialData) return;
-
-    setNombre(initialData.nombre_apellido);
-    setHoras(initialData.horas_semanales);
-    setActivo(initialData.activo ?? true);
-
-    if (initialData.relaciones?.tipo_personal) {
-      setTipoPersonalId(initialData.relaciones.tipo_personal.id);
+    if (!initialData) {
+      setNombre("");
+      setHoras("");
+      setTipoPersonalId("");
+      setFechaAltaGrupo(null);
+      setActivo(true);
+      return;
     }
+
+    setNombre(initialData.nombre_apellido ?? "");
+    setHoras(initialData.horas_semanales ?? "");
+    setActivo(initialData.activo ?? true);
+    setFechaAltaGrupo(
+      initialData.fecha_alta_grupo
+        ? new Date(`${initialData.fecha_alta_grupo}T00:00:00`)
+        : null
+    );
+    setTipoPersonalId(
+      initialData.relaciones?.tipo_personal?.id ??
+        initialData.tipo_personal_id ??
+        ""
+    );
   }, [initialData]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!nombreApellido.trim())
+    if (!nombreApellido.trim()) {
       newErrors.nombre = "Debe ingresar nombre y apellido";
+    }
 
-    if (!horasSemanales || Number(horasSemanales) <= 0)
-      newErrors.horas = "Debe ingresar horas válidas";
+    if (!horasSemanales || Number(horasSemanales) <= 0) {
+      newErrors.horas = "Debe ingresar horas validas";
+    }
 
-    if (requiereSeleccionTipoPersonal && !tipoPersonalId)
+    if (requiereSeleccionTipoPersonal && !tipoPersonalId) {
       newErrors.tipoPersonal = "Debe seleccionar tipo de personal";
+    }
 
-    if (!requiereSeleccionTipoPersonal && !tipoProfesional?.id)
+    if (!requiereSeleccionTipoPersonal && !tipoProfesional?.id) {
       newErrors.tipoPersonal =
-        "No se encontró configurado el tipo de personal Profesional";
+        "No se encontro configurado el tipo de personal Profesional";
+    }
+
+    if (!fechaAltaGrupo) {
+      newErrors.fechaAltaGrupo = "Debe ingresar la fecha de alta en el grupo";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -78,49 +102,66 @@ export default function FormPTAAProfesional({
     });
   };
 
-const submit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!validate()) return;
-
-  const payload = {
-    nombre_apellido: nombreApellido,
-    horas_semanales: Number(horasSemanales),
-    tipo_personal_id: requiereSeleccionTipoPersonal
-      ? Number(tipoPersonalId)
-      : Number(tipoProfesional!.id),
-    grupo_utn_id: uct!.id,
-    activo,
+  const formatDateStr = (d: Date | null) => {
+    if (!d) return "";
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${dd}`;
   };
 
-  if (isEdit && initialData?.id) {
-    await actualizarPersonal(initialData.id, payload, "personal");
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    const payload = {
+      nombre_apellido: nombreApellido,
+      horas_semanales: Number(horasSemanales),
+      tipo_personal_id: requiereSeleccionTipoPersonal
+        ? Number(tipoPersonalId)
+        : Number(tipoProfesional!.id),
+      fecha_alta_grupo: formatDateStr(fechaAltaGrupo),
+      grupo_utn_id: uct!.id,
+      activo,
+    };
+
+    if (isEdit && initialData?.id) {
+      await actualizarPersonal(
+        initialData.id,
+        payload,
+        tipo === "PROFESIONAL" ? "profesional" : "personal"
+      );
+
+      await qc.invalidateQueries({
+        queryKey: ["personal"],
+      });
+
+      navigate(
+        `/personal/${tipo === "PROFESIONAL" ? "profesional" : "personal"}/${initialData.id}`,
+        {
+          replace: true,
+          state: { successMessage: "Actualizado con exito!" },
+        }
+      );
+
+      return;
+    }
+
+    await upsertPersonal(payload);
 
     await qc.invalidateQueries({
       queryKey: ["personal"],
     });
 
-    navigate(`/personal/personal/${initialData.id}`, {
-      state: { successMessage: "Actualizado con éxito!" },
+    navigate("/personal", {
+      state: { successMessage: "Creado con exito!" },
     });
-
-    return;
-  }
-
-  await upsertPersonal(payload);
-
-  await qc.invalidateQueries({
-    queryKey: ["personal"],
-  });
-
-  navigate("/personal", {
-    state: { successMessage: "Creado con éxito!" },
-  });
-};
+  };
 
   return (
     <form
       onSubmit={submit}
-      className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 space-y-6"
+      className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
     >
       <Field label="Nombre y apellido">
         <>
@@ -135,9 +176,7 @@ const submit = async (e: React.FormEvent) => {
             }}
           />
           {errors.nombre && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.nombre}
-            </p>
+            <p className="mt-1 text-sm text-red-500">{errors.nombre}</p>
           )}
         </>
       </Field>
@@ -157,11 +196,23 @@ const submit = async (e: React.FormEvent) => {
             }}
           />
           {errors.horas && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.horas}
-            </p>
+            <p className="mt-1 text-sm text-red-500">{errors.horas}</p>
           )}
         </>
+      </Field>
+
+      <Field label="Fecha de alta en el grupo">
+        <Calendar
+          value={fechaAltaGrupo}
+          onChange={(date) => {
+            setFechaAltaGrupo(date);
+            if (date) clearError("fechaAltaGrupo");
+          }}
+          className={`input ${
+            errors.fechaAltaGrupo ? "border-red-500 ring-2 ring-red-500" : ""
+          }`}
+          helperText={errors.fechaAltaGrupo ?? "DD/MM/AAAA"}
+        />
       </Field>
 
       {requiereSeleccionTipoPersonal && (
@@ -188,9 +239,7 @@ const submit = async (e: React.FormEvent) => {
               ))}
             </select>
             {errors.tipoPersonal && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.tipoPersonal}
-              </p>
+              <p className="mt-1 text-sm text-red-500">{errors.tipoPersonal}</p>
             )}
           </>
         </Field>
@@ -223,9 +272,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium mb-2">
-        {label}
-      </label>
+      <label className="mb-2 block text-sm font-medium">{label}</label>
       {children}
     </div>
   );

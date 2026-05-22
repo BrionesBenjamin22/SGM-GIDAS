@@ -1,23 +1,30 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import Button from "@/components/Button";
-import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
+import Tarjeta from "@/components/Tarjeta";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
+import { useAuth } from "@/context/AuthContext";
 import { HttpError } from "@/lib/http";
-
 import { useRegistrosPropiedad } from "@/hooks/useRegistrosPropiedad";
 import {
   deleteRegistroPropiedad,
   type RegistroPropiedad,
 } from "@/services/registrosPropiedadServices";
-import { useAuth } from "@/context/AuthContext";
 import { toTitleCase } from "@/utils/format";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
+import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
+
+const ITEMS_PER_PAGE = 9;
 
 const formatFecha = (fecha?: string | null) => {
-  if (!fecha) return "—";
+  if (!fecha) return "-";
 
   const [y, m, d] = fecha.split("-");
   if (!y || !m || !d) return fecha;
@@ -36,47 +43,53 @@ export default function RegistrosPropiedadLanding() {
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
-
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [filters, setFilters] = useState({
     estado: "",
     tipoRegistro: "",
     fechaRegistro: "",
   });
-
   const [tempFilters, setTempFilters] = useState(filters);
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "registros-propiedad"),
+    [location.state]
+  );
 
   const filtroActivos = useMemo<"true" | "false" | "all">(() => {
+    if (memoriaFilter) return "all";
     if (filters.estado === "todos") return "all";
     if (filters.estado === "inactivos") return "false";
     return "true";
-  }, [filters.estado]);
+  }, [filters.estado, memoriaFilter]);
 
   const { list, isLoading, isError } = useRegistrosPropiedad(
     filtroActivos,
     "asc"
+  );
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
   );
 
   const opcionesFiltros = useMemo(() => {
     const tiposRegistro = new Set<string>();
     const fechasRegistro = new Set<string>();
 
-    list.forEach((r) => {
-      if (r.tipo_registro != null) {
-        tiposRegistro.add(toTitleCase(r.tipo_registro));
+    scopedList.forEach((registro) => {
+      if (registro.tipo_registro != null) {
+        tiposRegistro.add(toTitleCase(registro.tipo_registro));
       }
 
-      if (r.fecha_registro) {
-        fechasRegistro.add(formatFecha(r.fecha_registro));
+      if (registro.fecha_registro) {
+        fechasRegistro.add(formatFecha(registro.fecha_registro));
       }
     });
 
@@ -84,39 +97,53 @@ export default function RegistrosPropiedadLanding() {
       tiposRegistro: Array.from(tiposRegistro).sort(),
       fechasRegistro: Array.from(fechasRegistro).sort(),
     };
-  }, [list]);
+  }, [scopedList]);
 
   const registrosFiltrados = useMemo(() => {
-    return list.filter((r) => {
+    return scopedList.filter((registro) => {
       const query = searchQuery.toLowerCase().trim();
 
       const matchesSearch =
         !query ||
-        String(r.nombre_articulo ?? "").toLowerCase().includes(query) ||
-        String(r.tipo_registro ?? "").toLowerCase().includes(query) ||
-        String(r.fecha_registro ?? "").toLowerCase().includes(query);
+        String(registro.nombre_articulo ?? "").toLowerCase().includes(query) ||
+        String(registro.tipo_registro ?? "").toLowerCase().includes(query) ||
+        String(registro.fecha_registro ?? "").toLowerCase().includes(query) ||
+        String(registro.organismo_registrante ?? "")
+          .toLowerCase()
+          .includes(query);
 
       const matchTipoRegistro =
         !filters.tipoRegistro ||
-        toTitleCase(r.tipo_registro) === filters.tipoRegistro;
+        toTitleCase(registro.tipo_registro) === filters.tipoRegistro;
 
       const matchFechaRegistro =
         !filters.fechaRegistro ||
-        formatFecha(r.fecha_registro) === filters.fechaRegistro;
+        formatFecha(registro.fecha_registro) === filters.fechaRegistro;
 
       return matchesSearch && matchTipoRegistro && matchFechaRegistro;
     });
-  }, [list, filters, searchQuery]);
+  }, [scopedList, filters, searchQuery]);
+
+  const totalPages = Math.ceil(registrosFiltrados.length / ITEMS_PER_PAGE);
+
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return registrosFiltrados.slice(start, start + ITEMS_PER_PAGE);
+  }, [currentPage, registrosFiltrados]);
 
   const filtrosActivosCount = Object.values(filters).filter(Boolean).length;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, searchQuery]);
 
   useEffect(() => {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      window.history.replaceState({}, document.title);
+      navigate(location.pathname, { replace: true });
     }
-  }, [location.state]);
+  }, [location.state, navigate, location.pathname]);
 
   const setQuickEstado = (estado: "" | "todos" | "inactivos") => {
     setFilters((prev) => ({
@@ -135,7 +162,7 @@ export default function RegistrosPropiedadLanding() {
   const toggleSelect = (id: number, checked: boolean) => {
     if (!puedeEliminar) return;
 
-    const item = list.find((x) => x.id === id);
+    const item = scopedList.find((registro) => registro.id === id);
 
     if (item?.deleted_at) {
       setErrorMessage(
@@ -146,7 +173,7 @@ export default function RegistrosPropiedadLanding() {
     }
 
     setSelectedIds((prev) =>
-      checked ? [...prev, id] : prev.filter((x) => x !== id)
+      checked ? [...prev, id] : prev.filter((currentId) => currentId !== id)
     );
   };
 
@@ -156,18 +183,22 @@ export default function RegistrosPropiedadLanding() {
     setShowConfirm(false);
   };
 
-  const selectedItems = list.filter((r) => selectedIds.includes(r.id));
-  const selectedActiveItems = selectedItems.filter((r) => !r.deleted_at);
+  const selectedItems = scopedList.filter((registro) =>
+    selectedIds.includes(registro.id)
+  );
+  const selectedActiveItems = selectedItems.filter(
+    (registro) => !registro.deleted_at
+  );
 
   const confirmDelete = async () => {
-    const invalidItems = selectedItems.filter((r) => r.deleted_at);
+    const invalidItems = selectedItems.filter((registro) => registro.deleted_at);
 
     if (invalidItems.length > 0) {
       setShowConfirm(false);
       setErrorMessage(
         invalidItems.length === 1
           ? "El registro seleccionado ya fue eliminado."
-          : "Uno o más registros seleccionados ya fueron eliminados."
+          : "Uno o mas registros seleccionados ya fueron eliminados."
       );
       setShowError(true);
       return;
@@ -179,13 +210,12 @@ export default function RegistrosPropiedadLanding() {
       }
 
       await qc.invalidateQueries({ queryKey: ["registros-propiedad"] });
-
       cancelSelection();
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Registro eliminado con éxito."
-          : "Registros eliminados con éxito."
+          ? "Registro eliminado con exito."
+          : "Registros eliminados con exito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -204,7 +234,7 @@ export default function RegistrosPropiedadLanding() {
         );
       } else {
         setErrorMessage(
-          "Ocurrió un error inesperado al eliminar el registro de propiedad."
+          "Ocurrio un error inesperado al eliminar el registro de propiedad."
         );
       }
 
@@ -214,19 +244,19 @@ export default function RegistrosPropiedadLanding() {
 
   return (
     <>
-      <section className="w-full min-h-[calc(100vh-80px)] px-4 md:px-6 py-4 flex flex-col text-sm">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+      <section className="flex min-h-[calc(100vh-80px)] w-full flex-col px-4 py-4 text-sm md:px-6">
+        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
-            <h2 className="text-2xl md:text-3xl font-semibold leading-none text-slate-800">
+            <h2 className="text-2xl font-semibold leading-none text-slate-800 md:text-3xl">
               Registros de Propiedad
             </h2>
-            <p className="text-xs text-slate-500 mt-2">
-              {registrosFiltrados.length} de {list.length} resultados
+            <p className="mt-2 text-xs text-slate-500">
+              {registrosFiltrados.length} de {scopedList.length} resultados
             </p>
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <div className="flex items-center rounded-lg border border-slate-200 bg-white overflow-hidden">
+            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
               <button
                 type="button"
                 onClick={() => setQuickEstado("")}
@@ -242,7 +272,7 @@ export default function RegistrosPropiedadLanding() {
               <button
                 type="button"
                 onClick={() => setQuickEstado("todos")}
-                className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+                className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                   quickEstadoActual === "todos"
                     ? "bg-slate-800 text-white"
                     : "text-slate-600 hover:bg-slate-50"
@@ -254,7 +284,7 @@ export default function RegistrosPropiedadLanding() {
               <button
                 type="button"
                 onClick={() => setQuickEstado("inactivos")}
-                className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+                className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                   quickEstadoActual === "inactivos"
                     ? "bg-slate-800 text-white"
                     : "text-slate-600 hover:bg-slate-50"
@@ -267,8 +297,8 @@ export default function RegistrosPropiedadLanding() {
             <div className="relative w-full sm:w-64">
               <input
                 type="text"
-                placeholder="Buscar por nombre, tipo o fecha..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-10 py-1.5 focus:bg-white focus:ring-2 focus:ring-slate-200 outline-none transition-all text-xs"
+                placeholder="Buscar por nombre, tipo, organismo..."
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -312,7 +342,7 @@ export default function RegistrosPropiedadLanding() {
                 >
                   Filtros
                   {filtrosActivosCount > 0 && (
-                    <span className="ml-1.5 bg-slate-800 text-white text-[10px] rounded-full px-1.5 py-0.5">
+                    <span className="ml-1.5 rounded-full bg-slate-800 px-1.5 py-0.5 text-[10px] text-white">
                       {filtrosActivosCount}
                     </span>
                   )}
@@ -348,38 +378,88 @@ export default function RegistrosPropiedadLanding() {
           </div>
         </div>
 
+        {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
+
         <div className="flex-1">
           {isLoading ? (
-            <p className="text-slate-500 text-center py-10">Cargando…</p>
+            <p className="py-10 text-center text-slate-500">Cargando...</p>
           ) : isError ? (
-            <p className="text-slate-500 text-center py-10">Error al cargar.</p>
+            <p className="py-10 text-center text-slate-500">Error al cargar.</p>
           ) : registrosFiltrados.length === 0 ? (
-            <p className="text-slate-500 text-center py-10">
+            <p className="py-10 text-center text-slate-500">
               No hay registros de propiedad registrados.
             </p>
           ) : (
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-              {registrosFiltrados.map((r: RegistroPropiedad) => (
-                <Tarjeta<RegistroPropiedad>
-                  key={r.id}
-                  item={r}
-                  title={(x) => x.nombre_articulo || "—"}
-                  subtitle={(x) =>
-                    `${toTitleCase(x.tipo_registro) || "—"} · ${formatFecha(
-                      x.fecha_registro
-                    )}`
-                  }
-                  badge={(x) => (x.deleted_at ? "INACTIVO" : "ACTIVO")}
-                  selectable={puedeEliminar && selectMode}
-                  selectDisabled={!!r.deleted_at}
-                  selected={selectedIds.includes(r.id)}
-                  onSelectChange={(checked) => toggleSelect(r.id, checked)}
-                  onClick={() =>
-                    !selectMode && navigate(`/registros-propiedad/${r.id}`)
-                  }
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {paginatedItems.map((registro: RegistroPropiedad) => (
+                  <Tarjeta<RegistroPropiedad>
+                    key={registro.id}
+                    item={registro}
+                    title={(item) => item.nombre_articulo || "-"}
+                    subtitle={(item) =>
+                      `${toTitleCase(item.tipo_registro) || "-"} · ${formatFecha(
+                        item.fecha_registro
+                      )}`
+                    }
+                    badge={(item) => (item.deleted_at ? "INACTIVO" : "ACTIVO")}
+                    selectable={puedeEliminar && selectMode}
+                    selectDisabled={!!registro.deleted_at}
+                    selected={selectedIds.includes(registro.id)}
+                    onSelectChange={(checked) =>
+                      toggleSelect(registro.id, checked)
+                    }
+                    onClick={() =>
+                      !selectMode &&
+                      navigate(`/registros-propiedad/${registro.id}`, {
+                        state: buildMemoriaDetailState(location),
+                      })
+                    }
+                  />
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <div className="mt-8">
+                  <div className="flex items-center justify-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((page) => page - 1)}
+                    >
+                      {"<"}
+                    </Button>
+
+                    {[...Array(totalPages)].map((_, index) => {
+                      const page = index + 1;
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`rounded-lg px-3 py-1 text-sm ${
+                            currentPage === page
+                              ? "bg-slate-800 text-white"
+                              : "bg-slate-100 hover:bg-slate-200"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    })}
+
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((page) => page + 1)}
+                    >
+                      {">"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -387,7 +467,7 @@ export default function RegistrosPropiedadLanding() {
           open={showConfirm}
           title="Eliminar registros"
           message="¿Eliminar los siguientes registros?"
-          items={selectedActiveItems.map((r) => r.nombre_articulo || "—")}
+          items={selectedActiveItems.map((registro) => registro.nombre_articulo || "-")}
           onCancel={cancelSelection}
           onConfirm={confirmDelete}
         />
@@ -396,19 +476,19 @@ export default function RegistrosPropiedadLanding() {
       {showFilters && (
         <>
           <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
             onClick={() => setShowFilters(false)}
           />
-          <div className="fixed top-0 right-0 h-full w-[380px] bg-white z-50 shadow-2xl p-6 flex flex-col overflow-y-auto">
-            <h3 className="text-xl font-semibold mb-6">Filtros Avanzados</h3>
+          <div className="fixed right-0 top-0 z-50 flex h-full w-[380px] flex-col overflow-y-auto bg-white p-6 shadow-2xl">
+            <h3 className="mb-6 text-xl font-semibold">Filtros Avanzados</h3>
 
-            <div className="space-y-5 flex-1 text-[11px]">
+            <div className="flex-1 space-y-5 text-[11px]">
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
                   Estado
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.estado}
                   onChange={(e) =>
                     setTempFilters({
@@ -424,11 +504,11 @@ export default function RegistrosPropiedadLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
                   Tipo de Registro
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.tipoRegistro}
                   onChange={(e) =>
                     setTempFilters({
@@ -447,11 +527,11 @@ export default function RegistrosPropiedadLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
                   Fecha de Registro
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.fechaRegistro}
                   onChange={(e) =>
                     setTempFilters({
@@ -470,7 +550,7 @@ export default function RegistrosPropiedadLanding() {
               </div>
             </div>
 
-            <div className="flex justify-between gap-2 pt-6 border-t mt-4">
+            <div className="mt-4 flex justify-between gap-2 border-t pt-6">
               <Button
                 variant="secondary"
                 className="flex-1"
@@ -511,6 +591,7 @@ export default function RegistrosPropiedadLanding() {
         open={showError}
         message={errorMessage}
         onClose={() => setShowError(false)}
+        variant="error"
       />
     </>
   );

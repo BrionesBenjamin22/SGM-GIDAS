@@ -31,3 +31,54 @@ class VisitaAcademica(db.Model, AuditMixin):
             "nombre": self.tipo_visita.nombre
         }
         return data
+
+
+class VisitaAcademicaMemoriaVersion(db.Model, AuditMixin):
+    __tablename__ = "visita_academica_memoria_version"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
+
+    memoria_version_id = db.Column(
+        db.Integer,
+        db.ForeignKey("memoria_version.id"),
+        nullable=False
+    )
+    visita_academica_id = db.Column(
+        db.Integer,
+        db.ForeignKey("visita_grupo.id"),
+        nullable=False
+    )
+
+    razon = db.Column(db.Text, nullable=False)
+    procedencia = db.Column(db.Text, nullable=False)
+    fecha = db.Column(db.Date, nullable=False)
+
+    tipo_visita_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tipo_reunion_cientifica.id"),
+        nullable=False
+    )
+    tipo_visita_nombre = db.Column(db.String(255), nullable=True)
+
+    grupo_utn_id = db.Column(
+        db.Integer,
+        db.ForeignKey("grupo_utn.id"),
+        nullable=False
+    )
+    grupo_utn_nombre = db.Column(db.String(255), nullable=True)
+
+    memoria_version = db.relationship("MemoriaVersion", lazy="joined")
+    visita_academica = db.relationship("VisitaAcademica", lazy="joined")
+    tipo_visita = db.relationship("TipoReunion", lazy="joined")
+    grupo_utn = db.relationship("GrupoInvestigacionUtn", lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "memoria_version_id",
+            "visita_academica_id",
+            name="uq_visita_academica_memoria_version"
+        ),
+    )
+
+    def serialize(self):
+        return self.to_dict()

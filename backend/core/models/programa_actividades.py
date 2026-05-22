@@ -12,8 +12,6 @@ class PlanificacionGrupo(db.Model, AuditMixin): #antes Planificacion. ahora Plan
     grupo_id = db.Column(db.Integer, db.ForeignKey('grupo_utn.id')) 
     grupo_utn = db.relationship('GrupoInvestigacionUtn', back_populates='planificaciones')
 
-    proyectos_investigacion = db.relationship('ProyectoInvestigacion', back_populates='planificacion')
-
     def serialize(self):
         data = self.to_dict()
         data["grupo"] = self.grupo_utn.nombre_sigla_grupo if self.grupo_utn else None

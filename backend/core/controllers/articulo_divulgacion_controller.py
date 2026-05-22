@@ -50,6 +50,18 @@ class ArticuloDivulgacionController:
             return jsonify({"error": str(e)}), 500
 
     @staticmethod
+    def obtener_historial(articulo_id: int):
+        try:
+            historial = ArticuloDivulgacionService.get_historial(articulo_id)
+            return jsonify(historial), 200
+
+        except ValueError as ve:
+            return jsonify({"error": str(ve)}), 404
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @staticmethod
     def actualizar(articulo_id: int):
         try:
             data = request.get_json()

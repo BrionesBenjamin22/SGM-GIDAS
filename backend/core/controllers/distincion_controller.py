@@ -30,6 +30,15 @@ class DistincionRecibidaController:
             return jsonify({"error": str(e)}), 404
 
     @staticmethod
+    def get_historial(distincion_id):
+        try:
+            return jsonify(
+                DistincionRecibidaService.get_historial(distincion_id)
+            ), 200
+        except Exception as e:
+            return jsonify({"error": str(e)}), 404
+
+    @staticmethod
     def create():
         try:
             data = request.get_json()
@@ -44,8 +53,9 @@ class DistincionRecibidaController:
     def update(distincion_id):
         try:
             data = request.get_json()
+            user_id = g.current_user_id
             return jsonify(
-                DistincionRecibidaService.update(distincion_id, data)
+                DistincionRecibidaService.update(distincion_id, data, user_id)
             ), 200
         except Exception as e:
             return jsonify({"error": str(e)}), 400

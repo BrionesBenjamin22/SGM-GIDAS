@@ -1,19 +1,30 @@
-import { useNavigate } from "react-router-dom";
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 
 import Button from "@/components/Button";
-import Tarjeta from "@/components/Tarjeta";
-import SuccessToast from "@/components/SuccessToast";
 import CerrarProyectoDialog from "@/components/CerrarProyectoDialog";
-
-import { useProyectos } from "@/hooks/useProyectos";
-import type { Proyecto } from "@/services/proyectosServices";
-import { cerrarProyecto, reabrirProyecto } from "@/services/proyectosServices";
+import SuccessToast from "@/components/SuccessToast";
+import Tarjeta from "@/components/Tarjeta";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { useAuth } from "@/context/AuthContext";
+import { useProyectos } from "@/hooks/useProyectos";
+import {
+  cerrarProyecto,
+  reabrirProyecto,
+  type Proyecto,
+} from "@/services/proyectosServices";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
+import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
+
+const ITEMS_PER_PAGE = 9;
 
 export default function ProyectosLanding() {
   const navigate = useNavigate();
+  const location = useLocation();
   const qc = useQueryClient();
   const { canCreateRecords, canDeleteRecords } = useAuth();
 
@@ -36,14 +47,24 @@ export default function ProyectosLanding() {
     becario: "",
   });
   const [tempFilters, setTempFilters] = useState(filters);
+  const [currentPage, setCurrentPage] = useState(1);
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "proyectos"),
+    [location.state]
+  );
 
   const activosFilter = useMemo<"true" | "false" | "all">(() => {
+    if (memoriaFilter) return "all";
     if (filters.estado === "todos") return "all";
     if (filters.estado === "inactivos") return "false";
     return "true";
-  }, [filters.estado]);
+  }, [filters.estado, memoriaFilter]);
 
   const { data: list = [], isLoading } = useProyectos(activosFilter);
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
+  );
 
   const opcionesFiltros = useMemo(() => {
     const tipos = new Set<string>();
@@ -51,15 +72,19 @@ export default function ProyectosLanding() {
     const investigadores = new Set<string>();
     const becarios = new Set<string>();
 
-    list.forEach((p) => {
-      if (p.tipoProyectoNombre) tipos.add(p.tipoProyectoNombre);
-      if (p.fuenteFinanciamientoNombre) {
-        fuentes.add(p.fuenteFinanciamientoNombre);
+    scopedList.forEach((proyecto) => {
+      if (proyecto.tipoProyectoNombre) {
+        tipos.add(proyecto.tipoProyectoNombre);
       }
-      p.investigadores?.forEach((i) =>
-        investigadores.add(i.nombre_apellido)
-      );
-      p.becarios?.forEach((b) => becarios.add(b.nombre_apellido));
+      if (proyecto.fuenteFinanciamientoNombre) {
+        fuentes.add(proyecto.fuenteFinanciamientoNombre);
+      }
+      proyecto.investigadores?.forEach((investigador) => {
+        investigadores.add(investigador.nombre_apellido);
+      });
+      proyecto.becarios?.forEach((becario) => {
+        becarios.add(becario.nombre_apellido);
+      });
     });
 
     return {
@@ -68,43 +93,44 @@ export default function ProyectosLanding() {
       investigadores: Array.from(investigadores).sort(),
       becarios: Array.from(becarios).sort(),
     };
-  }, [list]);
+  }, [scopedList]);
 
   const proyectosFiltrados = useMemo(() => {
-    return list.filter((p) => {
+    return scopedList.filter((proyecto) => {
       const query = searchQuery.toLowerCase().trim();
 
       const matchesSearch =
         !query ||
-        p.nombreProyecto?.toLowerCase().includes(query) ||
-        p.descripcionProyecto?.toLowerCase().includes(query) ||
-        p.dificultadesProyecto?.toLowerCase().includes(query) ||
-        p.tipoProyectoNombre?.toLowerCase().includes(query) ||
-        p.fuenteFinanciamientoNombre?.toLowerCase().includes(query) ||
-        p.investigadores?.some((i) =>
-          i.nombre_apellido.toLowerCase().includes(query)
+        proyecto.nombreProyecto?.toLowerCase().includes(query) ||
+        proyecto.descripcionProyecto?.toLowerCase().includes(query) ||
+        proyecto.dificultadesProyecto?.toLowerCase().includes(query) ||
+        proyecto.tipoProyectoNombre?.toLowerCase().includes(query) ||
+        proyecto.fuenteFinanciamientoNombre?.toLowerCase().includes(query) ||
+        proyecto.investigadores?.some((investigador) =>
+          investigador.nombre_apellido.toLowerCase().includes(query)
         ) ||
-        p.becarios?.some((b) =>
-          b.nombre_apellido.toLowerCase().includes(query)
+        proyecto.becarios?.some((becario) =>
+          becario.nombre_apellido.toLowerCase().includes(query)
         );
 
       const matchTipo =
-        !filters.tipo || p.tipoProyectoNombre === filters.tipo;
+        !filters.tipo || proyecto.tipoProyectoNombre === filters.tipo;
 
       const matchFuente =
         !filters.fuente ||
-        p.fuenteFinanciamientoNombre === filters.fuente;
+        proyecto.fuenteFinanciamientoNombre === filters.fuente;
 
       const matchInvestigador =
         !filters.investigador ||
-        p.investigadores?.some(
-          (i) => i.nombre_apellido === filters.investigador
+        proyecto.investigadores?.some(
+          (investigador) =>
+            investigador.nombre_apellido === filters.investigador
         );
 
       const matchBecario =
         !filters.becario ||
-        p.becarios?.some(
-          (b) => b.nombre_apellido === filters.becario
+        proyecto.becarios?.some(
+          (becario) => becario.nombre_apellido === filters.becario
         );
 
       return (
@@ -115,15 +141,34 @@ export default function ProyectosLanding() {
         matchBecario
       );
     });
-  }, [list, filters, searchQuery]);
+  }, [scopedList, filters, searchQuery]);
+
+  const totalPages = Math.ceil(proyectosFiltrados.length / ITEMS_PER_PAGE);
+
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return proyectosFiltrados.slice(start, start + ITEMS_PER_PAGE);
+  }, [currentPage, proyectosFiltrados]);
 
   const filtrosActivosCount = Object.values(filters).filter(Boolean).length;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, searchQuery]);
+
+  useEffect(() => {
+    if (location.state?.successMessage) {
+      setSuccessMessage(location.state.successMessage);
+      setShowSuccess(true);
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.state, navigate, location.pathname]);
 
   const toggleSelect = (id: string, checked: boolean) => {
     if (!puedeEliminar) return;
 
     setSelectedIds((prev) =>
-      checked ? [...prev, id] : prev.filter((x) => x !== id)
+      checked ? [...prev, id] : prev.filter((currentId) => currentId !== id)
     );
   };
 
@@ -142,7 +187,7 @@ export default function ProyectosLanding() {
 
     await qc.invalidateQueries({ queryKey: ["proyectos"] });
     cancelSelection();
-    setSuccessMessage("Proyectos cerrados con éxito");
+    setSuccessMessage("Proyectos cerrados con exito");
     setShowSuccess(true);
   };
 
@@ -153,7 +198,7 @@ export default function ProyectosLanding() {
 
     await qc.invalidateQueries({ queryKey: ["proyectos"] });
     cancelSelection();
-    setSuccessMessage("Proyectos reabiertos con éxito");
+    setSuccessMessage("Proyectos reabiertos con exito");
     setShowSuccess(true);
   };
 
@@ -172,27 +217,27 @@ export default function ProyectosLanding() {
         : "activos";
 
   const haySeleccionablesCerrados = selectedIds.some((id) =>
-    list.some((p) => String(p.id) === id && p.cerrado === true)
+    scopedList.some((proyecto) => String(proyecto.id) === id && proyecto.cerrado)
   );
 
   const haySeleccionablesActivos = selectedIds.some((id) =>
-    list.some((p) => String(p.id) === id && p.cerrado !== true)
+    scopedList.some((proyecto) => String(proyecto.id) === id && !proyecto.cerrado)
   );
 
   return (
-    <section className="w-full min-h-[calc(100vh-80px)] px-4 md:px-6 py-4 flex flex-col text-sm">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+    <section className="flex min-h-[calc(100vh-80px)] w-full flex-col px-4 py-4 text-sm md:px-6">
+      <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <h2 className="text-2xl md:text-3xl font-semibold leading-none text-slate-800">
+          <h2 className="text-2xl font-semibold leading-none text-slate-800 md:text-3xl">
             Proyectos
           </h2>
-          <p className="text-xs text-slate-500 mt-2">
-            {proyectosFiltrados.length} de {list.length} resultados
+          <p className="mt-2 text-xs text-slate-500">
+            {proyectosFiltrados.length} de {scopedList.length} resultados
           </p>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <div className="flex items-center rounded-lg border border-slate-200 bg-white overflow-hidden">
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
             <button
               type="button"
               onClick={() => setQuickEstado("")}
@@ -208,7 +253,7 @@ export default function ProyectosLanding() {
             <button
               type="button"
               onClick={() => setQuickEstado("todos")}
-              className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+              className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                 quickEstadoActual === "todos"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
@@ -220,7 +265,7 @@ export default function ProyectosLanding() {
             <button
               type="button"
               onClick={() => setQuickEstado("inactivos")}
-              className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+              className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                 quickEstadoActual === "inactivos"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
@@ -234,7 +279,7 @@ export default function ProyectosLanding() {
             <input
               type="text"
               placeholder="Buscar por nombre, tipo, investigador..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-10 py-1.5 focus:bg-white focus:ring-2 focus:ring-slate-200 outline-none transition-all text-xs"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -276,9 +321,9 @@ export default function ProyectosLanding() {
                   setShowFilters(true);
                 }}
               >
-                Filtros{" "}
+                Filtros
                 {filtrosActivosCount > 0 && (
-                  <span className="ml-1.5 bg-slate-800 text-white text-[10px] rounded-full px-1.5 py-0.5">
+                  <span className="ml-1.5 rounded-full bg-slate-800 px-1.5 py-0.5 text-[10px] text-white">
                     {filtrosActivosCount}
                   </span>
                 )}
@@ -296,19 +341,15 @@ export default function ProyectosLanding() {
             </div>
           ) : (
             <div className="flex gap-2">
-              {selectedIds.length > 0 &&
-                haySeleccionablesActivos &&
-                puedeEliminar && (
+              {selectedIds.length > 0 && haySeleccionablesActivos && puedeEliminar && (
                 <Button size="sm" onClick={() => setShowCerrarDialog(true)}>
-                  Cerrar selección
+                  Cerrar seleccion
                 </Button>
               )}
 
-              {selectedIds.length > 0 &&
-                haySeleccionablesCerrados &&
-                puedeEliminar && (
+              {selectedIds.length > 0 && haySeleccionablesCerrados && puedeEliminar && (
                 <Button size="sm" onClick={handleReabrirSeleccion}>
-                  Reabrir selección
+                  Reabrir seleccion
                 </Button>
               )}
 
@@ -320,46 +361,100 @@ export default function ProyectosLanding() {
         </div>
       </div>
 
+      {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
+
       <div className="flex-1">
         {isLoading ? (
-          <p className="text-slate-500 text-center py-10">Cargando…</p>
+          <p className="py-10 text-center text-slate-500">Cargando...</p>
+        ) : proyectosFiltrados.length === 0 ? (
+          <p className="py-10 text-center text-slate-500">
+            No hay proyectos para mostrar.
+          </p>
         ) : (
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {proyectosFiltrados.map((p) => (
-              <Tarjeta<Proyecto>
-                key={p.id}
-                item={p}
-                title={(x) => x.nombreProyecto}
-                subtitle={(x) => x.tipoProyectoNombre || "PID"}
-                badge={(x) => (x.cerrado ? "CERRADO" : "ACTIVO")}
-                selectable={puedeEliminar && selectMode}
-                selected={selectedIds.includes(String(p.id))}
-                onSelectChange={(checked) =>
-                  toggleSelect(String(p.id), checked)
-                }
-                onClick={() => !selectMode && navigate(`/proyectos/${p.id}`)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {paginatedItems.map((proyecto) => (
+                <Tarjeta<Proyecto>
+                  key={proyecto.id}
+                  item={proyecto}
+                  title={(item) => item.nombreProyecto}
+                  subtitle={(item) => item.tipoProyectoNombre || "PID"}
+                  badge={(item) => (item.cerrado ? "CERRADO" : "ACTIVO")}
+                  selectable={puedeEliminar && selectMode}
+                  selected={selectedIds.includes(String(proyecto.id))}
+                  onSelectChange={(checked) =>
+                    toggleSelect(String(proyecto.id), checked)
+                  }
+                  onClick={() =>
+                    !selectMode &&
+                    navigate(`/proyectos/${proyecto.id}`, {
+                      state: buildMemoriaDetailState(location),
+                    })
+                  }
+                />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="mt-8">
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((page) => page - 1)}
+                  >
+                    {"<"}
+                  </Button>
+
+                  {[...Array(totalPages)].map((_, index) => {
+                    const page = index + 1;
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`rounded-lg px-3 py-1 text-sm ${
+                          currentPage === page
+                            ? "bg-slate-800 text-white"
+                            : "bg-slate-100 hover:bg-slate-200"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  })}
+
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((page) => page + 1)}
+                  >
+                    {">"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {showFilters && (
         <>
           <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
             onClick={() => setShowFilters(false)}
           />
-          <div className="fixed top-0 right-0 h-full w-[380px] bg-white z-50 shadow-2xl p-6 flex flex-col overflow-y-auto">
-            <h3 className="text-xl font-semibold mb-6">Filtros Avanzados</h3>
+          <div className="fixed right-0 top-0 z-50 flex h-full w-[380px] flex-col overflow-y-auto bg-white p-6 shadow-2xl">
+            <h3 className="mb-6 text-xl font-semibold">Filtros Avanzados</h3>
 
-            <div className="space-y-5 flex-1 text-[11px]">
+            <div className="flex-1 space-y-5 text-[11px]">
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
                   Estado
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.estado}
                   onChange={(e) =>
                     setTempFilters({
@@ -375,11 +470,11 @@ export default function ProyectosLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
                   Tipo de Proyecto
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.tipo}
                   onChange={(e) =>
                     setTempFilters({
@@ -389,20 +484,20 @@ export default function ProyectosLanding() {
                   }
                 >
                   <option value="">Todos los tipos</option>
-                  {opcionesFiltros.tipos.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
+                  {opcionesFiltros.tipos.map((tipo) => (
+                    <option key={tipo} value={tipo}>
+                      {tipo}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
                   Fuente de Financiamiento
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.fuente}
                   onChange={(e) =>
                     setTempFilters({
@@ -412,20 +507,20 @@ export default function ProyectosLanding() {
                   }
                 >
                   <option value="">Todas las fuentes</option>
-                  {opcionesFiltros.fuentes.map((f) => (
-                    <option key={f} value={f}>
-                      {f}
+                  {opcionesFiltros.fuentes.map((fuente) => (
+                    <option key={fuente} value={fuente}>
+                      {fuente}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
                   Investigador
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.investigador}
                   onChange={(e) =>
                     setTempFilters({
@@ -435,20 +530,20 @@ export default function ProyectosLanding() {
                   }
                 >
                   <option value="">Todos los investigadores</option>
-                  {opcionesFiltros.investigadores.map((i) => (
-                    <option key={i} value={i}>
-                      {i}
+                  {opcionesFiltros.investigadores.map((investigador) => (
+                    <option key={investigador} value={investigador}>
+                      {investigador}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
                   Becario
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.becario}
                   onChange={(e) =>
                     setTempFilters({
@@ -458,16 +553,16 @@ export default function ProyectosLanding() {
                   }
                 >
                   <option value="">Todos los becarios</option>
-                  {opcionesFiltros.becarios.map((b) => (
-                    <option key={b} value={b}>
-                      {b}
+                  {opcionesFiltros.becarios.map((becario) => (
+                    <option key={becario} value={becario}>
+                      {becario}
                     </option>
                   ))}
                 </select>
               </div>
             </div>
 
-            <div className="flex justify-between gap-2 pt-6 border-t mt-4">
+            <div className="mt-4 flex justify-between gap-2 border-t pt-6">
               <Button
                 variant="secondary"
                 className="flex-1"
@@ -508,7 +603,7 @@ export default function ProyectosLanding() {
 
       <SuccessToast
         open={showSuccess}
-        message={successMessage || "Cambios aplicados con éxito"}
+        message={successMessage || "Cambios aplicados con exito"}
         onClose={() => setShowSuccess(false)}
       />
     </section>

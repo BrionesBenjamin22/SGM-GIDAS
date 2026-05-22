@@ -106,9 +106,6 @@ class ProyectoInvestigacion(db.Model, AuditMixin):
     fuente_financiamiento_id = db.Column(db.Integer, db.ForeignKey('fuente_financiamiento.id'))
     fuente_financiamiento = db.relationship('FuenteFinanciamiento', back_populates='proyectos_investigacion')
 
-    planificacion_id = db.Column(db.Integer, db.ForeignKey('planificacion_grupo.id'), nullable=True)
-    planificacion = db.relationship('PlanificacionGrupo', back_populates='proyectos_investigacion')
-
     # --- Relaciones (Uno-a-Muchos) ---
     distinciones = db.relationship('DistincionRecibida', back_populates='proyecto_investigacion', cascade="all, delete-orphan")
 
@@ -146,15 +143,6 @@ class ProyectoInvestigacion(db.Model, AuditMixin):
             }
         else:
             data["fuente_financiamiento"] = None
-
-        # Planificación
-        if self.planificacion:
-            data["planificacion"] = {
-                "id": self.planificacion.id,
-                "descripcion": self.planificacion.descripcion
-            }
-        else:
-            data["planificacion"] = None
 
         # Tipo
         if self.tipo_proyecto:
@@ -197,3 +185,66 @@ class ProyectoInvestigacion(db.Model, AuditMixin):
                 pass
 
         return data
+
+
+class ProyectoInvestigacionMemoriaVersion(db.Model, AuditMixin):
+    __tablename__ = "proyecto_investigacion_memoria_version"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    memoria_version_id = db.Column(
+        db.Integer,
+        db.ForeignKey("memoria_version.id"),
+        nullable=False
+    )
+    proyecto_investigacion_id = db.Column(
+        db.Integer,
+        db.ForeignKey("proyecto_investigacion.id"),
+        nullable=False
+    )
+
+    codigo_proyecto = db.Column(db.Integer, nullable=False)
+    nombre_proyecto = db.Column(db.Text, nullable=False)
+    descripcion_proyecto = db.Column(db.Text, nullable=False)
+    fecha_inicio = db.Column(db.Date, nullable=False)
+    fecha_fin = db.Column(db.Date, nullable=True)
+    dificultades_proyecto = db.Column(db.Text, nullable=True)
+    monto_destinado = db.Column(db.Float, nullable=True)
+
+    tipo_proyecto_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tipo_proyecto_investigacion.id"),
+        nullable=False
+    )
+    tipo_proyecto_nombre = db.Column(db.Text, nullable=True)
+
+    grupo_utn_id = db.Column(
+        db.Integer,
+        db.ForeignKey("grupo_utn.id"),
+        nullable=True
+    )
+    grupo_utn_nombre = db.Column(db.String(255), nullable=True)
+
+    fuente_financiamiento_id = db.Column(
+        db.Integer,
+        db.ForeignKey("fuente_financiamiento.id"),
+        nullable=True
+    )
+    fuente_financiamiento_nombre = db.Column(db.String(255), nullable=True)
+
+    memoria_version = db.relationship("MemoriaVersion", lazy="joined")
+    proyecto_investigacion = db.relationship("ProyectoInvestigacion", lazy="joined")
+    tipo_proyecto = db.relationship("TipoProyecto", lazy="joined")
+    grupo_utn = db.relationship("GrupoInvestigacionUtn", lazy="joined")
+    fuente_financiamiento = db.relationship("FuenteFinanciamiento", lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "memoria_version_id",
+            "proyecto_investigacion_id",
+            name="uq_proyecto_memoria_version"
+        ),
+    )
+
+    def serialize(self):
+        return self.to_dict()

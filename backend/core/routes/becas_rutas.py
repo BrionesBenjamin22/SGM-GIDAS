@@ -21,6 +21,12 @@ def get_by_id(beca_id):
     return BecaController.get_by_id(beca_id)
 
 
+@beca_bp.route("/<int:beca_id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_historial(beca_id):
+    return BecaController.get_historial(beca_id)
+
+
 @beca_bp.route("/<int:beca_id>/becarios", methods=["GET"])
 @requiere_rol("ADMIN", "GESTOR", "LECTURA")
 def get_becarios(beca_id):

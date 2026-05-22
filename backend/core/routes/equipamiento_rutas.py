@@ -22,6 +22,12 @@ def get_by_id(equipamiento_id):
     return EquipamientoController.get_by_id(equipamiento_id)
 
 
+@equipamiento_bp.route("/<int:equipamiento_id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_historial(equipamiento_id):
+    return EquipamientoController.get_historial(equipamiento_id)
+
+
 # MODIFICACIÓN
 @equipamiento_bp.route("/", methods=["POST"])
 @requiere_rol("ADMIN", "GESTOR")

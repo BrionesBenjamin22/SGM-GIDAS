@@ -22,6 +22,13 @@ def get_all():
 def get_by_id(trabajo_id):
     return TrabajosRevistasReferatoController.get_by_id(trabajo_id)
 
+@trabajos_revistas_referato_bp.route(
+    "/<int:trabajo_id>/historial", methods=["GET"], strict_slashes=False
+)
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_historial(trabajo_id):
+    return TrabajosRevistasReferatoController.get_historial(trabajo_id)
+
 @trabajos_revistas_referato_bp.route("/", methods=["POST"], strict_slashes=False)
 @requiere_rol("ADMIN", "GESTOR")
 def create():

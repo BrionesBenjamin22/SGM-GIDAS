@@ -49,6 +49,57 @@ class RegistrosPropiedad(db.Model, AuditMixin):
         return data
 
 
+class RegistrosPropiedadMemoriaVersion(db.Model, AuditMixin):
+    __tablename__ = "registros_propiedad_memoria_version"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
+
+    memoria_version_id = db.Column(
+        db.Integer,
+        db.ForeignKey("memoria_version.id"),
+        nullable=False
+    )
+    registro_propiedad_id = db.Column(
+        db.Integer,
+        db.ForeignKey("registros_patente_grupo.id"),
+        nullable=False
+    )
+
+    nombre_articulo = db.Column(db.Text, nullable=False)
+    organismo_registrante = db.Column(db.Text, nullable=False)
+    fecha_registro = db.Column(db.Date, nullable=False)
+
+    tipo_registro_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tipo_registro_propiedad.id"),
+        nullable=False
+    )
+    tipo_registro_nombre = db.Column(db.Text, nullable=True)
+
+    grupo_utn_id = db.Column(
+        db.Integer,
+        db.ForeignKey("grupo_utn.id"),
+        nullable=False
+    )
+    grupo_utn_nombre = db.Column(db.String(255), nullable=True)
+
+    memoria_version = db.relationship("MemoriaVersion", lazy="joined")
+    registro_propiedad = db.relationship("RegistrosPropiedad", lazy="joined")
+    tipo_registro_rel = db.relationship("TipoRegistroPropiedad", lazy="joined")
+    grupo_utn = db.relationship("GrupoInvestigacionUtn", lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "memoria_version_id",
+            "registro_propiedad_id",
+            name="uq_registro_propiedad_memoria_version"
+        ),
+    )
+
+    def serialize(self):
+        return self.to_dict()
+
+
 class TipoRegistroPropiedad(db.Model):
     __tablename__ = 'tipo_registro_propiedad'
 

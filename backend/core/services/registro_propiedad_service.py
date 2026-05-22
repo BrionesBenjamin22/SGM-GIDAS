@@ -3,8 +3,14 @@ from datetime import datetime, date
 from sqlalchemy import or_
 
 from extension import db
-from core.models.registro_patente import RegistrosPropiedad, TipoRegistroPropiedad
+from core.models.registro_patente import (
+    RegistrosPropiedad,
+    TipoRegistroPropiedad,
+    RegistrosPropiedadMemoriaVersion,
+)
 from core.models.grupo import GrupoInvestigacionUtn
+from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import esta_en_periodo_memoria
 
 
 class RegistrosPropiedadService:
@@ -118,6 +124,14 @@ class RegistrosPropiedadService:
         registro = RegistrosPropiedadService._get_or_404(registro_id)
         return registro.serialize()
 
+    @staticmethod
+    def get_historial(registro_id: int):
+        registro = RegistrosPropiedadService._get_or_404(registro_id)
+        return AuditoriaService.obtener_historial_entidad(
+            entidad="registro_propiedad",
+            registro_id=registro.id
+        )
+
     # =========================
     # CREAR
     # =========================
@@ -160,9 +174,11 @@ class RegistrosPropiedadService:
     # ACTUALIZAR
     # =========================
     @staticmethod
-    def update(registro_id: int, data: dict):
+    def update(registro_id: int, data: dict, user_id: int):
         RegistrosPropiedadService._validar_payload(data)
+        RegistrosPropiedadService._validar_id(user_id, "user_id")
         registro = RegistrosPropiedadService._get_or_404(registro_id)
+        cambios = {}
 
         if not registro.activo:
             raise ValueError(
@@ -170,35 +186,78 @@ class RegistrosPropiedadService:
             )
 
         if "nombre_articulo" in data:
-            registro.nombre_articulo = RegistrosPropiedadService._validar_texto(
+            nuevo_valor = RegistrosPropiedadService._validar_texto(
                 data.get("nombre_articulo"), "nombre_articulo"
             )
+            cambio = AuditoriaService.construir_cambio(
+                registro.nombre_articulo,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["nombre_articulo"] = cambio
+                registro.nombre_articulo = nuevo_valor
 
         if "organismo_registrante" in data:
-            registro.organismo_registrante = RegistrosPropiedadService._validar_texto(
+            nuevo_valor = RegistrosPropiedadService._validar_texto(
                 data.get("organismo_registrante"), "organismo_registrante"
             )
+            cambio = AuditoriaService.construir_cambio(
+                registro.organismo_registrante,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["organismo_registrante"] = cambio
+                registro.organismo_registrante = nuevo_valor
 
         if "tipo_registro_id" in data:
-            registro.tipo_registro_id = RegistrosPropiedadService._validar_tipo_registro(
+            nuevo_valor = RegistrosPropiedadService._validar_tipo_registro(
                 data.get("tipo_registro_id")
             )
+            cambio = AuditoriaService.construir_cambio(
+                registro.tipo_registro_id,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["tipo_registro_id"] = cambio
+                registro.tipo_registro_id = nuevo_valor
 
         if "grupo_utn_id" in data:
-            registro.grupo_utn_id = RegistrosPropiedadService._validar_grupo(
+            nuevo_valor = RegistrosPropiedadService._validar_grupo(
                 data.get("grupo_utn_id")
             )
+            cambio = AuditoriaService.construir_cambio(
+                registro.grupo_utn_id,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["grupo_utn_id"] = cambio
+                registro.grupo_utn_id = nuevo_valor
 
         if "fecha_registro" in data:
             try:
-                fecha = datetime.strptime(data["fecha_registro"], "%Y-%m-%d").date()
+                nuevo_valor = datetime.strptime(data["fecha_registro"], "%Y-%m-%d").date()
             except (TypeError, ValueError):
                 raise ValueError("fecha_registro debe tener formato YYYY-MM-DD")
 
-            if fecha > date.today():
+            if nuevo_valor > date.today():
                 raise ValueError("fecha_registro no puede ser futura")
 
-            registro.fecha_registro = fecha
+            cambio = AuditoriaService.construir_cambio(
+                registro.fecha_registro,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["fecha_registro"] = cambio
+                registro.fecha_registro = nuevo_valor
+
+        if cambios:
+            registro.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="registro_propiedad",
+                registro_id=registro.id,
+                cambios=cambios,
+                user_id=user_id
+            )
 
         try:
             db.session.commit()
@@ -248,3 +307,54 @@ class RegistrosPropiedadService:
             raise
 
         return registro.serialize()
+
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        registros = RegistrosPropiedad.query.filter().all()
+
+        snapshots = []
+        for registro in registros:
+            if not esta_en_periodo_memoria(
+                memoria_version,
+                registro.fecha_registro
+            ):
+                continue
+            snapshot = RegistrosPropiedadMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                registro_propiedad_id=registro.id,
+                nombre_articulo=registro.nombre_articulo,
+                organismo_registrante=registro.organismo_registrante,
+                fecha_registro=registro.fecha_registro,
+                tipo_registro_id=registro.tipo_registro_id,
+                tipo_registro_nombre=(
+                    registro.tipo_registro.nombre
+                    if registro.tipo_registro else None
+                ),
+                grupo_utn_id=registro.grupo_utn_id,
+                grupo_utn_nombre=(
+                    registro.grupo_utn.nombre_sigla_grupo
+                    if registro.grupo_utn else None
+                ),
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            RegistrosPropiedadMemoriaVersion.query
+            .filter(
+                RegistrosPropiedadMemoriaVersion.memoria_version_id == memoria_version_id,
+                RegistrosPropiedadMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(
+                RegistrosPropiedadMemoriaVersion.fecha_registro.desc(),
+                RegistrosPropiedadMemoriaVersion.id.desc()
+            )
+            .all()
+        )
+
+        return [snapshot.serialize() for snapshot in snapshots]

@@ -1,8 +1,13 @@
 ﻿from datetime import datetime, date
 
 from extension import db
-from core.models.articulo_divulgacion import ArticuloDivulgacion
+from core.models.articulo_divulgacion import (
+    ArticuloDivulgacion,
+    ArticuloDivulgacionMemoriaVersion,
+)
 from core.models.grupo import GrupoInvestigacionUtn
+from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import esta_en_periodo_memoria
 
 
 class ArticuloDivulgacionService:
@@ -112,6 +117,17 @@ class ArticuloDivulgacionService:
         return articulo.serialize()
 
     @staticmethod
+    def get_historial(articulo_id: int):
+        articulo = db.session.get(ArticuloDivulgacion, articulo_id)
+        if not articulo:
+            raise ValueError("Articulo de divulgacion no encontrado")
+
+        return AuditoriaService.obtener_historial_entidad(
+            entidad="articulo_divulgacion",
+            registro_id=articulo.id
+        )
+
+    @staticmethod
     def create(data: dict, user_id: int):
         ArticuloDivulgacionService._validar_payload(data)
         ArticuloDivulgacionService._validar_user_id(user_id)
@@ -165,31 +181,68 @@ class ArticuloDivulgacionService:
         articulo = ArticuloDivulgacionService._get_articulo_activo_or_404(
             articulo_id
         )
+        cambios = {}
 
         if "fecha_publicacion" in data:
             try:
-                fecha_publicacion = datetime.strptime(
+                nuevo_valor = datetime.strptime(
                     data["fecha_publicacion"], "%Y-%m-%d"
                 ).date()
             except ValueError:
                 raise ValueError("La fecha debe tener formato YYYY-MM-DD")
 
-            ArticuloDivulgacionService._validar_fecha(fecha_publicacion)
-            articulo.fecha_publicacion = fecha_publicacion
+            ArticuloDivulgacionService._validar_fecha(nuevo_valor)
+            cambio = AuditoriaService.construir_cambio(
+                articulo.fecha_publicacion,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["fecha_publicacion"] = cambio
+                articulo.fecha_publicacion = nuevo_valor
 
         if "titulo" in data:
-            articulo.titulo = ArticuloDivulgacionService._validar_texto(
+            nuevo_valor = ArticuloDivulgacionService._validar_texto(
                 data["titulo"], "titulo", min_len=5
             )
+            cambio = AuditoriaService.construir_cambio(
+                articulo.titulo,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["titulo"] = cambio
+                articulo.titulo = nuevo_valor
 
         if "descripcion" in data:
-            articulo.descripcion = ArticuloDivulgacionService._validar_texto(
+            nuevo_valor = ArticuloDivulgacionService._validar_texto(
                 data["descripcion"], "descripcion", min_len=10
             )
+            cambio = AuditoriaService.construir_cambio(
+                articulo.descripcion,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["descripcion"] = cambio
+                articulo.descripcion = nuevo_valor
 
         if "grupo_utn_id" in data:
-            articulo.grupo_utn_id = ArticuloDivulgacionService._validar_grupo(
+            nuevo_valor = ArticuloDivulgacionService._validar_grupo(
                 data["grupo_utn_id"]
+            )
+            cambio = AuditoriaService.construir_cambio(
+                articulo.grupo_utn_id,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["grupo_utn_id"] = cambio
+                articulo.grupo_utn_id = nuevo_valor
+
+        if cambios and user_id is not None:
+            articulo.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="articulo_divulgacion",
+                registro_id=articulo.id,
+                cambios=cambios,
+                user_id=user_id
             )
 
         try:
@@ -216,3 +269,49 @@ class ArticuloDivulgacionService:
             raise
 
         return {"message": "Articulo de divulgacion eliminado correctamente"}
+
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        articulos = ArticuloDivulgacion.query.filter().all()
+
+        snapshots = []
+        for articulo in articulos:
+            if not esta_en_periodo_memoria(
+                memoria_version,
+                articulo.fecha_publicacion
+            ):
+                continue
+            snapshot = ArticuloDivulgacionMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                articulo_divulgacion_id=articulo.id,
+                titulo=articulo.titulo,
+                descripcion=articulo.descripcion,
+                fecha_publicacion=articulo.fecha_publicacion,
+                grupo_utn_id=articulo.grupo_utn_id,
+                grupo_utn_nombre=(
+                    articulo.grupo_utn.nombre_sigla_grupo
+                    if articulo.grupo_utn else None
+                ),
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            ArticuloDivulgacionMemoriaVersion.query
+            .filter(
+                ArticuloDivulgacionMemoriaVersion.memoria_version_id == memoria_version_id,
+                ArticuloDivulgacionMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(
+                ArticuloDivulgacionMemoriaVersion.fecha_publicacion.desc(),
+                ArticuloDivulgacionMemoriaVersion.id.desc()
+            )
+            .all()
+        )
+
+        return [snapshot.serialize() for snapshot in snapshots]

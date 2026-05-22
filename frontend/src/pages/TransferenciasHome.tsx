@@ -5,13 +5,20 @@ import { useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
 import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
-import MockIndicator from "@/components/MockIndicator";
 import SuccessToast from "@/components/SuccessToast";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 
 import { useTransferencias } from "@/hooks/useTransferencias";
 import { deleteTransferencia } from "@/services/transferenciasServices";
 import { HttpError } from "@/lib/http";
 import { useAuth } from "@/context/AuthContext";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
+import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
+
+const ITEMS_PER_PAGE = 9;
 
 export default function TransferenciasHome() {
   const navigate = useNavigate();
@@ -34,6 +41,7 @@ export default function TransferenciasHome() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [filters, setFilters] = useState({
     estado: "",
@@ -44,60 +52,66 @@ export default function TransferenciasHome() {
   });
 
   const [tempFilters, setTempFilters] = useState(filters);
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "transferencias"),
+    [location.state]
+  );
 
   const filtroActivos = useMemo<"true" | "false" | "all">(() => {
+    if (memoriaFilter) return "all";
     if (filters.estado === "todas") return "all";
     if (filters.estado === "inactivas") return "false";
     return "true";
-  }, [filters.estado]);
+  }, [filters.estado, memoriaFilter]);
 
   const { list = [], isLoading, isError } = useTransferencias(filtroActivos);
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
+  );
 
   useEffect(() => {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      window.history.replaceState({}, document.title);
+      navigate(location.pathname, { replace: true });
     }
-  }, [location.state]);
+  }, [location.state, navigate, location.pathname]);
 
-  const isTransferenciaDeleted = (t: any) => t.activo === false || !!t.deletedAt;
+  const isTransferenciaDeleted = (item: any) => item.activo === false || !!item.deletedAt;
 
   const transferenciasFiltradas = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
 
-    return list.filter((t) => {
+    return scopedList.filter((item) => {
       const matchSearch =
         !query ||
-        String(t.denominacion ?? "").toLowerCase().includes(query) ||
-        String(t.descripcionActividad ?? "").toLowerCase().includes(query) ||
-        String(t.demandante ?? "").toLowerCase().includes(query) ||
-        String(t.tipoContrato ?? "").toLowerCase().includes(query) ||
-        String(t.grupo ?? "").toLowerCase().includes(query);
+        String(item.denominacion ?? "").toLowerCase().includes(query) ||
+        String(item.descripcionActividad ?? "").toLowerCase().includes(query) ||
+        String(item.demandante ?? "").toLowerCase().includes(query) ||
+        String(item.tipoContrato ?? "").toLowerCase().includes(query) ||
+        String(item.grupo ?? "").toLowerCase().includes(query);
 
       const matchDemandante =
         !filters.demandante ||
-        String(t.demandante ?? "")
+        String(item.demandante ?? "")
           .toLowerCase()
           .includes(filters.demandante.toLowerCase());
 
       const matchGrupo =
         !filters.grupo ||
-        String(t.grupo ?? "")
-          .toLowerCase()
-          .includes(filters.grupo.toLowerCase());
+        String(item.grupo ?? "").toLowerCase().includes(filters.grupo.toLowerCase());
 
       const matchTipoContrato =
         !filters.tipoContrato ||
-        String(t.tipoContrato ?? "")
+        String(item.tipoContrato ?? "")
           .toLowerCase()
           .includes(filters.tipoContrato.toLowerCase());
 
-      const fechaBase = t.fechaInicio || t.fechaFin || "";
+      const fechaBase = item.fechaInicio || item.fechaFin || "";
       const matchAnio =
         !filters.anio ||
-        (fechaBase &&
-          new Date(fechaBase).getFullYear().toString() === filters.anio);
+        (fechaBase && new Date(fechaBase).getFullYear().toString() === filters.anio);
 
       return (
         matchSearch &&
@@ -107,25 +121,42 @@ export default function TransferenciasHome() {
         matchAnio
       );
     });
-  }, [list, searchQuery, filters]);
+  }, [scopedList, searchQuery, filters]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(transferenciasFiltradas.length / ITEMS_PER_PAGE)
+  );
+
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return transferenciasFiltradas.slice(start, start + ITEMS_PER_PAGE);
+  }, [transferenciasFiltradas, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, searchQuery]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const aniosDisponibles = useMemo(() => {
-    const years = list
-      .map((t) => t.fechaInicio || t.fechaFin)
+    const years = scopedList
+      .map((item) => item.fechaInicio || item.fechaFin)
       .filter(Boolean)
       .map((fecha) => new Date(fecha as string).getFullYear())
-      .filter((y) => !Number.isNaN(y));
+      .filter((year) => !Number.isNaN(year));
 
     return [...new Set(years)].sort((a, b) => b - a);
-  }, [list]);
+  }, [scopedList]);
 
   const filtrosActivosCount = Object.values(filters).filter(Boolean).length;
 
   const setQuickEstado = (estado: "" | "todas" | "inactivas") => {
-    setFilters((prev) => ({
-      ...prev,
-      estado,
-    }));
+    setFilters((prev) => ({ ...prev, estado }));
   };
 
   const quickEstadoActual =
@@ -138,7 +169,7 @@ export default function TransferenciasHome() {
   const toggleSelect = (id: number, checked: boolean) => {
     if (!puedeEliminar) return;
 
-    const transferencia = transferenciasFiltradas.find((x) => x.id === id);
+    const transferencia = scopedList.find((item) => item.id === id);
 
     if (transferencia && isTransferenciaDeleted(transferencia)) {
       setErrorMessage("No se puede eliminar una transferencia que ya fue eliminada.");
@@ -147,7 +178,7 @@ export default function TransferenciasHome() {
     }
 
     setSelectedIds((prev) =>
-      checked ? [...prev, id] : prev.filter((x) => x !== id)
+      checked ? [...prev, id] : prev.filter((value) => value !== id)
     );
   };
 
@@ -157,20 +188,14 @@ export default function TransferenciasHome() {
     setShowConfirm(false);
   };
 
-  const selectedTransfers = transferenciasFiltradas.filter((t) =>
-    selectedIds.includes(t.id)
-  );
+  const selectedTransfers = scopedList.filter((item) => selectedIds.includes(item.id));
   const selectedActiveTransfers = selectedTransfers.filter(
-    (t) => !isTransferenciaDeleted(t)
-  );
-
-  const selectedItems = selectedActiveTransfers.map(
-    (t) => t.denominacion || t.descripcionActividad || "—"
+    (item) => !isTransferenciaDeleted(item)
   );
 
   const confirmDelete = async () => {
-    const invalidItems = selectedTransfers.filter((t) =>
-      isTransferenciaDeleted(t)
+    const invalidItems = selectedTransfers.filter((item) =>
+      isTransferenciaDeleted(item)
     );
 
     if (invalidItems.length > 0) {
@@ -178,7 +203,7 @@ export default function TransferenciasHome() {
       setErrorMessage(
         invalidItems.length === 1
           ? "La transferencia seleccionada ya fue eliminada."
-          : "Una o más transferencias seleccionadas ya fueron eliminadas."
+          : "Una o mas transferencias seleccionadas ya fueron eliminadas."
       );
       setShowError(true);
       return;
@@ -194,8 +219,8 @@ export default function TransferenciasHome() {
 
       setSuccessMessage(
         selectedActiveTransfers.length === 1
-          ? "Transferencia eliminada con éxito."
-          : "Transferencias eliminadas con éxito."
+          ? "Transferencia eliminada con exito."
+          : "Transferencias eliminadas con exito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -203,11 +228,7 @@ export default function TransferenciasHome() {
 
       if (error instanceof HttpError) {
         const body = error.body as
-          | {
-              message?: string;
-              error?: string;
-              detalle?: string;
-            }
+          | { message?: string; error?: string; detalle?: string }
           | undefined;
 
         setErrorMessage(
@@ -218,7 +239,7 @@ export default function TransferenciasHome() {
         );
       } else {
         setErrorMessage(
-          "Ocurrió un error inesperado al eliminar la transferencia."
+          "Ocurrio un error inesperado al eliminar la transferencia."
         );
       }
 
@@ -230,27 +251,23 @@ export default function TransferenciasHome() {
     value
       ?.toLowerCase()
       .split(" ")
-      .map((word) =>
-        word ? word.charAt(0).toUpperCase() + word.slice(1) : ""
-      )
+      .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : ""))
       .join(" ") || "";
 
   return (
-    <section className="w-full min-h-[calc(100vh-80px)] px-4 md:px-6 py-4 flex flex-col text-sm">
-      <MockIndicator />
-
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+    <section className="flex min-h-[calc(100vh-80px)] w-full flex-col px-4 py-4 text-sm md:px-6">
+      <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <h2 className="text-2xl md:text-3xl font-semibold leading-none text-slate-800">
-            Vinculación Socio-Productiva
+          <h2 className="text-2xl font-semibold leading-none text-slate-800 md:text-3xl">
+            Vinculacion socio-productiva
           </h2>
-          <p className="text-xs text-slate-500 mt-2">
-            {transferenciasFiltradas.length} de {list.length} resultados
+          <p className="mt-2 text-xs text-slate-500">
+            {transferenciasFiltradas.length} de {scopedList.length} resultados
           </p>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <div className="flex items-center rounded-lg border border-slate-200 bg-white overflow-hidden">
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
             <button
               type="button"
               onClick={() => setQuickEstado("")}
@@ -266,7 +283,7 @@ export default function TransferenciasHome() {
             <button
               type="button"
               onClick={() => setQuickEstado("todas")}
-              className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+              className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                 quickEstadoActual === "todas"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
@@ -278,7 +295,7 @@ export default function TransferenciasHome() {
             <button
               type="button"
               onClick={() => setQuickEstado("inactivas")}
-              className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+              className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                 quickEstadoActual === "inactivas"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
@@ -291,8 +308,8 @@ export default function TransferenciasHome() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por denominación, actividad o demandante..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-10 py-1.5 focus:bg-white focus:ring-2 focus:ring-slate-200 outline-none transition-all text-xs"
+              placeholder="Buscar por denominacion, actividad o demandante..."
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -315,13 +332,9 @@ export default function TransferenciasHome() {
           </div>
 
           {!selectMode ? (
-            <div className="flex gap-2">
+            <>
               {puedeEliminar && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setSelectMode(true)}
-                >
+                <Button variant="secondary" size="sm" onClick={() => setSelectMode(true)}>
                   Seleccionar
                 </Button>
               )}
@@ -336,60 +349,53 @@ export default function TransferenciasHome() {
               >
                 Filtros
                 {filtrosActivosCount > 0 && (
-                  <span className="ml-1.5 bg-slate-800 text-white text-[10px] rounded-full px-1.5 py-0.5">
+                  <span className="ml-1.5 rounded-full bg-slate-800 px-1.5 py-0.5 text-[10px] text-white">
                     {filtrosActivosCount}
                   </span>
                 )}
               </Button>
 
               {puedeCrear && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => navigate("/transferencias/nuevo")}
-                >
+                <Button variant="primary" size="sm" onClick={() => navigate("/transferencias/nuevo")}>
                   Nuevo
                 </Button>
               )}
-            </div>
+            </>
           ) : (
-            <div className="flex gap-2">
+            <>
               {selectedIds.length > 0 && puedeEliminar && (
                 <Button size="sm" onClick={() => setShowConfirm(true)}>
                   Eliminar
                 </Button>
               )}
 
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={cancelSelection}
-              >
+              <Button variant="secondary" size="sm" onClick={cancelSelection}>
                 Cancelar
               </Button>
-            </div>
+            </>
           )}
         </div>
       </div>
 
-      <div className="flex-1">
+      {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
+
+      <div className="flex flex-1 flex-col">
         {isLoading ? (
-          <p className="text-slate-500 text-center py-10">Cargando…</p>
+          <p className="py-10 text-center text-slate-500">Cargando...</p>
         ) : isError ? (
-          <p className="text-slate-500 text-center py-10">Error al cargar.</p>
+          <p className="py-10 text-center text-slate-500">Error al cargar.</p>
         ) : transferenciasFiltradas.length === 0 ? (
-          <p className="text-slate-500 text-center py-10">
+          <p className="py-10 text-center text-slate-500">
             No hay transferencias registradas.
           </p>
         ) : (
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {transferenciasFiltradas.map((t) => (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {paginatedItems.map((item) => (
               <Tarjeta
-                key={t.id}
-                item={t}
+                key={item.id}
+                item={item}
                 title={(x) =>
-                  formatTitle(x.denominacion) ||
-                  formatTitle(x.descripcionActividad)
+                  formatTitle(x.denominacion) || formatTitle(x.descripcionActividad)
                 }
                 subtitle={(x) =>
                   x.monto !== null && x.monto !== undefined
@@ -398,14 +404,47 @@ export default function TransferenciasHome() {
                 }
                 badge={(x) => (isTransferenciaDeleted(x) ? "INACTIVA" : "ACTIVA")}
                 selectable={puedeEliminar && selectMode}
-                selectDisabled={isTransferenciaDeleted(t)}
-                selected={selectedIds.includes(t.id)}
-                onSelectChange={(checked) => toggleSelect(t.id, checked)}
+                selectDisabled={isTransferenciaDeleted(item)}
+                selected={selectedIds.includes(item.id)}
+                onSelectChange={(checked) => toggleSelect(item.id, checked)}
                 onClick={() =>
-                  !selectMode && navigate(`/transferencias/${t.id}`)
+                  !selectMode &&
+                  navigate(`/transferencias/${item.id}`, {
+                    state: buildMemoriaDetailState(location),
+                  })
                 }
               />
             ))}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="mt-auto pt-8">
+            <div className="flex items-center justify-between">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+
+              <span className="text-sm text-slate-500">
+                Pagina {currentPage} de {totalPages}
+              </span>
+
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Siguiente
+              </Button>
+            </div>
           </div>
         )}
       </div>
@@ -413,15 +452,17 @@ export default function TransferenciasHome() {
       <ConfirmDialog
         open={showConfirm}
         title="Eliminar transferencias"
-        message="¿Eliminar las siguientes transferencias?"
-        items={selectedItems}
+        message="Eliminar las siguientes transferencias?"
+        items={selectedActiveTransfers.map(
+          (item) => item.denominacion || item.descripcionActividad || "-"
+        )}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
       />
 
       <SuccessToast
         open={showSuccess}
-        message={successMessage || "Eliminado con éxito!"}
+        message={successMessage || "Eliminado con exito."}
         onClose={() => setShowSuccess(false)}
       />
 
@@ -429,25 +470,26 @@ export default function TransferenciasHome() {
         open={showError}
         message={errorMessage}
         onClose={() => setShowError(false)}
+        variant="error"
       />
 
       {showFilters && (
         <>
           <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
             onClick={() => setShowFilters(false)}
           />
 
-          <div className="fixed top-0 right-0 h-full w-[380px] bg-white z-50 shadow-2xl p-6 flex flex-col overflow-y-auto">
-            <h3 className="text-xl font-semibold mb-6">Filtros Avanzados</h3>
+          <div className="fixed top-0 right-0 z-50 flex h-full w-[380px] flex-col overflow-y-auto bg-white p-6 shadow-2xl">
+            <h3 className="mb-6 text-xl font-semibold">Filtros avanzados</h3>
 
-            <div className="space-y-5 flex-1 text-[11px]">
+            <div className="flex-1 space-y-5 text-[11px]">
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
                   Estado
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.estado}
                   onChange={(e) =>
                     setTempFilters({
@@ -463,11 +505,11 @@ export default function TransferenciasHome() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
                   Demandante
                 </label>
                 <input
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.demandante}
                   onChange={(e) =>
                     setTempFilters({
@@ -480,11 +522,11 @@ export default function TransferenciasHome() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
                   Grupo UTN
                 </label>
                 <input
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.grupo}
                   onChange={(e) =>
                     setTempFilters({
@@ -497,11 +539,11 @@ export default function TransferenciasHome() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
                   Tipo de contrato
                 </label>
                 <input
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.tipoContrato}
                   onChange={(e) =>
                     setTempFilters({
@@ -514,12 +556,11 @@ export default function TransferenciasHome() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
-                  Año
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
+                  Ano
                 </label>
-                <input
-                  type="number"
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                <select
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.anio}
                   onChange={(e) =>
                     setTempFilters({
@@ -527,12 +568,18 @@ export default function TransferenciasHome() {
                       anio: e.target.value,
                     })
                   }
-                  placeholder="Ej: 2025"
-                />
+                >
+                  <option value="">Todos</option>
+                  {aniosDisponibles.map((anio) => (
+                    <option key={anio} value={anio}>
+                      {anio}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            <div className="flex justify-between gap-2 pt-6 border-t mt-4">
+            <div className="mt-4 flex justify-between gap-2 border-t pt-6">
               <Button
                 variant="secondary"
                 className="flex-1"

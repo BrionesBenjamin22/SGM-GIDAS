@@ -20,6 +20,13 @@ def get_all():
 def get_by_id(distincion_id):
     return DistincionRecibidaController.get_by_id(distincion_id)
 
+@distincion_recibida_bp.route(
+    "/<int:distincion_id>/historial", methods=["GET"], strict_slashes=False
+)
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_historial(distincion_id):
+    return DistincionRecibidaController.get_historial(distincion_id)
+
 @distincion_recibida_bp.route("/", methods=["POST"], strict_slashes=False)
 @requiere_rol("ADMIN", "GESTOR")
 def create():

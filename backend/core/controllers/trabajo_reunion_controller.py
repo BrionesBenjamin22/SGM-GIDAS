@@ -41,6 +41,16 @@ class TrabajoReunionCientificaController:
         except Exception:
             return jsonify({"error": "Error interno del servidor"}), 500
 
+    @staticmethod
+    def get_historial(trabajo_id):
+        try:
+            result = TrabajoReunionCientificaService.get_historial(trabajo_id)
+            return jsonify(result), 200
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 404
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
+
 
     # =================================================
     # CREATE (con auditoría)
@@ -72,11 +82,16 @@ class TrabajoReunionCientificaController:
     def update(trabajo_id):
         try:
             data = request.get_json()
+            user_id = g.current_user_id
 
             if not data:
                 return jsonify({"error": "Body requerido"}), 400
 
-            result = TrabajoReunionCientificaService.update(trabajo_id, data)
+            result = TrabajoReunionCientificaService.update(
+                trabajo_id,
+                data,
+                user_id
+            )
 
             return jsonify(result), 200
 
@@ -137,9 +152,11 @@ class TrabajoReunionCientificaController:
                     "error": "investigadores_ids debe ser una lista no vacía"
                 }), 400
 
+            user_id = g.current_user_id
             result = TrabajoReunionCientificaService.vincular_investigadores(
                 trabajo_id,
-                investigadores_ids
+                investigadores_ids,
+                user_id
             )
 
             return jsonify(result), 200
@@ -168,9 +185,11 @@ class TrabajoReunionCientificaController:
                     "error": "investigadores_ids debe ser una lista no vacía"
                 }), 400
 
+            user_id = g.current_user_id
             result = TrabajoReunionCientificaService.desvincular_investigadores(
                 trabajo_id,
-                investigadores_ids
+                investigadores_ids,
+                user_id
             )
 
             return jsonify(result), 200

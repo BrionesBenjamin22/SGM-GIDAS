@@ -8,12 +8,12 @@ personal_bp = Blueprint(
     url_prefix="/personal"
 )
 
-@personal_bp.route("/", methods=["POST"])
+@personal_bp.route("", methods=["POST"])
 @requiere_rol("ADMIN", "GESTOR")
 def crear():
     return PersonalController.crear(request)
 
-@personal_bp.route("/", methods=["GET"])
+@personal_bp.route("", methods=["GET"])
 @requiere_rol("ADMIN", "GESTOR", "LECTURA")
 def listar():
     return PersonalController.listar(request)
@@ -22,6 +22,11 @@ def listar():
 @requiere_rol("ADMIN", "GESTOR", "LECTURA")
 def obtener(rol, id):
     return PersonalController.obtener_por_id(request, rol, id)
+
+@personal_bp.route("/<string:rol>/<int:id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def obtener_historial(rol, id):
+    return PersonalController.obtener_historial(request, rol, id)
 
 @personal_bp.route("/<string:rol>/<int:id>", methods=["PUT"])
 @requiere_rol("ADMIN", "GESTOR")

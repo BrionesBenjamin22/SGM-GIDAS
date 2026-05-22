@@ -1,8 +1,13 @@
 from datetime import date, datetime
 import unicodedata
 
-from core.models.participacion_relevante import ParticipacionRelevante
+from core.models.participacion_relevante import (
+    ParticipacionRelevante,
+    ParticipacionRelevanteMemoriaVersion,
+)
 from core.models.personal import Investigador
+from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 
 
@@ -168,6 +173,14 @@ class ParticipacionRelevanteService:
         ).serialize()
 
     @staticmethod
+    def get_historial(participacion_id: int):
+        participacion = ParticipacionRelevanteService._get_or_404(participacion_id)
+        return AuditoriaService.obtener_historial_entidad(
+            entidad="participacion_relevante",
+            registro_id=participacion.id
+        )
+
+    @staticmethod
     def create(data: dict, user_id: int):
         ParticipacionRelevanteService._validar_payload(data)
         ParticipacionRelevanteService._validar_user_id(user_id)
@@ -212,8 +225,9 @@ class ParticipacionRelevanteService:
         return participacion.serialize()
 
     @staticmethod
-    def update(participacion_id: int, data: dict):
+    def update(participacion_id: int, data: dict, user_id: int):
         ParticipacionRelevanteService._validar_payload(data)
+        ParticipacionRelevanteService._validar_user_id(user_id)
         part = ParticipacionRelevanteService._get_activa_or_404(participacion_id)
 
         nombre_evento = part.nombre_evento
@@ -250,17 +264,31 @@ class ParticipacionRelevanteService:
             part.id,
         )
 
-        if "nombre_evento" in data:
-            part.nombre_evento = nombre_evento
+        cambios = {}
 
-        if "forma_participacion" in data:
-            part.forma_participacion = forma_participacion
+        for campo, nuevo_valor in (
+            ("nombre_evento", nombre_evento),
+            ("forma_participacion", forma_participacion),
+            ("fecha", fecha),
+            ("investigador_id", investigador_id),
+        ):
+            if campo in data:
+                cambio = AuditoriaService.construir_cambio(
+                    getattr(part, campo),
+                    nuevo_valor
+                )
+                if cambio:
+                    cambios[campo] = cambio
+                    setattr(part, campo, nuevo_valor)
 
-        if "fecha" in data:
-            part.fecha = fecha
-
-        if "investigador_id" in data:
-            part.investigador_id = investigador_id
+        if cambios:
+            part.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="participacion_relevante",
+                registro_id=part.id,
+                cambios=cambios,
+                user_id=user_id
+            )
 
         try:
             db.session.commit()
@@ -284,3 +312,43 @@ class ParticipacionRelevanteService:
             raise
 
         return {"message": "Participacion relevante eliminada correctamente"}
+
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        participaciones = ParticipacionRelevante.query.filter().all()
+
+        snapshots = []
+        for participacion in participaciones:
+            if not esta_en_periodo_memoria(memoria_version, participacion.fecha):
+                continue
+            snapshot = ParticipacionRelevanteMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                participacion_relevante_id=participacion.id,
+                nombre_evento=participacion.nombre_evento,
+                forma_participacion=participacion.forma_participacion,
+                fecha=participacion.fecha,
+                investigador_id=participacion.investigador_id,
+                investigador_nombre=(
+                    participacion.investigador.nombre_apellido
+                    if participacion.investigador else None
+                ),
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            ParticipacionRelevanteMemoriaVersion.query
+            .filter(
+                ParticipacionRelevanteMemoriaVersion.memoria_version_id == memoria_version_id,
+                ParticipacionRelevanteMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(ParticipacionRelevanteMemoriaVersion.fecha.desc())
+            .all()
+        )
+
+        return [snapshot.serialize() for snapshot in snapshots]

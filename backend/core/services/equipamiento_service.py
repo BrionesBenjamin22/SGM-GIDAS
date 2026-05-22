@@ -1,7 +1,9 @@
 from datetime import datetime, date
 
-from core.models.equipamiento import Equipamiento
+from core.models.equipamiento import Equipamiento, EquipamientoMemoriaVersion
 from core.models.grupo import GrupoInvestigacionUtn
+from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
 
 
@@ -104,6 +106,19 @@ class EquipamientoService:
             raise Exception("Equipamiento no encontrado")
         return equipamiento.serialize()
 
+    @staticmethod
+    def get_historial(equipamiento_id: int):
+        equipamiento = db.session.get(
+            Equipamiento,
+            EquipamientoService._validar_id(equipamiento_id, "equipamiento_id")
+        )
+        if not equipamiento:
+            raise Exception("Equipamiento no encontrado")
+        return AuditoriaService.obtener_historial_entidad(
+            entidad="equipamiento_grupo",
+            registro_id=equipamiento.id
+        )
+
     # ==========================================
     # CREATE
     # ==========================================
@@ -146,33 +161,79 @@ class EquipamientoService:
     # ==========================================
 
     @staticmethod
-    def update(equipamiento_id: int, data: dict):
+    def update(equipamiento_id: int, data: dict, user_id: int):
         EquipamientoService._validar_payload(data)
+        EquipamientoService._validar_id(user_id, "user_id")
         equipamiento = EquipamientoService._get_activo_or_404(equipamiento_id)
+        cambios = {}
 
         if "denominacion" in data:
-            equipamiento.denominacion = EquipamientoService._validar_texto(
+            nuevo_valor = EquipamientoService._validar_texto(
                 data["denominacion"], "La denominacion"
             )
+            cambio = AuditoriaService.construir_cambio(
+                equipamiento.denominacion,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["denominacion"] = cambio
+                equipamiento.denominacion = nuevo_valor
 
         if "descripcion_breve" in data:
-            equipamiento.descripcion_breve = EquipamientoService._validar_texto(
+            nuevo_valor = EquipamientoService._validar_texto(
                 data["descripcion_breve"], "La descripcion"
             )
+            cambio = AuditoriaService.construir_cambio(
+                equipamiento.descripcion_breve,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["descripcion_breve"] = cambio
+                equipamiento.descripcion_breve = nuevo_valor
 
         if "monto_invertido" in data:
-            equipamiento.monto_invertido = EquipamientoService._validar_monto(
+            nuevo_valor = EquipamientoService._validar_monto(
                 data["monto_invertido"]
             )
+            cambio = AuditoriaService.construir_cambio(
+                equipamiento.monto_invertido,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["monto_invertido"] = cambio
+                equipamiento.monto_invertido = nuevo_valor
 
         if "fecha_incorporacion" in data:
-            equipamiento.fecha_incorporacion = EquipamientoService._validar_fecha(
+            nuevo_valor = EquipamientoService._validar_fecha(
                 data["fecha_incorporacion"]
             )
+            cambio = AuditoriaService.construir_cambio(
+                equipamiento.fecha_incorporacion,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["fecha_incorporacion"] = cambio
+                equipamiento.fecha_incorporacion = nuevo_valor
 
         if "grupo_utn_id" in data:
-            equipamiento.grupo_utn_id = EquipamientoService._validar_grupo(
+            nuevo_valor = EquipamientoService._validar_grupo(
                 data["grupo_utn_id"]
+            )
+            cambio = AuditoriaService.construir_cambio(
+                equipamiento.grupo_utn_id,
+                nuevo_valor
+            )
+            if cambio:
+                cambios["grupo_utn_id"] = cambio
+                equipamiento.grupo_utn_id = nuevo_valor
+
+        if cambios:
+            equipamiento.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="equipamiento_grupo",
+                registro_id=equipamiento.id,
+                cambios=cambios,
+                user_id=user_id
             )
 
         try:
@@ -201,3 +262,48 @@ class EquipamientoService:
             raise
 
         return {"message": "Equipamiento eliminado correctamente"}
+
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        equipamientos = Equipamiento.query.filter().all()
+
+        snapshots = []
+        for equipamiento in equipamientos:
+            if not estuvo_activo_en_periodo_memoria(
+                memoria_version,
+                equipamiento.fecha_incorporacion,
+                getattr(equipamiento, "deleted_at", None)
+            ):
+                continue
+            snapshot = EquipamientoMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                equipamiento_id=equipamiento.id,
+                denominacion=equipamiento.denominacion,
+                descripcion_breve=equipamiento.descripcion_breve,
+                fecha_incorporacion=equipamiento.fecha_incorporacion,
+                monto_invertido=equipamiento.monto_invertido,
+                grupo_utn_id=equipamiento.grupo_utn_id,
+                grupo_utn_nombre=(
+                    equipamiento.grupo_utn.nombre_sigla_grupo
+                    if equipamiento.grupo_utn else None
+                ),
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            EquipamientoMemoriaVersion.query
+            .filter(
+                EquipamientoMemoriaVersion.memoria_version_id == memoria_version_id,
+                EquipamientoMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(EquipamientoMemoriaVersion.denominacion.asc())
+            .all()
+        )
+
+        return [snapshot.serialize() for snapshot in snapshots]

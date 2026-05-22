@@ -4,20 +4,20 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
+import SuccessToast from "@/components/SuccessToast";
 import { HttpError } from "@/lib/http";
-import { toTitleCase } from "@/utils/format";
 import { useInvestigadores } from "@/hooks/useInvestigadores";
 import {
+  actualizarParticipacion,
   crearParticipacion,
   getParticipacionById,
-  actualizarParticipacion,
 } from "@/services/participacionesServices";
 
 const FORMAS_PARTICIPACION = [
   { value: "jurado", label: "Jurado" },
   { value: "evaluador", label: "Evaluador" },
   { value: "panelista", label: "Panelista" },
-  { value: "comite", label: "Miembro de comité científico" },
+  { value: "comite", label: "Miembro de comite cientifico" },
 ];
 
 export default function ParticipacionesForm() {
@@ -26,7 +26,6 @@ export default function ParticipacionesForm() {
   const qc = useQueryClient();
 
   const isEdit = Boolean(id);
-
   const { data: investigadores = [] } = useInvestigadores();
 
   const { data: initialData, isLoading } = useQuery({
@@ -41,6 +40,8 @@ export default function ParticipacionesForm() {
   const [fecha, setFecha] = useState<Date | null>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     if (!initialData) return;
@@ -48,33 +49,8 @@ export default function ParticipacionesForm() {
     setInvestigadorId(initialData.investigador_id ?? null);
     setNombreEvento(initialData.nombre_evento ?? "");
     setFormaParticipacion(initialData.forma_participacion ?? "");
-    setFecha(initialData.fecha ? new Date(initialData.fecha) : null);
+    setFecha(initialData.fecha ? new Date(`${initialData.fecha}T00:00:00`) : null);
   }, [initialData]);
-
-  const mutation = useMutation({
-    mutationFn: (payload: any) =>
-      isEdit
-        ? actualizarParticipacion(Number(id), payload)
-        : crearParticipacion(payload),
-    onSuccess: async (saved) => {
-      await qc.invalidateQueries({ queryKey: ["participaciones"] });
-      await qc.invalidateQueries({ queryKey: ["participacion", id] });
-
-      if (isEdit) {
-        navigate(`/participaciones/${id}`, {
-          state: {
-            successMessage: "Participación actualizada con éxito!",
-          },
-        });
-      } else {
-        navigate(`/participaciones/${saved.id}`, {
-          state: {
-            successMessage: "Participación creada con éxito!",
-          },
-        });
-      }
-    },
-  });
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -96,8 +72,7 @@ export default function ParticipacionesForm() {
     }
 
     if (!formaParticipacion) {
-      newErrors.formaParticipacion =
-        "Debe seleccionar una forma de participación";
+      newErrors.formaParticipacion = "Debe seleccionar una forma de participacion";
     }
 
     if (!fecha) {
@@ -108,27 +83,51 @@ export default function ParticipacionesForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
+  const formatDateStr = (date: Date | null) => {
+    if (!date) return null;
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
 
-    const payload = {
-      investigador_id: investigadorId!,
-      nombre_evento: toTitleCase(nombreEvento),
-      forma_participacion: formaParticipacion,
-      fecha: fecha!.toISOString().split("T")[0],
-    };
+  const mutation = useMutation({
+    mutationFn: (payload: any) =>
+      isEdit
+        ? actualizarParticipacion(Number(id), payload)
+        : crearParticipacion(payload),
+    onSuccess: async (saved) => {
+      const participacionId = isEdit ? Number(id) : saved.id;
 
-    try {
-      await mutation.mutateAsync(payload);
-    } catch (error) {
+      await qc.invalidateQueries({ queryKey: ["participaciones"] });
+      await qc.invalidateQueries({ queryKey: ["participacion", participacionId] });
+      await qc.invalidateQueries({
+        queryKey: ["participacion-historial", participacionId],
+      });
+
+      navigate(`/participaciones/${participacionId}`, {
+        replace: true,
+        state: {
+          successMessage: isEdit
+            ? "Participacion actualizada con exito."
+            : "Participacion creada con exito.",
+        },
+      });
+    },
+    onError: (error) => {
+      const defaultMessage = isEdit
+        ? "No se pudo actualizar la participacion."
+        : "No se pudo crear la participacion.";
+
+      let backendMessage = defaultMessage;
+
       if (error instanceof HttpError) {
         const body = error.body as
           | { message?: string; error?: string; detalle?: string }
           | undefined;
 
-        const backendMessage =
-          body?.error || body?.message || body?.detalle || "";
+        backendMessage =
+          body?.error || body?.message || body?.detalle || defaultMessage;
 
         const lowerMessage = backendMessage.toLowerCase();
 
@@ -137,47 +136,76 @@ export default function ParticipacionesForm() {
             ...prev,
             investigador: backendMessage,
           }));
-          return;
-        }
-
-        if (lowerMessage.includes("nombre") || lowerMessage.includes("evento")) {
+        } else if (lowerMessage.includes("nombre") || lowerMessage.includes("evento")) {
           setErrors((prev) => ({
             ...prev,
             nombreEvento: backendMessage,
           }));
-          return;
-        }
-
-        if (
+        } else if (
           lowerMessage.includes("forma") ||
-          lowerMessage.includes("participación") ||
           lowerMessage.includes("participacion")
         ) {
           setErrors((prev) => ({
             ...prev,
             formaParticipacion: backendMessage,
           }));
-          return;
-        }
-
-        if (lowerMessage.includes("fecha")) {
+        } else if (lowerMessage.includes("fecha")) {
           setErrors((prev) => ({
             ...prev,
             fecha: backendMessage,
           }));
-          return;
         }
       }
 
-      setErrors((prev) => ({
-        ...prev,
-        general: "No se pudo guardar la participación.",
-      }));
+      setErrorMessage(backendMessage);
+      setShowError(true);
+    },
+  });
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    const payload = {
+      investigador_id: investigadorId!,
+      nombre_evento: nombreEvento.trim(),
+      forma_participacion: formaParticipacion,
+      fecha: formatDateStr(fecha)!,
+    };
+
+    if (!isEdit) {
+      await mutation.mutateAsync(payload);
+      return;
     }
+
+    const initialPayload = {
+      investigador_id: initialData?.investigador_id ?? null,
+      nombre_evento: initialData?.nombre_evento ?? "",
+      forma_participacion: initialData?.forma_participacion ?? "",
+      fecha: initialData?.fecha ?? null,
+    };
+
+    const changedPayload = Object.fromEntries(
+      Object.entries(payload).filter(([key, value]) => {
+        return initialPayload[key as keyof typeof initialPayload] !== value;
+      })
+    );
+
+    if (Object.keys(changedPayload).length === 0) {
+      navigate(`/participaciones/${id}`, {
+        replace: true,
+        state: {
+          successMessage: "No hubo cambios para actualizar.",
+        },
+      });
+      return;
+    }
+
+    await mutation.mutateAsync(changedPayload);
   };
 
   if (isEdit && isLoading) {
-    return <p className="text-slate-500">Cargando participación…</p>;
+    return <p className="text-slate-500">Cargando participacion...</p>;
   }
 
   const inputClass = (field: string) =>
@@ -185,13 +213,13 @@ export default function ParticipacionesForm() {
 
   return (
     <section className="w-full">
-      <h2 className="text-2xl md:text-3xl font-semibold leading-none">
-        {isEdit ? "Editar participación" : "Nueva participación relevante"}
+      <h2 className="text-2xl font-semibold leading-none md:text-3xl">
+        {isEdit ? "Editar participacion" : "Nueva participacion relevante"}
       </h2>
 
       <form
         onSubmit={submit}
-        className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 space-y-6"
+        className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
         <Field label="Investigador">
           <>
@@ -217,9 +245,7 @@ export default function ParticipacionesForm() {
             </select>
 
             {errors.investigador && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.investigador}
-              </p>
+              <p className="mt-1 text-sm text-red-500">{errors.investigador}</p>
             )}
           </>
         </Field>
@@ -234,22 +260,15 @@ export default function ParticipacionesForm() {
                 setNombreEvento(e.target.value);
                 if (e.target.value.trim()) clearError("nombreEvento");
               }}
-              onBlur={() => {
-                if (nombreEvento.trim()) {
-                  setNombreEvento(toTitleCase(nombreEvento));
-                }
-              }}
-              placeholder="Ej: Congreso Argentino de Ingeniería"
+              placeholder="Ej: Congreso Argentino de Ingenieria"
             />
             {errors.nombreEvento && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.nombreEvento}
-              </p>
+              <p className="mt-1 text-sm text-red-500">{errors.nombreEvento}</p>
             )}
           </>
         </Field>
 
-        <Field label="Forma de participación">
+        <Field label="Forma de participacion">
           <>
             <select
               className={`${inputClass("formaParticipacion")} ${
@@ -262,7 +281,7 @@ export default function ParticipacionesForm() {
               }}
             >
               <option value="" disabled>
-                Seleccionar forma de participación
+                Seleccionar forma de participacion
               </option>
               {FORMAS_PARTICIPACION.map((f) => (
                 <option key={f.value} value={f.value}>
@@ -272,7 +291,7 @@ export default function ParticipacionesForm() {
             </select>
 
             {errors.formaParticipacion && (
-              <p className="text-red-500 text-sm mt-1">
+              <p className="mt-1 text-sm text-red-500">
                 {errors.formaParticipacion}
               </p>
             )}
@@ -291,10 +310,6 @@ export default function ParticipacionesForm() {
           />
         </Field>
 
-        {errors.general && (
-          <p className="text-red-500 text-sm">{errors.general}</p>
-        )}
-
         <div className="flex justify-between pt-6">
           <Button
             type="button"
@@ -307,13 +322,22 @@ export default function ParticipacionesForm() {
 
           <Button type="submit" size="sm" disabled={mutation.isPending}>
             {mutation.isPending
-              ? "Guardando…"
+              ? isEdit
+                ? "Actualizando..."
+                : "Guardando..."
               : isEdit
                 ? "Actualizar"
                 : "Guardar"}
           </Button>
         </div>
       </form>
+
+      <SuccessToast
+        open={showError}
+        message={errorMessage}
+        onClose={() => setShowError(false)}
+        variant="error"
+      />
     </section>
   );
 }

@@ -1,6 +1,7 @@
-from flask import Blueprint
+from flask import Blueprint, current_app
 from core.controllers.auth_controller import AuthController
 from core.services.middleware import requiere_rol
+from extension import limiter
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -16,6 +17,7 @@ def primer_usuario():
 # Registro
 # -------------------------
 @auth_bp.route("/register", methods=["POST"])
+@limiter.limit(lambda: current_app.config["AUTH_REGISTER_LIMIT"])
 def register():
     return AuthController.register()
 
@@ -24,6 +26,7 @@ def register():
 # Login
 # -------------------------
 @auth_bp.route("/login", methods=["POST"])
+@limiter.limit(lambda: current_app.config["AUTH_LOGIN_LIMIT"])
 def login():
     return AuthController.login()
 
@@ -40,6 +43,7 @@ def perfil():
 # Refresh token
 # -------------------------
 @auth_bp.route("/refresh", methods=["POST"])
+@limiter.limit(lambda: current_app.config["AUTH_REFRESH_LIMIT"])
 def refresh():
     return AuthController.refresh()
 
@@ -48,6 +52,7 @@ def refresh():
 # Change password (POST según especificación del frontend)
 # -------------------------
 @auth_bp.route("/cambiar-password", methods=["POST"])
+@limiter.limit(lambda: current_app.config["AUTH_CHANGE_PASSWORD_LIMIT"])
 def change_password():
     return AuthController.change_password()
 

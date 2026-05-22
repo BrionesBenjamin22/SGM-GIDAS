@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
+import SuccessToast from "@/components/SuccessToast";
 import { HttpError } from "@/lib/http";
 import { useUctGuard } from "@/hooks/useUctGuard";
 import {
@@ -31,6 +32,8 @@ export default function ArticulosDivulgacionForm() {
   const [fechaPublicacion, setFechaPublicacion] = useState<Date | null>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     if (!initialData) return;
@@ -39,35 +42,10 @@ export default function ArticulosDivulgacionForm() {
     setDescripcion(initialData.descripcion ?? "");
     setFechaPublicacion(
       initialData.fecha_publicacion
-        ? new Date(initialData.fecha_publicacion)
+        ? new Date(`${initialData.fecha_publicacion}T00:00:00`)
         : null
     );
   }, [initialData]);
-
-  const mutation = useMutation({
-    mutationFn: (payload: any) =>
-      isEdit
-        ? updateArticulo(Number(id), payload)
-        : createArticulo(payload),
-    onSuccess: async (saved) => {
-      await qc.invalidateQueries({ queryKey: ["articulos-divulgacion"] });
-      await qc.invalidateQueries({ queryKey: ["articulo-divulgacion", id] });
-
-      if (isEdit) {
-        navigate(`/articulos-divulgacion/${id}`, {
-          state: {
-            successMessage: "Artículo actualizado con éxito!",
-          },
-        });
-      } else {
-        navigate(`/articulos-divulgacion/${saved.id}`, {
-          state: {
-            successMessage: "Artículo creado con éxito!",
-          },
-        });
-      }
-    },
-  });
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -81,16 +59,16 @@ export default function ArticulosDivulgacionForm() {
     const newErrors: Record<string, string> = {};
 
     if (!titulo.trim()) {
-      newErrors.titulo = "Debe ingresar título";
+      newErrors.titulo = "Debe ingresar titulo";
     } else if (titulo.trim().length < 5) {
-      newErrors.titulo = "El título debe tener al menos 5 caracteres";
+      newErrors.titulo = "El titulo debe tener al menos 5 caracteres";
     }
 
     if (!descripcion.trim()) {
-      newErrors.descripcion = "Debe ingresar descripción";
+      newErrors.descripcion = "Debe ingresar descripcion";
     } else if (descripcion.trim().length < 10) {
       newErrors.descripcion =
-        "La descripción debe tener al menos 10 caracteres";
+        "La descripcion debe tener al menos 10 caracteres";
     }
 
     if (!fechaPublicacion) {
@@ -101,6 +79,76 @@ export default function ArticulosDivulgacionForm() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const formatDateStr = (date: Date | null) => {
+    if (!date) return null;
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const mutation = useMutation({
+    mutationFn: (payload: any) =>
+      isEdit
+        ? updateArticulo(Number(id), payload)
+        : createArticulo(payload),
+    onSuccess: async (saved) => {
+      const articuloId = isEdit ? Number(id) : saved.id;
+
+      await qc.invalidateQueries({ queryKey: ["articulos-divulgacion"] });
+      await qc.invalidateQueries({ queryKey: ["articulo-divulgacion", articuloId] });
+      await qc.invalidateQueries({
+        queryKey: ["articulo-divulgacion-historial", articuloId],
+      });
+
+      navigate(`/articulos-divulgacion/${articuloId}`, {
+        replace: true,
+        state: {
+          successMessage: isEdit
+            ? "Articulo actualizado con exito."
+            : "Articulo creado con exito.",
+        },
+      });
+    },
+    onError: (error) => {
+      const defaultMessage = isEdit
+        ? "No se pudo actualizar el articulo de divulgacion."
+        : "No se pudo crear el articulo de divulgacion.";
+
+      let backendMessage = defaultMessage;
+
+      if (error instanceof HttpError) {
+        const body = error.body as
+          | { message?: string; error?: string; detalle?: string }
+          | undefined;
+
+        backendMessage = body?.error || body?.message || body?.detalle || defaultMessage;
+
+        const lowerMessage = backendMessage.toLowerCase();
+
+        if (lowerMessage.includes("titulo")) {
+          setErrors((prev) => ({
+            ...prev,
+            titulo: backendMessage,
+          }));
+        } else if (lowerMessage.includes("descripcion")) {
+          setErrors((prev) => ({
+            ...prev,
+            descripcion: backendMessage,
+          }));
+        } else if (lowerMessage.includes("fecha")) {
+          setErrors((prev) => ({
+            ...prev,
+            fecha: backendMessage,
+          }));
+        }
+      }
+
+      setErrorMessage(backendMessage);
+      setShowError(true);
+    },
+  });
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
@@ -109,60 +157,43 @@ export default function ArticulosDivulgacionForm() {
     const payload = {
       titulo: titulo.trim(),
       descripcion: descripcion.trim(),
-      fecha_publicacion: fechaPublicacion!.toISOString().split("T")[0],
+      fecha_publicacion: formatDateStr(fechaPublicacion)!,
       grupo_utn_id: uct.id,
     };
 
-    try {
+    if (!isEdit) {
       await mutation.mutateAsync(payload);
-    } catch (error) {
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | { message?: string; error?: string; detalle?: string }
-          | undefined;
-
-        const backendMessage =
-          body?.error || body?.message || body?.detalle || "";
-
-        const lowerMessage = backendMessage.toLowerCase();
-
-        if (lowerMessage.includes("titulo") || lowerMessage.includes("título")) {
-          setErrors((prev) => ({
-            ...prev,
-            titulo: backendMessage,
-          }));
-          return;
-        }
-
-        if (
-          lowerMessage.includes("descripcion") ||
-          lowerMessage.includes("descripción")
-        ) {
-          setErrors((prev) => ({
-            ...prev,
-            descripcion: backendMessage,
-          }));
-          return;
-        }
-
-        if (lowerMessage.includes("fecha")) {
-          setErrors((prev) => ({
-            ...prev,
-            fecha: backendMessage,
-          }));
-          return;
-        }
-      }
-
-      setErrors((prev) => ({
-        ...prev,
-        general: "No se pudo guardar el artículo de divulgación.",
-      }));
+      return;
     }
+
+    const initialPayload = {
+      titulo: initialData?.titulo ?? "",
+      descripcion: initialData?.descripcion ?? "",
+      fecha_publicacion: initialData?.fecha_publicacion ?? null,
+      grupo_utn_id: uct.id,
+    };
+
+    const changedPayload = Object.fromEntries(
+      Object.entries(payload).filter(([key, value]) => {
+        return initialPayload[key as keyof typeof initialPayload] !== value;
+      })
+    );
+
+    if (Object.keys(changedPayload).length === 0) {
+      navigate(`/articulos-divulgacion/${id}`, {
+        replace: true,
+        state: {
+          successMessage: "No hubo cambios para actualizar.",
+        },
+      });
+      return;
+    }
+
+    await mutation.mutateAsync(changedPayload);
   };
 
   if (isEdit && isLoading) {
-    return <p className="text-slate-500">Cargando artículo…</p>;
+    return <p className="text-slate-500">Cargando articulo...</p>;
   }
 
   const inputClass = (field: string) =>
@@ -170,17 +201,17 @@ export default function ArticulosDivulgacionForm() {
 
   return (
     <section className="w-full">
-      <h2 className="text-2xl md:text-3xl font-semibold leading-none">
+      <h2 className="text-2xl font-semibold leading-none md:text-3xl">
         {isEdit
-          ? "Editar artículo de divulgación"
-          : "Nuevo artículo de divulgación"}
+          ? "Editar articulo de divulgacion"
+          : "Nuevo articulo de divulgacion"}
       </h2>
 
       <form
         onSubmit={submit}
-        className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 space-y-6"
+        className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Título">
+        <Field label="Titulo">
           <>
             <input
               type="text"
@@ -190,15 +221,15 @@ export default function ArticulosDivulgacionForm() {
                 setTitulo(e.target.value);
                 if (e.target.value.trim()) clearError("titulo");
               }}
-              placeholder="Ej: Impacto de la investigación en la comunidad"
+              placeholder="Ej: Impacto de la investigacion en la comunidad"
             />
             {errors.titulo && (
-              <p className="text-red-500 text-sm mt-1">{errors.titulo}</p>
+              <p className="mt-1 text-sm text-red-500">{errors.titulo}</p>
             )}
           </>
         </Field>
 
-        <Field label="Descripción">
+        <Field label="Descripcion">
           <>
             <textarea
               className={`${inputClass("descripcion")} min-h-[100px]`}
@@ -207,15 +238,15 @@ export default function ArticulosDivulgacionForm() {
                 setDescripcion(e.target.value);
                 if (e.target.value.trim()) clearError("descripcion");
               }}
-              placeholder="Ej: Artículo orientado a la divulgación de resultados científicos para público general"
+              placeholder="Ej: Articulo orientado a la divulgacion de resultados cientificos para publico general"
             />
             {errors.descripcion && (
-              <p className="text-red-500 text-sm mt-1">{errors.descripcion}</p>
+              <p className="mt-1 text-sm text-red-500">{errors.descripcion}</p>
             )}
           </>
         </Field>
 
-        <Field label="Fecha de publicación">
+        <Field label="Fecha de publicacion">
           <Calendar
             value={fechaPublicacion}
             onChange={(date) => {
@@ -226,10 +257,6 @@ export default function ArticulosDivulgacionForm() {
             helperText={errors.fecha ?? "DD/MM/AAAA"}
           />
         </Field>
-
-        {errors.general && (
-          <p className="text-red-500 text-sm">{errors.general}</p>
-        )}
 
         <div className="flex justify-between pt-6">
           <Button
@@ -243,13 +270,22 @@ export default function ArticulosDivulgacionForm() {
 
           <Button type="submit" size="sm" disabled={mutation.isPending || !uct}>
             {mutation.isPending
-              ? "Guardando…"
+              ? isEdit
+                ? "Actualizando..."
+                : "Guardando..."
               : isEdit
                 ? "Actualizar"
                 : "Guardar"}
           </Button>
         </div>
       </form>
+
+      <SuccessToast
+        open={showError}
+        message={errorMessage}
+        onClose={() => setShowError(false)}
+        variant="error"
+      />
 
       {uctGuard}
     </section>

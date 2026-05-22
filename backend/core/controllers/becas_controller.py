@@ -29,6 +29,16 @@ class BecaController:
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
+    @staticmethod
+    def get_historial(beca_id):
+        try:
+            data = BecaService.get_historial(beca_id)
+            return jsonify(data), 200
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 404
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
 
     # =========================
     # CREATE
@@ -56,8 +66,9 @@ class BecaController:
     def update(beca_id):
         try:
             data = request.get_json()
+            user_id = g.current_user_id
 
-            beca_actualizada = BecaService.update(beca_id, data)
+            beca_actualizada = BecaService.update(beca_id, data, user_id)
 
             return jsonify(beca_actualizada), 200
 

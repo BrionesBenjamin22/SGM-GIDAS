@@ -1,5 +1,4 @@
 import enum
-
 from extension import db
 from core.models.audit_mixin import AuditMixin
 

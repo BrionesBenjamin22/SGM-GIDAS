@@ -2,6 +2,58 @@ from datetime import datetime
 
 from extension import db
 from core.models.memorias import Memoria, MemoriaVersion, EstadoMemoria
+from core.services.investigador_service import (
+    obtener_snapshots_investigadores_por_memoria_version,
+    snapshot_investigadores_para_memoria_version,
+)
+from core.services.becario_service import (
+    snapshot_becarios_para_memoria_version,
+    obtener_snapshots_becarios_por_memoria_version,
+)
+from core.services.personal_service import (
+    snapshot_personal_para_memoria_version,
+    obtener_snapshots_personal_por_memoria_version,
+)
+from core.services.proyecto_investigacion_service import (
+    ProyectoInvestigacionService,
+)
+from core.services.actividad_docencia_service import (
+    ActividadDocenciaService,
+)
+from core.services.participacion_relevante_service import (
+    ParticipacionRelevanteService,
+)
+from core.services.documentacion_service import (
+    DocumentacionBibliograficaService,
+)
+from core.services.equipamiento_service import (
+    EquipamientoService,
+)
+from core.services.erogacion_service import (
+    ErogacionService,
+)
+from core.services.transferencia_service import (
+    TransferenciaSocioProductivaService,
+)
+from core.services.trabajo_reunion_service import (
+    TrabajoReunionCientificaService,
+)
+from core.services.trabajo_revista_service import (
+    TrabajosRevistasReferatoService,
+)
+from core.services.distincion_service import (
+    DistincionRecibidaService,
+)
+from core.services.registro_propiedad_service import (
+    RegistrosPropiedadService,
+)
+from core.services.articulo_divulgacion_service import (
+    ArticuloDivulgacionService,
+)
+from core.services.visita_service import (
+    obtener_snapshots_visitas_por_memoria_version,
+    snapshot_visitas_para_memoria_version,
+)
 
 
 class MemoriaService:
@@ -52,7 +104,45 @@ class MemoriaService:
                 "La fecha de inicio del periodo no puede ser mayor a la fecha de fin"
             )
 
+        if fecha_inicio.year != fecha_fin.year:
+            raise ValueError(
+                "La memoria debe corresponder a un unico anio calendario"
+            )
+
         return fecha_inicio, fecha_fin
+
+    @staticmethod
+    def _validar_unicidad_anual(periodo_fin, memoria_id_excluida: int | None = None):
+        query = Memoria.query.filter(Memoria.deleted_at.is_(None))
+
+        if memoria_id_excluida is not None:
+            query = query.filter(Memoria.id != memoria_id_excluida)
+
+        memorias = query.all()
+        for memoria in memorias:
+            if memoria.periodo_fin and memoria.periodo_fin.year == periodo_fin.year:
+                raise ValueError(
+                    f"Ya existe una memoria registrada para el anio {periodo_fin.year}"
+                )
+
+    @staticmethod
+    def _validar_unica_memoria_activa(memoria_id_excluida: int | None = None):
+        query = Memoria.query.filter(Memoria.deleted_at.is_(None))
+
+        if memoria_id_excluida is not None:
+            query = query.filter(Memoria.id != memoria_id_excluida)
+
+        memorias = query.all()
+        for memoria in memorias:
+            version_actual = memoria.version_actual
+            if (
+                version_actual
+                and version_actual.deleted_at is None
+                and version_actual.estado != EstadoMemoria.CERRADA
+            ):
+                raise ValueError(
+                    "Solo puede existir una memoria activa a la vez"
+                )
 
     @staticmethod
     def _resolver_fecha_apertura(fecha_apertura):
@@ -148,6 +238,16 @@ class MemoriaService:
         return memoria.version_actual
 
     @staticmethod
+    def _get_version_or_404(memoria_version_id: int):
+        version = db.session.get(
+            MemoriaVersion,
+            MemoriaService._validar_id(memoria_version_id, "memoria_version_id")
+        )
+        if not version or version.deleted_at is not None:
+            raise ValueError("La version de memoria no existe")
+        return version
+
+    @staticmethod
     def _validar_transicion_estado(estado_actual: EstadoMemoria, nuevo_estado: EstadoMemoria):
         transiciones_validas = {
             EstadoMemoria.ABIERTA: {
@@ -192,6 +292,44 @@ class MemoriaService:
         memoria.version_actual_id = version.id
         return version
 
+    @staticmethod
+    def _contar_elementos_version(version: MemoriaVersion):
+        if not version or version.deleted_at is not None:
+            return 0
+
+        if version.estado != EstadoMemoria.CERRADA:
+            return 0
+
+        colecciones = [
+            obtener_snapshots_investigadores_por_memoria_version(version.id),
+            obtener_snapshots_becarios_por_memoria_version(version.id),
+            obtener_snapshots_personal_por_memoria_version(version.id),
+            ProyectoInvestigacionService.obtener_snapshots_por_memoria_version(version.id),
+            ActividadDocenciaService.obtener_snapshots_por_memoria_version(version.id),
+            ParticipacionRelevanteService.obtener_snapshots_por_memoria_version(version.id),
+            DocumentacionBibliograficaService.obtener_snapshots_por_memoria_version(version.id),
+            EquipamientoService.obtener_snapshots_por_memoria_version(version.id),
+            ErogacionService.obtener_snapshots_por_memoria_version(version.id),
+            TransferenciaSocioProductivaService.obtener_snapshots_por_memoria_version(version.id),
+            TrabajoReunionCientificaService.obtener_snapshots_por_memoria_version(version.id),
+            TrabajosRevistasReferatoService.obtener_snapshots_por_memoria_version(version.id),
+            DistincionRecibidaService.obtener_snapshots_por_memoria_version(version.id),
+            RegistrosPropiedadService.obtener_snapshots_por_memoria_version(version.id),
+            ArticuloDivulgacionService.obtener_snapshots_por_memoria_version(version.id),
+            obtener_snapshots_visitas_por_memoria_version(version.id)
+        ]
+
+        return sum(len(coleccion) for coleccion in colecciones)
+
+    @staticmethod
+    def _serializar_memoria(memoria: Memoria):
+        data = memoria.serialize()
+        version_actual = memoria.version_actual
+        data["cantidad_elementos"] = MemoriaService._contar_elementos_version(
+            version_actual
+        ) if version_actual else 0
+        return data
+
     # ==========================================
     # GET ALL
     # ==========================================
@@ -210,7 +348,7 @@ class MemoriaService:
             query = query.filter(Memoria.deleted_at.is_(None))
 
         memorias = query.order_by(Memoria.id.desc()).all()
-        return [memoria.serialize() for memoria in memorias]
+        return [MemoriaService._serializar_memoria(memoria) for memoria in memorias]
 
     # ==========================================
     # GET BY ID
@@ -224,7 +362,195 @@ class MemoriaService:
         )
         if not memoria:
             raise Exception("Memoria no encontrada")
-        return memoria.serialize()
+        data = MemoriaService._serializar_memoria(memoria)
+        data["versiones"] = [
+            version.serialize()
+            for version in memoria.versiones
+            if version.deleted_at is None
+        ]
+        return data
+
+    @staticmethod
+    def get_investigadores_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return obtener_snapshots_investigadores_por_memoria_version(version.id)
+
+    @staticmethod
+    def get_becarios_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return obtener_snapshots_becarios_por_memoria_version(version.id)
+
+    @staticmethod
+    def get_personal_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return obtener_snapshots_personal_por_memoria_version(version.id)
+
+    @staticmethod
+    def get_proyectos_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return ProyectoInvestigacionService.obtener_snapshots_por_memoria_version(
+            version.id
+        )
+
+    @staticmethod
+    def get_actividades_docencia_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return ActividadDocenciaService.obtener_snapshots_por_memoria_version(
+            version.id
+        )
+
+    @staticmethod
+    def get_participaciones_relevantes_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return ParticipacionRelevanteService.obtener_snapshots_por_memoria_version(
+            version.id
+        )
+
+    @staticmethod
+    def get_documentacion_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return DocumentacionBibliograficaService.obtener_snapshots_por_memoria_version(
+            version.id
+        )
+
+    @staticmethod
+    def get_equipamiento_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return EquipamientoService.obtener_snapshots_por_memoria_version(
+            version.id
+        )
+
+    @staticmethod
+    def get_erogaciones_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return ErogacionService.obtener_snapshots_por_memoria_version(version.id)
+
+    @staticmethod
+    def get_transferencias_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return TransferenciaSocioProductivaService.obtener_snapshots_por_memoria_version(
+            version.id
+        )
+
+    @staticmethod
+    def get_trabajos_reunion_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return TrabajoReunionCientificaService.obtener_snapshots_por_memoria_version(
+            version.id
+        )
+
+    @staticmethod
+    def get_trabajos_revista_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return TrabajosRevistasReferatoService.obtener_snapshots_por_memoria_version(
+            version.id
+        )
+
+    @staticmethod
+    def get_distinciones_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return DistincionRecibidaService.obtener_snapshots_por_memoria_version(
+            version.id
+        )
+
+    @staticmethod
+    def get_registros_propiedad_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return RegistrosPropiedadService.obtener_snapshots_por_memoria_version(
+            version.id
+        )
+
+    @staticmethod
+    def get_articulos_divulgacion_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return ArticuloDivulgacionService.obtener_snapshots_por_memoria_version(
+            version.id
+        )
+
+    @staticmethod
+    def get_visitas_snapshot(memoria_id: int, memoria_version_id: int):
+        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        version = MemoriaService._get_version_or_404(memoria_version_id)
+
+        if version.memoria_id != memoria.id:
+            raise ValueError("La version no pertenece a la memoria indicada")
+
+        return obtener_snapshots_visitas_por_memoria_version(version.id)
 
     # ==========================================
     # CREATE
@@ -238,6 +564,8 @@ class MemoriaService:
             data.get("periodo_inicio"),
             data.get("periodo_fin")
         )
+        MemoriaService._validar_unicidad_anual(periodo_fin)
+        MemoriaService._validar_unica_memoria_activa()
 
         memoria = Memoria(
             periodo_inicio=periodo_inicio,
@@ -302,7 +630,7 @@ class MemoriaService:
     # ==========================================
 
     @staticmethod
-    def change_status(memoria_id: int, data: dict):
+    def change_status(memoria_id: int, data: dict, user_id: int | None = None):
         MemoriaService._validar_payload(data)
         memoria = MemoriaService._get_memoria_or_404(memoria_id)
         version_actual = MemoriaService._get_version_actual_or_404(memoria)
@@ -322,8 +650,76 @@ class MemoriaService:
                 data.get("fecha_cierre"),
                 "fecha_cierre"
             )
+            if user_id is not None:
+                version_actual.mark_updated(user_id)
+                snapshot_investigadores_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                snapshot_becarios_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                snapshot_personal_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                ProyectoInvestigacionService.snapshot_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                ActividadDocenciaService.snapshot_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                ParticipacionRelevanteService.snapshot_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                DocumentacionBibliograficaService.snapshot_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                EquipamientoService.snapshot_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                ErogacionService.snapshot_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                TransferenciaSocioProductivaService.snapshot_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                TrabajoReunionCientificaService.snapshot_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                TrabajosRevistasReferatoService.snapshot_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                DistincionRecibidaService.snapshot_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                RegistrosPropiedadService.snapshot_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                ArticuloDivulgacionService.snapshot_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
+                snapshot_visitas_para_memoria_version(
+                    version_actual,
+                    user_id
+                )
         else:
             version_actual.fecha_cierre = None
+            if user_id is not None:
+                version_actual.mark_updated(user_id)
 
         try:
             db.session.commit()
@@ -348,6 +744,8 @@ class MemoriaService:
             raise ValueError(
                 "Solo se puede crear una nueva version a partir de una memoria cerrada"
             )
+
+        MemoriaService._validar_unica_memoria_activa(memoria_id_excluida=memoria.id)
 
         # Reabrir no muta la version historica cerrada: crea una nueva version
         # editable y la convierte en la version actual de la memoria.

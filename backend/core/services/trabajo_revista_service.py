@@ -5,7 +5,12 @@ from sqlalchemy import or_
 from core.models.grupo import GrupoInvestigacionUtn
 from core.models.personal import Investigador
 from core.models.trabajo_reunion import TipoReunion
-from core.models.trabajo_revista import TrabajosRevistasReferato
+from core.models.trabajo_revista import (
+    TrabajosRevistasReferato,
+    TrabajosRevistasReferatoMemoriaVersion,
+)
+from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 
 
@@ -244,6 +249,14 @@ class TrabajosRevistasReferatoService:
         return TrabajosRevistasReferatoService._get_or_404(trabajo_id).serialize()
 
     @staticmethod
+    def get_historial(trabajo_id: int):
+        trabajo = TrabajosRevistasReferatoService._get_or_404(trabajo_id)
+        return AuditoriaService.obtener_historial_entidad(
+            entidad="trabajo_revista_referato",
+            registro_id=trabajo.id
+        )
+
+    @staticmethod
     def create(data: dict, user_id: int):
         TrabajosRevistasReferatoService._validar_payload(data)
         TrabajosRevistasReferatoService._validar_user_id(user_id)
@@ -302,9 +315,11 @@ class TrabajosRevistasReferatoService:
         return trabajo.serialize()
 
     @staticmethod
-    def update(trabajo_id: int, data: dict):
+    def update(trabajo_id: int, data: dict, user_id: int):
         TrabajosRevistasReferatoService._validar_payload(data)
+        TrabajosRevistasReferatoService._validar_user_id(user_id)
         trabajo = TrabajosRevistasReferatoService._get_activo_or_404(trabajo_id)
+        cambios = {}
 
         titulo_trabajo = trabajo.titulo_trabajo
         if "titulo_trabajo" in data:
@@ -362,14 +377,69 @@ class TrabajosRevistasReferatoService:
             trabajo.id,
         )
 
-        trabajo.titulo_trabajo = titulo_trabajo
-        trabajo.nombre_revista = nombre_revista
-        trabajo.editorial = editorial
-        trabajo.issn = issn
-        trabajo.pais = pais
-        trabajo.fecha = fecha
-        trabajo.grupo_utn_id = grupo_utn_id
-        trabajo.tipo_reunion_id = tipo_reunion_id
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.titulo_trabajo,
+            titulo_trabajo
+        )
+        if cambio:
+            cambios["titulo_trabajo"] = cambio
+            trabajo.titulo_trabajo = titulo_trabajo
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.nombre_revista,
+            nombre_revista
+        )
+        if cambio:
+            cambios["nombre_revista"] = cambio
+            trabajo.nombre_revista = nombre_revista
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.editorial,
+            editorial
+        )
+        if cambio:
+            cambios["editorial"] = cambio
+            trabajo.editorial = editorial
+
+        cambio = AuditoriaService.construir_cambio(trabajo.issn, issn)
+        if cambio:
+            cambios["issn"] = cambio
+            trabajo.issn = issn
+
+        cambio = AuditoriaService.construir_cambio(trabajo.pais, pais)
+        if cambio:
+            cambios["pais"] = cambio
+            trabajo.pais = pais
+
+        cambio = AuditoriaService.construir_cambio(trabajo.fecha, fecha)
+        if cambio:
+            cambios["fecha"] = cambio
+            trabajo.fecha = fecha
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.grupo_utn_id,
+            grupo_utn_id
+        )
+        if cambio:
+            cambios["grupo_utn_id"] = cambio
+            trabajo.grupo_utn_id = grupo_utn_id
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.tipo_reunion_id,
+            tipo_reunion_id
+        )
+        if cambio:
+            cambios["tipo_reunion_id"] = cambio
+            trabajo.tipo_reunion_id = tipo_reunion_id
+
+        if cambios:
+            trabajo.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="trabajo_revista_referato",
+                registro_id=trabajo.id,
+                cambios=cambios,
+                user_id=user_id
+            )
 
         try:
             db.session.commit()
@@ -412,7 +482,11 @@ class TrabajosRevistasReferatoService:
         return trabajo.serialize()
 
     @staticmethod
-    def vincular_investigadores(trabajo_id: int, investigadores_ids: list[int]):
+    def vincular_investigadores(
+        trabajo_id: int,
+        investigadores_ids: list[int],
+        user_id: int | None = None
+    ):
         trabajo = TrabajosRevistasReferatoService._get_activo_or_404(trabajo_id)
         investigadores_ids = (
             TrabajosRevistasReferatoService._validar_investigadores_ids(
@@ -434,9 +508,25 @@ class TrabajosRevistasReferatoService:
                 "Uno o mas investigadores no existen o estan eliminados"
             )
 
+        hubo_cambios = False
         for inv in investigadores:
             if inv not in trabajo.investigadores:
                 trabajo.investigadores.append(inv)
+                hubo_cambios = True
+                AuditoriaService.registrar_evento_relacion(
+                    entidad="trabajo_revista_referato",
+                    registro_id=trabajo.id,
+                    relacion="investigadores",
+                    accion="vincular",
+                    detalle={
+                        "investigador_id": inv.id,
+                        "nombre_apellido": inv.nombre_apellido
+                    },
+                    user_id=user_id
+                )
+
+        if hubo_cambios:
+            trabajo.mark_updated(user_id)
 
         try:
             db.session.commit()
@@ -447,7 +537,11 @@ class TrabajosRevistasReferatoService:
         return trabajo.serialize()
 
     @staticmethod
-    def desvincular_investigadores(trabajo_id: int, investigadores_ids: list[int]):
+    def desvincular_investigadores(
+        trabajo_id: int,
+        investigadores_ids: list[int],
+        user_id: int | None = None
+    ):
         trabajo = TrabajosRevistasReferatoService._get_activo_or_404(trabajo_id)
         investigadores_ids = (
             TrabajosRevistasReferatoService._validar_investigadores_ids(
@@ -455,9 +549,25 @@ class TrabajosRevistasReferatoService:
             )
         )
 
+        hubo_cambios = False
         for inv in trabajo.investigadores[:]:
             if inv.id in investigadores_ids:
                 trabajo.investigadores.remove(inv)
+                hubo_cambios = True
+                AuditoriaService.registrar_evento_relacion(
+                    entidad="trabajo_revista_referato",
+                    registro_id=trabajo.id,
+                    relacion="investigadores",
+                    accion="desvincular",
+                    detalle={
+                        "investigador_id": inv.id,
+                        "nombre_apellido": inv.nombre_apellido
+                    },
+                    user_id=user_id
+                )
+
+        if hubo_cambios:
+            trabajo.mark_updated(user_id)
 
         try:
             db.session.commit()
@@ -466,3 +576,61 @@ class TrabajosRevistasReferatoService:
             raise
 
         return trabajo.serialize()
+
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        trabajos = TrabajosRevistasReferato.query.filter().all()
+
+        snapshots = []
+        for trabajo in trabajos:
+            if not esta_en_periodo_memoria(memoria_version, trabajo.fecha):
+                continue
+            investigadores_participantes = ", ".join(sorted([
+                investigador.nombre_apellido
+                for investigador in trabajo.investigadores
+                if getattr(investigador, "deleted_at", None) is None
+            ]))
+
+            snapshot = TrabajosRevistasReferatoMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                trabajo_revista_id=trabajo.id,
+                titulo_trabajo=trabajo.titulo_trabajo,
+                nombre_revista=trabajo.nombre_revista,
+                editorial=trabajo.editorial,
+                issn=trabajo.issn,
+                pais=trabajo.pais,
+                fecha=trabajo.fecha,
+                grupo_utn_id=trabajo.grupo_utn_id,
+                grupo_utn_nombre=(
+                    trabajo.grupo_utn.nombre_sigla_grupo
+                    if trabajo.grupo_utn else None
+                ),
+                tipo_reunion_id=trabajo.tipo_reunion_id,
+                tipo_reunion_nombre=(
+                    trabajo.tipo_reunion.nombre
+                    if trabajo.tipo_reunion else None
+                ),
+                investigadores_participantes=investigadores_participantes,
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            TrabajosRevistasReferatoMemoriaVersion.query
+            .filter(
+                TrabajosRevistasReferatoMemoriaVersion.memoria_version_id == memoria_version_id,
+                TrabajosRevistasReferatoMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(
+                TrabajosRevistasReferatoMemoriaVersion.fecha.desc(),
+                TrabajosRevistasReferatoMemoriaVersion.id.desc()
+            )
+            .all()
+        )
+
+        return [snapshot.serialize() for snapshot in snapshots]

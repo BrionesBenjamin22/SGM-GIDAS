@@ -1,11 +1,12 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import Button from "@/components/Button";
 import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 
 import { useErogaciones } from "@/hooks/useErogaciones";
 import { useTiposErogacion } from "@/hooks/useTipoErogacion";
@@ -13,6 +14,11 @@ import { useFuentesFinanciamiento } from "@/hooks/useFuenteFinanciamiento";
 import { deleteErogaciones } from "@/services/erogacionesServices";
 import { HttpError } from "@/lib/http";
 import { useAuth } from "@/context/AuthContext";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
+import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -34,13 +40,13 @@ export default function ErogacionesLanding() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [showFilters, setShowFilters] = useState(false);
   const [filtroActivos, setFiltroActivos] = useState<"true" | "false" | "all">(
     "true"
   );
 
-  const { list = [], isLoading, isError } = useErogaciones(filtroActivos);
   const { tipos } = useTiposErogacion();
   const { fuentes } = useFuentesFinanciamiento();
 
@@ -54,42 +60,52 @@ export default function ErogacionesLanding() {
   });
 
   const [tempFilters, setTempFilters] = useState(filters);
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "erogaciones"),
+    [location.state]
+  );
+  const effectiveActivos = memoriaFilter ? "all" : filtroActivos;
+  const { list = [], isLoading, isError } = useErogaciones(effectiveActivos);
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
+  );
   const filtrosActivos = Object.values(filters).filter(Boolean).length;
 
   const aniosDisponibles = useMemo(() => {
-    const years = list
-      .filter((e) => e.fecha)
-      .map((e) => new Date(e.fecha).getFullYear());
+    const years = scopedList
+      .filter((item) => item.fecha)
+      .map((item) => new Date(item.fecha).getFullYear());
 
     return [...new Set(years)].sort((a, b) => b - a);
-  }, [list]);
+  }, [scopedList]);
 
   const erogacionesFiltradas = useMemo(() => {
-    return list.filter((e) => {
+    return scopedList.filter((item) => {
       const search = filters.search.toLowerCase().trim();
 
       const matchSearch =
         !search ||
-        String(e.numero_erogacion ?? "").includes(search) ||
-        String(e.tipo_erogacion?.nombre ?? "").toLowerCase().includes(search) ||
-        String(e.fuente?.nombre ?? "").toLowerCase().includes(search);
+        String(item.numero_erogacion ?? "").includes(search) ||
+        String(item.tipo_erogacion?.nombre ?? "").toLowerCase().includes(search) ||
+        String(item.fuente?.nombre ?? "").toLowerCase().includes(search);
 
       const matchTipo =
-        !filters.tipoId || e.tipo_erogacion?.id?.toString() === filters.tipoId;
+        !filters.tipoId || item.tipo_erogacion?.id?.toString() === filters.tipoId;
 
       const matchFuente =
-        !filters.fuenteId || e.fuente?.id?.toString() === filters.fuenteId;
+        !filters.fuenteId || item.fuente?.id?.toString() === filters.fuenteId;
 
       const matchIngresos =
-        !filters.ingresosMin || e.ingresos >= Number(filters.ingresosMin);
+        !filters.ingresosMin || item.ingresos >= Number(filters.ingresosMin);
 
       const matchEgresos =
-        !filters.egresosMin || e.egresos >= Number(filters.egresosMin);
+        !filters.egresosMin || item.egresos >= Number(filters.egresosMin);
 
       const matchAnio =
         !filters.anio ||
-        new Date(e.fecha).getFullYear().toString() === filters.anio;
+        new Date(item.fecha).getFullYear().toString() === filters.anio;
 
       return (
         matchSearch &&
@@ -100,11 +116,12 @@ export default function ErogacionesLanding() {
         matchAnio
       );
     });
-  }, [list, filters]);
+  }, [scopedList, filters]);
 
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const totalPages = Math.ceil(erogacionesFiltradas.length / ITEMS_PER_PAGE);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(erogacionesFiltradas.length / ITEMS_PER_PAGE)
+  );
 
   const paginatedItems = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -116,53 +133,64 @@ export default function ErogacionesLanding() {
   }, [filters, filtroActivos]);
 
   useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      window.history.replaceState({}, document.title);
+      navigate(location.pathname, { replace: true });
     }
-  }, [location.state]);
+  }, [location.state, navigate, location.pathname]);
 
   const toggleSelect = (id: number, checked: boolean) => {
     if (!puedeEliminar) return;
 
-    const erogacion = list.find((x) => x.id === id);
+    const erogacion = scopedList.find((item) => item.id === id);
 
     if (erogacion?.deleted_at) {
-      setErrorMessage("No se puede eliminar una erogación que ya fue eliminada.");
+      setErrorMessage("No se puede eliminar una erogacion que ya fue eliminada.");
       setShowError(true);
       return;
     }
 
     setSelectedIds((prev) =>
-      checked ? [...prev, id] : prev.filter((x) => x !== id)
+      checked ? [...prev, id] : prev.filter((value) => value !== id)
     );
   };
 
   const cancelSelection = () => {
+    if (isDeleting) return;
     setSelectMode(false);
     setSelectedIds([]);
     setShowConfirm(false);
   };
 
-  const selectedItems = list.filter((e) => selectedIds.includes(e.id));
-  const selectedActiveItems = selectedItems.filter((e) => !e.deleted_at);
+  const selectedItems = scopedList.filter((item) => selectedIds.includes(item.id));
+  const selectedActiveItems = selectedItems.filter((item) => !item.deleted_at);
 
   const confirmDelete = async () => {
-    const invalidItems = selectedItems.filter((e) => e.deleted_at);
+    if (isDeleting) return;
+
+    const invalidItems = selectedItems.filter((item) => item.deleted_at);
 
     if (invalidItems.length > 0) {
       setShowConfirm(false);
       setErrorMessage(
         invalidItems.length === 1
-          ? "La erogación seleccionada ya fue eliminada."
-          : "Una o más erogaciones seleccionadas ya fueron eliminadas."
+          ? "La erogacion seleccionada ya fue eliminada."
+          : "Una o mas erogaciones seleccionadas ya fueron eliminadas."
       );
       setShowError(true);
       return;
     }
 
     try {
+      setIsDeleting(true);
+
       for (const item of selectedActiveItems) {
         await deleteErogaciones(item.id);
       }
@@ -172,8 +200,8 @@ export default function ErogacionesLanding() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Erogación eliminada con éxito."
-          : "Erogaciones eliminadas con éxito."
+          ? "Erogacion eliminada con exito."
+          : "Erogaciones eliminadas con exito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -181,41 +209,39 @@ export default function ErogacionesLanding() {
 
       if (error instanceof HttpError) {
         const body = error.body as
-          | {
-              message?: string;
-              error?: string;
-              detalle?: string;
-            }
+          | { message?: string; error?: string; detalle?: string }
           | undefined;
 
         setErrorMessage(
           body?.message ||
             body?.error ||
             body?.detalle ||
-            "No se pudo eliminar la erogación."
+            "No se pudo eliminar la erogacion."
         );
       } else {
-        setErrorMessage("Ocurrió un error inesperado al eliminar la erogación.");
+        setErrorMessage("Ocurrio un error inesperado al eliminar la erogacion.");
       }
 
       setShowError(true);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   return (
-    <section className="w-full min-h-[calc(100vh-80px)] px-4 md:px-6 py-4 flex flex-col text-sm">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+    <section className="flex min-h-[calc(100vh-80px)] w-full flex-col px-4 py-4 text-sm md:px-6">
+      <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <h2 className="text-2xl md:text-3xl font-semibold leading-none text-slate-800">
-            Resumen de Ingresos y Egresos
+          <h2 className="text-2xl font-semibold leading-none text-slate-800 md:text-3xl">
+            Resumen de ingresos y egresos
           </h2>
-          <p className="text-xs text-slate-500 mt-2">
-            {erogacionesFiltradas.length} de {list.length} resultados
+          <p className="mt-2 text-xs text-slate-500">
+            {erogacionesFiltradas.length} de {scopedList.length} resultados
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2 items-center justify-end">
-          <div className="flex items-center rounded-lg border border-slate-200 bg-white overflow-hidden">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
             <button
               type="button"
               onClick={() => setFiltroActivos("true")}
@@ -231,7 +257,7 @@ export default function ErogacionesLanding() {
             <button
               type="button"
               onClick={() => setFiltroActivos("all")}
-              className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+              className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                 filtroActivos === "all"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
@@ -243,7 +269,7 @@ export default function ErogacionesLanding() {
             <button
               type="button"
               onClick={() => setFiltroActivos("false")}
-              className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+              className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                 filtroActivos === "false"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
@@ -256,8 +282,8 @@ export default function ErogacionesLanding() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por número, tipo o fuente..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-10 py-1.5 focus:bg-white focus:ring-2 focus:ring-slate-200 outline-none transition-all text-xs"
+              placeholder="Buscar por numero, tipo o fuente..."
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={filters.search}
               onChange={(e) =>
                 setFilters((prev) => ({
@@ -296,7 +322,7 @@ export default function ErogacionesLanding() {
               >
                 Filtros
                 {filtrosActivos > 0 && (
-                  <span className="ml-1.5 bg-slate-800 text-white text-[10px] rounded-full px-1.5 py-0.5">
+                  <span className="ml-1.5 rounded-full bg-slate-800 px-1.5 py-0.5 text-[10px] text-white">
                     {filtrosActivos}
                   </span>
                 )}
@@ -330,11 +356,7 @@ export default function ErogacionesLanding() {
                 </Button>
               )}
 
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={cancelSelection}
-              >
+              <Button variant="secondary" size="sm" onClick={cancelSelection}>
                 Cancelar
               </Button>
             </>
@@ -342,31 +364,38 @@ export default function ErogacionesLanding() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col">
+      {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
+
+      <div className="flex flex-1 flex-col">
         {isLoading ? (
-          <p className="text-slate-500 text-center py-10">Cargando…</p>
+          <p className="py-10 text-center text-slate-500">Cargando...</p>
         ) : isError ? (
-          <p className="text-slate-500 text-center py-10">Error al cargar.</p>
+          <p className="py-10 text-center text-slate-500">Error al cargar.</p>
         ) : erogacionesFiltradas.length === 0 ? (
-          <p className="text-slate-500 text-center py-10">
+          <p className="py-10 text-center text-slate-500">
             No hay erogaciones registradas.
           </p>
         ) : (
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {paginatedItems.map((e) => (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {paginatedItems.map((item) => (
               <Tarjeta
-                key={e.id}
-                item={e}
+                key={item.id}
+                item={item}
                 title={(x) =>
-                  `Erogación N° ${String(x.numero_erogacion).padStart(6, "0")}`
+                  `Erogacion Nro ${String(x.numero_erogacion).padStart(6, "0")}`
                 }
-                subtitle={(x) => x.tipo_erogacion?.nombre || "—"}
+                subtitle={(x) => x.tipo_erogacion?.nombre || "-"}
                 badge={(x) => (x.deleted_at ? "INACTIVA" : "ACTIVA")}
                 selectable={puedeEliminar && selectMode}
-                selectDisabled={!!e.deleted_at}
-                selected={selectedIds.includes(e.id)}
-                onSelectChange={(checked) => toggleSelect(e.id, checked)}
-                onClick={() => !selectMode && navigate(`/erogaciones/${e.id}`)}
+                selectDisabled={!!item.deleted_at}
+                selected={selectedIds.includes(item.id)}
+                onSelectChange={(checked) => toggleSelect(item.id, checked)}
+                onClick={() =>
+                  !selectMode &&
+                  navigate(`/erogaciones/${item.id}`, {
+                    state: buildMemoriaDetailState(location),
+                  })
+                }
               />
             ))}
           </div>
@@ -374,40 +403,31 @@ export default function ErogacionesLanding() {
 
         {totalPages > 1 && (
           <div className="mt-auto pt-8">
-            <div className="flex justify-center items-center gap-2">
+            <div className="flex items-center justify-between">
               <Button
-                size="sm"
+                type="button"
                 variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => p - 1)}
               >
-                ←
+                Anterior
               </Button>
 
-              {[...Array(totalPages)].map((_, i) => {
-                const page = i + 1;
-                return (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-3 py-1 rounded-lg text-sm ${
-                      currentPage === page
-                        ? "bg-slate-800 text-white"
-                        : "bg-slate-100 hover:bg-slate-200"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                );
-              })}
+              <span className="text-sm text-slate-500">
+                Pagina {currentPage} de {totalPages}
+              </span>
 
               <Button
-                size="sm"
+                type="button"
                 variant="secondary"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
                 disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => p + 1)}
               >
-                →
+                Siguiente
               </Button>
             </div>
           </div>
@@ -417,20 +437,20 @@ export default function ErogacionesLanding() {
       {showFilters && (
         <>
           <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
             onClick={() => setShowFilters(false)}
           />
 
-          <div className="fixed top-0 right-0 h-full w-[380px] bg-white z-50 shadow-2xl p-6 flex flex-col overflow-y-auto">
-            <h3 className="text-xl font-semibold mb-6">Filtros Avanzados</h3>
+          <div className="fixed top-0 right-0 z-50 flex h-full w-[380px] flex-col overflow-y-auto bg-white p-6 shadow-2xl">
+            <h3 className="mb-6 text-xl font-semibold">Filtros avanzados</h3>
 
-            <div className="space-y-5 flex-1 text-[11px]">
+            <div className="flex-1 space-y-5 text-[11px]">
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
-                  Año
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
+                  Ano
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.anio}
                   onChange={(e) =>
                     setTempFilters({
@@ -449,11 +469,11 @@ export default function ErogacionesLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
-                  Número de erogación
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
+                  Numero de erogacion
                 </label>
                 <input
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.search}
                   onChange={(e) =>
                     setTempFilters({
@@ -465,11 +485,11 @@ export default function ErogacionesLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
                   Tipo
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.tipoId}
                   onChange={(e) =>
                     setTempFilters({
@@ -479,20 +499,20 @@ export default function ErogacionesLanding() {
                   }
                 >
                   <option value="">Todos</option>
-                  {tipos.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.nombre}
+                  {tipos.map((tipo) => (
+                    <option key={tipo.id} value={tipo.id}>
+                      {tipo.nombre}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
                   Fuente
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.fuenteId}
                   onChange={(e) =>
                     setTempFilters({
@@ -502,21 +522,21 @@ export default function ErogacionesLanding() {
                   }
                 >
                   <option value="">Todas</option>
-                  {fuentes.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.nombre}
+                  {fuentes.map((fuente) => (
+                    <option key={fuente.id} value={fuente.id}>
+                      {fuente.nombre}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
-                  Ingresos mínimos
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
+                  Ingresos minimos
                 </label>
                 <input
                   type="number"
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.ingresosMin}
                   onChange={(e) =>
                     setTempFilters({
@@ -528,12 +548,12 @@ export default function ErogacionesLanding() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
-                  Egresos mínimos
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
+                  Egresos minimos
                 </label>
                 <input
                   type="number"
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.egresosMin}
                   onChange={(e) =>
                     setTempFilters({
@@ -545,7 +565,7 @@ export default function ErogacionesLanding() {
               </div>
             </div>
 
-            <div className="flex justify-between gap-2 pt-6 border-t mt-4">
+            <div className="mt-4 flex justify-between gap-2 border-t pt-6">
               <Button
                 variant="secondary"
                 className="flex-1"
@@ -582,17 +602,20 @@ export default function ErogacionesLanding() {
       <ConfirmDialog
         open={showConfirm}
         title="Eliminar erogaciones"
-        message="¿Eliminar las siguientes erogaciones?"
+        message="Eliminar las siguientes erogaciones?"
         items={selectedActiveItems.map(
-          (e) => `Erogación N° ${String(e.numero_erogacion).padStart(6, "0")}`
+          (item) =>
+            `Erogacion Nro ${String(item.numero_erogacion).padStart(6, "0")}`
         )}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
+        confirmText={isDeleting ? "Eliminando..." : "Aceptar"}
+        confirmDisabled={isDeleting}
       />
 
       <SuccessToast
         open={showSuccess}
-        message={successMessage || "Eliminado con éxito!"}
+        message={successMessage || "Eliminado con exito."}
         onClose={() => setShowSuccess(false)}
       />
 
@@ -600,6 +623,7 @@ export default function ErogacionesLanding() {
         open={showError}
         message={errorMessage}
         onClose={() => setShowError(false)}
+        variant="error"
       />
     </section>
   );

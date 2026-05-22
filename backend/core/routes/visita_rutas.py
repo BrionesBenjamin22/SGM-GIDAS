@@ -25,6 +25,11 @@ def listar():
 def obtener(id):
     return VisitaAcademicaController.obtener_por_id(request, id)
 
+@visita_academica_bp.route("/<int:id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def obtener_historial(id):
+    return VisitaAcademicaController.obtener_historial(request, id)
+
 @visita_academica_bp.route("/<int:id>", methods=["PUT"])
 @requiere_rol("ADMIN", "GESTOR")
 def actualizar(id):

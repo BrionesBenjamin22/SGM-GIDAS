@@ -1,14 +1,29 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
 import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import SuccessToast from "@/components/SuccessToast";
+import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { useDocumentacion } from "@/hooks/useDocumentacion";
 import { deleteDocumentacion } from "@/services/documentacionServices";
-import SuccessToast from "@/components/SuccessToast";
 import { HttpError } from "@/lib/http";
 import { useAuth } from "@/context/AuthContext";
+import {
+  applyMemoriaSectionFilter,
+  getMemoriaSectionFilter,
+} from "@/lib/memoriaSectionFilter";
+import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
+
+const ITEMS_PER_PAGE = 9;
+
+const formatTitulo = (titulo: string) =>
+  titulo
+    .toLowerCase()
+    .split(" ")
+    .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : ""))
+    .join(" ");
 
 export default function DocumentacionHome() {
   const navigate = useNavigate();
@@ -21,7 +36,6 @@ export default function DocumentacionHome() {
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
-
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -31,6 +45,7 @@ export default function DocumentacionHome() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [filters, setFilters] = useState({
     estado: "",
@@ -39,69 +54,95 @@ export default function DocumentacionHome() {
   });
 
   const [tempFilters, setTempFilters] = useState(filters);
+  const memoriaFilter = useMemo(
+    () => getMemoriaSectionFilter(location.state, "documentacion-bibliografica"),
+    [location.state]
+  );
 
   const filtroActivos = useMemo<"true" | "false" | "all">(() => {
+    if (memoriaFilter) return "all";
     if (filters.estado === "todos") return "all";
     if (filters.estado === "inactivas") return "false";
     return "true";
-  }, [filters.estado]);
+  }, [filters.estado, memoriaFilter]);
 
   const { list = [], isLoading, isError } = useDocumentacion(filtroActivos);
+  const scopedList = useMemo(
+    () => applyMemoriaSectionFilter(list, memoriaFilter),
+    [list, memoriaFilter]
+  );
 
   const aniosDisponibles = useMemo(() => {
-    const years = list
-      .filter((d) => d.anio)
-      .map((d) => Number(d.anio))
-      .filter((y) => !Number.isNaN(y));
+    const years = scopedList
+      .filter((item) => item.anio)
+      .map((item) => Number(item.anio))
+      .filter((year) => !Number.isNaN(year));
 
     return [...new Set(years)].sort((a, b) => b - a);
-  }, [list]);
+  }, [scopedList]);
 
   const documentacionFiltrada = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
 
-    return list.filter((d) => {
-      const autoresTexto = d.autores?.length
-        ? d.autores.map((a) => a.nombre_apellido).join(", ")
+    return scopedList.filter((item) => {
+      const autoresTexto = item.autores?.length
+        ? item.autores.map((autor) => autor.nombre_apellido).join(", ")
         : "";
 
       const matchSearch =
         !query ||
-        String(d.titulo ?? "").toLowerCase().includes(query) ||
+        String(item.titulo ?? "").toLowerCase().includes(query) ||
         autoresTexto.toLowerCase().includes(query) ||
-        String(d.editorial ?? "").toLowerCase().includes(query) ||
-        String(d.anio ?? "").toLowerCase().includes(query);
+        String(item.editorial ?? "").toLowerCase().includes(query) ||
+        String(item.anio ?? "").includes(query);
 
       const matchAutor =
         !filters.autor ||
-        (d.autores?.some((a) =>
-          String(a.nombre_apellido ?? "")
+        (item.autores?.some((autor) =>
+          String(autor.nombre_apellido ?? "")
             .toLowerCase()
             .includes(filters.autor.toLowerCase())
         ) ??
           false);
 
-      const matchAnio = !filters.anio || String(d.anio ?? "") === filters.anio;
+      const matchAnio = !filters.anio || String(item.anio ?? "") === filters.anio;
 
       return matchSearch && matchAutor && matchAnio;
     });
-  }, [list, searchQuery, filters]);
+  }, [scopedList, searchQuery, filters]);
 
   const filtrosActivosCount = Object.values(filters).filter(Boolean).length;
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(documentacionFiltrada.length / ITEMS_PER_PAGE)
+  );
+
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return documentacionFiltrada.slice(start, start + ITEMS_PER_PAGE);
+  }, [documentacionFiltrada, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, searchQuery]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   useEffect(() => {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      window.history.replaceState({}, document.title);
+      navigate(location.pathname, { replace: true });
     }
-  }, [location.state]);
+  }, [location.state, navigate, location.pathname]);
 
   const setQuickEstado = (estado: "" | "todos" | "inactivas") => {
-    setFilters((prev) => ({
-      ...prev,
-      estado,
-    }));
+    setFilters((prev) => ({ ...prev, estado }));
   };
 
   const quickEstadoActual =
@@ -114,8 +155,7 @@ export default function DocumentacionHome() {
   const toggleSelect = (id: number, checked: boolean) => {
     if (!puedeEliminar) return;
 
-    const documento = documentacionFiltrada.find((x) => x.id === id);
-
+    const documento = scopedList.find((item) => item.id === id);
     if (documento?.deleted_at) {
       setErrorMessage("No se puede eliminar un documento que ya fue eliminado.");
       setShowError(true);
@@ -123,7 +163,7 @@ export default function DocumentacionHome() {
     }
 
     setSelectedIds((prev) =>
-      checked ? [...prev, id] : prev.filter((x) => x !== id)
+      checked ? [...prev, id] : prev.filter((value) => value !== id)
     );
   };
 
@@ -133,22 +173,18 @@ export default function DocumentacionHome() {
     setShowConfirm(false);
   };
 
-  const selectedDocuments = documentacionFiltrada.filter((d) =>
-    selectedIds.includes(d.id)
-  );
-  const selectedActiveDocuments = selectedDocuments.filter((d) => !d.deleted_at);
-
-  const selectedItems = selectedActiveDocuments.map((d) => d.titulo);
+  const selectedDocuments = scopedList.filter((item) => selectedIds.includes(item.id));
+  const selectedActiveDocuments = selectedDocuments.filter((item) => !item.deleted_at);
 
   const confirmDelete = async () => {
-    const invalidItems = selectedDocuments.filter((d) => d.deleted_at);
+    const invalidItems = selectedDocuments.filter((item) => item.deleted_at);
 
     if (invalidItems.length > 0) {
       setShowConfirm(false);
       setErrorMessage(
         invalidItems.length === 1
           ? "El documento seleccionado ya fue eliminado."
-          : "Uno o más documentos seleccionados ya fueron eliminados."
+          : "Uno o mas documentos seleccionados ya fueron eliminados."
       );
       setShowError(true);
       return;
@@ -164,8 +200,8 @@ export default function DocumentacionHome() {
 
       setSuccessMessage(
         selectedActiveDocuments.length === 1
-          ? "Documentación eliminada con éxito."
-          : "Documentación eliminada con éxito."
+          ? "Documentacion eliminada con exito."
+          : "Documentacion eliminada con exito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -173,22 +209,18 @@ export default function DocumentacionHome() {
 
       if (error instanceof HttpError) {
         const body = error.body as
-          | {
-              message?: string;
-              error?: string;
-              detalle?: string;
-            }
+          | { message?: string; error?: string; detalle?: string }
           | undefined;
 
         setErrorMessage(
           body?.message ||
             body?.error ||
             body?.detalle ||
-            "No se pudo eliminar la documentación."
+            "No se pudo eliminar la documentacion."
         );
       } else {
         setErrorMessage(
-          "Ocurrió un error inesperado al eliminar la documentación."
+          "Ocurrio un error inesperado al eliminar la documentacion."
         );
       }
 
@@ -196,29 +228,20 @@ export default function DocumentacionHome() {
     }
   };
 
-  const formatTitulo = (titulo: string) =>
-    titulo
-      .toLowerCase()
-      .split(" ")
-      .map((word) =>
-        word ? word.charAt(0).toUpperCase() + word.slice(1) : ""
-      )
-      .join(" ");
-
   return (
-    <section className="w-full min-h-[calc(100vh-80px)] px-4 md:px-6 py-4 flex flex-col text-sm">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+    <section className="flex min-h-[calc(100vh-80px)] w-full flex-col px-4 py-4 text-sm md:px-6">
+      <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <h2 className="text-2xl md:text-3xl font-semibold leading-none text-slate-800">
-            Documentación
+          <h2 className="text-2xl font-semibold leading-none text-slate-800 md:text-3xl">
+            Documentacion
           </h2>
-          <p className="text-xs text-slate-500 mt-2">
-            {documentacionFiltrada.length} de {list.length} resultados
+          <p className="mt-2 text-xs text-slate-500">
+            {documentacionFiltrada.length} de {scopedList.length} resultados
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2 items-center justify-end">
-          <div className="flex items-center rounded-lg border border-slate-200 bg-white overflow-hidden">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
             <button
               type="button"
               onClick={() => setQuickEstado("")}
@@ -234,7 +257,7 @@ export default function DocumentacionHome() {
             <button
               type="button"
               onClick={() => setQuickEstado("todos")}
-              className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+              className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                 quickEstadoActual === "todos"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
@@ -246,7 +269,7 @@ export default function DocumentacionHome() {
             <button
               type="button"
               onClick={() => setQuickEstado("inactivas")}
-              className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
+              className={`border-l border-slate-200 px-3 py-1.5 text-xs transition-colors ${
                 quickEstadoActual === "inactivas"
                   ? "bg-slate-800 text-white"
                   : "text-slate-600 hover:bg-slate-50"
@@ -259,8 +282,8 @@ export default function DocumentacionHome() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por título, autor, editorial o año..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-10 py-1.5 focus:bg-white focus:ring-2 focus:ring-slate-200 outline-none transition-all text-xs"
+              placeholder="Buscar por titulo, autor, editorial o ano..."
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -285,11 +308,7 @@ export default function DocumentacionHome() {
           {!selectMode ? (
             <>
               {puedeEliminar && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setSelectMode(true)}
-                >
+                <Button variant="secondary" size="sm" onClick={() => setSelectMode(true)}>
                   Seleccionar
                 </Button>
               )}
@@ -304,18 +323,14 @@ export default function DocumentacionHome() {
               >
                 Filtros
                 {filtrosActivosCount > 0 && (
-                  <span className="ml-1.5 bg-slate-800 text-white text-[10px] rounded-full px-1.5 py-0.5">
+                  <span className="ml-1.5 rounded-full bg-slate-800 px-1.5 py-0.5 text-[10px] text-white">
                     {filtrosActivosCount}
                   </span>
                 )}
               </Button>
 
               {puedeCrear && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => navigate("/documentacion/nuevo")}
-                >
+                <Button variant="primary" size="sm" onClick={() => navigate("/documentacion/nuevo")}>
                   Nuevo
                 </Button>
               )}
@@ -328,11 +343,7 @@ export default function DocumentacionHome() {
                 </Button>
               )}
 
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={cancelSelection}
-              >
+              <Button variant="secondary" size="sm" onClick={cancelSelection}>
                 Cancelar
               </Button>
             </>
@@ -340,57 +351,89 @@ export default function DocumentacionHome() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col">
+      {memoriaFilter && <MemoriaFilterBanner filter={memoriaFilter} />}
+
+      <div className="flex flex-1 flex-col">
         {isLoading ? (
-          <p className="text-slate-500 text-center py-10">Cargando…</p>
+          <p className="py-10 text-center text-slate-500">Cargando...</p>
         ) : isError ? (
-          <p className="text-slate-500 text-center py-10">Error al cargar.</p>
+          <p className="py-10 text-center text-slate-500">Error al cargar.</p>
         ) : documentacionFiltrada.length === 0 ? (
-          <p className="text-slate-500 text-center py-10">
-            No hay documentación registrada.
+          <p className="py-10 text-center text-slate-500">
+            No hay documentacion registrada.
           </p>
         ) : (
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {documentacionFiltrada.map((d) => (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {paginatedItems.map((item) => (
               <Tarjeta
-                key={d.id}
-                item={d}
+                key={item.id}
+                item={item}
                 title={(x) => formatTitulo(x.titulo)}
                 subtitle={(x) => {
                   const autores = x.autores?.length
-                    ? x.autores.map((a) => a.nombre_apellido).join(", ")
+                    ? x.autores.map((autor) => autor.nombre_apellido).join(", ")
                     : "Sin autores";
-
-                  const anio = x.anio ?? "—";
-
-                  return `Autores: ${autores} · Año: ${anio}`;
+                  return `Autores: ${autores} · Ano: ${x.anio ?? "-"}`;
                 }}
                 badge={(x) => (x.deleted_at ? "INACTIVA" : "ACTIVA")}
                 selectable={puedeEliminar && selectMode}
-                selectDisabled={!!d.deleted_at}
-                selected={selectedIds.includes(d.id)}
-                onSelectChange={(checked) => toggleSelect(d.id, checked)}
+                selectDisabled={!!item.deleted_at}
+                selected={selectedIds.includes(item.id)}
+                onSelectChange={(checked) => toggleSelect(item.id, checked)}
                 onClick={() =>
-                  !selectMode && navigate(`/documentacion/${d.id}`)
+                  !selectMode &&
+                  navigate(`/documentacion/${item.id}`, {
+                    state: buildMemoriaDetailState(location),
+                  })
                 }
               />
             ))}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="mt-auto pt-8">
+            <div className="flex items-center justify-between">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+
+              <span className="text-sm text-slate-500">
+                Pagina {currentPage} de {totalPages}
+              </span>
+
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Siguiente
+              </Button>
+            </div>
           </div>
         )}
       </div>
 
       <ConfirmDialog
         open={showConfirm}
-        title="Eliminar documentación"
-        message="¿Eliminar los siguientes documentos?"
-        items={selectedItems}
+        title="Eliminar documentacion"
+        message="Eliminar los siguientes documentos?"
+        items={selectedActiveDocuments.map((item) => formatTitulo(item.titulo))}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
       />
 
       <SuccessToast
         open={showSuccess}
-        message={successMessage || "Eliminado con éxito!"}
+        message={successMessage || "Eliminado con exito."}
         onClose={() => setShowSuccess(false)}
       />
 
@@ -398,25 +441,26 @@ export default function DocumentacionHome() {
         open={showError}
         message={errorMessage}
         onClose={() => setShowError(false)}
+        variant="error"
       />
 
       {showFilters && (
         <>
           <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
             onClick={() => setShowFilters(false)}
           />
 
-          <div className="fixed top-0 right-0 h-full w-[380px] bg-white z-50 shadow-2xl p-6 flex flex-col overflow-y-auto">
-            <h3 className="text-xl font-semibold mb-6">Filtros Avanzados</h3>
+          <div className="fixed top-0 right-0 z-50 flex h-full w-[380px] flex-col overflow-y-auto bg-white p-6 shadow-2xl">
+            <h3 className="mb-6 text-xl font-semibold">Filtros avanzados</h3>
 
-            <div className="space-y-5 flex-1 text-[11px]">
+            <div className="flex-1 space-y-5 text-[11px]">
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
                   Estado
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.estado}
                   onChange={(e) =>
                     setTempFilters({
@@ -432,11 +476,11 @@ export default function DocumentacionHome() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
                   Autor
                 </label>
                 <input
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.autor}
                   onChange={(e) =>
                     setTempFilters({
@@ -444,16 +488,16 @@ export default function DocumentacionHome() {
                       autor: e.target.value,
                     })
                   }
-                  placeholder="Ej: Juan Pérez"
+                  placeholder="Ej: Juan Perez"
                 />
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold mb-1 block uppercase tracking-wider">
-                  Año
+                <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
+                  Ano
                 </label>
                 <select
-                  className="w-full border border-slate-200 p-2 rounded outline-none focus:border-slate-400"
+                  className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
                   value={tempFilters.anio}
                   onChange={(e) =>
                     setTempFilters({
@@ -472,7 +516,7 @@ export default function DocumentacionHome() {
               </div>
             </div>
 
-            <div className="flex justify-between gap-2 pt-6 border-t mt-4">
+            <div className="mt-4 flex justify-between gap-2 border-t pt-6">
               <Button
                 variant="secondary"
                 className="flex-1"

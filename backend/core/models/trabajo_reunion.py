@@ -17,7 +17,6 @@ class TrabajoReunionCientifica(db.Model, AuditMixin):
     titulo_trabajo = db.Column(db.Text, nullable=False)
     nombre_reunion = db.Column(db.Text, nullable=False)
     procedencia = db.Column(db.Text, nullable=False)
-
     fecha_inicio = db.Column(db.Date, nullable=False)
 
     tipo_reunion_id = db.Column(
@@ -79,6 +78,63 @@ class TrabajoReunionCientifica(db.Model, AuditMixin):
             )
         })
 
+        return data
+
+
+class TrabajoReunionCientificaMemoriaVersion(db.Model, AuditMixin):
+    __tablename__ = "trabajo_reunion_cientifica_memoria_version"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    memoria_version_id = db.Column(
+        db.Integer,
+        db.ForeignKey("memoria_version.id"),
+        nullable=False
+    )
+    trabajo_reunion_id = db.Column(
+        db.Integer,
+        db.ForeignKey("trabajo_reunion_cientifica.id"),
+        nullable=False
+    )
+
+    titulo_trabajo = db.Column(db.Text, nullable=False)
+    nombre_reunion = db.Column(db.Text, nullable=False)
+    procedencia = db.Column(db.Text, nullable=False)
+    fecha_inicio = db.Column(db.Date, nullable=False)
+
+    tipo_reunion_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tipo_reunion_cientifica.id"),
+        nullable=False
+    )
+    tipo_reunion_nombre = db.Column(db.String(100), nullable=True)
+
+    grupo_utn_id = db.Column(
+        db.Integer,
+        db.ForeignKey("grupo_utn.id"),
+        nullable=True
+    )
+    grupo_utn_nombre = db.Column(db.String(255), nullable=True)
+    investigadores_participantes = db.Column(db.Text, nullable=True)
+
+    memoria_version = db.relationship("MemoriaVersion", lazy="joined")
+    trabajo_reunion = db.relationship("TrabajoReunionCientifica", lazy="joined")
+    tipo_reunion = db.relationship("TipoReunion", lazy="joined")
+    grupo_utn = db.relationship("GrupoInvestigacionUtn", lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "memoria_version_id",
+            "trabajo_reunion_id",
+            name="uq_trabajo_reunion_memoria_version"
+        ),
+    )
+
+    def serialize(self):
+        data = self.to_dict()
+        data["investigadores_participantes"] = (
+            self.investigadores_participantes or ""
+        )
         return data
     
     

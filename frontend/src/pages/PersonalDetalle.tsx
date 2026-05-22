@@ -1,17 +1,36 @@
-﻿import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
+import { ChevronDown } from "lucide-react";
 import Button from "@/components/Button";
 import SuccessToast from "@/components/SuccessToast";
-import { getPersonalCompletoByRolAndId } from "@/services/personalCompletoServices";
+import HistorialCambiosCard from "@/components/HistorialCambiosCard";
+import {
+  getHistorialPersonalByRolAndId,
+  getPersonalCompletoByRolAndId,
+} from "@/services/personalCompletoServices";
 import { useAuditoria } from "@/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
+import { useTiposFormacion } from "@/hooks/useTiposFormacion";
+import { useDedicaciones } from "@/hooks/useDedicaciones";
+import { useCategoriasUtn } from "@/hooks/useCategoriasUtn";
+import { useProgramasIncentivos } from "@/hooks/useProgramasIncentivos";
+import { useTiposPersonal } from "@/hooks/useTiposPersonal";
+import {
+  navigateBackFromMemoriaContext,
+  stripSuccessMessageState,
+} from "@/lib/memoriaNavigation";
 
 export default function PersonalDetalle() {
   const { rol: paramRol, id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { canEditRecords } = useAuth();
+  const { data: tiposFormacion = [] } = useTiposFormacion();
+  const { data: dedicaciones = [] } = useDedicaciones();
+  const { data: categoriasUtn = [] } = useCategoriasUtn();
+  const { data: programasIncentivos = [] } = useProgramasIncentivos();
+  const { data: tiposPersonal = [] } = useTiposPersonal();
 
   const puedeEditar = canEditRecords();
 
@@ -33,9 +52,12 @@ export default function PersonalDetalle() {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      window.history.replaceState({}, document.title);
+      navigate(location.pathname, {
+        replace: true,
+        state: stripSuccessMessageState(location.state),
+      });
     }
-  }, [location.state]);
+  }, [location.state, navigate, location.pathname]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["personal-detalle", rol, id],
@@ -43,18 +65,31 @@ export default function PersonalDetalle() {
     enabled: !!rol && !!id,
   });
 
+  const {
+    data: historialCambios = [],
+    isLoading: isLoadingHistorial,
+  } = useQuery({
+    queryKey: ["personal-historial", rol, id],
+    queryFn: () => getHistorialPersonalByRolAndId(rol!, Number(id)),
+    enabled: !!rol && !!id,
+  });
+
   const auditoria = useAuditoria(data);
 
   if (isLoading) {
-    return <p className="text-slate-500">Cargando…</p>;
+    return <p className="text-slate-500">Cargando...</p>;
   }
 
   if (isError || !data) {
-    return <p className="text-slate-500">No se encontró el registro.</p>;
+    return <p className="text-slate-500">No se encontro el registro.</p>;
   }
 
   const relaciones = data.relaciones || {};
   const isInactive = !!data.deleted_at || data.activo === false;
+  const nombreActualizador =
+    typeof data.updated_by_nombre === "string" && data.updated_by_nombre.trim()
+      ? data.updated_by_nombre
+      : "-";
 
   const formatearLabel = (key: string) => {
     return key
@@ -71,7 +106,7 @@ export default function PersonalDetalle() {
   };
 
   const formatFechaHora = (fecha?: string | null) => {
-    if (!fecha) return "—";
+    if (!fecha) return "-";
     return new Date(fecha).toLocaleString("es-AR");
   };
 
@@ -86,13 +121,59 @@ export default function PersonalDetalle() {
     if (rol === "profesional") return "Profesional";
     if (rol === "investigador") return "Investigador";
     if (rol === "becario") return "Becario";
-    return rol ?? "—";
+    return rol ?? "-";
   };
 
   const handleEditar = () => {
     if (rol === "becario") navigate(`/becarios/${id}/editar`);
     else if (rol === "investigador") navigate(`/investigadores/${id}/editar`);
     else navigate(`/personal/${rol}/${id}/editar`);
+  };
+
+  const getCatalogName = (
+    collection: Array<{ id: number; nombre: string }>,
+    value: unknown
+  ) => {
+    const normalizedId =
+      typeof value === "number"
+        ? value
+        : typeof value === "string" && value.trim() !== ""
+          ? Number(value)
+          : NaN;
+
+    if (Number.isNaN(normalizedId)) {
+      return null;
+    }
+
+    return collection.find((item) => item.id === normalizedId)?.nombre ?? null;
+  };
+
+  const formatHistorialValue = (item: { campo?: string }, value: unknown) => {
+    if (value === null || value === undefined || value === "") {
+      return "-";
+    }
+
+    switch (item.campo) {
+      case "tipo_formacion_id":
+        return getCatalogName(tiposFormacion, value) ?? String(value);
+      case "tipo_dedicacion_id":
+        return getCatalogName(dedicaciones, value) ?? String(value);
+      case "categoria_utn_id":
+        return getCatalogName(categoriasUtn, value) ?? String(value);
+      case "programa_incentivos_id":
+        return getCatalogName(programasIncentivos, value) ?? String(value);
+      case "tipo_personal_id":
+        return getCatalogName(tiposPersonal, value) ?? String(value);
+      default:
+        if (typeof value === "object") {
+          try {
+            return JSON.stringify(value);
+          } catch {
+            return "-";
+          }
+        }
+        return String(value);
+    }
   };
 
   return (
@@ -106,7 +187,7 @@ export default function PersonalDetalle() {
 
             <div className="flex flex-wrap items-center gap-2">
               {rol && (
-                <span className="w-fit px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-600 uppercase tracking-wider border border-slate-200">
+                <span className="w-fit rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600">
                   {getRolLabel()}
                 </span>
               )}
@@ -131,7 +212,7 @@ export default function PersonalDetalle() {
         </div>
 
         <article className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
-          <div className="space-y-2 text-sm md:text-base text-slate-500">
+          <div className="space-y-2 text-sm text-slate-500 md:text-base">
             {relaciones.tipo_personal?.nombre && (
               <p>
                 <span className="font-medium text-slate-700">
@@ -144,7 +225,7 @@ export default function PersonalDetalle() {
             {relaciones.tipo_formacion?.nombre && (
               <p>
                 <span className="font-medium text-slate-700">
-                  Grado de Formación:
+                  Grado de Formacion:
                 </span>{" "}
                 {relaciones.tipo_formacion.nombre}
               </p>
@@ -153,7 +234,7 @@ export default function PersonalDetalle() {
             {relaciones.categoria_utn?.nombre && (
               <p>
                 <span className="font-medium text-slate-700">
-                  Categoría UTN:
+                  Categoria UTN:
                 </span>{" "}
                 {relaciones.categoria_utn.nombre}
               </p>
@@ -171,7 +252,7 @@ export default function PersonalDetalle() {
             {relaciones.tipo_dedicacion?.nombre && (
               <p>
                 <span className="font-medium text-slate-700">
-                  Tipo de Dedicación:
+                  Tipo de Dedicacion:
                 </span>{" "}
                 {relaciones.tipo_dedicacion.nombre}
               </p>
@@ -196,7 +277,7 @@ export default function PersonalDetalle() {
             {relaciones.trabajos_reunion_cientifica?.length > 0 && (
               <p>
                 <span className="font-medium text-slate-700">
-                  Trabajos en Reunión Científica:
+                  Trabajos en Reunion Cientifica:
                 </span>{" "}
                 {renderArray(relaciones.trabajos_reunion_cientifica)}
               </p>
@@ -223,10 +304,15 @@ export default function PersonalDetalle() {
                       <button
                         type="button"
                         onClick={() => setShowHistorialHoras((prev) => !prev)}
-                        className="text-slate-500 hover:text-slate-800 text-sm transition-colors"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-100 hover:text-slate-800"
                         title="Ver historial de horas"
+                        aria-label="Ver historial de horas"
                       >
-                        Ver historial
+                        <ChevronDown
+                          className={`h-4 w-4 transition-transform ${
+                            showHistorialHoras ? "rotate-180" : ""
+                          }`}
+                        />
                       </button>
                     )}
                 </p>
@@ -234,11 +320,11 @@ export default function PersonalDetalle() {
                 {showHistorialHoras &&
                   Array.isArray(data.historial_horas) &&
                   data.historial_horas.length > 0 && (
-                    <div className="ml-4 border-l border-slate-200 pl-4 text-sm text-slate-600 space-y-1">
+                    <div className="ml-4 space-y-1 border-l border-slate-200 pl-4 text-sm text-slate-600">
                       {data.historial_horas.map((h: any) => (
                         <p key={h.id}>
-                          {h.horas_semanales} hs — {formatFecha(h.fecha_inicio)}{" "}
-                          → {formatFecha(h.fecha_fin)}
+                          Horas: {h.horas_semanales} - Periodo:{" "}
+                          {formatFecha(h.fecha_inicio)} - {formatFecha(h.fecha_fin)}
                         </p>
                       ))}
                     </div>
@@ -254,7 +340,7 @@ export default function PersonalDetalle() {
                 </p>
 
                 {data.becas.length > 0 && (
-                  <div className="ml-4 border-l border-slate-200 pl-4 text-sm text-slate-600 space-y-2">
+                  <div className="ml-4 space-y-2 border-l border-slate-200 pl-4 text-sm text-slate-600">
                     {data.becas.map((b: any, index: number) => (
                       <div key={b.id ?? index}>
                         <p>
@@ -263,15 +349,14 @@ export default function PersonalDetalle() {
                           </span>
                         </p>
                         <p>
-                          {formatFecha(b.fecha_inicio)} →{" "}
-                          {formatFecha(b.fecha_fin)}
+                          {formatFecha(b.fecha_inicio)} - {formatFecha(b.fecha_fin)}
                         </p>
                         <p>
                           Monto percibido:{" "}
                           {b.monto_percibido !== null &&
                           b.monto_percibido !== undefined
                             ? b.monto_percibido
-                            : "—"}
+                            : "-"}
                         </p>
                         {b.descripcion && <p>{b.descripcion}</p>}
                       </div>
@@ -292,10 +377,13 @@ export default function PersonalDetalle() {
                     "relaciones",
                     "grupo",
                     "created_by",
+                    "updated_by",
                     "deleted_by",
                     "created_by_nombre",
+                    "updated_by_nombre",
                     "deleted_by_nombre",
                     "created_at",
+                    "updated_at",
                     "deleted_at",
                     "historial_horas",
                     "horas_semanales",
@@ -327,7 +415,7 @@ export default function PersonalDetalle() {
                     <span className="font-medium text-slate-700">
                       {formatearLabel(key)}:
                     </span>{" "}
-                    {String(value) ?? "—"}
+                    {String(value) ?? "-"}
                   </p>
                 );
               })}
@@ -336,38 +424,51 @@ export default function PersonalDetalle() {
 
         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-700">Auditoría</h3>
-            <p className="text-xs text-slate-500 mt-1">{data.nombre_apellido}</p>
+            <h3 className="text-lg font-semibold text-slate-700">Auditoria</h3>
+            <p className="mt-1 text-xs text-slate-500">{data.nombre_apellido}</p>
           </div>
 
-          <div className="space-y-2 text-sm md:text-base text-slate-500">
+          <div className="space-y-2 text-sm text-slate-500 md:text-base">
             <p>
               <span className="font-medium text-slate-700">Creado por:</span>{" "}
               {auditoria.nombreCreador}
             </p>
             <p>
               <span className="font-medium text-slate-700">
-                Fecha de creación:
+                Fecha de creacion:
               </span>{" "}
               {formatFechaHora(data.created_at)}
             </p>
             <p>
-              <span className="font-medium text-slate-700">
-                Eliminado por:
-              </span>{" "}
+              <span className="font-medium text-slate-700">Eliminado por:</span>{" "}
               {auditoria.nombreEliminador}
             </p>
             <p>
               <span className="font-medium text-slate-700">
-                Fecha de eliminación:
+                Fecha de eliminacion:
               </span>{" "}
               {formatFechaHora(data.deleted_at)}
             </p>
           </div>
         </article>
 
+        <HistorialCambiosCard
+          subtitle={data.nombre_apellido}
+          items={historialCambios}
+          isLoading={isLoadingHistorial}
+          updatedAt={data.updated_at}
+          updatedByName={nombreActualizador}
+          formatItemValue={(item, value) => formatHistorialValue(item, value)}
+        />
+
         <div className="flex justify-start pt-4">
-          <Button variant="secondary" size="sm" onClick={() => navigate(-1)}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() =>
+              navigateBackFromMemoriaContext(navigate, location, "/personal")
+            }
+          >
             Volver
           </Button>
         </div>

@@ -7,12 +7,14 @@ from core.models.proyecto_investigacion import (
     ProyectoInvestigacion,
     TipoProyecto,
     InvestigadorProyecto,
-    BecarioProyecto
+    BecarioProyecto,
+    ProyectoInvestigacionMemoriaVersion
 )
 from core.models.grupo import GrupoInvestigacionUtn
 from core.models.fuente_financiamiento import FuenteFinanciamiento
-from core.models.programa_actividades import PlanificacionGrupo
 from core.models.personal import Becario, Investigador
+from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 
 
 class ProyectoInvestigacionService:
@@ -232,27 +234,22 @@ class ProyectoInvestigacionService:
                 raise Exception("La fecha fin no puede ser anterior a la fecha inicio")
 
         if not TipoProyecto.query.get(data.get("tipo_proyecto_id")):
-            raise Exception("Tipo de proyecto invÃ¡lido")
+            raise Exception("Tipo de proyecto inválido")
         
-        if data.get("planificacion_id"):
-            planificacion = PlanificacionGrupo.query.get(data["planificacion_id"])
-            if not planificacion:
-                raise ValueError("PlanificaciÃ³n invÃ¡lida")
-            
         if data.get("fuente_financiamiento_id"):
             fuente = FuenteFinanciamiento.query.get(data["fuente_financiamiento_id"])
             if not fuente:
-                raise ValueError("Fuente de financiamiento invÃ¡lida")
+                raise ValueError("Fuente de financiamiento inválida")
             
         if data.get("grupo_utn_id"):
             grupo = GrupoInvestigacionUtn.query.get(data["grupo_utn_id"])
             if not grupo:
-                raise ValueError("Grupo UTN invÃ¡lido")
+                raise ValueError("Grupo UTN inválido")
             
         if data.get("tipo_proyecto_id"):
             tipo = TipoProyecto.query.get(data["tipo_proyecto_id"])
             if not tipo:
-                raise ValueError("Tipo de proyecto invÃ¡lido")
+                raise ValueError("Tipo de proyecto inválido")
 
         proyecto = ProyectoInvestigacion(
             codigo_proyecto=data["codigo_proyecto"],
@@ -265,7 +262,6 @@ class ProyectoInvestigacionService:
             tipo_proyecto_id=data["tipo_proyecto_id"],
             grupo_utn_id=data.get("grupo_utn_id"),
             fuente_financiamiento_id=data.get("fuente_financiamiento_id"),
-            planificacion_id=data.get("planificacion_id"),
             created_by=user_id
         )
 
@@ -290,6 +286,7 @@ class ProyectoInvestigacionService:
 
         if user_id is not None:
             ProyectoInvestigacionService._validar_id(user_id, "user_id")
+        cambios = {}
 
         es_cierre_por_update = (
             user_id is not None and
@@ -305,7 +302,13 @@ class ProyectoInvestigacionService:
             "monto_destinado"
         ]:
             if field in data:
-                setattr(proyecto, field, data[field])
+                cambio = AuditoriaService.construir_cambio(
+                    getattr(proyecto, field),
+                    data[field]
+                )
+                if cambio:
+                    cambios[field] = cambio
+                    setattr(proyecto, field, data[field])
 
         if "tipo_proyecto_id" in data:
             tipo_proyecto_id = data["tipo_proyecto_id"]
@@ -315,12 +318,24 @@ class ProyectoInvestigacionService:
             if not TipoProyecto.query.get(tipo_proyecto_id):
                 raise ValueError("Tipo de proyecto inválido")
 
-            proyecto.tipo_proyecto_id = tipo_proyecto_id
+            cambio = AuditoriaService.construir_cambio(
+                proyecto.tipo_proyecto_id,
+                tipo_proyecto_id
+            )
+            if cambio:
+                cambios["tipo_proyecto_id"] = cambio
+                proyecto.tipo_proyecto_id = tipo_proyecto_id
 
         if "grupo_utn_id" in data:
             grupo_utn_id = data["grupo_utn_id"]
             if grupo_utn_id in (None, ""):
-                proyecto.grupo_utn_id = None
+                cambio = AuditoriaService.construir_cambio(
+                    proyecto.grupo_utn_id,
+                    None
+                )
+                if cambio:
+                    cambios["grupo_utn_id"] = cambio
+                    proyecto.grupo_utn_id = None
             else:
                 if not isinstance(grupo_utn_id, int) or grupo_utn_id <= 0:
                     raise ValueError("Grupo UTN inválido")
@@ -328,12 +343,24 @@ class ProyectoInvestigacionService:
                 if not GrupoInvestigacionUtn.query.get(grupo_utn_id):
                     raise ValueError("Grupo UTN inválido")
 
-                proyecto.grupo_utn_id = grupo_utn_id
+                cambio = AuditoriaService.construir_cambio(
+                    proyecto.grupo_utn_id,
+                    grupo_utn_id
+                )
+                if cambio:
+                    cambios["grupo_utn_id"] = cambio
+                    proyecto.grupo_utn_id = grupo_utn_id
 
         if "fuente_financiamiento_id" in data:
             fuente_financiamiento_id = data["fuente_financiamiento_id"]
             if fuente_financiamiento_id in (None, ""):
-                proyecto.fuente_financiamiento_id = None
+                cambio = AuditoriaService.construir_cambio(
+                    proyecto.fuente_financiamiento_id,
+                    None
+                )
+                if cambio:
+                    cambios["fuente_financiamiento_id"] = cambio
+                    proyecto.fuente_financiamiento_id = None
             else:
                 if (
                     not isinstance(fuente_financiamiento_id, int)
@@ -344,32 +371,39 @@ class ProyectoInvestigacionService:
                 if not FuenteFinanciamiento.query.get(fuente_financiamiento_id):
                     raise ValueError("Fuente de financiamiento inválida")
 
-                proyecto.fuente_financiamiento_id = fuente_financiamiento_id
-
-        if "planificacion_id" in data:
-            planificacion_id = data["planificacion_id"]
-            if planificacion_id in (None, ""):
-                proyecto.planificacion_id = None
-            else:
-                if not isinstance(planificacion_id, int) or planificacion_id <= 0:
-                    raise ValueError("Planificación inválida")
-
-                if not PlanificacionGrupo.query.get(planificacion_id):
-                    raise ValueError("Planificación inválida")
-
-                proyecto.planificacion_id = planificacion_id
+                cambio = AuditoriaService.construir_cambio(
+                    proyecto.fuente_financiamiento_id,
+                    fuente_financiamiento_id
+                )
+                if cambio:
+                    cambios["fuente_financiamiento_id"] = cambio
+                    proyecto.fuente_financiamiento_id = fuente_financiamiento_id
 
         if "fecha_inicio" in data:
-            proyecto.fecha_inicio = datetime.strptime(
+            nueva_fecha = datetime.strptime(
                 data["fecha_inicio"], "%Y-%m-%d"
             ).date()
+            cambio = AuditoriaService.construir_cambio(
+                proyecto.fecha_inicio,
+                nueva_fecha
+            )
+            if cambio:
+                cambios["fecha_inicio"] = cambio
+                proyecto.fecha_inicio = nueva_fecha
 
         if "fecha_fin" in data:
-            proyecto.fecha_fin = (
+            nueva_fecha_fin = (
                 datetime.strptime(data["fecha_fin"], "%Y-%m-%d").date()
                 if data["fecha_fin"]
                 else None
             )
+            cambio = AuditoriaService.construir_cambio(
+                proyecto.fecha_fin,
+                nueva_fecha_fin
+            )
+            if cambio:
+                cambios["fecha_fin"] = cambio
+                proyecto.fecha_fin = nueva_fecha_fin
 
         if proyecto.fecha_fin and proyecto.fecha_fin < proyecto.fecha_inicio:
             raise Exception("La fecha fin no puede ser anterior a la fecha inicio")
@@ -380,6 +414,15 @@ class ProyectoInvestigacionService:
                     "No se puede cerrar el proyecto con una fecha futura"
                 )
             proyecto.soft_delete(user_id)
+
+        if cambios and user_id is not None:
+            proyecto.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="proyecto_investigacion",
+                registro_id=proyecto.id,
+                cambios=cambios,
+                user_id=user_id
+            )
 
         db.session.commit()
         return proyecto.serialize()
@@ -513,12 +556,12 @@ class ProyectoInvestigacionService:
             ).first()
 
             if not participacion:
-                raise ValueError("ParticipaciÃ³n activa no encontrada.")
+                raise ValueError("Participación activa no encontrada.")
 
-            # ðŸ”¹ LÃ³gica de negocio
+            # Lógica de negocio
             participacion.fecha_fin = date.today()
 
-            # ðŸ”¹ LÃ³gica de auditorÃ­a
+            # Lógica de auditoría
             participacion.soft_delete(user_id=user_id)
 
         db.session.commit()
@@ -546,7 +589,7 @@ class ProyectoInvestigacionService:
             ).first()
 
             if existente:
-                raise ValueError("Ya existe participaciÃ³n activa.")
+                raise ValueError("Ya existe participación activa.")
 
             nueva = BecarioProyecto(
                 id_becario=becario_id,
@@ -580,12 +623,79 @@ class ProyectoInvestigacionService:
             ).first()
 
             if not participacion:
-                raise ValueError("ParticipaciÃ³n activa no encontrada.")
+                raise ValueError("Participación activa no encontrada.")
 
             participacion.fecha_fin = date.today()
             participacion.soft_delete(user_id=user_id)
 
         db.session.commit()
         return proyecto.serialize()
+
+    @staticmethod
+    def obtener_historial(proyecto_id: int):
+        ProyectoInvestigacionService._get_proyecto_or_404(proyecto_id)
+        return AuditoriaService.obtener_historial_entidad(
+            "proyecto_investigacion",
+            proyecto_id
+        )
+
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        proyectos = ProyectoInvestigacion.query.filter().all()
+
+        snapshots = []
+        for proyecto in proyectos:
+            if not estuvo_activo_en_periodo_memoria(
+                memoria_version,
+                proyecto.fecha_inicio,
+                getattr(proyecto, "deleted_at", None)
+            ):
+                continue
+
+            snapshot = ProyectoInvestigacionMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                proyecto_investigacion_id=proyecto.id,
+                codigo_proyecto=proyecto.codigo_proyecto,
+                nombre_proyecto=proyecto.nombre_proyecto,
+                descripcion_proyecto=proyecto.descripcion_proyecto,
+                fecha_inicio=proyecto.fecha_inicio,
+                fecha_fin=proyecto.fecha_fin,
+                dificultades_proyecto=proyecto.dificultades_proyecto,
+                monto_destinado=proyecto.monto_destinado,
+                tipo_proyecto_id=proyecto.tipo_proyecto_id,
+                tipo_proyecto_nombre=(
+                    proyecto.tipo_proyecto.nombre
+                    if proyecto.tipo_proyecto else None
+                ),
+                grupo_utn_id=proyecto.grupo_utn_id,
+                grupo_utn_nombre=(
+                    proyecto.grupo_utn.nombre_sigla_grupo
+                    if proyecto.grupo_utn else None
+                ),
+                fuente_financiamiento_id=proyecto.fuente_financiamiento_id,
+                fuente_financiamiento_nombre=(
+                    proyecto.fuente_financiamiento.nombre
+                    if proyecto.fuente_financiamiento else None
+                ),
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            ProyectoInvestigacionMemoriaVersion.query
+            .filter(
+                ProyectoInvestigacionMemoriaVersion.memoria_version_id == memoria_version_id,
+                ProyectoInvestigacionMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(ProyectoInvestigacionMemoriaVersion.nombre_proyecto.asc())
+            .all()
+        )
+
+        return [snapshot.serialize() for snapshot in snapshots]
 
 

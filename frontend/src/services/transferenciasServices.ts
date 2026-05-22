@@ -2,275 +2,194 @@ import { http } from "@/lib/http";
 import { isMockMode } from "./tiposContratoService";
 import type { Adoptante } from "./adoptantesServices";
 
-/** Forzar modo mock para transferencias (poner false cuando el backend esté listo). */
 const FORCE_MOCK = false;
 const useMock = () => FORCE_MOCK || isMockMode();
 
-// ─── Tipos ───────────────────────────────────────────────────
-
-/** Lo que devuelve el backend en GET /transferencias */
 interface TransferenciaBackend {
   id: number;
+  numero_transferencia: number;
+  denominacion: string;
   demandante: string;
   descripcion_actividad: string;
   monto: number | null;
   fecha_inicio: string;
   fecha_fin: string | null;
   tipo_contrato: string | null;
+  tipo_contrato_id?: number | null;
   grupo: string | null;
+  grupo_utn_id?: number | null;
   adoptantes?: Adoptante[];
-  numero_transferencia: number;
-  denominacion: string;
-
-  activo?: boolean;
   created_at?: string | null;
-  deleted_at?: string | null;
   created_by?: number | string | null;
   created_by_nombre?: string | null;
+  updated_at?: string | null;
+  updated_by?: number | string | null;
+  updated_by_nombre?: string | null;
+  deleted_at?: string | null;
   deleted_by?: number | string | null;
   deleted_by_nombre?: string | null;
 }
 
-/** Interfaz unificada del frontend. */
 export interface Transferencia {
   id: number;
+  numeroTransferencia: number;
+  denominacion: string;
   demandante: string;
   descripcionActividad: string;
   monto: number | null;
   fechaInicio: string;
   fechaFin?: string;
   tipoContrato: string | null;
-  tipoContratoId?: number;
+  tipoContratoId?: number | null;
   grupo: string | null;
-  grupoUtnId?: number;
+  grupoUtnId?: number | null;
   adoptantes: Adoptante[];
-  denominacion: string;
-  numeroTransferencia: number;
-
   activo: boolean;
   created_at?: string | null;
-  created_by_nombre?: string | null;
-  deletedAt?: string | null;
   created_by?: number | string | null;
+  created_by_nombre?: string | null;
+  updated_at?: string | null;
+  updated_by?: number | string | null;
+  updated_by_nombre?: string | null;
+  deletedAt?: string | null;
   deleted_by?: number | string | null;
   deleted_by_nombre?: string | null;
 }
 
-/** Payload para crear/editar en el frontend. */
+export type HistorialTransferenciaItem = {
+  id: number | string;
+  campo?: string;
+  fecha_cambio?: string | null;
+  usuario_nombre?: string | null;
+  valor_anterior?: unknown;
+  valor_nuevo?: unknown;
+  tipo?: string;
+};
+
 export interface TransferenciaPayload {
+  numeroTransferencia: number;
+  denominacion: string;
   demandante: string;
   descripcionActividad: string;
-  monto: number | null;
+  monto: number;
   fechaInicio: string;
   fechaFin?: string;
   tipoContratoId: number;
   grupoUtnId: number;
   adoptantesIds?: number[];
-  denominacion: string;
-  numeroTransferencia: number;
 }
-
-// ─── Mappers ─────────────────────────────────────────────────
 
 function fromBackend(raw: TransferenciaBackend): Transferencia {
   return {
     id: raw.id,
-    demandante: raw.demandante,
-    descripcionActividad: raw.descripcion_actividad,
-    monto: raw.monto,
-    fechaInicio: raw.fecha_inicio,
+    numeroTransferencia: raw.numero_transferencia ?? 0,
+    denominacion: raw.denominacion ?? "",
+    demandante: raw.demandante ?? "",
+    descripcionActividad: raw.descripcion_actividad ?? "",
+    monto:
+      typeof raw.monto === "number"
+        ? raw.monto
+        : raw.monto === null
+          ? null
+          : Number(raw.monto ?? 0),
+    fechaInicio: raw.fecha_inicio ?? "",
     fechaFin: raw.fecha_fin ?? undefined,
-    tipoContrato: raw.tipo_contrato,
-    grupo: raw.grupo,
-    adoptantes: raw.adoptantes ?? [],
-    denominacion: raw.denominacion || "",
-    numeroTransferencia: raw.numero_transferencia || 0,
-
-    activo: raw.activo ?? raw.deleted_at == null,
+    tipoContrato: raw.tipo_contrato ?? null,
+    tipoContratoId: raw.tipo_contrato_id ?? null,
+    grupo: raw.grupo ?? null,
+    grupoUtnId: raw.grupo_utn_id ?? null,
+    adoptantes: Array.isArray(raw.adoptantes) ? raw.adoptantes : [],
+    activo: raw.deleted_at == null,
     created_at: raw.created_at ?? null,
-    created_by_nombre: raw.created_by_nombre ?? null,
-    deletedAt: raw.deleted_at ?? null,
     created_by: raw.created_by ?? null,
+    created_by_nombre: raw.created_by_nombre ?? null,
+    updated_at: raw.updated_at ?? null,
+    updated_by: raw.updated_by ?? null,
+    updated_by_nombre: raw.updated_by_nombre ?? null,
+    deletedAt: raw.deleted_at ?? null,
     deleted_by: raw.deleted_by ?? null,
     deleted_by_nombre: raw.deleted_by_nombre ?? null,
   };
 }
 
-function toBackend(data: TransferenciaPayload): Record<string, unknown> {
-  return {
-    demandante: data.demandante,
-    descripcion_actividad: data.descripcionActividad,
-    monto: data.monto,
-    fecha_inicio: data.fechaInicio,
-    fecha_fin: data.fechaFin || null,
-    tipo_contrato_id: data.tipoContratoId,
-    grupo_utn_id: data.grupoUtnId,
-    denominacion: data.denominacion,
-    numero_transferencia: data.numeroTransferencia,
-  };
+function toBackend(data: Partial<TransferenciaPayload>): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+
+  if ("numeroTransferencia" in data) {
+    body.numero_transferencia = data.numeroTransferencia;
+  }
+  if ("denominacion" in data) {
+    body.denominacion = data.denominacion;
+  }
+  if ("demandante" in data) {
+    body.demandante = data.demandante;
+  }
+  if ("descripcionActividad" in data) {
+    body.descripcion_actividad = data.descripcionActividad;
+  }
+  if ("monto" in data) {
+    body.monto = data.monto;
+  }
+  if ("fechaInicio" in data) {
+    body.fecha_inicio = data.fechaInicio;
+  }
+  if ("fechaFin" in data) {
+    body.fecha_fin = data.fechaFin || null;
+  }
+  if ("tipoContratoId" in data) {
+    body.tipo_contrato_id = data.tipoContratoId;
+  }
+  if ("grupoUtnId" in data) {
+    body.grupo_utn_id = data.grupoUtnId;
+  }
+
+  return body;
 }
-
-// ─── Mock helpers ────────────────────────────────────────────
-
-const MOCK_KEY = "gidas_transferencias_mock";
-
-const delay = (ms = 300) => new Promise((r) => setTimeout(r, ms));
-
-function readMock(): Transferencia[] {
-  const raw = localStorage.getItem(MOCK_KEY);
-  return raw ? JSON.parse(raw) : [];
-}
-
-function writeMock(items: Transferencia[]) {
-  localStorage.setItem(MOCK_KEY, JSON.stringify(items));
-}
-
-let _mockIdCounter = 100;
-
-function ensureSeed() {
-  if (localStorage.getItem(MOCK_KEY) !== null) return;
-
-  const now = new Date().toISOString();
-
-  const seed: Transferencia[] = [
-    {
-      id: 1,
-      denominacion: "Desarrollo de software de gestión para PyMEs",
-      descripcionActividad:
-        "Transferencia de sistema de gestión desarrollado por el grupo de investigación para su adopción en pequeñas y medianas empresas de la región.",
-      demandante: "Cámara de Comercio Local",
-      tipoContrato: "Transferencia de Tecnología",
-      tipoContratoId: 1,
-      grupo: "GIDAS",
-      grupoUtnId: 1,
-      monto: 150000,
-      fechaInicio: "2024-03-01",
-      fechaFin: "2024-12-31",
-      numeroTransferencia: 2024001,
-      adoptantes: [{ id: 1, nombre: "Empresa Tech SA" }],
-      activo: true,
-      created_at: now,
-      deletedAt: null,
-      created_by: 1,
-      deleted_by: null,
-    },
-    {
-      id: 2,
-      denominacion: "Capacitación en Machine Learning aplicado",
-      descripcionActividad:
-        "Curso intensivo de 40 horas sobre técnicas de ML aplicadas al análisis de datos públicos municipales.",
-      demandante: "Secretaría de Modernización",
-      tipoContrato: "Transferencia de conocimientos",
-      tipoContratoId: 3,
-      grupo: "GIDAS",
-      grupoUtnId: 1,
-      monto: 80000,
-      numeroTransferencia: 2024002,
-      fechaInicio: "2024-06-15",
-      adoptantes: [{ id: 2, nombre: "Municipalidad de Resistencia" }],
-      activo: true,
-      created_at: now,
-      deletedAt: null,
-      created_by: 1,
-      deleted_by: null,
-    },
-    {
-      id: 3,
-      denominacion: "Ensayos de resistencia de materiales",
-      descripcionActividad:
-        "Realización de ensayos normalizados de compresión y tracción sobre probetas de hormigón para obra en curso.",
-      demandante: "Constructora Norte SRL",
-      tipoContrato:
-        "Servicios Técnicos / de apoyo / supervisión y/o Ensayos de Laboratorio",
-      tipoContratoId: 5,
-      grupo: "GIDAS",
-      grupoUtnId: 1,
-      monto: null,
-      fechaInicio: "2024-01-10",
-      fechaFin: "2024-04-30",
-      numeroTransferencia: 2024005,
-      adoptantes: [{ id: 3, nombre: "Fundación Educativa del Norte" }],
-      activo: false,
-      created_at: now,
-      deletedAt: "2026-03-27T12:00:00",
-      created_by: 1,
-      deleted_by: 1,
-    },
-  ];
-
-  _mockIdCounter = 100;
-  writeMock(seed);
-}
-
-// ─── CRUD Transferencias ─────────────────────────────────────
 
 export async function getTransferencias(
   activos: "true" | "false" | "all" = "true"
 ): Promise<Transferencia[]> {
   if (useMock()) {
-    ensureSeed();
-    await delay();
-
-    const items = readMock();
-
-    if (activos === "true") return items.filter((t) => t.activo);
-    if (activos === "false") return items.filter((t) => !t.activo);
-    return items;
+    return [];
   }
 
-  const raw = await http<TransferenciaBackend[]>(
-    `/transferencias/?activos=${activos}`
-  );
+  const response = await http<any>(`/transferencias?activos=${activos}`);
+  const items = Array.isArray(response)
+    ? response
+    : Array.isArray(response?.data)
+      ? response.data
+      : [];
 
-  return raw.map(fromBackend);
+  return items.map(fromBackend);
 }
 
 export async function getTransferenciaById(
   id: number
 ): Promise<Transferencia | null> {
   if (useMock()) {
-    await delay();
-    return readMock().find((t) => t.id === id) ?? null;
+    return null;
   }
 
   const raw = await http<TransferenciaBackend | null>(`/transferencias/${id}`);
   return raw ? fromBackend(raw) : null;
 }
 
+export async function getHistorialTransferenciaById(
+  id: number
+): Promise<HistorialTransferenciaItem[]> {
+  const response = await http<any>(`/transferencias/${id}/historial`, {
+    method: "GET",
+  });
+
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.data)) return response.data;
+  return [];
+}
+
 export async function createTransferencia(
   data: TransferenciaPayload
 ): Promise<Transferencia> {
-  if (useMock()) {
-    await delay();
-
-    const item: Transferencia = {
-      id: ++_mockIdCounter,
-      demandante: data.demandante,
-      descripcionActividad: data.descripcionActividad,
-      monto: data.monto,
-      fechaInicio: data.fechaInicio,
-      fechaFin: data.fechaFin,
-      tipoContrato: null,
-      tipoContratoId: data.tipoContratoId,
-      grupo: null,
-      grupoUtnId: data.grupoUtnId,
-      adoptantes: [],
-      denominacion: data.denominacion || "Sin Denominación",
-      numeroTransferencia: data.numeroTransferencia,
-      activo: true,
-      created_at: new Date().toISOString(),
-      deletedAt: null,
-      created_by: 1,
-      deleted_by: null,
-    };
-
-    const list = readMock();
-    list.push(item);
-    writeMock(list);
-    return item;
-  }
-
-  const raw = await http<TransferenciaBackend>("/transferencias/", {
+  const raw = await http<TransferenciaBackend>("/transferencias", {
     method: "POST",
     body: JSON.stringify(toBackend(data)),
   });
@@ -288,77 +207,15 @@ export async function updateTransferencia(
   id: number,
   data: Partial<TransferenciaPayload>
 ): Promise<Transferencia> {
-  if (useMock()) {
-    await delay();
-    const list = readMock();
-    const idx = list.findIndex((t) => t.id === id);
-    if (idx === -1) throw new Error("Transferencia no encontrada");
-
-    list[idx] = {
-      ...list[idx],
-      demandante: data.demandante ?? list[idx].demandante,
-      descripcionActividad:
-        data.descripcionActividad ?? list[idx].descripcionActividad,
-      monto: data.monto ?? list[idx].monto,
-      fechaInicio: data.fechaInicio ?? list[idx].fechaInicio,
-      fechaFin: data.fechaFin ?? list[idx].fechaFin,
-      tipoContratoId: data.tipoContratoId ?? list[idx].tipoContratoId,
-      grupoUtnId: data.grupoUtnId ?? list[idx].grupoUtnId,
-      denominacion: data.denominacion ?? list[idx].denominacion,
-      numeroTransferencia:
-        data.numeroTransferencia ?? list[idx].numeroTransferencia,
-    };
-
-    writeMock(list);
-    return list[idx];
-  }
-
-  const backendPayload: Record<string, unknown> = {};
-
-  if (data.demandante !== undefined) backendPayload.demandante = data.demandante;
-  if (data.descripcionActividad !== undefined) {
-    backendPayload.descripcion_actividad = data.descripcionActividad;
-  }
-  if (data.monto !== undefined) backendPayload.monto = data.monto;
-  if (data.fechaInicio !== undefined) backendPayload.fecha_inicio = data.fechaInicio;
-  if (data.fechaFin !== undefined) backendPayload.fecha_fin = data.fechaFin || null;
-  if (data.tipoContratoId !== undefined) {
-    backendPayload.tipo_contrato_id = data.tipoContratoId;
-  }
-  if (data.grupoUtnId !== undefined) {
-    backendPayload.grupo_utn_id = data.grupoUtnId;
-  }
-  if (data.denominacion !== undefined) backendPayload.denominacion = data.denominacion;
-  if (data.numeroTransferencia !== undefined) {
-    backendPayload.numero_transferencia = data.numeroTransferencia;
-  }
-
   const raw = await http<TransferenciaBackend>(`/transferencias/${id}`, {
     method: "PUT",
-    body: JSON.stringify(backendPayload),
+    body: JSON.stringify(toBackend(data)),
   });
 
   return fromBackend(raw);
 }
 
 export async function deleteTransferencia(id: number): Promise<void> {
-  if (useMock()) {
-    await delay();
-    const list = readMock();
-    const idx = list.findIndex((t) => t.id === id);
-    if (idx === -1) return;
-
-    list[idx] = {
-      ...list[idx],
-      activo: false,
-      deletedAt: new Date().toISOString(),
-      deleted_by: 1,
-    };
-
-    writeMock(list);
-    return;
-  }
-
   await http(`/transferencias/${id}`, {
     method: "DELETE",
   });
@@ -368,11 +225,6 @@ export async function addAdoptantesToTransferencia(
   transferenciaId: number,
   adoptantesIds: number[]
 ): Promise<void> {
-  if (useMock()) {
-    await delay();
-    return;
-  }
-
   await http(`/transferencias/${transferenciaId}/adoptantes`, {
     method: "POST",
     body: JSON.stringify({ adoptantes_ids: adoptantesIds }),
@@ -383,11 +235,6 @@ export async function removeAdoptantesFromTransferencia(
   transferenciaId: number,
   adoptantesIds: number[]
 ): Promise<void> {
-  if (useMock()) {
-    await delay();
-    return;
-  }
-
   await http(`/transferencias/${transferenciaId}/adoptantes`, {
     method: "DELETE",
     body: JSON.stringify({ adoptantes_ids: adoptantesIds }),

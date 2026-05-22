@@ -127,11 +127,6 @@ def eliminar_planificacion_grupo(id, user_id=None):
     if not planificacion or planificacion.deleted_at is not None:
         raise ValueError("Planificacion no encontrada.")
 
-    if planificacion.proyectos_investigacion:
-        raise ValueError(
-            "No se puede eliminar la planificacion porque tiene proyectos asociados."
-        )
-
     planificacion.soft_delete(user_id)
 
     try:

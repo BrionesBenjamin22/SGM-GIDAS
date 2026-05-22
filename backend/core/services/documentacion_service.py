@@ -1,5 +1,14 @@
+from datetime import datetime
+
 from core.models.grupo import GrupoInvestigacionUtn
-from core.models.documentacion_autores import DocumentacionBibliografica, Autor
+from core.models.documentacion_autores import (
+    DocumentacionBibliografica,
+    Autor,
+    DocumentacionBibliograficaMemoriaVersion,
+    DocumentacionBibliograficaAutorMemoriaVersion,
+)
+from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 
 
@@ -22,6 +31,15 @@ class DocumentacionBibliograficaService:
             raise Exception(f"{campo} es obligatorio")
 
         return " ".join(valor.strip().split()).lower()
+
+    @staticmethod
+    def _parse_fecha(valor, campo="fecha"):
+        try:
+            return datetime.strptime(valor, "%Y-%m-%d").date()
+        except (TypeError, ValueError):
+            raise Exception(
+                f"El campo '{campo}' es obligatorio y debe tener formato YYYY-MM-DD"
+            )
 
     # =========================
     # GET ALL
@@ -67,6 +85,16 @@ class DocumentacionBibliograficaService:
             raise Exception("Documentacion bibliografica no encontrada")
         return doc.serialize()
 
+    @staticmethod
+    def get_historial(doc_id: int):
+        doc = db.session.get(DocumentacionBibliografica, doc_id)
+        if not doc:
+            raise Exception("Documentacion bibliografica no encontrada")
+        return AuditoriaService.obtener_historial_entidad(
+            entidad="documentacion_bibliografica",
+            registro_id=doc.id
+        )
+
     # =========================
     # CREATE
     # =========================
@@ -89,6 +117,7 @@ class DocumentacionBibliograficaService:
                 data["editorial"], "Editorial"
             ),
             anio=data["anio"],
+            fecha=DocumentacionBibliograficaService._parse_fecha(data.get("fecha")),
             grupo_id=data["grupo_id"],
             created_by=user_id
         )
@@ -102,24 +131,57 @@ class DocumentacionBibliograficaService:
     # UPDATE
     # =========================
     @staticmethod
-    def update(doc_id: int, data: dict):
+    def update(doc_id: int, data: dict, user_id: int):
         doc = DocumentacionBibliograficaService._get_activo_or_404(doc_id)
+        cambios = {}
 
         if "titulo" in data:
-            doc.titulo = DocumentacionBibliograficaService._normalizar_texto(
+            nuevo_valor = DocumentacionBibliograficaService._normalizar_texto(
                 data["titulo"], "Titulo"
             )
+            cambio = AuditoriaService.construir_cambio(doc.titulo, nuevo_valor)
+            if cambio:
+                cambios["titulo"] = cambio
+                doc.titulo = nuevo_valor
 
         if "editorial" in data:
-            doc.editorial = DocumentacionBibliograficaService._normalizar_texto(
+            nuevo_valor = DocumentacionBibliograficaService._normalizar_texto(
                 data["editorial"], "Editorial"
             )
+            cambio = AuditoriaService.construir_cambio(doc.editorial, nuevo_valor)
+            if cambio:
+                cambios["editorial"] = cambio
+                doc.editorial = nuevo_valor
 
         if "anio" in data:
-            doc.anio = data["anio"]
+            cambio = AuditoriaService.construir_cambio(doc.anio, data["anio"])
+            if cambio:
+                cambios["anio"] = cambio
+                doc.anio = data["anio"]
+
+        if "fecha" in data:
+            nuevo_valor = DocumentacionBibliograficaService._parse_fecha(
+                data["fecha"]
+            )
+            cambio = AuditoriaService.construir_cambio(doc.fecha, nuevo_valor)
+            if cambio:
+                cambios["fecha"] = cambio
+                doc.fecha = nuevo_valor
 
         if "grupo_id" in data:
-            doc.grupo_id = data["grupo_id"]
+            cambio = AuditoriaService.construir_cambio(doc.grupo_id, data["grupo_id"])
+            if cambio:
+                cambios["grupo_id"] = cambio
+                doc.grupo_id = data["grupo_id"]
+
+        if cambios:
+            doc.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="documentacion_bibliografica",
+                registro_id=doc.id,
+                cambios=cambios,
+                user_id=user_id
+            )
 
         db.session.commit()
 
@@ -172,3 +234,58 @@ class DocumentacionBibliograficaService:
         db.session.commit()
 
         return doc.serialize()
+
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        documentos = DocumentacionBibliografica.query.filter().all()
+
+        snapshots = []
+        for doc in documentos:
+            if not esta_en_periodo_memoria(memoria_version, doc.fecha):
+                continue
+            snapshot = DocumentacionBibliograficaMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                documentacion_bibliografica_id=doc.id,
+                titulo=doc.titulo,
+                editorial=doc.editorial,
+                anio=doc.anio,
+                fecha=doc.fecha,
+                grupo_id=doc.grupo_id,
+                grupo_nombre=(
+                    doc.grupo_utn.nombre_unidad_academica
+                    if doc.grupo_utn else None
+                ),
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            db.session.flush()
+
+            for autor in getattr(doc, "autores", []):
+                if getattr(autor, "deleted_at", None) is not None:
+                    continue
+
+                autor_snapshot = DocumentacionBibliograficaAutorMemoriaVersion(
+                    documentacion_memoria_version=snapshot,
+                    autor_id=autor.id,
+                    nombre_apellido=autor.nombre_apellido,
+                    created_by=user_id
+                )
+                db.session.add(autor_snapshot)
+
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            DocumentacionBibliograficaMemoriaVersion.query
+            .filter(
+                DocumentacionBibliograficaMemoriaVersion.memoria_version_id == memoria_version_id,
+                DocumentacionBibliograficaMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(DocumentacionBibliograficaMemoriaVersion.titulo.asc())
+            .all()
+        )
+
+        return [snapshot.serialize() for snapshot in snapshots]

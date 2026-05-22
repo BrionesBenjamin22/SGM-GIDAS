@@ -11,7 +11,8 @@ class PersonalCompletoController:
     def listar():
         try:
             activos = request.args.get("activos", "true")
-            data = listar_personal_completo(activos)
+            tipo = request.args.get("tipo")
+            data = listar_personal_completo(activos, tipo)
             return jsonify(data), 200
         except Exception as e:
             print("ERROR EN PERSONAL COMPLETO:", e)

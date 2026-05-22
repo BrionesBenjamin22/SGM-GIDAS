@@ -10,6 +10,10 @@ class AuditMixin:
         default=datetime.utcnow,
         nullable=False
     )
+    updated_at = db.Column(
+        db.DateTime,
+        nullable=True
+    )
 
     deleted_at = db.Column(db.DateTime, nullable=True)
     
@@ -40,10 +44,27 @@ class AuditMixin:
             lazy="joined"
         )
 
+    @declared_attr
+    def updated_by(cls):
+        return db.Column(db.Integer, db.ForeignKey("usuario.id"), nullable=True)
+
+    @declared_attr
+    def updated_by_user(cls):
+        return db.relationship(
+            "Usuario",
+            foreign_keys=[cls.updated_by],
+            lazy="joined"
+        )
+
     def soft_delete(self, user_id: int):
         self.deleted_at = datetime.utcnow()
         self.deleted_by = user_id
         self.activo = False
+
+    def mark_updated(self, user_id: int | None = None):
+        self.updated_at = datetime.utcnow()
+        if user_id is not None:
+            self.updated_by = user_id
 
     def restore(self):
         self.deleted_at = None
@@ -76,6 +97,9 @@ class AuditMixin:
         )
         data["deleted_by_nombre"] = self._get_audit_user_name(
             getattr(self, "deleted_by_user", None)
+        )
+        data["updated_by_nombre"] = self._get_audit_user_name(
+            getattr(self, "updated_by_user", None)
         )
 
         return data

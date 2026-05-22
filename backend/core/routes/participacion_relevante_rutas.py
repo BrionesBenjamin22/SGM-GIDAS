@@ -20,6 +20,11 @@ def get_all():
 def get_by_id(participacion_id):
     return ParticipacionRelevanteController.get_by_id(participacion_id)
 
+@participacion_relevante_bp.route("/<int:participacion_id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_historial(participacion_id):
+    return ParticipacionRelevanteController.get_historial(participacion_id)
+
 @participacion_relevante_bp.route("/", methods=["POST"])
 @requiere_rol("ADMIN", "GESTOR")
 def create():

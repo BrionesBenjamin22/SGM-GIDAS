@@ -4,7 +4,13 @@ from sqlalchemy import or_
 
 from core.models.grupo import GrupoInvestigacionUtn
 from core.models.personal import Investigador
-from core.models.trabajo_reunion import TrabajoReunionCientifica, TipoReunion
+from core.models.trabajo_reunion import (
+    TrabajoReunionCientifica,
+    TipoReunion,
+    TrabajoReunionCientificaMemoriaVersion,
+)
+from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 
 
@@ -232,6 +238,14 @@ class TrabajoReunionCientificaService:
         return TrabajoReunionCientificaService._get_or_404(trabajo_id).serialize()
 
     @staticmethod
+    def get_historial(trabajo_id: int):
+        trabajo = TrabajoReunionCientificaService._get_or_404(trabajo_id)
+        return AuditoriaService.obtener_historial_entidad(
+            entidad="trabajo_reunion_cientifica",
+            registro_id=trabajo.id
+        )
+
+    @staticmethod
     def create(data: dict, user_id: int):
         TrabajoReunionCientificaService._validar_payload(data)
         TrabajoReunionCientificaService._validar_user_id(user_id)
@@ -282,9 +296,11 @@ class TrabajoReunionCientificaService:
         return trabajo.serialize()
 
     @staticmethod
-    def update(trabajo_id: int, data: dict):
+    def update(trabajo_id: int, data: dict, user_id: int):
         TrabajoReunionCientificaService._validar_payload(data)
+        TrabajoReunionCientificaService._validar_user_id(user_id)
         trabajo = TrabajoReunionCientificaService._get_activo_or_404(trabajo_id)
+        cambios = {}
 
         fecha_inicio = trabajo.fecha_inicio
         if "fecha_inicio" in data:
@@ -330,12 +346,62 @@ class TrabajoReunionCientificaService:
             trabajo.id,
         )
 
-        trabajo.fecha_inicio = fecha_inicio
-        trabajo.titulo_trabajo = titulo
-        trabajo.nombre_reunion = nombre_reunion
-        trabajo.procedencia = procedencia
-        trabajo.tipo_reunion_id = tipo_reunion_id
-        trabajo.grupo_utn_id = grupo_utn_id
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.fecha_inicio,
+            fecha_inicio
+        )
+        if cambio:
+            cambios["fecha_inicio"] = cambio
+            trabajo.fecha_inicio = fecha_inicio
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.titulo_trabajo,
+            titulo
+        )
+        if cambio:
+            cambios["titulo_trabajo"] = cambio
+            trabajo.titulo_trabajo = titulo
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.nombre_reunion,
+            nombre_reunion
+        )
+        if cambio:
+            cambios["nombre_reunion"] = cambio
+            trabajo.nombre_reunion = nombre_reunion
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.procedencia,
+            procedencia
+        )
+        if cambio:
+            cambios["procedencia"] = cambio
+            trabajo.procedencia = procedencia
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.tipo_reunion_id,
+            tipo_reunion_id
+        )
+        if cambio:
+            cambios["tipo_reunion_id"] = cambio
+            trabajo.tipo_reunion_id = tipo_reunion_id
+
+        cambio = AuditoriaService.construir_cambio(
+            trabajo.grupo_utn_id,
+            grupo_utn_id
+        )
+        if cambio:
+            cambios["grupo_utn_id"] = cambio
+            trabajo.grupo_utn_id = grupo_utn_id
+
+        if cambios:
+            trabajo.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="trabajo_reunion_cientifica",
+                registro_id=trabajo.id,
+                cambios=cambios,
+                user_id=user_id
+            )
 
         try:
             db.session.commit()
@@ -378,7 +444,11 @@ class TrabajoReunionCientificaService:
         return trabajo.serialize()
 
     @staticmethod
-    def vincular_investigadores(trabajo_id: int, investigadores_ids: list[int]):
+    def vincular_investigadores(
+        trabajo_id: int,
+        investigadores_ids: list[int],
+        user_id: int | None = None
+    ):
         trabajo = TrabajoReunionCientificaService._get_activo_or_404(trabajo_id)
         investigadores_ids = (
             TrabajoReunionCientificaService._validar_investigadores_ids(
@@ -398,9 +468,25 @@ class TrabajoReunionCientificaService:
         if len(investigadores) != len(investigadores_ids):
             raise ValueError("Uno o mas investigadores no existen o estan eliminados")
 
+        hubo_cambios = False
         for inv in investigadores:
             if inv not in trabajo.investigadores:
                 trabajo.investigadores.append(inv)
+                hubo_cambios = True
+                AuditoriaService.registrar_evento_relacion(
+                    entidad="trabajo_reunion_cientifica",
+                    registro_id=trabajo.id,
+                    relacion="investigadores",
+                    accion="vincular",
+                    detalle={
+                        "investigador_id": inv.id,
+                        "nombre_apellido": inv.nombre_apellido
+                    },
+                    user_id=user_id
+                )
+
+        if hubo_cambios:
+            trabajo.mark_updated(user_id)
 
         try:
             db.session.commit()
@@ -411,7 +497,11 @@ class TrabajoReunionCientificaService:
         return trabajo.serialize()
 
     @staticmethod
-    def desvincular_investigadores(trabajo_id: int, investigadores_ids: list[int]):
+    def desvincular_investigadores(
+        trabajo_id: int,
+        investigadores_ids: list[int],
+        user_id: int | None = None
+    ):
         trabajo = TrabajoReunionCientificaService._get_activo_or_404(trabajo_id)
         investigadores_ids = (
             TrabajoReunionCientificaService._validar_investigadores_ids(
@@ -419,9 +509,25 @@ class TrabajoReunionCientificaService:
             )
         )
 
+        hubo_cambios = False
         for inv in trabajo.investigadores[:]:
             if inv.id in investigadores_ids:
                 trabajo.investigadores.remove(inv)
+                hubo_cambios = True
+                AuditoriaService.registrar_evento_relacion(
+                    entidad="trabajo_reunion_cientifica",
+                    registro_id=trabajo.id,
+                    relacion="investigadores",
+                    accion="desvincular",
+                    detalle={
+                        "investigador_id": inv.id,
+                        "nombre_apellido": inv.nombre_apellido
+                    },
+                    user_id=user_id
+                )
+
+        if hubo_cambios:
+            trabajo.mark_updated(user_id)
 
         try:
             db.session.commit()
@@ -430,3 +536,59 @@ class TrabajoReunionCientificaService:
             raise
 
         return trabajo.serialize()
+
+    @staticmethod
+    def snapshot_para_memoria_version(memoria_version, user_id):
+        trabajos = TrabajoReunionCientifica.query.filter().all()
+
+        snapshots = []
+        for trabajo in trabajos:
+            if not esta_en_periodo_memoria(memoria_version, trabajo.fecha_inicio):
+                continue
+            investigadores_participantes = ", ".join(sorted([
+                investigador.nombre_apellido
+                for investigador in trabajo.investigadores
+                if getattr(investigador, "deleted_at", None) is None
+            ]))
+
+            snapshot = TrabajoReunionCientificaMemoriaVersion(
+                memoria_version_id=memoria_version.id,
+                trabajo_reunion_id=trabajo.id,
+                titulo_trabajo=trabajo.titulo_trabajo,
+                nombre_reunion=trabajo.nombre_reunion,
+                procedencia=trabajo.procedencia,
+                fecha_inicio=trabajo.fecha_inicio,
+                tipo_reunion_id=trabajo.tipo_reunion_id,
+                tipo_reunion_nombre=(
+                    trabajo.tipo_reunion_cientifica.nombre
+                    if trabajo.tipo_reunion_cientifica else None
+                ),
+                grupo_utn_id=trabajo.grupo_utn_id,
+                grupo_utn_nombre=(
+                    trabajo.grupo_utn.nombre_sigla_grupo
+                    if trabajo.grupo_utn else None
+                ),
+                investigadores_participantes=investigadores_participantes,
+                created_by=user_id
+            )
+            db.session.add(snapshot)
+            snapshots.append(snapshot)
+
+        return snapshots
+
+    @staticmethod
+    def obtener_snapshots_por_memoria_version(memoria_version_id: int):
+        snapshots = (
+            TrabajoReunionCientificaMemoriaVersion.query
+            .filter(
+                TrabajoReunionCientificaMemoriaVersion.memoria_version_id == memoria_version_id,
+                TrabajoReunionCientificaMemoriaVersion.deleted_at.is_(None)
+            )
+            .order_by(
+                TrabajoReunionCientificaMemoriaVersion.fecha_inicio.desc(),
+                TrabajoReunionCientificaMemoriaVersion.id.desc()
+            )
+            .all()
+        )
+
+        return [snapshot.serialize() for snapshot in snapshots]

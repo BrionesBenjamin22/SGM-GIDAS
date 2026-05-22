@@ -9,6 +9,7 @@ type DatePickerProps = {
   placeholder?: string;
   className?: string; // para pasar "input" o estilos propios
   helperText?: string; // ej: "DD/MM/YYYY"
+  disabled?: boolean;
 };
 
 const MONTHS_ES = [
@@ -47,6 +48,7 @@ export default function DatePicker({
   placeholder = "DD/MM/AAAA",
   className = "input",
   helperText = "DD/MM/AAAA",
+  disabled = false,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<Date>(() => value ?? new Date());
@@ -87,7 +89,7 @@ export default function DatePicker({
     return cells;
   }, [view]);
 
-  const disabled = (d: Date) =>
+  const isDateDisabled = (d: Date) =>
     (minDate && d < stripTime(minDate)) || (maxDate && d > stripTime(maxDate));
 
   function stripTime(d: Date) {
@@ -105,13 +107,15 @@ export default function DatePicker({
           className={className}
           value={fmt(value)}
           placeholder={placeholder}
-          onClick={() => setOpen((o) => !o)}
+          onClick={() => !disabled && setOpen((o) => !o)}
+          disabled={disabled}
         />
         <button
           type="button"
           aria-label="Abrir calendario"
-          className="absolute top-1/2 -translate-y-1/2 right-2 rounded p-2 hover:bg-slate-100"
-          onClick={() => setOpen((o) => !o)}
+          className="absolute top-1/2 -translate-y-1/2 right-2 rounded p-2 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={() => !disabled && setOpen((o) => !o)}
+          disabled={disabled}
         >
           {/* ícono calendario */}
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -157,7 +161,7 @@ export default function DatePicker({
             {grid.map((d, i) => {
               if (!d) return <div key={i} className="h-8" />;
               const selected = isSameDay(d, temp);
-              const invalid = disabled(d);
+              const invalid = isDateDisabled(d);
               return (
                 <button
                   key={i}

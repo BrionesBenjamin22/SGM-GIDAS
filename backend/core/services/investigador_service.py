@@ -3,10 +3,15 @@ from datetime import date
 from sqlalchemy.exc import IntegrityError
 
 from extension import db
-from core.models.personal import Investigador, TipoDedicacion, InvestigadorHorasHistorial
+from core.models.personal import Investigador, TipoDedicacion, InvestigadorHorasHistorial, InvestigadorMemoriaVersion
 from core.models.categoria_utn import CategoriaUtn
 from core.models.programa_incentivos import ProgramaIncentivos
 from core.models.grupo import GrupoInvestigacionUtn
+from core.services.auditoria_service import AuditoriaService
+from core.services.memoria_periodo_service import (
+    validar_fecha_alta_grupo,
+    estuvo_activo_en_periodo_memoria,
+)
 
 
 # =====================================================
@@ -66,6 +71,14 @@ def _obtener_historial_activo_unico(investigador):
         raise ValueError("El investigador tiene mas de un historial de horas activo.")
 
     return historiales_activos[0] if historiales_activos else None
+
+
+def _resolver_horas_activas(investigador):
+    historial_activo = _obtener_historial_activo_unico(investigador)
+    return (
+        historial_activo.horas_semanales
+        if historial_activo else investigador.horas_semanales
+    )
 
 
 def _cerrar_historial(historial_activo):
@@ -146,6 +159,9 @@ def crear_investigador(data, user_id):
     investigador = Investigador(
         nombre_apellido=nombre,
         horas_semanales=horas,
+        fecha_alta_grupo=validar_fecha_alta_grupo(
+            data.get("fecha_alta_grupo")
+        ),
         tipo_dedicacion_id=tipo_dedicacion_id,
         categoria_utn_id=_validar_categoria_utn(data.get("categoria_utn_id")),
         programa_incentivos_id=_validar_programa_incentivos(data.get("programa_incentivos_id")),
@@ -184,13 +200,25 @@ def actualizar_investigador(id, data, user_id):
     _validar_user_id(user_id)
 
     investigador = _obtener_investigador_activo(id)
+    cambios = {}
 
     if "nombre_apellido" in data:
-        investigador.nombre_apellido = _validar_nombre(data["nombre_apellido"])
+        nuevo_valor = _validar_nombre(data["nombre_apellido"])
+        cambio = AuditoriaService.construir_cambio(
+            investigador.nombre_apellido,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["nombre_apellido"] = cambio
+            investigador.nombre_apellido = nuevo_valor
 
     if "horas_semanales" in data:
         horas = _validar_horas(data["horas_semanales"])
         historial_activo = _obtener_historial_activo_unico(investigador)
+        cambio = AuditoriaService.construir_cambio(
+            investigador.horas_semanales,
+            horas
+        )
 
         if not historial_activo:
             nuevo = InvestigadorHorasHistorial(
@@ -214,27 +242,74 @@ def actualizar_investigador(id, data, user_id):
 
             db.session.add(nuevo)
 
-        investigador.horas_semanales = horas
+        if cambio:
+            cambios["horas_semanales"] = cambio
+            investigador.horas_semanales = horas
 
     if "tipo_dedicacion_id" in data:
-        investigador.tipo_dedicacion_id = _validar_tipo_dedicacion(
+        nuevo_valor = _validar_tipo_dedicacion(
             data["tipo_dedicacion_id"]
         )
+        cambio = AuditoriaService.construir_cambio(
+            investigador.tipo_dedicacion_id,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["tipo_dedicacion_id"] = cambio
+            investigador.tipo_dedicacion_id = nuevo_valor
 
     if "categoria_utn_id" in data:
-        investigador.categoria_utn_id = _validar_categoria_utn(
+        nuevo_valor = _validar_categoria_utn(
             data["categoria_utn_id"]
         )
+        cambio = AuditoriaService.construir_cambio(
+            investigador.categoria_utn_id,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["categoria_utn_id"] = cambio
+            investigador.categoria_utn_id = nuevo_valor
 
     if "programa_incentivos_id" in data:
-        investigador.programa_incentivos_id = _validar_programa_incentivos(
+        nuevo_valor = _validar_programa_incentivos(
             data["programa_incentivos_id"]
         )
+        cambio = AuditoriaService.construir_cambio(
+            investigador.programa_incentivos_id,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["programa_incentivos_id"] = cambio
+            investigador.programa_incentivos_id = nuevo_valor
 
     if "grupo_utn_id" in data:
-        investigador.grupo_utn_id = _validar_grupo_utn(data["grupo_utn_id"])
+        nuevo_valor = _validar_grupo_utn(data["grupo_utn_id"])
+        cambio = AuditoriaService.construir_cambio(
+            investigador.grupo_utn_id,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["grupo_utn_id"] = cambio
+            investigador.grupo_utn_id = nuevo_valor
 
-    investigador.updated_by = user_id
+    if "fecha_alta_grupo" in data:
+        nuevo_valor = validar_fecha_alta_grupo(data["fecha_alta_grupo"])
+        cambio = AuditoriaService.construir_cambio(
+            investigador.fecha_alta_grupo,
+            nuevo_valor
+        )
+        if cambio:
+            cambios["fecha_alta_grupo"] = cambio
+            investigador.fecha_alta_grupo = nuevo_valor
+
+    if cambios:
+        investigador.mark_updated(user_id)
+        AuditoriaService.registrar_cambios(
+            entidad="investigador",
+            registro_id=investigador.id,
+            cambios=cambios,
+            user_id=user_id
+        )
 
     try:
         db.session.commit()
@@ -332,3 +407,69 @@ def obtener_investigador_por_id(id):
         raise ValueError("Investigador no encontrado.")
 
     return investigador
+
+
+def obtener_historial_investigador(id):
+    investigador = obtener_investigador_por_id(id)
+    return AuditoriaService.obtener_historial_entidad(
+        entidad="investigador",
+        registro_id=investigador.id
+    )
+
+
+def snapshot_investigadores_para_memoria_version(memoria_version, user_id):
+    investigadores = Investigador.query.filter().all()
+
+    snapshots = []
+    for investigador in investigadores:
+        if not estuvo_activo_en_periodo_memoria(
+            memoria_version,
+            investigador.fecha_alta_grupo,
+            getattr(investigador, "deleted_at", None)
+        ):
+            continue
+        snapshot = InvestigadorMemoriaVersion(
+            memoria_version_id=memoria_version.id,
+            investigador_id=investigador.id,
+            nombre_apellido=investigador.nombre_apellido,
+            horas_semanales=_resolver_horas_activas(investigador),
+            tipo_dedicacion_id=investigador.tipo_dedicacion_id,
+            tipo_dedicacion_nombre=(
+                investigador.tipo_dedicacion.nombre
+                if investigador.tipo_dedicacion else None
+            ),
+            categoria_utn_id=investigador.categoria_utn_id,
+            categoria_utn_nombre=(
+                investigador.categoria_utn.nombre
+                if investigador.categoria_utn else None
+            ),
+            programa_incentivos_id=investigador.programa_incentivos_id,
+            programa_incentivos_nombre=(
+                investigador.programa_incentivos.nombre
+                if investigador.programa_incentivos else None
+            ),
+            grupo_utn_id=investigador.grupo_utn_id,
+            grupo_utn_nombre=(
+                investigador.grupo_utn.nombre_sigla_grupo
+                if investigador.grupo_utn else None
+            ),
+            created_by=user_id
+        )
+        db.session.add(snapshot)
+        snapshots.append(snapshot)
+
+    return snapshots
+
+
+def obtener_snapshots_investigadores_por_memoria_version(memoria_version_id):
+    snapshots = (
+        InvestigadorMemoriaVersion.query
+        .filter(
+            InvestigadorMemoriaVersion.memoria_version_id == memoria_version_id,
+            InvestigadorMemoriaVersion.deleted_at.is_(None)
+        )
+        .order_by(InvestigadorMemoriaVersion.nombre_apellido.asc())
+        .all()
+    )
+
+    return [snapshot.serialize() for snapshot in snapshots]

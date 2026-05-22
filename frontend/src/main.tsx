@@ -68,6 +68,10 @@ import ParticipacionesDetalle from "./pages/ParticipacionesDetalle";
 import VisitantesHome from "./pages/VisitantesHome";
 import VisitantesForm from "./pages/VisitantesForm";
 import VisitantesDetalle from "./pages/VisitantesDetalle";
+import MemoriasHome from "./pages/MemoriasHome";
+import MemoriaForm from "./pages/MemoriaForm";
+import MemoriaDetalle from "./pages/MemoriaDetalle";
+import MemoriaVersionDetalle from "./pages/MemoriaVersionDetalle";
 
 // Gestión de usuarios
 import CambiarPassword from "./pages/CambiarPassword";
@@ -214,6 +218,22 @@ const router = createBrowserRouter([
       { path: "visitantes/nuevo", element: <VisitantesForm /> },
       { path: "visitantes/:id", element: <VisitantesDetalle /> },
       { path: "visitantes/:id/editar", element: <VisitantesForm /> },
+
+      // Memorias
+      { path: "memorias", element: <MemoriasHome /> },
+      {
+        path: "memorias/nueva",
+        element: (
+          <ProtectedRoute requiredRole="ADMIN">
+            <MemoriaForm />
+          </ProtectedRoute>
+        ),
+      },
+      { path: "memorias/:id", element: <MemoriaDetalle /> },
+      {
+        path: "memorias/:id/versiones/:versionId",
+        element: <MemoriaVersionDetalle />,
+      },
       
 
       // Gestión de Usuarios (solo admin)
