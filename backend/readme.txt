@@ -128,14 +128,41 @@ Regla operativa:
 
 Variables de entorno
 La aplicacion carga variables desde el archivo definido en ENV_FILE. Si no se informa, usa .env.local.
+La clase de configuracion se selecciona con APP_ENV.
+
+Valores de APP_ENV soportados:
+- local
+- development
+- docker
+- testing
+- production
+- prod
+
+Archivos de referencia versionables:
+- .env.example
+- .env.testing.example
+- .env.production.example
+
+Archivos reales esperados:
+- .env.local para desarrollo local
+- .env.docker para el compose base
+- .env.testing para testing
+- .env.production para produccion
+
+El archivo .env.docker del backend si tiene uso: docker-compose.yml lo toma por defecto para los servicios db y backend cuando no se informa otro archivo con BACKEND_ENV_FILE. No se usa un .env.docker en la raiz del proyecto.
 
 Variables importantes:
+- APP_ENV
 - SECRET_KEY
 - JWT_SECRET
 - REFRESH_SECRET
 - DATABASE_URL
 - FRONTEND_URL
+- FRONTEND_URLS
 - JWT_EXPIRATION_MINUTES
+- POSTGRES_DB
+- POSTGRES_USER
+- POSTGRES_PASSWORD
 
 Valor por defecto de base de datos:
 postgresql://postgres:postgres@localhost:5432/gidas_db
@@ -177,8 +204,10 @@ Estos tests validan principalmente:
 - contrato HTTP basico entre rutas, controller y service
 
 Ejemplos de ejecucion:
-- python -m unittest discover -s tests -v
-- python -m unittest tests.test_memoria_service tests.test_memoria_routes -v
+- venv\Scripts\python -m unittest discover -s tests -v
+- venv\Scripts\python -m unittest tests.test_memoria_service tests.test_memoria_routes -v
+
+Si se ejecutan los tests con el Python global, pueden faltar dependencias locales como Flask-Limiter aunque esten declaradas en requirements.txt. Para validar el backend debe usarse el entorno virtual del modulo o instalar previamente requirements.txt en el interprete activo.
 
 Alcance actual de los tests
 Los tests estan orientados a logica de backend y contratos del sistema. No reemplazan:

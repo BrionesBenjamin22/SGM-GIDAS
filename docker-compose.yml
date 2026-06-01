@@ -1,12 +1,12 @@
 services:
   db:
     image: postgres:16
-    container_name: gidas_db_v1
+    container_name: ${COMPOSE_SERVICE_PREFIX:-gidas}_db
     restart: always
     env_file:
-      - ./backend/.env.docker
+      - ./backend/${BACKEND_ENV_FILE:-.env.docker}
     ports:
-      - "5433:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -21,12 +21,12 @@ services:
   backend:
     build:
       context: ./backend
-    container_name: gidas_backend_v1
+    container_name: ${COMPOSE_SERVICE_PREFIX:-gidas}_backend
     restart: always
     depends_on:
       - db
     env_file:
-      - ./backend/.env.docker
+      - ./backend/${BACKEND_ENV_FILE:-.env.docker}
     expose:
       - "5000"
     volumes:
@@ -43,13 +43,13 @@ services:
   frontend:
     build:
       context: ./frontend
-    container_name: gidas_frontend_v1
+    container_name: ${COMPOSE_SERVICE_PREFIX:-gidas}_frontend
     restart: always
     depends_on:
       backend:
         condition: service_healthy
     env_file:
-      - ./frontend/.env
+      - ./frontend/${FRONTEND_ENV_FILE:-.env}
     expose:
       - "5173"
     volumes:
@@ -60,10 +60,10 @@ services:
 
   nginx:
     image: nginx:stable-alpine
-    container_name: gidas_proxy_v1
+    container_name: ${COMPOSE_SERVICE_PREFIX:-gidas}_proxy
     restart: always
     ports:
-      - "80:80"
+      - "${NGINX_PORT:-80}:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
@@ -74,6 +74,8 @@ services:
 
 volumes:
   postgres_data:
+    name: ${POSTGRES_VOLUME:-gidas_postgres_data}
 networks:
   gidas_network:
     driver: bridge
+    name: ${COMPOSE_NETWORK:-gidas_network}

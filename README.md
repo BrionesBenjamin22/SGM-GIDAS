@@ -268,12 +268,52 @@ Nota:
 
 ## Variables y entorno
 
+El proyecto separa la configuracion por ambiente en tres niveles:
+
+- raiz: variables de Docker Compose, puertos, volumenes y archivos de entorno a usar
+- backend: variables de Flask, JWT, CORS, base de datos y PostgreSQL
+- frontend: variables publicas de Vite
+
+Archivos versionables de referencia:
+
+- `.env.example`
+- `.env.testing.example`
+- `.env.production.example`
+- `backend/.env.example`
+- `backend/.env.testing.example`
+- `backend/.env.production.example`
+- `frontend/.env.example`
+- `frontend/.env.testing.example`
+- `frontend/.env.production.example`
+
+Archivos reales esperados por entorno:
+
+- local / Docker base: `backend/.env.local`, `backend/.env.docker`, `frontend/.env`
+- testing: `.env.testing`, `backend/.env.testing`, `frontend/.env.testing`
+- produccion: `.env.production`, `backend/.env.production`, `frontend/.env.production`
+
+El archivo `.env.docker` de raiz no se utiliza. El compose base toma por defecto `backend/.env.docker` para `db` y `backend`, y `frontend/.env` para `frontend`.
+
+Para levantar testing con Docker Compose:
+
+```bash
+docker compose --env-file .env.testing up --build
+```
+
+Para levantar produccion con Docker Compose:
+
+```bash
+docker compose --env-file .env.production up --build -d
+```
+
 ### Backend
 
 El backend carga variables desde el archivo definido en `ENV_FILE`. Si no se informa, usa `.env.local`.
+La clase de configuracion se selecciona con `APP_ENV`.
 
 Variables frecuentes:
 
+- `APP_ENV`
 - `SECRET_KEY`
 - `JWT_SECRET`
 - `REFRESH_SECRET`
@@ -284,8 +324,9 @@ Variables frecuentes:
 
 ### Frontend
 
-Variable importante:
+Variables importantes:
 
+- `VITE_APP_ENV`
 - `VITE_API_URL`
 
 Ejemplos comunes:
@@ -294,6 +335,14 @@ Ejemplos comunes:
   - `VITE_API_URL=http://localhost:5000`
 - con proxy:
   - `VITE_API_URL=/api`
+
+Scripts utiles:
+
+```bash
+npm run dev:testing
+npm run build:testing
+npm run build:production
+```
 
 ---
 
@@ -347,7 +396,7 @@ La mayor cobertura actual está en backend.
 Desde `backend/`:
 
 ```bash
-python -m unittest discover -s tests -v
+venv\Scripts\python -m unittest discover -s tests -v
 ```
 
 Los tests cubren principalmente:

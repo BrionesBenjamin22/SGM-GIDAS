@@ -12,6 +12,7 @@ def _parse_csv_env(value: str | None) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 class Config:
+    APP_ENV = os.getenv("APP_ENV", "local")
     SECRET_KEY = os.getenv("SECRET_KEY") 
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
     FRONTEND_URLS = _parse_csv_env(os.getenv("FRONTEND_URLS")) or [FRONTEND_URL]
@@ -52,5 +53,23 @@ class DevelopmentConfig(Config):
 class DockerConfig(Config):
     DEBUG = True
 
+class TestingConfig(Config):
+    DEBUG = False
+
 class ProductionConfig(Config):
     DEBUG = False
+
+
+CONFIG_BY_ENV = {
+    "local": DevelopmentConfig,
+    "development": DevelopmentConfig,
+    "docker": DockerConfig,
+    "testing": TestingConfig,
+    "production": ProductionConfig,
+    "prod": ProductionConfig,
+}
+
+
+def get_config_class():
+    app_env = os.getenv("APP_ENV", "local").strip().lower()
+    return CONFIG_BY_ENV.get(app_env, DevelopmentConfig)
