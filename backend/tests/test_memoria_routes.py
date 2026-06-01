@@ -332,10 +332,10 @@ class MemoriaRoutesTestCase(unittest.TestCase):
         )
         mock_create.assert_not_called()
 
-    def test_post_con_rol_gestor_devuelve_201(self):
+    def test_post_con_rol_admin_devuelve_201(self):
         with patch(
             "core.services.middleware.AuthService.verify_token",
-            return_value={"sub": "3", "rol": "GESTOR"}
+            return_value={"sub": "3", "rol": "ADMIN"}
         ), patch(
             "core.controllers.memoria_controller.MemoriaService.create",
             return_value={"id": 1}
@@ -354,10 +354,10 @@ class MemoriaRoutesTestCase(unittest.TestCase):
         self.assertEqual(response.get_json(), {"id": 1})
         mock_create.assert_called_once_with(payload, 3)
 
-    def test_put_estado_con_rol_gestor_devuelve_200(self):
+    def test_put_estado_con_rol_admin_devuelve_200(self):
         with patch(
             "core.services.middleware.AuthService.verify_token",
-            return_value={"sub": "4", "rol": "GESTOR"}
+            return_value={"sub": "4", "rol": "ADMIN"}
         ), patch(
             "core.controllers.memoria_controller.MemoriaService.change_status",
             return_value={"id": 1, "version_actual": {"estado": "cerrada"}}

@@ -14,18 +14,28 @@ class MemoriaServiceTestCase(unittest.TestCase):
         self.commit_patcher = patch("core.services.memoria_service.db.session.commit")
         self.rollback_patcher = patch("core.services.memoria_service.db.session.rollback")
         self.get_patcher = patch("core.services.memoria_service.db.session.get")
+        self.validar_unicidad_patcher = patch(
+            "core.services.memoria_service.MemoriaService._validar_unicidad_anual"
+        )
+        self.validar_activa_patcher = patch(
+            "core.services.memoria_service.MemoriaService._validar_unica_memoria_activa"
+        )
 
         self.mock_add = self.add_patcher.start()
         self.mock_flush = self.flush_patcher.start()
         self.mock_commit = self.commit_patcher.start()
         self.mock_rollback = self.rollback_patcher.start()
         self.mock_get = self.get_patcher.start()
+        self.mock_validar_unicidad = self.validar_unicidad_patcher.start()
+        self.mock_validar_activa = self.validar_activa_patcher.start()
 
         self.addCleanup(self.add_patcher.stop)
         self.addCleanup(self.flush_patcher.stop)
         self.addCleanup(self.commit_patcher.stop)
         self.addCleanup(self.rollback_patcher.stop)
         self.addCleanup(self.get_patcher.stop)
+        self.addCleanup(self.validar_unicidad_patcher.stop)
+        self.addCleanup(self.validar_activa_patcher.stop)
 
     def _make_memoria(self):
         memoria = Memoria(
@@ -98,6 +108,8 @@ class MemoriaServiceTestCase(unittest.TestCase):
         self.assertEqual(resultado["version_actual"]["estado"], "abierta")
         self.assertEqual(resultado["cantidad_versiones"], 1)
         self.assertEqual(created_objects["memoria"].created_by, 7)
+        self.mock_validar_unicidad.assert_called_once_with(date(2026, 12, 31))
+        self.mock_validar_activa.assert_called_once_with()
         self.mock_commit.assert_called_once()
 
     def test_update_falla_porque_memoria_es_inmutable(self):
@@ -203,6 +215,7 @@ class MemoriaServiceTestCase(unittest.TestCase):
         self.assertEqual(memoria.version_actual_id, nueva_version.id)
         self.assertEqual(resultado["version_actual"]["numero_version"], 2)
         self.assertEqual(resultado["version_actual"]["estado"], "abierta")
+        self.mock_validar_activa.assert_called_once_with(memoria_id_excluida=memoria.id)
         self.mock_commit.assert_called_once()
 
     def test_reopen_falla_si_la_version_actual_no_esta_cerrada(self):
