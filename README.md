@@ -260,6 +260,14 @@ Levantar toda la aplicacion en produccion:
 docker compose --env-file .env.production up --build -d
 ```
 
+Para despliegue con HTTPS mediante Nginx del servidor y Certbot, mantener en `.env.production`:
+
+```env
+NGINX_PORT=8080
+```
+
+El Nginx externo del servidor debe publicar los puertos 80/443 y reenviar al proxy interno del compose en `http://127.0.0.1:8080`. La guia completa esta en [Despliegue en produccion con Nginx y Certbot](./docs/despliegue_produccion.md).
+
 Levantar solo el backend de produccion con sus dependencias minimas:
 
 ```bash
@@ -505,6 +513,7 @@ En la carpeta `docs/` se documentan decisiones y piezas importantes del sistema.
 
 Documentos destacados:
 
+- [Despliegue en produccion con Nginx y Certbot](./docs/despliegue_produccion.md)
 - [Documentación técnica de memorias](./docs/memorias_tecnica.md)
 - [Resumen técnico de plantilla Excel](./docs/excel_memoria_template_summary.md)
 
