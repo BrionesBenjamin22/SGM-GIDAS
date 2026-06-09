@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useSearch } from "@/hooks/useSearch";
 import { useUctGuard } from "@/hooks/useUctGuard";
 import { highlight } from "@/utils/highlight";
@@ -41,6 +41,7 @@ const getTypeConfig = (tipo: string) => {
 
 export default function SearchPage() {
   const nav = useNavigate();
+  const location = useLocation();
   const { uctGuard } = useUctGuard();
   const {
     q, setQ,
@@ -60,6 +61,15 @@ export default function SearchPage() {
   } = useSearch();
 
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const searchReturnTo = `${location.pathname}${location.search}`;
+
+  const navigateFromSearch = (to: string) => {
+    nav(to, {
+      state: {
+        searchReturnTo,
+      },
+    });
+  };
 
   const ORDEN_OPTIONS = [
     { value: "alf_asc", label: "Alfabético A → Z" },
@@ -539,7 +549,7 @@ export default function SearchPage() {
                           key={item.id}
                           className="group py-4 px-2 -mx-2 cursor-pointer hover:bg-slate-50 rounded-lg transition-all"
                           onClick={() =>
-                            nav(
+                            navigateFromSearch(
                               item.relatedItem
                                 ? resolveFrontendUrl(item.relatedItem.url)
                                 : item.origin.href
@@ -582,7 +592,7 @@ export default function SearchPage() {
                                               key={proy.id}
                                               onClick={(e) => {
                                                 e.stopPropagation();
-                                                nav(resolveFrontendUrl(proyectoUrl));
+                                                navigateFromSearch(resolveFrontendUrl(proyectoUrl));
                                               }}
                                               className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-full hover:bg-green-100 transition-colors"
                                             >

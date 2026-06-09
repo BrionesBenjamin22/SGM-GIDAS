@@ -38,6 +38,13 @@ export function navigateBackFromMemoriaContext(
   fallbackPath: string
 ) {
   const state = asNavigationState(location.state);
+  const searchReturnTo = state?.searchReturnTo;
+
+  if (typeof searchReturnTo === "string") {
+    navigate(searchReturnTo);
+    return;
+  }
+
   const memoriaFilter = state?.memoriaFilter;
   const memoriaReturnTo = state?.memoriaReturnTo;
 

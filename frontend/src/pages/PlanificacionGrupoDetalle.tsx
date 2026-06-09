@@ -9,6 +9,10 @@ import {
 } from "@/services/planificacionGrupoServices";
 import { useAuditoria } from "@/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
+import {
+  navigateBackFromMemoriaContext,
+  stripSuccessMessageState,
+} from "@/lib/memoriaNavigation";
 
 export default function PlanificacionGrupoDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -33,9 +37,12 @@ export default function PlanificacionGrupoDetalle() {
     if (location.state?.successMessage) {
       setSuccessMessage(location.state.successMessage);
       setShowSuccess(true);
-      window.history.replaceState({}, document.title);
+      navigate(location.pathname, {
+        replace: true,
+        state: stripSuccessMessageState(location.state),
+      });
     }
-  }, [location.state]);
+  }, [location.pathname, location.state, navigate]);
 
   const formatFechaHora = (fecha?: string | null) => {
     if (!fecha) return "—";
@@ -132,7 +139,9 @@ export default function PlanificacionGrupoDetalle() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => navigate("/planificaciones")}
+            onClick={() =>
+              navigateBackFromMemoriaContext(navigate, location, "/planificaciones")
+            }
           >
             Volver
           </Button>
