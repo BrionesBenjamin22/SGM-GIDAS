@@ -384,6 +384,20 @@ Para levantar testing con Docker Compose:
 docker compose --env-file .env.testing -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
+Para abrir `psql` contra la base de testing:
+
+```bash
+docker compose --env-file .env.testing -f docker-compose.yml -f docker-compose.dev.yml exec db psql -U postgres -d gidas_testing_db
+```
+
+Para cargar datos ficticios de testing:
+
+```bash
+docker compose --env-file .env.testing -f docker-compose.yml -f docker-compose.dev.yml exec backend python tools/seed_testing_data.py
+```
+
+El seed de testing crea usuarios, catalogos basicos, grupo, personas, proyecto y una memoria abierta. Solo corre si `APP_ENV=testing` o si se define explicitamente `ALLOW_TEST_SEED=true`.
+
 Para levantar produccion con Docker Compose:
 
 ```bash

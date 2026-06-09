@@ -207,6 +207,21 @@ Ejemplos de ejecucion:
 - venv\Scripts\python -m unittest discover -s tests -v
 - venv\Scripts\python -m unittest tests.test_memoria_service tests.test_memoria_routes -v
 
+Datos ficticios de testing
+Para operar el frontend contra una base de testing con datos minimos, levantar el entorno de testing y ejecutar:
+- docker compose --env-file .env.testing -f docker-compose.yml -f docker-compose.dev.yml exec backend python tools/seed_testing_data.py
+
+El script crea usuarios de prueba, catalogos basicos, grupo, personas, proyecto y una memoria abierta.
+Credenciales generadas:
+- admin.testing / Testing123!
+- gestor.testing / Testing123!
+- lector.testing / Testing123!
+
+El script esta protegido para no ejecutarse accidentalmente sobre produccion: requiere APP_ENV=testing o ALLOW_TEST_SEED=true.
+
+Para consultar la base con psql desde Docker:
+- docker compose --env-file .env.testing -f docker-compose.yml -f docker-compose.dev.yml exec db psql -U postgres -d gidas_testing_db
+
 Si se ejecutan los tests con el Python global, pueden faltar dependencias locales como Flask-Limiter aunque esten declaradas en requirements.txt. Para validar el backend debe usarse el entorno virtual del modulo o instalar previamente requirements.txt en el interprete activo.
 
 Docker y produccion
