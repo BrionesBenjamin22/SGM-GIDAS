@@ -5,7 +5,10 @@ from core.services.auth_service import AuthService
 
 def _add_cors_headers(response):
     """Agrega headers CORS a la respuesta"""
-    response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin', '*'))
+    origin = request.headers.get('Origin')
+    if origin:
+        response.headers.add('Access-Control-Allow-Origin', origin)
+        response.headers.add('Vary', 'Origin')
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
     response.headers.add('Access-Control-Allow-Credentials', 'true')

@@ -209,6 +209,36 @@ Ejemplos de ejecucion:
 
 Si se ejecutan los tests con el Python global, pueden faltar dependencias locales como Flask-Limiter aunque esten declaradas en requirements.txt. Para validar el backend debe usarse el entorno virtual del modulo o instalar previamente requirements.txt en el interprete activo.
 
+Docker y produccion
+El backend se construye con Dockerfile multi-stage:
+- builder: compila wheels de dependencias.
+- runtime: instala dependencias desde wheels, copia la aplicacion y ejecuta con usuario no root.
+- development: conserva herramientas minimas para desarrollo local.
+- production: imagen final para despliegue.
+
+En produccion el entrypoint aplica migraciones, ejecuta el seed inicial de roles e inicia la API con Gunicorn. El servidor de desarrollo de Flask queda reservado para ambientes no productivos.
+
+Variables obligatorias en produccion:
+- APP_ENV=production
+- SECRET_KEY
+- JWT_SECRET
+- REFRESH_SECRET
+- DATABASE_URL
+- FRONTEND_URL
+- FRONTEND_URLS
+
+Las claves SECRET_KEY, JWT_SECRET y REFRESH_SECRET deben tener al menos 32 caracteres y no pueden usar placeholders. La aplicacion falla al iniciar si detecta una configuracion insegura para produccion, CORS con comodin o ausencia de DATABASE_URL.
+
+Controles de seguridad de API:
+- CORS restringido por FRONTEND_URLS en produccion.
+- rate limit global y limites especificos para autenticacion.
+- almacenamiento de rate limit en Redis interno para evitar contadores aislados por worker.
+- headers defensivos: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy y HSTS cuando DEBUG esta desactivado.
+- cookies de sesion con HttpOnly, SameSite y Secure en produccion.
+- ejecucion en contenedor no root, filesystem read-only desde Compose y capacidades Linux reducidas.
+
+No se deben versionar archivos .env reales. Los archivos .env.example y .env.production.example son plantillas y sus valores deben reemplazarse antes de desplegar.
+
 Alcance actual de los tests
 Los tests estan orientados a logica de backend y contratos del sistema. No reemplazan:
 - la validacion final sobre base real

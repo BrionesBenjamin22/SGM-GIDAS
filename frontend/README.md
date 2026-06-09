@@ -47,3 +47,28 @@ npm run dev:testing
 npm run build:testing
 npm run build:production
 ```
+
+## Docker y produccion
+
+El frontend se construye con Dockerfile multi-stage:
+
+- `dependencies`: instala dependencias con `npm ci`.
+- `build`: genera el bundle estatico de Vite.
+- `production`: sirve `dist` con Nginx no privilegiado en el puerto interno 8080.
+- `development`: ejecuta Vite para desarrollo local.
+
+En produccion debe usarse `VITE_API_URL=/api` para que el proxy Nginx del proyecto enrute la API sin exponer el backend al host. Las variables `VITE_*` son publicas y quedan embebidas en el bundle, por lo que no deben contener claves, tokens ni secretos.
+
+Controles aplicados en produccion:
+
+- imagen final sin Node.js ni dependencias de desarrollo.
+- servidor Nginx no privilegiado.
+- cache de assets estaticos versionados.
+- fallback SPA hacia `index.html`.
+- contenedor compatible con filesystem read-only, `no-new-privileges` y capacidades Linux reducidas desde Compose.
+
+Para desarrollo con Docker usar el compose de desarrollo desde la raiz del proyecto:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```

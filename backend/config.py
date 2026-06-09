@@ -1,4 +1,5 @@
 import os
+import secrets
 from dotenv import load_dotenv
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -11,9 +12,51 @@ def _parse_csv_env(value: str | None) -> list[str]:
         return []
     return [item.strip() for item in value.split(",") if item.strip()]
 
+
+def _is_insecure_secret(value: str | None) -> bool:
+    if not value:
+        return True
+    normalized = value.strip().lower()
+    insecure_values = {
+        "change-me",
+        "changeme",
+        "replace-with-secure-secret",
+        "secret",
+        "dev-secret",
+        "test-secret",
+    }
+    return normalized in insecure_values or len(value.strip()) < 32
+
+
+def _require_production_security(config_class):
+    if config_class.APP_ENV not in {"production", "prod"}:
+        return
+
+    required_secrets = {
+        "SECRET_KEY": config_class.SECRET_KEY,
+        "JWT_SECRET": config_class.JWT_SECRET,
+        "REFRESH_SECRET": config_class.REFRESH_SECRET,
+    }
+    missing_or_insecure = [
+        key for key, value in required_secrets.items() if _is_insecure_secret(value)
+    ]
+
+    if missing_or_insecure:
+        raise RuntimeError(
+            "Configuracion insegura para produccion. Revise: "
+            + ", ".join(missing_or_insecure)
+        )
+
+    if config_class.CORS_ORIGINS == "*" or "*" in config_class.CORS_ORIGINS:
+        raise RuntimeError("CORS_ORIGINS no puede usar '*' en produccion")
+
+    if not os.getenv("DATABASE_URL"):
+        raise RuntimeError("DATABASE_URL es obligatorio en produccion")
+
+
 class Config:
     APP_ENV = os.getenv("APP_ENV", "local")
-    SECRET_KEY = os.getenv("SECRET_KEY") 
+    SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_urlsafe(48)
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
     FRONTEND_URLS = _parse_csv_env(os.getenv("FRONTEND_URLS")) or [FRONTEND_URL]
     CORS_ORIGINS = FRONTEND_URLS
@@ -44,6 +87,9 @@ class Config:
     AUTH_REFRESH_LIMIT = os.getenv("AUTH_REFRESH_LIMIT", "30 per minute")
     AUTH_REGISTER_LIMIT = os.getenv("AUTH_REGISTER_LIMIT", "5 per hour")
     AUTH_CHANGE_PASSWORD_LIMIT = os.getenv("AUTH_CHANGE_PASSWORD_LIMIT", "10 per hour")
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
+    SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False") == "True"
 
 
 class DevelopmentConfig(Config):
@@ -51,13 +97,14 @@ class DevelopmentConfig(Config):
     CORS_ORIGINS = "*"
 
 class DockerConfig(Config):
-    DEBUG = True
+    DEBUG = os.getenv("FLASK_DEBUG", "False") == "True"
 
 class TestingConfig(Config):
     DEBUG = False
 
 class ProductionConfig(Config):
     DEBUG = False
+    SESSION_COOKIE_SECURE = True
 
 
 CONFIG_BY_ENV = {
@@ -72,4 +119,6 @@ CONFIG_BY_ENV = {
 
 def get_config_class():
     app_env = os.getenv("APP_ENV", "local").strip().lower()
-    return CONFIG_BY_ENV.get(app_env, DevelopmentConfig)
+    config_class = CONFIG_BY_ENV.get(app_env, DevelopmentConfig)
+    _require_production_security(config_class)
+    return config_class

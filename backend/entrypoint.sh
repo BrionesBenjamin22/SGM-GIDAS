@@ -34,4 +34,15 @@ echo "Ejecutando seed inicial..."
 python seed_roles.py
 
 echo "Iniciando backend..."
+
+if [ "${APP_ENV}" = "production" ] || [ "${APP_ENV}" = "prod" ]; then
+  exec gunicorn "app:app" \
+    --bind 0.0.0.0:5000 \
+    --workers "${GUNICORN_WORKERS:-3}" \
+    --threads "${GUNICORN_THREADS:-2}" \
+    --timeout "${GUNICORN_TIMEOUT:-60}" \
+    --access-logfile - \
+    --error-logfile -
+fi
+
 exec flask run --host=0.0.0.0 --port=5000
