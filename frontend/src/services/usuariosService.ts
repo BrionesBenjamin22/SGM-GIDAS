@@ -1,11 +1,13 @@
 import { http } from "@/lib/http";
 import type { Rol } from "./authService";
 
+export type UsuarioRol = Rol | "LECTOR";
+
 export type Usuario = {
   id: number;
   nombre_usuario: string;
   mail: string;
-  rol: Rol;
+  rol: UsuarioRol;
   activo: boolean;
   primer_login: boolean;
   fecha_creacion?: string;
@@ -28,6 +30,11 @@ export type ActualizarUsuarioPayload = {
   mail?: string;
   rol_id?: number;
   activo?: boolean;
+};
+
+type ActualizarUsuarioResponse = {
+  mensaje: string;
+  usuario: Usuario;
 };
 export function rolToRolId(rol: Rol): number {
   switch (rol) {
@@ -65,10 +72,12 @@ export async function actualizarUsuario(
   id: number,
   payload: ActualizarUsuarioPayload
 ): Promise<Usuario> {
-  return http<Usuario>(`/auth/usuarios/${id}`, {
+  const response = await http<Usuario | ActualizarUsuarioResponse>(`/auth/usuarios/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });
+
+  return "usuario" in response ? response.usuario : response;
 }
 
 export async function eliminarUsuario(id: number): Promise<void> {

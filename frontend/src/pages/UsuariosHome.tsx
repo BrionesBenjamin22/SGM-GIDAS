@@ -1,18 +1,29 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { getUsuarios, eliminarUsuario, type Usuario } from "@/services/usuariosService";
+import {
+  actualizarUsuario,
+  eliminarUsuario,
+  getUsuarios,
+  rolToRolId,
+  type ActualizarUsuarioPayload,
+  type Usuario,
+  type UsuarioRol,
+} from "@/services/usuariosService";
 import { useAuth } from "@/context/AuthContext";
 import { HttpError } from "@/lib/http";
 import Button from "@/components/Button";
+import type { Rol } from "@/services/authService";
 import {
   Users,
   Plus,
   Trash2,
+  Edit3,
   AlertCircle,
   X,
   Shield,
   UserCog,
   BookOpen,
+  Loader2,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -31,6 +42,14 @@ function getErrorMessage(error: unknown): string {
   return "Ocurrió un error inesperado";
 }
 
+function normalizeRolForForm(rol: UsuarioRol): Rol {
+  return rol === "LECTOR" ? "LECTURA" : rol;
+}
+
+function isSameRol(a: UsuarioRol, b: Rol) {
+  return normalizeRolForForm(a) === b;
+}
+
 function getRolConfig(rol: string) {
   switch (rol) {
     case "ADMIN":
@@ -42,6 +61,7 @@ function getRolConfig(rol: string) {
       };
 
     case "LECTURA":
+    case "LECTOR":
       return {
         label: "Lector",
         icon: BookOpen,
@@ -60,6 +80,14 @@ function getRolConfig(rol: string) {
   }
 }
 
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isValidUsername(username: string): boolean {
+  return /^[a-zA-Z0-9._-]+$/.test(username);
+}
+
 export default function UsuariosHome() {
   const { isAdmin, user } = useAuth();
   const nav = useNavigate();
@@ -67,6 +95,18 @@ export default function UsuariosHome() {
 
   const [usuarioAEliminar, setUsuarioAEliminar] = useState<Usuario | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [usuarioAEditar, setUsuarioAEditar] = useState<Usuario | null>(null);
+  const [editForm, setEditForm] = useState({
+    nombre_usuario: "",
+    mail: "",
+    rol: "GESTOR" as Rol,
+  });
+  const [editErrors, setEditErrors] = useState<{
+    nombre_usuario?: string;
+    mail?: string;
+    rol?: string;
+    general?: string;
+  }>({});
 
   if (!isAdmin()) {
     return (
@@ -95,15 +135,111 @@ export default function UsuariosHome() {
     },
   });
 
+  const editarMutation = useMutation({
+    mutationFn: (payload: {
+      id: number;
+      data: ActualizarUsuarioPayload;
+    }) => actualizarUsuario(payload.id, payload.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["usuarios"] });
+      setUsuarioAEditar(null);
+      setEditErrors({});
+    },
+    onError: (error) => {
+      setEditErrors((prev) => ({
+        ...prev,
+        general: getErrorMessage(error),
+      }));
+    },
+  });
+
   function handleEliminar(usuario: Usuario) {
     setUsuarioAEliminar(usuario);
     setDeleteError(null);
+  }
+
+  function handleEditar(usuario: Usuario) {
+    setUsuarioAEditar(usuario);
+    setEditForm({
+      nombre_usuario: usuario.nombre_usuario,
+      mail: usuario.mail,
+      rol: normalizeRolForForm(usuario.rol),
+    });
+    setEditErrors({});
+    editarMutation.reset();
   }
 
   function handleCerrarModal() {
     setUsuarioAEliminar(null);
     setDeleteError(null);
     eliminarMutation.reset();
+  }
+
+  function handleCerrarEditar() {
+    setUsuarioAEditar(null);
+    setEditErrors({});
+    editarMutation.reset();
+  }
+
+  function validarEdicion() {
+    const errors: typeof editErrors = {};
+    const nombreUsuario = editForm.nombre_usuario.trim();
+    const mail = editForm.mail.trim();
+
+    if (!nombreUsuario) {
+      errors.nombre_usuario = "El nombre de usuario es obligatorio";
+    } else if (nombreUsuario.length < 3) {
+      errors.nombre_usuario = "El nombre debe tener al menos 3 caracteres";
+    } else if (!isValidUsername(nombreUsuario)) {
+      errors.nombre_usuario = "Solo letras, numeros, puntos, guiones y guiones bajos";
+    }
+
+    if (!mail) {
+      errors.mail = "El email es obligatorio";
+    } else if (!isValidEmail(mail)) {
+      errors.mail = "Ingrese un email valido";
+    }
+
+    if (!["ADMIN", "GESTOR", "LECTURA"].includes(editForm.rol)) {
+      errors.rol = "Debe seleccionar un rol valido";
+    }
+
+    if (usuarioAEditar?.id === user?.id && !isSameRol(usuarioAEditar.rol, editForm.rol)) {
+      errors.rol = "No puede cambiar el rol de su propia cuenta";
+    }
+
+    setEditErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
+
+  function confirmarEdicion() {
+    if (!usuarioAEditar || !validarEdicion()) return;
+
+    const data: ActualizarUsuarioPayload = {};
+    const nombreUsuario = editForm.nombre_usuario.trim();
+    const mail = editForm.mail.trim();
+
+    if (nombreUsuario !== usuarioAEditar.nombre_usuario) {
+      data.nombre_usuario = nombreUsuario;
+    }
+
+    if (mail !== usuarioAEditar.mail) {
+      data.mail = mail;
+    }
+
+    if (!isSameRol(usuarioAEditar.rol, editForm.rol)) {
+      data.rol_id = rolToRolId(editForm.rol);
+    }
+
+    if (Object.keys(data).length === 0) {
+      handleCerrarEditar();
+      return;
+    }
+
+    editarMutation.mutate({
+      id: usuarioAEditar.id,
+      data,
+    });
   }
 
   function confirmarEliminar() {
@@ -115,7 +251,8 @@ export default function UsuariosHome() {
   const total = usuarios?.length || 0;
   const admins = usuarios?.filter((u) => u.rol === "ADMIN").length || 0;
   const gestores = usuarios?.filter((u) => u.rol === "GESTOR").length || 0;
-  const lectores = usuarios?.filter((u) => u.rol === "LECTURA").length || 0;
+  const lectores =
+    usuarios?.filter((u) => u.rol === "LECTURA" || u.rol === "LECTOR").length || 0;
 
   return (
     <section className="w-full">
@@ -287,7 +424,15 @@ export default function UsuariosHome() {
                       </td>
 
                       <td className="px-6 py-4">
-                        <div className="flex items-center justify-end">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => handleEditar(usuarioItem)}
+                            className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                            title="Editar usuario"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+
                           <button
                             onClick={() => handleEliminar(usuarioItem)}
                             className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
@@ -309,6 +454,148 @@ export default function UsuariosHome() {
           </div>
         )}
       </div>
+
+      {usuarioAEditar && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Editar usuario</h3>
+              <button
+                onClick={handleCerrarEditar}
+                className="p-1 hover:bg-slate-100 rounded"
+                disabled={editarMutation.isPending}
+              >
+                <X className="w-5 h-5 text-slate-400" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Nombre de usuario
+                </label>
+                <input
+                  type="text"
+                  className={`input ${editErrors.nombre_usuario ? "border-rose-300" : ""}`}
+                  value={editForm.nombre_usuario}
+                  onChange={(event) => {
+                    setEditForm((prev) => ({
+                      ...prev,
+                      nombre_usuario: event.target.value,
+                    }));
+                    if (editErrors.nombre_usuario) {
+                      setEditErrors((prev) => ({
+                        ...prev,
+                        nombre_usuario: undefined,
+                        general: undefined,
+                      }));
+                    }
+                  }}
+                  disabled={editarMutation.isPending}
+                />
+                {editErrors.nombre_usuario && (
+                  <p className="mt-1 text-sm text-rose-600">
+                    {editErrors.nombre_usuario}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium">Email</label>
+                <input
+                  type="email"
+                  className={`input ${editErrors.mail ? "border-rose-300" : ""}`}
+                  value={editForm.mail}
+                  onChange={(event) => {
+                    setEditForm((prev) => ({
+                      ...prev,
+                      mail: event.target.value,
+                    }));
+                    if (editErrors.mail) {
+                      setEditErrors((prev) => ({
+                        ...prev,
+                        mail: undefined,
+                        general: undefined,
+                      }));
+                    }
+                  }}
+                  disabled={editarMutation.isPending}
+                />
+                {editErrors.mail && (
+                  <p className="mt-1 text-sm text-rose-600">{editErrors.mail}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium">Rol</label>
+                <select
+                  className={`input ${editErrors.rol ? "border-rose-300" : ""}`}
+                  value={editForm.rol}
+                  onChange={(event) => {
+                    setEditForm((prev) => ({
+                      ...prev,
+                      rol: event.target.value as Rol,
+                    }));
+                    if (editErrors.rol) {
+                      setEditErrors((prev) => ({
+                        ...prev,
+                        rol: undefined,
+                        general: undefined,
+                      }));
+                    }
+                  }}
+                  disabled={editarMutation.isPending || usuarioAEditar.id === user?.id}
+                >
+                  <option value="ADMIN">Administrador</option>
+                  <option value="GESTOR">Gestor</option>
+                  <option value="LECTURA">Lector</option>
+                </select>
+                {usuarioAEditar.id === user?.id && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    No puede modificar el rol de su propia cuenta.
+                  </p>
+                )}
+                {editErrors.rol && (
+                  <p className="mt-1 text-sm text-rose-600">{editErrors.rol}</p>
+                )}
+              </div>
+
+              {editErrors.general && (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  {editErrors.general}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <Button
+                variant="secondary"
+                onClick={handleCerrarEditar}
+                className="flex-1"
+                disabled={editarMutation.isPending}
+              >
+                Cancelar
+              </Button>
+
+              <Button
+                variant="primary"
+                onClick={confirmarEdicion}
+                className="flex-1"
+                disabled={editarMutation.isPending}
+              >
+                {editarMutation.isPending ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Guardando...
+                  </span>
+                ) : (
+                  "Guardar cambios"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {usuarioAEliminar && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

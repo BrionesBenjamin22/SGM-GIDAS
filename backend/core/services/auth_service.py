@@ -218,7 +218,6 @@ class AuthService:
     @staticmethod
     def change_password(user_id: int, password_actual: str, password_nueva: str, es_primer_cambio: bool = False):
         user = AuthService._get_user_or_error(user_id, solo_activos=True)
-
         if not password_nueva:
             raise Exception("La contraseña nueva es obligatoria")
 
@@ -285,13 +284,34 @@ class AuthService:
     def update_user(user_id: int, data: dict, current_user_id: int):
         """Actualizar datos de un usuario"""
         user = AuthService._get_user_or_error(user_id, solo_activos=True)
+        requested_rol_id = data.get("rol_id")
+        requested_rol_name = data.get("rol")
+        requested_rol = None
+
+        if requested_rol_id is not None:
+            requested_rol = db.session.get(RolUsuario, requested_rol_id)
+            if not requested_rol:
+                raise Exception("Rol invalido")
+        elif requested_rol_name is not None:
+            requested_rol = RolUsuario.query.filter_by(nombre=requested_rol_name).first()
+            if not requested_rol:
+                raise Exception("Rol invalido")
+
+        changes_role = requested_rol is not None and requested_rol.id != user.id_rol
         
         # Evitar que un admin se desactive a sí mismo
         if user_id == current_user_id and data.get("activo") == False:
             raise Exception("No puede desactivar su propia cuenta")
+
+        if user_id == current_user_id and changes_role:
+            raise Exception("No puede cambiar el rol de su propia cuenta")
         
         # Verificar que quede al menos un admin si se desactiva un admin
-        if user.rol.nombre == "ADMIN" and data.get("activo") == False:
+        should_check_last_admin = user.rol.nombre == "ADMIN" and (
+            data.get("activo") == False
+            or changes_role
+        )
+        if should_check_last_admin:
             admin_count = Usuario.query.join(RolUsuario).filter(
                 RolUsuario.nombre == "ADMIN",
                 Usuario.activo == True
@@ -300,21 +320,36 @@ class AuthService:
                 raise Exception("Debe quedar al menos un administrador en el sistema")
         
         # Actualizar campos permitidos
-        if "rol" in data:
-            rol = RolUsuario.query.filter_by(nombre=data["rol"]).first()
-            if not rol:
-                raise Exception("Rol inválido")
-            user.id_rol = rol.id
+        if requested_rol is not None:
+            user.id_rol = requested_rol.id
         
+        if "nombre_usuario" in data:
+            nombre_usuario = (data["nombre_usuario"] or "").strip()
+            if not nombre_usuario:
+                raise Exception("El nombre de usuario es obligatorio")
+
+            existing = Usuario.query.filter(
+                Usuario.nombre_usuario == nombre_usuario,
+                Usuario.id != user_id
+            ).first()
+            if existing:
+                raise Exception("El nombre de usuario ya esta en uso")
+
+            user.nombre_usuario = nombre_usuario
+
         if "mail" in data:
+            mail = (data["mail"] or "").strip()
+            if not mail:
+                raise Exception("El mail es obligatorio")
+
             # Verificar que el mail no exista
             existing = Usuario.query.filter(
-                Usuario.mail == data["mail"],
+                Usuario.mail == mail,
                 Usuario.id != user_id
             ).first()
             if existing:
                 raise Exception("El mail ya está en uso")
-            user.mail = data["mail"]
+            user.mail = mail
         
         if "activo" in data:
             user.activo = data["activo"]
