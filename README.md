@@ -58,14 +58,17 @@ La memoria cerrada siempre debe trabajar sobre snapshots, no sobre tablas vivas.
 
 El sistema se organiza como una arquitectura desacoplada:
 
-- **Frontend**: React + Vite
+- **Frontend**: React + Vite en desarrollo; build estatico servido por Nginx en produccion
 - **Backend**: Flask + SQLAlchemy
 - **Base de datos**: PostgreSQL
+- **Rate limiting compartido**: Redis
 - **Proxy**: Nginx
 - **Orquestación**: Docker Compose
 
 ```text
-[ React / Vite ] -> [ Nginx ] -> [ Flask API ] -> [ PostgreSQL ]
+[ React estatico / Nginx ] -> [ Nginx proxy ] -> [ Flask API / Gunicorn ] -> [ PostgreSQL ]
+                                                     |
+                                                     -> [ Redis ]
 ```
 
 ---
@@ -99,6 +102,7 @@ El sistema se organiza como una arquitectura desacoplada:
 - Docker
 - Docker Compose
 - Nginx
+- Redis
 
 ---
 
@@ -111,6 +115,7 @@ Sistema Gidas/
 ├── docs/
 ├── nginx/
 ├── docker-compose.yml
+├── docker-compose.dev.yml
 └── README.md
 ```
 
@@ -180,7 +185,7 @@ El módulo de memorias es el núcleo funcional del sistema.
 ### Para correr localmente por separado
 
 - Python 3
-- Node.js 18 o superior
+- Node.js 20 o superior
 - npm
 - PostgreSQL
 
@@ -188,7 +193,12 @@ El módulo de memorias es el núcleo funcional del sistema.
 
 ## Ejecución con Docker Compose
 
-Es la forma recomendada para levantar todo el entorno integrado.
+Es la forma recomendada para levantar el sistema integrado.
+
+El proyecto separa los perfiles de uso:
+
+- `docker-compose.yml`: base orientada a produccion.
+- `docker-compose.dev.yml`: override para desarrollo local con bind mounts y Vite dev server.
 
 ### 1. Clonar el repositorio
 
@@ -197,29 +207,93 @@ git clone <url-del-repositorio>
 cd "Sistema Gidas"
 ```
 
-### 2. Configurar variables de entorno
+### 2. Desarrollo local con Docker
 
-El proyecto usa archivos de entorno dentro de cada módulo. Como base mínima:
+Configurar los archivos reales de desarrollo:
 
 - `backend/.env.docker`
 - `frontend/.env`
 
-### 3. Levantar servicios
+Levantar el entorno de desarrollo:
 
 ```bash
-docker compose up --build
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
-### Servicios disponibles
+Servicios de desarrollo:
 
 - **Proxy / acceso principal**: `http://localhost`
 - **Base de datos**: `localhost:5433`
 
-En el esquema Docker actual:
+En desarrollo:
 
-- el frontend queda detrás de `nginx`
-- el backend queda detrás de `nginx`
+- el frontend corre con Vite dentro del contenedor
+- el backend corre con Flask dev server
 - PostgreSQL expone `5433` localmente
+- Nginx usa `nginx/default.dev.conf`
+
+### 3. Produccion con Docker
+
+Crear los archivos reales desde las plantillas:
+
+```bash
+copy .env.production.example .env.production
+copy backend\.env.production.example backend\.env.production
+copy frontend\.env.production.example frontend\.env.production
+```
+
+Antes de levantar produccion, reemplazar en `backend/.env.production`:
+
+- `SECRET_KEY`
+- `JWT_SECRET`
+- `REFRESH_SECRET`
+- `POSTGRES_PASSWORD`
+- `DATABASE_URL`
+- `FRONTEND_URL`
+- `FRONTEND_URLS`
+
+Las claves deben tener al menos 32 caracteres y no pueden conservar placeholders. Si la configuracion de produccion es insegura, el backend no inicia.
+
+Levantar toda la aplicacion en produccion:
+
+```bash
+docker compose --env-file .env.production up --build -d
+```
+
+Levantar solo el backend de produccion con sus dependencias minimas:
+
+```bash
+docker compose --env-file .env.production up --build -d db redis backend
+```
+
+Ver estado:
+
+```bash
+docker compose --env-file .env.production ps
+```
+
+Ver logs del backend:
+
+```bash
+docker compose --env-file .env.production logs -f backend
+```
+
+Servicios de produccion:
+
+- **Proxy / acceso principal**: `http://localhost` o el dominio configurado en el proxy externo.
+- **Backend interno**: `backend:5000` dentro de la red Docker.
+- **Frontend interno**: `frontend:8080` dentro de la red Docker.
+- **PostgreSQL**: solo dentro de la red Docker.
+- **Redis**: solo dentro de la red Docker.
+
+En produccion:
+
+- el frontend se compila como archivos estaticos
+- el frontend se sirve con Nginx no privilegiado
+- el backend corre con Gunicorn
+- PostgreSQL no se expone al host
+- Redis almacena contadores de rate limit
+- los contenedores aplican `read_only`, `tmpfs`, `no-new-privileges`, `cap_drop` y limites de procesos cuando corresponde
 
 ---
 
@@ -292,12 +366,14 @@ Archivos reales esperados por entorno:
 - testing: `.env.testing`, `backend/.env.testing`, `frontend/.env.testing`
 - produccion: `.env.production`, `backend/.env.production`, `frontend/.env.production`
 
-El archivo `.env.docker` de raiz no se utiliza. El compose base toma por defecto `backend/.env.docker` para `db` y `backend`, y `frontend/.env` para `frontend`.
+El archivo `.env.docker` de raiz no se utiliza.
+
+El compose base toma por defecto `backend/.env.production` y queda orientado a produccion. Para desarrollo local debe usarse tambien `docker-compose.dev.yml`, que sobreescribe los archivos de entorno hacia `backend/.env.docker` y `frontend/.env`.
 
 Para levantar testing con Docker Compose:
 
 ```bash
-docker compose --env-file .env.testing up --build
+docker compose --env-file .env.testing -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
 Para levantar produccion con Docker Compose:
@@ -321,6 +397,13 @@ Variables frecuentes:
 - `FRONTEND_URL`
 - `FRONTEND_URLS`
 - `JWT_EXPIRATION_MINUTES`
+- `RATELIMIT_STORAGE_URI`
+
+En produccion `RATELIMIT_STORAGE_URI` debe apuntar a Redis:
+
+```text
+redis://redis:6379/0
+```
 
 ### Frontend
 
@@ -365,13 +448,20 @@ Antes de avanzar con cambios estructurales importantes, conviene verificar que e
 
 ## Seguridad y operación
 
-El sistema ya incorpora medidas operativas básicas:
+El sistema incorpora medidas operativas y de seguridad:
 
 - autenticación JWT
 - control de permisos por rol
-- CORS configurado para desarrollo y despliegue
-- rate limiting en backend y `nginx`
+- CORS restringido por `FRONTEND_URLS` en produccion
+- rate limiting en backend, Redis y `nginx`
 - healthcheck del backend en `/health`
+- validacion de secretos obligatorios en produccion
+- rechazo de placeholders o claves cortas en produccion
+- frontend estatico servido por Nginx no privilegiado
+- backend servido por Gunicorn en produccion
+- headers defensivos en proxy y API
+- contenedores con filesystem read-only, capacidades reducidas y `no-new-privileges`
+- `.dockerignore` para evitar copiar archivos `.env` reales a las imagenes
 
 Endpoint:
 
