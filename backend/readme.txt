@@ -127,7 +127,7 @@ Regla operativa:
 - el Excel debe consumir la ultima version cerrada y no las tablas vivas
 
 Variables de entorno
-La aplicacion carga variables desde el archivo definido en ENV_FILE. Si no se informa, usa .env.local.
+La aplicacion carga variables desde el archivo definido en ENV_FILE. Si no se informa, usa .env.
 La clase de configuracion se selecciona con APP_ENV.
 
 Valores de APP_ENV soportados:
@@ -144,12 +144,12 @@ Archivos de referencia versionables:
 - .env.production.example
 
 Archivos reales esperados:
-- .env.local para desarrollo local
-- .env.docker para el compose base
+- .env para desarrollo local y compose de desarrollo
+- .env.docker como compatibilidad o configuracion alternativa explicita
 - .env.testing para testing
 - .env.production para produccion
 
-El archivo .env.docker del backend si tiene uso: docker-compose.yml lo toma por defecto para los servicios db y backend cuando no se informa otro archivo con BACKEND_ENV_FILE. No se usa un .env.docker en la raiz del proyecto.
+El archivo .env.docker del backend ya no es el default. El compose de desarrollo toma backend/.env cuando no se informa otro archivo con BACKEND_ENV_FILE. No se usa un .env.docker en la raiz del proyecto.
 
 Variables importantes:
 - APP_ENV
@@ -172,7 +172,7 @@ Ejecucion local
    python -m venv venv
 2. Instalar dependencias:
    pip install -r requirements.txt
-3. Configurar variables de entorno en .env.local.
+3. Configurar variables de entorno en .env.
 4. Aplicar migraciones:
    flask db upgrade
 5. Ejecutar la aplicacion:

@@ -211,7 +211,7 @@ cd "Sistema Gidas"
 
 Configurar los archivos reales de desarrollo:
 
-- `backend/.env.docker`
+- `backend/.env`
 - `frontend/.env`
 
 Levantar el entorno de desarrollo:
@@ -362,13 +362,13 @@ Archivos versionables de referencia:
 
 Archivos reales esperados por entorno:
 
-- local / Docker base: `backend/.env.local`, `backend/.env.docker`, `frontend/.env`
+- local / Docker base: `backend/.env`, `frontend/.env`
 - testing: `.env.testing`, `backend/.env.testing`, `frontend/.env.testing`
 - produccion: `.env.production`, `backend/.env.production`, `frontend/.env.production`
 
-El archivo `.env.docker` de raiz no se utiliza.
+El archivo `.env.docker` de raiz no se utiliza. Si existe `backend/.env.docker`, queda solo como compatibilidad o configuracion alternativa explicita.
 
-El compose base toma por defecto `backend/.env.production` y queda orientado a produccion. Para desarrollo local debe usarse tambien `docker-compose.dev.yml`, que sobreescribe los archivos de entorno hacia `backend/.env.docker` y `frontend/.env`.
+El compose base toma por defecto `backend/.env.production` y queda orientado a produccion. Para desarrollo local debe usarse tambien `docker-compose.dev.yml`, que sobreescribe los archivos de entorno hacia `backend/.env` y `frontend/.env`.
 
 Para levantar testing con Docker Compose:
 
@@ -384,7 +384,7 @@ docker compose --env-file .env.production up --build -d
 
 ### Backend
 
-El backend carga variables desde el archivo definido en `ENV_FILE`. Si no se informa, usa `.env.local`.
+El backend carga variables desde el archivo definido en `ENV_FILE`. Si no se informa, usa `.env`.
 La clase de configuracion se selecciona con `APP_ENV`.
 
 Variables frecuentes:
