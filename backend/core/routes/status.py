@@ -1,9 +1,2 @@
-from flask import Blueprint, jsonify
-from extension import limiter
-
-health_bp = Blueprint("health", __name__)
-
-@health_bp.route("/health", methods=["GET"])
-@limiter.exempt
-def health():
-    return jsonify({"status": "ok"}), 200
+﻿"""Compatibility wrapper for the modular backend layout."""
+from modules.shared.routes.status import *  # noqa: F401,F403
