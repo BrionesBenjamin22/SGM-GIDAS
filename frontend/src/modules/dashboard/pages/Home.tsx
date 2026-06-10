@@ -7,6 +7,7 @@ import Button from "@/components/Button";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 import { useAuth } from "@/context/AuthContext";
+import { ArrowUp } from "lucide-react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -29,6 +30,10 @@ const CHART_COLORS = [
   "#8b5cf6",
   "#06b6d4",
 ];
+
+function scrollToPageTop() {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 
 type ChartItem = {
   label: string;
@@ -485,6 +490,19 @@ export default function Home() {
             </Button>
           </div>
         )}
+
+        <div className="flex justify-end border-t border-slate-100 pt-4">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={scrollToPageTop}
+            className="flex items-center gap-2"
+          >
+            <ArrowUp className="h-4 w-4" />
+            Volver al inicio
+          </Button>
+        </div>
 
         <ConfirmDialog
           open={showConfirm}
