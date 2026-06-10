@@ -1,6 +1,7 @@
 from extension import db
 from sqlalchemy import func
 from core.models.programa_incentivos import ProgramaIncentivos
+from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 def _validar_nombre(nombre, programa_id=None):
@@ -23,7 +24,7 @@ def _validar_nombre(nombre, programa_id=None):
     return nombre
 
 
-def crear_programa_incentivos(data):
+def crear_programa_incentivos(data, user_id=None):
     if not data:
         raise ValueError("Los datos no pueden estar vacíos.")
 
@@ -39,6 +40,7 @@ def crear_programa_incentivos(data):
         raise ValueError("Ya existe un programa de incentivos con ese nombre.")
 
     nuevo = ProgramaIncentivos(nombre=nombre)
+    CatalogoAuditoriaService.marcar_creacion(nuevo, user_id)
     db.session.add(nuevo)
 
     try:
@@ -49,7 +51,7 @@ def crear_programa_incentivos(data):
         raise
 
 
-def actualizar_programa_incentivos(id, data):
+def actualizar_programa_incentivos(id, data, user_id=None):
     programa = ProgramaIncentivos.query.get(id)
     if not programa:
         raise ValueError("Programa de incentivos no encontrado.")
@@ -70,7 +72,12 @@ def actualizar_programa_incentivos(id, data):
     if duplicado:
         raise ValueError("Ya existe un programa de incentivos con ese nombre.")
 
+    cambios = CatalogoAuditoriaService.construir_cambios(
+        programa,
+        {"nombre": nombre}
+    )
     programa.nombre = nombre
+    CatalogoAuditoriaService.marcar_actualizacion(programa, cambios, user_id)
 
     try:
         db.session.commit()
@@ -80,7 +87,7 @@ def actualizar_programa_incentivos(id, data):
         raise
 
 
-def eliminar_programa_incentivos(id):
+def eliminar_programa_incentivos(id, user_id=None):
     programa = ProgramaIncentivos.query.get(id)
     if not programa:
         raise ValueError("Programa de incentivos no encontrado.")
@@ -90,7 +97,7 @@ def eliminar_programa_incentivos(id):
             "No se puede eliminar el programa porque está asociado a investigadores."
         )
 
-    db.session.delete(programa)
+    CatalogoAuditoriaService.marcar_baja(programa, user_id)
     try:
         db.session.commit()
         return programa
@@ -99,8 +106,13 @@ def eliminar_programa_incentivos(id):
         raise
 
 
-def listar_programas_incentivos():
-    return ProgramaIncentivos.query.all()
+def listar_programas_incentivos(activos="true"):
+    query = ProgramaIncentivos.query
+    if activos == "true":
+        query = query.filter(ProgramaIncentivos.deleted_at.is_(None))
+    elif activos == "false":
+        query = query.filter(ProgramaIncentivos.deleted_at.isnot(None))
+    return query.order_by(ProgramaIncentivos.nombre.asc()).all()
 
 
 def obtener_programa_incentivos_por_id(id):

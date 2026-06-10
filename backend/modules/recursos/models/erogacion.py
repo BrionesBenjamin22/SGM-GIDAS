@@ -2,7 +2,7 @@ from datetime import date
 from extension import db
 from core.models.audit_mixin import AuditMixin
 
-class TipoErogacion(db.Model):
+class TipoErogacion(db.Model, AuditMixin):
     __tablename__ = 'tipo_erogacion'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
@@ -11,7 +11,7 @@ class TipoErogacion(db.Model):
     erogaciones = db.relationship('Erogacion', back_populates='tipo_erogacion', cascade="all, delete-orphan")
 
     def serialize(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        return self.to_dict()
 
 
 class Erogacion(db.Model, AuditMixin):

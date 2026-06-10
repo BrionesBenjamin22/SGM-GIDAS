@@ -203,7 +203,7 @@ class AdoptanteTransferenciaMemoriaVersion(db.Model, AuditMixin):
         return self.to_dict()
 
 
-class TipoContrato(db.Model):
+class TipoContrato(db.Model, AuditMixin):
     __tablename__ = 'tipo_contrato_transferencia'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
@@ -212,4 +212,4 @@ class TipoContrato(db.Model):
     transferencias = db.relationship('TransferenciaSocioProductiva', back_populates='tipo_contrato_transferencia')
 
     def serialize(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        return self.to_dict()

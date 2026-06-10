@@ -2,6 +2,7 @@ from sqlalchemy import func
 
 from extension import db
 from core.models.personal import TipoDedicacion
+from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 def _validar_id_positivo(tipo_dedicacion_id):
@@ -64,11 +65,12 @@ def _obtener_tipo_dedicacion_o_error(tipo_dedicacion_id):
     return tipo
 
 
-def crear_tipo_dedicacion(data):
+def crear_tipo_dedicacion(data, user_id=None):
     data = _validar_data(data)
     nombre = _validar_nombre(data.get("nombre"))
 
     nuevo = TipoDedicacion(nombre=nombre)
+    CatalogoAuditoriaService.marcar_creacion(nuevo, user_id)
     db.session.add(nuevo)
 
     try:
@@ -79,12 +81,14 @@ def crear_tipo_dedicacion(data):
         raise
 
 
-def actualizar_tipo_dedicacion(id, data):
+def actualizar_tipo_dedicacion(id, data, user_id=None):
     data = _validar_data(data)
     tipo = _obtener_tipo_dedicacion_o_error(id)
     nombre = _validar_nombre(data.get("nombre"), tipo_dedicacion_id=tipo.id)
 
+    cambios = CatalogoAuditoriaService.construir_cambios(tipo, {"nombre": nombre})
     tipo.nombre = nombre
+    CatalogoAuditoriaService.marcar_actualizacion(tipo, cambios, user_id)
 
     try:
         db.session.commit()
@@ -94,7 +98,7 @@ def actualizar_tipo_dedicacion(id, data):
         raise
 
 
-def eliminar_tipo_dedicacion(id):
+def eliminar_tipo_dedicacion(id, user_id=None):
     tipo = _obtener_tipo_dedicacion_o_error(id)
 
     if len(tipo.investigadores) > 0:
@@ -102,7 +106,7 @@ def eliminar_tipo_dedicacion(id):
             "No se puede eliminar el tipo de dedicación porque está asociado a investigadores."
         )
 
-    db.session.delete(tipo)
+    CatalogoAuditoriaService.marcar_baja(tipo, user_id)
     try:
         db.session.commit()
         return tipo
@@ -111,8 +115,13 @@ def eliminar_tipo_dedicacion(id):
         raise
 
 
-def listar_tipos_dedicacion():
-    return TipoDedicacion.query.order_by(TipoDedicacion.nombre.asc()).all()
+def listar_tipos_dedicacion(activos="true"):
+    query = TipoDedicacion.query
+    if activos == "true":
+        query = query.filter(TipoDedicacion.deleted_at.is_(None))
+    elif activos == "false":
+        query = query.filter(TipoDedicacion.deleted_at.isnot(None))
+    return query.order_by(TipoDedicacion.nombre.asc()).all()
 
 
 

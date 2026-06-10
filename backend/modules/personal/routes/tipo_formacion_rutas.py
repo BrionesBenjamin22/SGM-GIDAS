@@ -23,6 +23,11 @@ def listar():
 def obtener(id):
     return TipoFormacionController.obtener_por_id(request, id)
 
+@tipo_formacion_becario_bp.route("/<int:id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def historial(id):
+    return TipoFormacionController.historial(request, id)
+
 @tipo_formacion_becario_bp.route("/<int:id>", methods=["PUT"])
 @requiere_rol("ADMIN", "GESTOR")
 def actualizar(id):

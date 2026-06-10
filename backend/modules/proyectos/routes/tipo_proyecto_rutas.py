@@ -18,6 +18,11 @@ def get_all():
 def get_by_id(tipo_id):
     return TipoProyectoController.get_by_id(tipo_id)
 
+@tipo_proyecto_bp.route("/<int:tipo_id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_historial(tipo_id):
+    return TipoProyectoController.get_historial(tipo_id)
+
 @tipo_proyecto_bp.route("/", methods=["POST"])
 @requiere_rol("ADMIN", "GESTOR")
 def create():

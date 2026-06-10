@@ -1,4 +1,5 @@
 from core.models.actividad_docencia import RolActividad
+from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from extension import db
 from sqlalchemy import func
 
@@ -52,10 +53,15 @@ class RolActividadService:
         return rol
 
     @staticmethod
-    def get_all():
+    def get_all(activos="true"):
+        query = RolActividad.query
+        if activos == "true":
+            query = query.filter(RolActividad.deleted_at.is_(None))
+        elif activos == "false":
+            query = query.filter(RolActividad.deleted_at.isnot(None))
         return [
             r.serialize()
-            for r in RolActividad.query.order_by(RolActividad.nombre.asc()).all()
+            for r in query.order_by(RolActividad.nombre.asc()).all()
         ]
 
     @staticmethod
@@ -64,11 +70,12 @@ class RolActividadService:
         return rol.serialize()
 
     @staticmethod
-    def create(data: dict):
+    def create(data: dict, user_id=None):
         RolActividadService._validar_payload(data)
         nombre = RolActividadService._validar_nombre(data.get("nombre"))
 
         rol = RolActividad(nombre=nombre)
+        CatalogoAuditoriaService.marcar_creacion(rol, user_id)
         db.session.add(rol)
 
         try:
@@ -80,15 +87,21 @@ class RolActividadService:
         return rol.serialize()
 
     @staticmethod
-    def update(rol_id: int, data: dict):
+    def update(rol_id: int, data: dict, user_id=None):
         RolActividadService._validar_payload(data)
         rol = RolActividadService._get_or_404(rol_id)
 
         if "nombre" in data:
-            rol.nombre = RolActividadService._validar_nombre(
+            nombre = RolActividadService._validar_nombre(
                 data.get("nombre"),
                 rol_id=rol.id
             )
+            cambios = CatalogoAuditoriaService.construir_cambios(
+                rol,
+                {"nombre": nombre}
+            )
+            rol.nombre = nombre
+            CatalogoAuditoriaService.marcar_actualizacion(rol, cambios, user_id)
 
         try:
             db.session.commit()
@@ -99,7 +112,7 @@ class RolActividadService:
         return rol.serialize()
 
     @staticmethod
-    def delete(rol_id: int):
+    def delete(rol_id: int, user_id=None):
         rol = RolActividadService._get_or_404(rol_id)
 
         if rol.actividades_docencia:
@@ -107,7 +120,7 @@ class RolActividadService:
                 "No se puede eliminar el rol de actividad porque tiene actividades asociadas"
             )
 
-        db.session.delete(rol)
+        CatalogoAuditoriaService.marcar_baja(rol, user_id)
 
         try:
             db.session.commit()

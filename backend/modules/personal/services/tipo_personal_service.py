@@ -1,8 +1,9 @@
 from extension import db
 from core.models.tipo_personal import TipoPersonal
+from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
-def crear_tipo_personal(data):
+def crear_tipo_personal(data, user_id=None):
     if not data:
         raise ValueError("Los datos no pueden estar vacíos.")
 
@@ -18,6 +19,7 @@ def crear_tipo_personal(data):
         raise ValueError("Ya existe un tipo de personal con ese nombre.")
 
     nuevo_tipo = TipoPersonal(nombre=nombre)
+    CatalogoAuditoriaService.marcar_creacion(nuevo_tipo, user_id)
     db.session.add(nuevo_tipo)
 
     try:
@@ -28,7 +30,7 @@ def crear_tipo_personal(data):
         raise
 
 
-def actualizar_tipo_personal(id, data):
+def actualizar_tipo_personal(id, data, user_id=None):
     tipo_personal = TipoPersonal.query.get(id)
     if not tipo_personal:
         raise ValueError("Tipo de personal no encontrado.")
@@ -49,7 +51,12 @@ def actualizar_tipo_personal(id, data):
     if duplicado:
         raise ValueError("Ya existe un tipo de personal con ese nombre.")
 
+    cambios = CatalogoAuditoriaService.construir_cambios(
+        tipo_personal,
+        {"nombre": nombre}
+    )
     tipo_personal.nombre = nombre
+    CatalogoAuditoriaService.marcar_actualizacion(tipo_personal, cambios, user_id)
 
     try:
         db.session.commit()
@@ -59,7 +66,7 @@ def actualizar_tipo_personal(id, data):
         raise
 
 
-def eliminar_tipo_personal(id):
+def eliminar_tipo_personal(id, user_id=None):
     tipo_personal = TipoPersonal.query.get(id)
     if not tipo_personal:
         raise ValueError("Tipo de personal no encontrado.")
@@ -69,7 +76,7 @@ def eliminar_tipo_personal(id):
             "No se puede eliminar el tipo de personal porque está asociado a personal."
         )
 
-    db.session.delete(tipo_personal)
+    CatalogoAuditoriaService.marcar_baja(tipo_personal, user_id)
 
     try:
         db.session.commit()
@@ -79,8 +86,13 @@ def eliminar_tipo_personal(id):
         raise
 
 
-def listar_tipos():
-    return TipoPersonal.query.all()
+def listar_tipos(activos="true"):
+    query = TipoPersonal.query
+    if activos == "true":
+        query = query.filter(TipoPersonal.deleted_at.is_(None))
+    elif activos == "false":
+        query = query.filter(TipoPersonal.deleted_at.isnot(None))
+    return query.order_by(TipoPersonal.nombre.asc()).all()
 
 
 def obtener_tipo_por_id(id):

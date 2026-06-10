@@ -138,7 +138,7 @@ class TrabajoReunionCientificaMemoriaVersion(db.Model, AuditMixin):
         return data
     
     
-class TipoReunion(db.Model):
+class TipoReunion(db.Model, AuditMixin):
     __tablename__ = 'tipo_reunion_cientifica'
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False, unique=True)
@@ -161,8 +161,5 @@ class TipoReunion(db.Model):
     )
 
     def serialize(self):
-        return {
-            "id": self.id,
-            "nombre": self.nombre
-        }
+        return self.to_dict()
         

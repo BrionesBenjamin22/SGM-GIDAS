@@ -1,6 +1,7 @@
 from extension import db
 from sqlalchemy import func
 from core.models.actividad_docencia import GradoAcademico
+from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 class GradoAcademicoService:
@@ -36,8 +37,13 @@ class GradoAcademicoService:
         return grado
 
     @staticmethod
-    def get_all():
-        return [g.serialize() for g in GradoAcademico.query.order_by(GradoAcademico.nombre.asc()).all()]
+    def get_all(activos="true"):
+        query = GradoAcademico.query
+        if activos == "true":
+            query = query.filter(GradoAcademico.deleted_at.is_(None))
+        elif activos == "false":
+            query = query.filter(GradoAcademico.deleted_at.isnot(None))
+        return [g.serialize() for g in query.order_by(GradoAcademico.nombre.asc()).all()]
 
     @staticmethod
     def get_by_id(grado_id: int):
@@ -45,7 +51,7 @@ class GradoAcademicoService:
         return grado.serialize()
 
     @staticmethod
-    def create(data: dict):
+    def create(data: dict, user_id=None):
         GradoAcademicoService._validar_payload(data)
         nombre = GradoAcademicoService._validar_nombre(data.get("nombre"))
 
@@ -57,6 +63,7 @@ class GradoAcademicoService:
             raise ValueError("Ya existe un grado academico con ese nombre")
 
         grado = GradoAcademico(nombre=nombre)
+        CatalogoAuditoriaService.marcar_creacion(grado, user_id)
         db.session.add(grado)
 
         try:
@@ -68,7 +75,7 @@ class GradoAcademicoService:
         return grado.serialize()
 
     @staticmethod
-    def update(grado_id: int, data: dict):
+    def update(grado_id: int, data: dict, user_id=None):
         GradoAcademicoService._validar_payload(data)
         grado = GradoAcademicoService._get_or_404(grado_id)
 
@@ -83,7 +90,12 @@ class GradoAcademicoService:
             if existente:
                 raise ValueError("Ya existe un grado academico con ese nombre")
 
+            cambios = CatalogoAuditoriaService.construir_cambios(
+                grado,
+                {"nombre": nombre}
+            )
             grado.nombre = nombre
+            CatalogoAuditoriaService.marcar_actualizacion(grado, cambios, user_id)
 
         try:
             db.session.commit()
@@ -94,7 +106,7 @@ class GradoAcademicoService:
         return grado.serialize()
 
     @staticmethod
-    def delete(grado_id: int):
+    def delete(grado_id: int, user_id=None):
         grado = GradoAcademicoService._get_or_404(grado_id)
 
         if grado.participaciones:
@@ -102,7 +114,7 @@ class GradoAcademicoService:
                 "No se puede eliminar el grado academico porque tiene actividades asociadas"
             )
 
-        db.session.delete(grado)
+        CatalogoAuditoriaService.marcar_baja(grado, user_id)
 
         try:
             db.session.commit()

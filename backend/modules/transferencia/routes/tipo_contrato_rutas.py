@@ -16,6 +16,10 @@ tipo_contrato_bp.route("/<int:tipo_contrato_id>", methods=["GET"])(
     requiere_rol("ADMIN", "GESTOR", "LECTURA")(TipoContratoController.get_by_id)
 )
 
+tipo_contrato_bp.route("/<int:tipo_contrato_id>/historial", methods=["GET"])(
+    requiere_rol("ADMIN", "GESTOR", "LECTURA")(TipoContratoController.get_historial)
+)
+
 tipo_contrato_bp.route("/", methods=["POST"])(
     requiere_rol("ADMIN", "GESTOR")(TipoContratoController.create)
 )

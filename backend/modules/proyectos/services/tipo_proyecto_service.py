@@ -1,6 +1,7 @@
 from sqlalchemy import func
 
 from core.models.proyecto_investigacion import TipoProyecto
+from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from extension import db
 
 
@@ -66,14 +67,16 @@ class TipoProyectoService:
 
     @staticmethod
     def _serializar(tipo):
-        return {
-            "id": tipo.id,
-            "nombre": tipo.nombre
-        }
+        return tipo.serialize()
 
     @staticmethod
-    def get_all():
-        tipos = TipoProyecto.query.order_by(TipoProyecto.nombre.asc()).all()
+    def get_all(activos="true"):
+        query = TipoProyecto.query
+        if activos == "true":
+            query = query.filter(TipoProyecto.deleted_at.is_(None))
+        elif activos == "false":
+            query = query.filter(TipoProyecto.deleted_at.isnot(None))
+        tipos = query.order_by(TipoProyecto.nombre.asc()).all()
         return [TipoProyectoService._serializar(t) for t in tipos]
 
     @staticmethod
@@ -82,11 +85,12 @@ class TipoProyectoService:
         return TipoProyectoService._serializar(tipo)
 
     @staticmethod
-    def create(data: dict):
+    def create(data: dict, user_id=None):
         data = TipoProyectoService._validar_data(data)
         nombre = TipoProyectoService._validar_nombre(data.get("nombre"))
 
         tipo = TipoProyecto(nombre=nombre)
+        CatalogoAuditoriaService.marcar_creacion(tipo, user_id)
 
         db.session.add(tipo)
         try:
@@ -98,10 +102,13 @@ class TipoProyectoService:
         return TipoProyectoService._serializar(tipo)
 
     @staticmethod
-    def update(tipo_id: int, data: dict):
+    def update(tipo_id: int, data: dict, user_id=None):
         data = TipoProyectoService._validar_data(data)
         tipo = TipoProyectoService._obtener_tipo_o_error(tipo_id)
-        tipo.nombre = TipoProyectoService._validar_nombre(data.get("nombre"), tipo.id)
+        nombre = TipoProyectoService._validar_nombre(data.get("nombre"), tipo.id)
+        cambios = CatalogoAuditoriaService.construir_cambios(tipo, {"nombre": nombre})
+        tipo.nombre = nombre
+        CatalogoAuditoriaService.marcar_actualizacion(tipo, cambios, user_id)
 
         try:
             db.session.commit()
@@ -112,7 +119,7 @@ class TipoProyectoService:
         return TipoProyectoService._serializar(tipo)
 
     @staticmethod
-    def delete(tipo_id: int):
+    def delete(tipo_id: int, user_id=None):
         tipo = TipoProyectoService._obtener_tipo_o_error(tipo_id)
 
         if len(tipo.proyectos_investigacion) > 0:
@@ -120,7 +127,7 @@ class TipoProyectoService:
                 "No se puede eliminar el tipo porque tiene proyectos asociados"
             )
 
-        db.session.delete(tipo)
+        CatalogoAuditoriaService.marcar_baja(tipo, user_id)
         try:
             db.session.commit()
         except Exception:

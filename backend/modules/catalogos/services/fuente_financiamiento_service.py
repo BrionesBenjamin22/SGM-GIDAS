@@ -1,8 +1,9 @@
 from extension import db
 from core.models.fuente_financiamiento import FuenteFinanciamiento
+from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
-def crear_fuente_financiamiento(data):
+def crear_fuente_financiamiento(data, user_id=None):
     if not data:
         raise ValueError("Los datos no pueden estar vacíos.")
 
@@ -26,6 +27,7 @@ def crear_fuente_financiamiento(data):
 
     # Se guarda el nombre tal como lo escribió el usuario
     nueva = FuenteFinanciamiento(nombre=nombre_original)
+    CatalogoAuditoriaService.marcar_creacion(nueva, user_id)
     db.session.add(nueva)
 
     try:
@@ -36,7 +38,7 @@ def crear_fuente_financiamiento(data):
         raise
 
 
-def actualizar_fuente_financiamiento(id, data):
+def actualizar_fuente_financiamiento(id, data, user_id=None):
     fuente = FuenteFinanciamiento.query.get(id)
     if not fuente:
         raise ValueError("Fuente de financiamiento no encontrada.")
@@ -57,7 +59,12 @@ def actualizar_fuente_financiamiento(id, data):
     if duplicado:
         raise ValueError("Ya existe una fuente de financiamiento con ese nombre.")
 
+    cambios = CatalogoAuditoriaService.construir_cambios(
+        fuente,
+        {"nombre": nombre}
+    )
     fuente.nombre = nombre
+    CatalogoAuditoriaService.marcar_actualizacion(fuente, cambios, user_id)
 
     try:
         db.session.commit()
@@ -67,12 +74,12 @@ def actualizar_fuente_financiamiento(id, data):
         raise
 
 
-def eliminar_fuente_financiamiento(id):
+def eliminar_fuente_financiamiento(id, user_id=None):
     fuente = FuenteFinanciamiento.query.get(id)
     if not fuente:
         raise ValueError("Fuente de financiamiento no encontrada.")
 
-    if fuente.becarios.count() > 0:
+    if fuente.becas.count() > 0:
         raise ValueError(
             "No se puede eliminar la fuente de financiamiento porque está asociada a becarios."
         )
@@ -82,7 +89,7 @@ def eliminar_fuente_financiamiento(id):
             "No se puede eliminar la fuente de financiamiento porque está asociada a proyectos."
         )
 
-    db.session.delete(fuente)
+    CatalogoAuditoriaService.marcar_baja(fuente, user_id)
     try:
         db.session.commit()
         return fuente
@@ -91,8 +98,13 @@ def eliminar_fuente_financiamiento(id):
         raise
 
 
-def listar_fuentes_financiamiento():
-    return FuenteFinanciamiento.query.all()
+def listar_fuentes_financiamiento(activos="true"):
+    query = FuenteFinanciamiento.query
+    if activos == "true":
+        query = query.filter(FuenteFinanciamiento.deleted_at.is_(None))
+    elif activos == "false":
+        query = query.filter(FuenteFinanciamiento.deleted_at.isnot(None))
+    return query.order_by(FuenteFinanciamiento.nombre.asc()).all()
 
 
 def obtener_fuente_financiamiento_por_id(id):

@@ -1,5 +1,6 @@
 from sqlalchemy import func
 from core.models.registro_patente import TipoRegistroPropiedad
+from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from extension import db
 
 
@@ -26,10 +27,15 @@ class TipoRegistroPropiedadService:
         return nombre
 
     @staticmethod
-    def get_all():
+    def get_all(activos="true"):
+        query = TipoRegistroPropiedad.query
+        if activos == "true":
+            query = query.filter(TipoRegistroPropiedad.deleted_at.is_(None))
+        elif activos == "false":
+            query = query.filter(TipoRegistroPropiedad.deleted_at.isnot(None))
         return [
             t.serialize()
-            for t in TipoRegistroPropiedad.query.order_by(
+            for t in query.order_by(
                 TipoRegistroPropiedad.nombre.asc()
             ).all()
         ]
@@ -42,7 +48,7 @@ class TipoRegistroPropiedadService:
         return tipo.serialize()
 
     @staticmethod
-    def create(data: dict):
+    def create(data: dict, user_id=None):
         if not data:
             raise Exception("Los datos no pueden estar vacios")
 
@@ -51,12 +57,13 @@ class TipoRegistroPropiedadService:
                 data.get("nombre")
             )
         )
+        CatalogoAuditoriaService.marcar_creacion(nuevo, user_id)
         db.session.add(nuevo)
         db.session.commit()
         return nuevo.serialize()
 
     @staticmethod
-    def update(tipo_id: int, data: dict):
+    def update(tipo_id: int, data: dict, user_id=None):
         if not data:
             raise Exception("Los datos no pueden estar vacios")
 
@@ -65,16 +72,22 @@ class TipoRegistroPropiedadService:
             raise Exception("Tipo de registro no encontrado")
 
         if "nombre" in data:
-            tipo.nombre = TipoRegistroPropiedadService._validar_nombre(
+            nombre = TipoRegistroPropiedadService._validar_nombre(
                 data["nombre"],
                 tipo_id=tipo_id
             )
+            cambios = CatalogoAuditoriaService.construir_cambios(
+                tipo,
+                {"nombre": nombre}
+            )
+            tipo.nombre = nombre
+            CatalogoAuditoriaService.marcar_actualizacion(tipo, cambios, user_id)
 
         db.session.commit()
         return tipo.serialize()
 
     @staticmethod
-    def delete(tipo_id: int):
+    def delete(tipo_id: int, user_id=None):
         tipo = db.session.get(TipoRegistroPropiedad, tipo_id)
         if not tipo:
             raise Exception("Tipo de registro no encontrado")
@@ -84,6 +97,6 @@ class TipoRegistroPropiedadService:
                 "No se puede eliminar el tipo de registro porque tiene registros asociados"
             )
 
-        db.session.delete(tipo)
+        CatalogoAuditoriaService.marcar_baja(tipo, user_id)
         db.session.commit()
         return {"message": "Tipo de registro eliminado correctamente"}

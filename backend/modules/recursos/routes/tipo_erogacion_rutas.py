@@ -16,6 +16,10 @@ tipo_erogacion_bp.route("/<int:tipo_id>", methods=["GET"])(
     requiere_rol("ADMIN", "GESTOR", "LECTURA")(TipoErogacionController.get_by_id)
 )
 
+tipo_erogacion_bp.route("/<int:tipo_id>/historial", methods=["GET"])(
+    requiere_rol("ADMIN", "GESTOR", "LECTURA")(TipoErogacionController.get_historial)
+)
+
 tipo_erogacion_bp.route("/", methods=["POST"])(
     requiere_rol("ADMIN", "GESTOR")(TipoErogacionController.create)
 )

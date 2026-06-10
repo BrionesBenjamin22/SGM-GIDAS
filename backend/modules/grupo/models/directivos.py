@@ -44,7 +44,7 @@ class DirectivoGrupo(db.Model, AuditMixin):
     )
     
     
-class Cargo(db.Model):
+class Cargo(db.Model, AuditMixin):
     __tablename__ = 'cargo'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
@@ -56,7 +56,7 @@ class Cargo(db.Model):
     )
 
     def serialize(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        return self.to_dict()
 
 
 class Directivo(db.Model, AuditMixin):

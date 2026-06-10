@@ -23,6 +23,10 @@ def get_all():
 def get_by_id(grado_id):
     return GradoAcademicoController.get_by_id(grado_id)
 
+@grado_academico_bp.route("/<int:grado_id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_historial(grado_id):
+    return GradoAcademicoController.get_historial(grado_id)
 
 # =========================
 # MODIFICACIÓN

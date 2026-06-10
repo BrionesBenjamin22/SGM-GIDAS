@@ -1,7 +1,8 @@
 from extension import db
+from core.models.audit_mixin import AuditMixin
 
 
-class TipoPersonal(db.Model):
+class TipoPersonal(db.Model, AuditMixin):
     __tablename__ = 'tipo_personal'
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(50), nullable=False)
@@ -10,6 +11,6 @@ class TipoPersonal(db.Model):
 
     
     def serialize(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}  # type: ignore
+        return self.to_dict()
     
    

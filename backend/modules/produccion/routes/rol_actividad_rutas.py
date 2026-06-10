@@ -14,6 +14,11 @@ def get_all_rol_actividad():
 def get_rol_actividad_by_id(rol_id):
     return RolActividadController.get_by_id(rol_id)
 
+@rol_actividad_bp.route('/rol-actividad/<int:rol_id>/historial', methods=['GET'])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_historial_rol_actividad(rol_id):
+    return RolActividadController.get_historial(rol_id)
+
 @rol_actividad_bp.route('/rol-actividad', methods=['POST'])
 @requiere_rol("ADMIN", "GESTOR")
 def create_rol_actividad():

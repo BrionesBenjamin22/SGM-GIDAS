@@ -10,6 +10,9 @@ cargo_bp.route("/", methods=["GET"])(
 cargo_bp.route("/<int:cargo_id>", methods=["GET"])(
     requiere_rol("ADMIN", "GESTOR", "LECTURA")(CargoController.get_by_id)
 )
+cargo_bp.route("/<int:cargo_id>/historial", methods=["GET"])(
+    requiere_rol("ADMIN", "GESTOR", "LECTURA")(CargoController.get_historial)
+)
 cargo_bp.route("/", methods=["POST"])(
     requiere_rol("ADMIN", "GESTOR")(CargoController.create)
 )

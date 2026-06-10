@@ -111,7 +111,7 @@ class ActividadDocencia(db.Model, AuditMixin):
 
 
 
-class RolActividad(db.Model):
+class RolActividad(db.Model, AuditMixin):
     __tablename__ = 'rol_actividad_docencia'
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False, unique=True)
@@ -123,13 +123,10 @@ class RolActividad(db.Model):
     )
 
     def serialize(self):
-        return {
-            "id": self.id,
-            "nombre": self.nombre
-        }
+        return self.to_dict()
         
         
-class GradoAcademico(db.Model):
+class GradoAcademico(db.Model, AuditMixin):
     __tablename__ = 'grado_academico'
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False, unique=True)
@@ -141,10 +138,7 @@ class GradoAcademico(db.Model):
     )
 
     def serialize(self):
-        return {
-            "id": self.id,
-            "nombre": self.nombre
-        }
+        return self.to_dict()
         
         
 class InvestigadorActividadGrado(db.Model, AuditMixin):

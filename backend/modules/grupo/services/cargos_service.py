@@ -1,13 +1,19 @@
 from sqlalchemy import func
 from extension import db
 from core.models.directivos import Cargo
+from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 class CargoService:
 
     @staticmethod
-    def get_all():
-        cargos = Cargo.query.order_by(Cargo.nombre.asc()).all()
+    def get_all(activos="true"):
+        query = Cargo.query
+        if activos == "true":
+            query = query.filter(Cargo.deleted_at.is_(None))
+        elif activos == "false":
+            query = query.filter(Cargo.deleted_at.isnot(None))
+        cargos = query.order_by(Cargo.nombre.asc()).all()
         return [c.serialize() for c in cargos]
 
     @staticmethod
@@ -36,11 +42,12 @@ class CargoService:
         return nombre
 
     @staticmethod
-    def create(data: dict):
+    def create(data: dict, user_id=None):
         if not data:
             raise ValueError("Los datos no pueden estar vacios")
 
         cargo = Cargo(nombre=CargoService._validar_nombre(data.get("nombre")))
+        CatalogoAuditoriaService.marcar_creacion(cargo, user_id)
 
         db.session.add(cargo)
         db.session.commit()
@@ -48,7 +55,7 @@ class CargoService:
         return cargo.serialize()
 
     @staticmethod
-    def update(cargo_id: int, data: dict):
+    def update(cargo_id: int, data: dict, user_id=None):
         if not data:
             raise ValueError("Los datos no pueden estar vacios")
 
@@ -58,17 +65,23 @@ class CargoService:
             raise ValueError("Cargo no encontrado")
 
         if "nombre" in data:
-            cargo.nombre = CargoService._validar_nombre(
+            nombre = CargoService._validar_nombre(
                 data.get("nombre"),
                 cargo_id=cargo_id
             )
+            cambios = CatalogoAuditoriaService.construir_cambios(
+                cargo,
+                {"nombre": nombre}
+            )
+            cargo.nombre = nombre
+            CatalogoAuditoriaService.marcar_actualizacion(cargo, cambios, user_id)
 
         db.session.commit()
 
         return cargo.serialize()
 
     @staticmethod
-    def delete(cargo_id: int):
+    def delete(cargo_id: int, user_id=None):
         cargo = db.session.get(Cargo, cargo_id)
 
         if not cargo:
@@ -79,7 +92,7 @@ class CargoService:
                 "No se puede eliminar el cargo porque tiene participaciones asociadas"
             )
 
-        db.session.delete(cargo)
+        CatalogoAuditoriaService.marcar_baja(cargo, user_id)
         db.session.commit()
 
         return {"message": "Cargo eliminado correctamente"}

@@ -1,6 +1,8 @@
 from extension import db
+from core.models.audit_mixin import AuditMixin
 
-class FuenteFinanciamiento(db.Model):
+
+class FuenteFinanciamiento(db.Model, AuditMixin):
     __tablename__ = 'fuente_financiamiento'
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.Text) 
@@ -11,7 +13,7 @@ class FuenteFinanciamiento(db.Model):
     erogaciones = db.relationship('Erogacion', back_populates='fuente_financiamiento', cascade="all, delete-orphan")
     
     def serialize(self):
-        data = {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        data = self.to_dict()
         data["proyectos"] = [p.codigo_proyecto for p in self.proyectos_investigacion]
         data["becas"] = [b.nombre_beca for b in self.becas]
         return data

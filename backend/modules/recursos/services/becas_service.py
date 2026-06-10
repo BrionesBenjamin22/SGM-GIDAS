@@ -89,8 +89,13 @@ def _validar_beca_unica(nombre_beca, fuente_financiamiento_id, beca_id=None):
 class BecaService:
 
     @staticmethod
-    def get_all():
-        becas = Beca.query.filter(Beca.deleted_at.is_(None)).all()
+    def get_all(activos="true"):
+        query = Beca.query
+        if activos == "true":
+            query = query.filter(Beca.deleted_at.is_(None))
+        elif activos == "false":
+            query = query.filter(Beca.deleted_at.isnot(None))
+        becas = query.order_by(Beca.nombre_beca.asc()).all()
         return [b.serialize() for b in becas]
 
     @staticmethod

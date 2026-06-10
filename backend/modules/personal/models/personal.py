@@ -184,7 +184,7 @@ class Becario(db.Model, AuditMixin):
 
         return data
 
-class TipoFormacion(db.Model):
+class TipoFormacion(db.Model, AuditMixin):
     __tablename__ = 'tipo_formacion_becario'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -197,16 +197,13 @@ class TipoFormacion(db.Model):
     )
 
     def serialize(self):
-        return {
-            "id": self.id,
-            "nombre": self.nombre
-        }
+        return self.to_dict()
 
 
 # =====================================================
 # TIPO DEDICACIÓN
 # =====================================================
-class TipoDedicacion(db.Model):
+class TipoDedicacion(db.Model, AuditMixin):
     __tablename__ = 'tipo_dedicacion'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -219,10 +216,7 @@ class TipoDedicacion(db.Model):
     )
 
     def serialize(self):
-        return {
-            "id": self.id,
-            "nombre": self.nombre
-        }
+        return self.to_dict()
 
 
 # =====================================================

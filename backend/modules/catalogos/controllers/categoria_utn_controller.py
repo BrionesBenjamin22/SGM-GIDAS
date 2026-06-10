@@ -1,4 +1,4 @@
-from flask import Request, Response, jsonify
+from flask import Request, Response, jsonify, g
 from core.services.categoria_utn_service import (
     crear_categoria_utn,
     actualizar_categoria_utn,
@@ -6,6 +6,8 @@ from core.services.categoria_utn_service import (
     listar_categorias_utn,
     obtener_categoria_utn_por_id
 )   
+from core.models.categoria_utn import CategoriaUtn
+from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 class CategoriaUtnController:
@@ -15,7 +17,7 @@ class CategoriaUtnController:
         data = req.get_json()
 
         try:
-            categoria = crear_categoria_utn(data)
+            categoria = crear_categoria_utn(data, getattr(g, "current_user_id", None))
             return jsonify(categoria.serialize()), 201
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 400
@@ -25,7 +27,7 @@ class CategoriaUtnController:
     @staticmethod
     def listar(req: Request) -> Response:
         try:
-            categorias = listar_categorias_utn()
+            categorias = listar_categorias_utn(req.args.get("activos", "true"))
             return jsonify([c.serialize() for c in categorias]), 200
         except Exception:
             return jsonify({"error": "Error interno del servidor"}), 500
@@ -41,11 +43,26 @@ class CategoriaUtnController:
             return jsonify({"error": "Error interno del servidor"}), 500
 
     @staticmethod
+    def historial(req: Request, id: int) -> Response:
+        try:
+            return jsonify(
+                CatalogoAuditoriaService.historial_por_modelo(CategoriaUtn, id)
+            ), 200
+        except ValueError as ve:
+            return jsonify({"error": str(ve)}), 404
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
+
+    @staticmethod
     def actualizar(req: Request, id: int) -> Response:
         data = req.get_json()
 
         try:
-            categoria = actualizar_categoria_utn(id, data)
+            categoria = actualizar_categoria_utn(
+                id,
+                data,
+                getattr(g, "current_user_id", None)
+            )
             return jsonify(categoria.serialize()), 200
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 400
@@ -55,7 +72,7 @@ class CategoriaUtnController:
     @staticmethod
     def eliminar(req: Request, id: int) -> Response:
         try:
-            eliminar_categoria_utn(id)
+            eliminar_categoria_utn(id, getattr(g, "current_user_id", None))
             return jsonify({"message": "Categoría UTN eliminada correctamente"}), 200
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 400

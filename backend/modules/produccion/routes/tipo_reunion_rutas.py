@@ -13,6 +13,11 @@ tipo_reunion_bp = Blueprint(
 def get_all():
     return TipoReunionController.get_all()
 
+@tipo_reunion_bp.route("/<int:tipo_id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_historial(tipo_id):
+    return TipoReunionController.get_historial(tipo_id)
+
 @tipo_reunion_bp.route("/", methods=["POST"])
 @requiere_rol("ADMIN", "GESTOR")
 def create():

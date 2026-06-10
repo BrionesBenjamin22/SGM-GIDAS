@@ -25,6 +25,11 @@ def listar():
 def obtener(id):
     return ProgramaIncentivosController.obtener_por_id(request, id)
 
+@programa_incentivos_bp.route("/<int:id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def historial(id):
+    return ProgramaIncentivosController.historial(request, id)
+
 @programa_incentivos_bp.route("/<int:id>", methods=["PUT"])
 @requiere_rol("ADMIN", "GESTOR")
 def actualizar(id):

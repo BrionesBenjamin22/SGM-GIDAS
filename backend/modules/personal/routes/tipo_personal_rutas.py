@@ -37,6 +37,10 @@ def listar():
 def obtener_por_id(id):
     return TipoPersonalController.obtener_por_id(request, id)
 
+@tipo_personal_bp.route("/<int:id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def historial(id):
+    return TipoPersonalController.historial(request, id)
 
 # -------------------------
 # Actualizar

@@ -100,7 +100,7 @@ class RegistrosPropiedadMemoriaVersion(db.Model, AuditMixin):
         return self.to_dict()
 
 
-class TipoRegistroPropiedad(db.Model):
+class TipoRegistroPropiedad(db.Model, AuditMixin):
     __tablename__ = 'tipo_registro_propiedad'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
@@ -112,7 +112,4 @@ class TipoRegistroPropiedad(db.Model):
     )
 
     def serialize(self):
-        return {
-            "id": self.id,
-            "nombre": self.nombre
-        }
+        return self.to_dict()

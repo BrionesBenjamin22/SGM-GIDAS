@@ -23,6 +23,10 @@ def listar():
 def obtener(id):
     return FuenteFinanciamientoController.obtener_por_id(request, id)
 
+@fuente_financiamiento_bp.route("/<int:id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def historial(id):
+    return FuenteFinanciamientoController.historial(request, id)
 
 # =========================
 # MODIFICACIÓN

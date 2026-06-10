@@ -75,7 +75,7 @@ class BecarioProyecto(db.Model, AuditMixin):
     )
 
 
-class TipoProyecto(db.Model):
+class TipoProyecto(db.Model, AuditMixin):
     __tablename__ = 'tipo_proyecto_investigacion'
     __table_args__ = (
         db.UniqueConstraint('nombre', name='uq_tipo_proyecto_nombre'),
@@ -83,6 +83,9 @@ class TipoProyecto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.Text, nullable=False)
     proyectos_investigacion = db.relationship('ProyectoInvestigacion', back_populates='tipo_proyecto')
+
+    def serialize(self):
+        return self.to_dict()
 
 
 class ProyectoInvestigacion(db.Model, AuditMixin):

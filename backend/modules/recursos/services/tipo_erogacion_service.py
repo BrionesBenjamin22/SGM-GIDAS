@@ -1,6 +1,7 @@
 from sqlalchemy import func
 
 from core.models.erogacion import TipoErogacion
+from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from extension import db
 
 
@@ -65,8 +66,13 @@ class TipoErogacionService:
         return tipo
 
     @staticmethod
-    def get_all():
-        return [t.serialize() for t in TipoErogacion.query.order_by(TipoErogacion.nombre.asc()).all()]
+    def get_all(activos="true"):
+        query = TipoErogacion.query
+        if activos == "true":
+            query = query.filter(TipoErogacion.deleted_at.is_(None))
+        elif activos == "false":
+            query = query.filter(TipoErogacion.deleted_at.isnot(None))
+        return [t.serialize() for t in query.order_by(TipoErogacion.nombre.asc()).all()]
 
     @staticmethod
     def get_by_id(tipo_id: int):
@@ -74,11 +80,12 @@ class TipoErogacionService:
         return tipo.serialize()
 
     @staticmethod
-    def create(data: dict):
+    def create(data: dict, user_id=None):
         data = TipoErogacionService._validar_data(data)
         nombre = TipoErogacionService._validar_nombre(data.get("nombre"))
 
         nuevo = TipoErogacion(nombre=nombre)
+        CatalogoAuditoriaService.marcar_creacion(nuevo, user_id)
 
         db.session.add(nuevo)
         try:
@@ -90,10 +97,13 @@ class TipoErogacionService:
         return nuevo.serialize()
 
     @staticmethod
-    def update(tipo_id: int, data: dict):
+    def update(tipo_id: int, data: dict, user_id=None):
         data = TipoErogacionService._validar_data(data)
         tipo = TipoErogacionService._obtener_tipo_o_error(tipo_id)
-        tipo.nombre = TipoErogacionService._validar_nombre(data.get("nombre"), tipo.id)
+        nombre = TipoErogacionService._validar_nombre(data.get("nombre"), tipo.id)
+        cambios = CatalogoAuditoriaService.construir_cambios(tipo, {"nombre": nombre})
+        tipo.nombre = nombre
+        CatalogoAuditoriaService.marcar_actualizacion(tipo, cambios, user_id)
 
         try:
             db.session.commit()
@@ -104,7 +114,7 @@ class TipoErogacionService:
         return tipo.serialize()
 
     @staticmethod
-    def delete(tipo_id: int):
+    def delete(tipo_id: int, user_id=None):
         tipo = TipoErogacionService._obtener_tipo_o_error(tipo_id)
 
         if len(tipo.erogaciones) > 0:
@@ -112,7 +122,7 @@ class TipoErogacionService:
                 "No se puede eliminar el tipo de erogación porque está asociado a erogaciones"
             )
 
-        db.session.delete(tipo)
+        CatalogoAuditoriaService.marcar_baja(tipo, user_id)
         try:
             db.session.commit()
         except Exception:

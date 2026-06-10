@@ -1,4 +1,5 @@
 from core.models.transferencia_socio import TipoContrato
+from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from extension import db
 from sqlalchemy import func
 
@@ -65,10 +66,15 @@ class TipoContratoService:
     # -------------------------------------------------
 
     @staticmethod
-    def get_all():
+    def get_all(activos="true"):
+        query = TipoContrato.query
+        if activos == "true":
+            query = query.filter(TipoContrato.deleted_at.is_(None))
+        elif activos == "false":
+            query = query.filter(TipoContrato.deleted_at.isnot(None))
         return [
             t.serialize()
-            for t in TipoContrato.query.order_by(TipoContrato.nombre.asc()).all()
+            for t in query.order_by(TipoContrato.nombre.asc()).all()
         ]
 
     @staticmethod
@@ -77,11 +83,12 @@ class TipoContratoService:
         return tipo.serialize()
 
     @staticmethod
-    def create(data: dict):
+    def create(data: dict, user_id=None):
         TipoContratoService._validar_payload(data)
         nombre = TipoContratoService._validar_nombre(data.get("nombre"))
 
         tipo = TipoContrato(nombre=nombre)
+        CatalogoAuditoriaService.marcar_creacion(tipo, user_id)
 
         db.session.add(tipo)
         try:
@@ -93,15 +100,21 @@ class TipoContratoService:
         return tipo.serialize()
 
     @staticmethod
-    def update(tipo_contrato_id, data: dict):
+    def update(tipo_contrato_id, data: dict, user_id=None):
         TipoContratoService._validar_payload(data)
         tipo = TipoContratoService._get_or_404(tipo_contrato_id)
 
         if "nombre" in data:
-            tipo.nombre = TipoContratoService._validar_nombre(
+            nombre = TipoContratoService._validar_nombre(
                 data["nombre"],
                 contrato_id=tipo.id
             )
+            cambios = CatalogoAuditoriaService.construir_cambios(
+                tipo,
+                {"nombre": nombre}
+            )
+            tipo.nombre = nombre
+            CatalogoAuditoriaService.marcar_actualizacion(tipo, cambios, user_id)
 
         try:
             db.session.commit()
@@ -112,7 +125,7 @@ class TipoContratoService:
         return tipo.serialize()
 
     @staticmethod
-    def delete(tipo_contrato_id):
+    def delete(tipo_contrato_id, user_id=None):
         tipo = TipoContratoService._get_or_404(tipo_contrato_id)
 
         if any(t.deleted_at is None for t in tipo.transferencias):
@@ -120,7 +133,7 @@ class TipoContratoService:
                 "No se puede eliminar el tipo de contrato porque tiene transferencias asociadas"
             )
 
-        db.session.delete(tipo)
+        CatalogoAuditoriaService.marcar_baja(tipo, user_id)
         try:
             db.session.commit()
         except Exception:

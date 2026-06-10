@@ -10,7 +10,7 @@ class BecaController:
     @staticmethod
     def get_all():
         try:
-            data = BecaService.get_all()
+            data = BecaService.get_all(request.args.get("activos", "true"))
             return jsonify(data), 200
         except Exception as e:
             return jsonify({"error": str(e)}), 500

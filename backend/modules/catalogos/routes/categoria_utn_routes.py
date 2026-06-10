@@ -25,6 +25,10 @@ def listar():
 def obtener_por_id(id):
     return CategoriaUtnController.obtener_por_id(request, id)
 
+@categoria_utn_bp.route("/<int:id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def historial(id):
+    return CategoriaUtnController.historial(request, id)
 
 @categoria_utn_bp.route("/<int:id>", methods=["PUT"])
 @requiere_rol("ADMIN", "GESTOR")
