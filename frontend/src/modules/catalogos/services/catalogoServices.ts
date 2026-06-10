@@ -16,10 +16,39 @@ export interface CatalogItem {
     [key: string]: unknown;
 }
 
+export interface CatalogHistoryItem {
+    id: number | string;
+    entidad?: string;
+    registro_id?: number;
+    campo?: string;
+    valor_anterior?: unknown;
+    valor_nuevo?: unknown;
+    fecha_cambio?: string;
+    usuario_nombre?: string | null;
+}
+
+function withActivosAll(endpoint: string) {
+    const separator = endpoint.includes("?") ? "&" : "?";
+    return `${endpoint}${separator}activos=all`;
+}
+
+function withId(endpoint: string, id: number) {
+    return `${endpoint.replace(/\/?$/, "/")}${id}`;
+}
+
 export async function getCatalogItems(endpoint: string): Promise<CatalogItem[]> {
-    const data = await http<CatalogItem[] | CatalogItem | null>(endpoint);
+    const data = await http<CatalogItem[] | CatalogItem | null>(
+        withActivosAll(endpoint)
+    );
     if (!data) return [];
     return Array.isArray(data) ? data : [data];
+}
+
+export async function getCatalogHistory(
+    endpoint: string,
+    id: number
+): Promise<CatalogHistoryItem[]> {
+    return http<CatalogHistoryItem[]>(`${withId(endpoint, id)}/historial`);
 }
 
 export async function createCatalogItem(
@@ -37,7 +66,7 @@ export async function updateCatalogItem(
     id: number,
     body: Record<string, unknown>
 ): Promise<CatalogItem> {
-    return http<CatalogItem>(`${endpoint}${id}`, {
+    return http<CatalogItem>(withId(endpoint, id), {
         method: "PUT",
         body: JSON.stringify(body),
     });
@@ -47,5 +76,5 @@ export async function deleteCatalogItem(
     endpoint: string,
     id: number
 ): Promise<void> {
-    await http(`${endpoint}${id}`, { method: "DELETE" });
+    await http(withId(endpoint, id), { method: "DELETE" });
 }

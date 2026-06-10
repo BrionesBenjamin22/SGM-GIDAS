@@ -14,8 +14,10 @@ import {
 import {
   createCatalogItem,
   deleteCatalogItem,
+  getCatalogHistory,
   getCatalogItems,
   updateCatalogItem,
+  type CatalogHistoryItem,
   type CatalogItem,
 } from "@/services/catalogoServices";
 import Button from "@/components/Button";
@@ -77,6 +79,8 @@ type ToastState = {
   message: string;
   variant: "success" | "error";
 };
+
+type CatalogHistoryMap = Record<number, CatalogHistoryItem[]>;
 
 const CATALOG_GROUPS: CatalogGroup[] = [
   "Institucionales / normativos",
@@ -173,7 +177,7 @@ const CATALOGS: CatalogDef[] = [
   },
   {
     label: "Tipo de Proyecto",
-    endpoint: "/tipo-proyecto/",
+    endpoint: "/tipos-proyecto/",
     description: "Clasifica proyectos de investigacion.",
     helpText:
       "Catalogo operativo con impacto en proyectos y memorias. Use nuevos valores ante cambios conceptuales.",
@@ -274,6 +278,31 @@ function getModifiedAt(item: CatalogItem) {
     formatDate(item.created_at) ||
     formatDate(item.deleted_at)
   );
+}
+
+function formatHistoryValue(value: unknown) {
+  if (value === null || value === undefined || value === "") return "-";
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return "valor complejo";
+    }
+  }
+  return String(value);
+}
+
+function formatHistoryItem(item: CatalogHistoryItem) {
+  const date = formatDate(item.fecha_cambio) ?? "Sin fecha";
+  const user = item.usuario_nombre ?? "Sistema";
+  if (item.campo === "accion_sistema") {
+    const payload = item.valor_nuevo as { accion?: string } | null;
+    return `${date} - ${user} - ${payload?.accion ?? "accion registrada"}`;
+  }
+
+  return `${date} - ${user} - ${item.campo ?? "campo"}: ${formatHistoryValue(
+    item.valor_anterior
+  )} -> ${formatHistoryValue(item.valor_nuevo)}`;
 }
 
 function getCatalogSummary(items: CatalogItem[]): CatalogSummary {
@@ -387,6 +416,7 @@ function CatalogPanel({
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [fkOptions, setFkOptions] = useState<CatalogItem[]>([]);
+  const [historyByItem, setHistoryByItem] = useState<CatalogHistoryMap>({});
 
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
@@ -423,6 +453,17 @@ function CatalogPanel({
       const data = await getCatalogItems(def.endpoint);
       setItems(data);
       onSummaryChange(def.label, getCatalogSummary(data));
+      const histories = await Promise.all(
+        data.map(async (item) => {
+          try {
+            const history = await getCatalogHistory(def.endpoint, item.id);
+            return [item.id, history] as const;
+          } catch {
+            return [item.id, []] as const;
+          }
+        })
+      );
+      setHistoryByItem(Object.fromEntries(histories));
       setErrorMessage("");
     } catch {
       setErrorMessage(`No se pudo cargar el catalogo de ${entityLabel}.`);
@@ -739,6 +780,25 @@ function CatalogPanel({
                         )}
                       </p>
                     ) : null}
+
+                    <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Historial de cambios
+                      </p>
+                      {(historyByItem[item.id] ?? []).length > 0 ? (
+                        <ul className="mt-2 space-y-1">
+                          {(historyByItem[item.id] ?? []).slice(0, 3).map((history) => (
+                            <li key={history.id} className="text-xs text-slate-600">
+                              {formatHistoryItem(history)}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-xs text-slate-400">
+                          Sin cambios registrados para este valor.
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3 md:justify-end">
