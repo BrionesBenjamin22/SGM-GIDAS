@@ -1,12 +1,2 @@
-import {http} from "@/lib/http";
-
-export interface GrupoUtn {
-  id: number;
-  nombre: string;
-}
-
-export const getGruposUtn = async (): Promise<GrupoUtn[]> => {
-  return http<GrupoUtn[]>("/grupos-utn/", {
-    method: "GET",
-  });
-};
+﻿// Compatibility wrapper for the modular frontend layout.
+export * from "@/modules/grupo/services/gruposUtnServices";

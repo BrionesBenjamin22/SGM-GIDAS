@@ -1,10 +1,2 @@
-import { http } from "@/lib/http";
-
-export interface ProgramaIncentivos {
-  id: number;
-  nombre: string;
-}
-
-export function getProgramasIncentivos() {
-  return http<ProgramaIncentivos[]>("/programas-incentivos/");
-}
+﻿// Compatibility wrapper for the modular frontend layout.
+export * from "@/modules/grupo/services/programaIncentivosServices";

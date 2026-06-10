@@ -1,10 +1,2 @@
-import { http } from "@/lib/http";
-
-export type FuenteFinanciamiento = {
-  id: number;
-  nombre: string;
-};
-
-export async function getFuentesFinanciamiento() {
-  return http<FuenteFinanciamiento[]>("/fuente-financiamiento/");
-}
+﻿// Compatibility wrapper for the modular frontend layout.
+export * from "@/modules/catalogos/services/fuenteFinanciamientoService";

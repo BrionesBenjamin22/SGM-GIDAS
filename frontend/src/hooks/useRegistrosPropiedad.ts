@@ -1,26 +1,2 @@
-import { useQuery } from "@tanstack/react-query";
-import {
-  getRegistrosPropiedad,
-  type RegistroPropiedad,
-} from "@/services/registrosPropiedadServices";
-
-export function useRegistrosPropiedad(
-  activos: "true" | "false" | "all" = "true",
-  orden: "asc" | "desc" = "asc"
-) {
-  const { data, isLoading, isError } = useQuery<RegistroPropiedad[]>({
-    queryKey: ["registros-propiedad", activos, orden],
-    queryFn: () =>
-      getRegistrosPropiedad({
-        activos,
-        orden,
-      }),
-    staleTime: 60_000,
-  });
-
-  return {
-    list: data ?? [],
-    isLoading,
-    isError,
-  };
-}
+﻿// Compatibility wrapper for the modular frontend layout.
+export * from "@/modules/produccion/hooks/useRegistrosPropiedad";

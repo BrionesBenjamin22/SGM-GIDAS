@@ -1,9 +1,2 @@
-import { useQuery } from "@tanstack/react-query";
-import { getGradosAcademicos } from "@/services/gradoAcademicoService";
-
-export const useGradosAcademicos = () => {
-  return useQuery({
-    queryKey: ["grado-academico"],
-    queryFn: getGradosAcademicos,
-  });
-};
+﻿// Compatibility wrapper for the modular frontend layout.
+export * from "@/modules/produccion/hooks/useGradoAcademico";
