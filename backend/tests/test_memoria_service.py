@@ -1,5 +1,6 @@
 import unittest
 from datetime import date, datetime
+from contextlib import ExitStack
 from unittest.mock import patch
 
 from core.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
@@ -233,6 +234,113 @@ class MemoriaServiceTestCase(unittest.TestCase):
         self.assertEqual(
             str(ctx.exception),
             "Solo se puede crear una nueva version a partir de una memoria cerrada"
+        )
+
+    def test_contar_elementos_version_respeta_cada_version_cerrada(self):
+        memoria = self._make_memoria()
+        version_uno = self._make_version(
+            memoria,
+            numero=1,
+            estado=EstadoMemoria.CERRADA
+        )
+        version_uno.id = 101
+        version_dos = self._make_version(
+            memoria,
+            numero=2,
+            estado=EstadoMemoria.CERRADA
+        )
+        version_dos.id = 102
+
+        def snapshots_por_version(version_id):
+            if version_id == 101:
+                return [{"id": 1}]
+            if version_id == 102:
+                return [{"id": 1}, {"id": 2}, {"id": 3}]
+            return []
+
+        patch_targets = [
+            "core.services.memoria_service.obtener_snapshots_investigadores_por_memoria_version",
+            "core.services.memoria_service.obtener_snapshots_becarios_por_memoria_version",
+            "core.services.memoria_service.obtener_snapshots_personal_por_memoria_version",
+            "core.services.memoria_service.ProyectoInvestigacionService.obtener_snapshots_por_memoria_version",
+            "core.services.memoria_service.ActividadDocenciaService.obtener_snapshots_por_memoria_version",
+            "core.services.memoria_service.ParticipacionRelevanteService.obtener_snapshots_por_memoria_version",
+            "core.services.memoria_service.DocumentacionBibliograficaService.obtener_snapshots_por_memoria_version",
+            "core.services.memoria_service.EquipamientoService.obtener_snapshots_por_memoria_version",
+            "core.services.memoria_service.ErogacionService.obtener_snapshots_por_memoria_version",
+            "core.services.memoria_service.TransferenciaSocioProductivaService.obtener_snapshots_por_memoria_version",
+            "core.services.memoria_service.TrabajoReunionCientificaService.obtener_snapshots_por_memoria_version",
+            "core.services.memoria_service.TrabajosRevistasReferatoService.obtener_snapshots_por_memoria_version",
+            "core.services.memoria_service.DistincionRecibidaService.obtener_snapshots_por_memoria_version",
+            "core.services.memoria_service.RegistrosPropiedadService.obtener_snapshots_por_memoria_version",
+            "core.services.memoria_service.ArticuloDivulgacionService.obtener_snapshots_por_memoria_version",
+            "core.services.memoria_service.obtener_snapshots_visitas_por_memoria_version",
+        ]
+
+        with ExitStack() as stack:
+            for target in patch_targets:
+                stack.enter_context(patch(target, side_effect=snapshots_por_version))
+
+            self.assertEqual(
+                MemoriaService._contar_elementos_version(version_uno),
+                16
+            )
+            self.assertEqual(
+                MemoriaService._contar_elementos_version(version_dos),
+                48
+            )
+
+    def test_get_proyectos_snapshot_usa_la_version_solicitada(self):
+        memoria = self._make_memoria()
+        memoria.id = 44
+        version_uno = self._make_version(
+            memoria,
+            numero=1,
+            estado=EstadoMemoria.CERRADA
+        )
+        version_uno.id = 501
+        version_uno.memoria_id = memoria.id
+        version_dos = self._make_version(
+            memoria,
+            numero=2,
+            estado=EstadoMemoria.CERRADA
+        )
+        version_dos.id = 502
+        version_dos.memoria_id = memoria.id
+        memoria.version_actual = version_dos
+        memoria.version_actual_id = version_dos.id
+        memoria.versiones = [version_uno, version_dos]
+
+        def get_side_effect(_model, object_id):
+            if object_id == memoria.id:
+                return memoria
+            if object_id == version_uno.id:
+                return version_uno
+            if object_id == version_dos.id:
+                return version_dos
+            return None
+
+        self.mock_get.side_effect = get_side_effect
+
+        with patch(
+            "core.services.memoria_service."
+            "ProyectoInvestigacionService.obtener_snapshots_por_memoria_version",
+            side_effect=lambda version_id: [{"id": version_id}]
+        ) as mock_snapshots:
+            resultado_v1 = MemoriaService.get_proyectos_snapshot(
+                memoria.id,
+                version_uno.id
+            )
+            resultado_v2 = MemoriaService.get_proyectos_snapshot(
+                memoria.id,
+                version_dos.id
+            )
+
+        self.assertEqual(resultado_v1, [{"id": version_uno.id}])
+        self.assertEqual(resultado_v2, [{"id": version_dos.id}])
+        self.assertEqual(
+            [call.args[0] for call in mock_snapshots.call_args_list],
+            [version_uno.id, version_dos.id]
         )
 
 
