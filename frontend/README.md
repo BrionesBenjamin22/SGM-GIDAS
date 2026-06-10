@@ -26,6 +26,40 @@ npm install
 npm run dev
 ```
 
+## Arquitectura frontend
+
+El frontend se organiza como monolito modular bajo `src/modules`.
+
+Cada modulo contiene, cuando aplica:
+
+- `pages`: vistas de home, formulario y detalle.
+- `services`: clientes HTTP, tipos TypeScript y contratos con backend.
+- `hooks`: hooks reutilizables del dominio.
+- `components`: componentes especificos del dominio.
+
+Modulos actuales:
+
+- `auth`
+- `catalogos`
+- `dashboard`
+- `grupo`
+- `memorias`
+- `personal`
+- `produccion`
+- `proyectos`
+- `recursos`
+- `search`
+- `shared`
+- `transferencia`
+
+Las carpetas historicas `src/pages`, `src/services` y `src/hooks` siguen
+existiendo como fachadas de compatibilidad. Para codigo nuevo, preferir imports
+desde `@/modules/<modulo>/...`.
+
+Los componentes reutilizables globales permanecen en `src/components`, el layout
+global en `src/layouts`, el contexto de autenticacion en `src/context` y los
+estilos base en `src/styles`.
+
 ## Variables de entorno
 
 El frontend usa variables publicas de Vite. Los archivos de referencia son:

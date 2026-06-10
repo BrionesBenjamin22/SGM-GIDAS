@@ -124,7 +124,8 @@ Sistema Gidas/
 - `backend/`
   API, dominio, servicios, modelos, migraciones y tests.
 - `frontend/`
-  Interfaz de usuario, páginas, servicios HTTP y componentes.
+  Interfaz de usuario organizada como monolito modular en `src/modules`, con
+  fachadas de compatibilidad en `src/pages`, `src/services` y `src/hooks`.
 - `docs/`
   Documentación técnica y funcional del proyecto.
 - `nginx/`
