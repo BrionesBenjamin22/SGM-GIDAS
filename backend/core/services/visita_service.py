@@ -1,2 +1,6 @@
-﻿"""Compatibility wrapper for the modular backend layout."""
-from modules.grupo.services.visita_service import *  # noqa: F401,F403
+"""Compatibility wrapper for the modular backend layout."""
+
+from core.services._compat import alias_module
+
+_module = alias_module(__name__, "modules.grupo.services.visita_service")
+globals().update(_module.__dict__)

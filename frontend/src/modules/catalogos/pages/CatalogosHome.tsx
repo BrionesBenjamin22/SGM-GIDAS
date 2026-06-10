@@ -1089,14 +1089,6 @@ export default function CatalogosHome() {
         </Button>
       </div>
 
-      <div className="mb-4 rounded-xl border border-slate-200 bg-white/80 px-5 py-4 shadow-sm text-sm text-slate-600">
-        <p>
-          Esta vista muestra solo metricas disponibles desde los endpoints
-          actuales. Usos, origen e historial requieren soporte backend
-          especifico y se mantienen como mejoras pendientes.
-        </p>
-      </div>
-
       <div className="mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 px-4 py-3">
           <div className="flex gap-2 overflow-x-auto pb-1">
