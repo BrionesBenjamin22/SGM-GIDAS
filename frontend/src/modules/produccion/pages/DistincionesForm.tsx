@@ -27,7 +27,7 @@ export default function DistincionesForm() {
 
   const { data: proyectos = [] } = useQuery({
     queryKey: ["proyectos"],
-    queryFn: getProyectos,
+    queryFn: () => getProyectos(),
     staleTime: 60_000,
   });
 

@@ -192,7 +192,7 @@ export default function TransferenciasForm() {
       return updated ?? transferencia ?? null;
     },
     onSuccess: async (saved) => {
-      if (!saved && isEdit) return;
+      if (!saved) return;
 
       const transferenciaId = isEdit ? Number(id) : saved.id;
 

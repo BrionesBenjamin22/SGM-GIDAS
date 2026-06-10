@@ -206,7 +206,7 @@ export default function DocumentacionForm() {
       return doc ?? initial ?? null;
     },
     onSuccess: async (saved) => {
-      if (!saved && isEdit) return;
+      if (!saved) return;
 
       const documentacionId = isEdit ? Number(id) : saved.id;
 

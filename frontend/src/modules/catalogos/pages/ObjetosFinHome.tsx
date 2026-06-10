@@ -38,13 +38,13 @@ export default function ObjetosLanding() {
 
   const { data: erogaciones = [], isLoading: loadingErog } = useQuery({
     queryKey: ["erogaciones"],
-    queryFn: getErogaciones,
+    queryFn: () => getErogaciones(),
     staleTime: 60_000,
   });
 
   const { data: equipamiento = [], isLoading: loadingEq } = useQuery({
     queryKey: ["equipamiento"],
-    queryFn: getEquipamiento,
+    queryFn: () => getEquipamiento(),
     staleTime: 60_000,
   });
 

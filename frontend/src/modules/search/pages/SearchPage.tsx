@@ -39,6 +39,16 @@ const getTypeConfig = (tipo: string) => {
   return TYPE_CONFIG[tipo] || { color: "text-slate-700", bgColor: "bg-slate-100", icon: FileText };
 };
 
+const getExtraArray = (extra: Record<string, unknown>, key: string): any[] => {
+  const value = extra[key];
+  return Array.isArray(value) ? value : [];
+};
+
+const getExtraString = (extra: Record<string, unknown>, key: string): string | null => {
+  const value = extra[key];
+  return typeof value === "string" ? value : null;
+};
+
 export default function SearchPage() {
   const nav = useNavigate();
   const location = useLocation();
@@ -146,69 +156,70 @@ export default function SearchPage() {
 
     switch (result.tipo) {
       case "Proyecto de Investigación":
-        const invProy = (extra.investigadores || []).map((i: any) => i.nombre_apellido || i.nombre);
-        const becProy = (extra.becarios || []).map((b: any) => b.nombre_apellido || b.nombre);
+        const invProy = getExtraArray(extra, "investigadores").map((i: any) => i.nombre_apellido || i.nombre);
+        const becProy = getExtraArray(extra, "becarios").map((b: any) => b.nombre_apellido || b.nombre);
         items = [...invProy, ...becProy];
         break;
 
       case "Trabajo en Reunión Científica":
       case "Trabajo en Revista con Referato":
-        items = (extra.investigadores || []).map((i: any) => i.nombre_apellido || i.nombre);
+        items = getExtraArray(extra, "investigadores").map((i: any) => i.nombre_apellido || i.nombre);
         break;
 
       case "Investigador":
-        items = (extra.proyectos || []).map((p: any) => p.nombre || p.titulo);
+        items = getExtraArray(extra, "proyectos").map((p: any) => p.nombre || p.titulo);
         label = "Proyectos";
         break;
 
       case "Becario":
-        items = (extra.proyectos || []).map((p: any) => p.nombre || p.titulo);
+        items = getExtraArray(extra, "proyectos").map((p: any) => p.nombre || p.titulo);
         label = "Proyectos";
         break;
 
       case "Autor":
-        items = (extra.documentos || []).map((d: any) => d.titulo || d.nombre);
+        items = getExtraArray(extra, "documentos").map((d: any) => d.titulo || d.nombre);
         label = "Documentos";
         break;
 
       case "Documentación":
-        items = (extra.autores || []).map((a: any) => a.nombre_apellido || a.nombre);
+        items = getExtraArray(extra, "autores").map((a: any) => a.nombre_apellido || a.nombre);
         label = "Autores";
         break;
 
       case "Tipo de Proyecto":
-        items = (extra.proyectos || []).map((p: any) => p.nombre || p.titulo);
+        items = getExtraArray(extra, "proyectos").map((p: any) => p.nombre || p.titulo);
         label = "Proyectos";
         break;
 
       case "Fuente de Financiamiento":
-        items = (extra.proyectos || []).map((p: any) => p.nombre || p.titulo);
+        items = getExtraArray(extra, "proyectos").map((p: any) => p.nombre || p.titulo);
         label = "Proyectos";
         break;
 
       case "Tipo de Erogación":
-        items = (extra.erogaciones_recientes || []).map((e: any) => e.descripcion || e.nombre);
+        items = getExtraArray(extra, "erogaciones_recientes").map((e: any) => e.descripcion || e.nombre);
         label = "Erogaciones";
         break;
 
       case "Tipo de Contrato":
-        items = (extra.transferencias || []).map((t: any) => t.descripcion || t.nombre);
+        items = getExtraArray(extra, "transferencias").map((t: any) => t.descripcion || t.nombre);
         label = "Transferencias";
         break;
 
       case "Tipo Personal":
-        items = (extra.personal || []).map((p: any) => p.nombre_apellido || p.nombre);
+        items = getExtraArray(extra, "personal").map((p: any) => p.nombre_apellido || p.nombre);
         label = "Personal";
         break;
 
       case "Tipo Registro Propiedad":
-        items = (extra.registros || []).map((r: any) => r.articulo || r.nombre);
+        items = getExtraArray(extra, "registros").map((r: any) => r.articulo || r.nombre);
         label = "Registros";
         break;
 
       case "Actividad de Docencia":
-        if (extra.investigador) {
-          items = [extra.investigador];
+        const investigador = getExtraString(extra, "investigador");
+        if (investigador) {
+          items = [investigador];
         }
         label = "Docente";
         break;

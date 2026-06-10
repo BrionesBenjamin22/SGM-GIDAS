@@ -23,6 +23,7 @@ export function useDocumentacionForm(initial?: Documentacion) {
     titulo: "",
     editorial: "",
     anio: undefined as number | undefined,
+    fecha: "",
   });
 
   const [autores, setAutores] = useState<Autor[]>([]);
@@ -34,6 +35,7 @@ export function useDocumentacionForm(initial?: Documentacion) {
       titulo: initial.titulo ?? "",
       editorial: initial.editorial ?? "",
       anio: initial.anio ?? undefined,
+      fecha: initial.fecha ?? "",
     });
 
     setAutores(initial.autores ?? []);
@@ -44,6 +46,7 @@ export function useDocumentacionForm(initial?: Documentacion) {
       data.titulo.trim() !== "" &&
       data.editorial.trim() !== "" &&
       data.anio !== undefined &&
+      data.fecha.trim() !== "" &&
       autores.length > 0,
     [data, autores]
   );
@@ -105,6 +108,7 @@ export function useDocumentacionForm(initial?: Documentacion) {
       titulo: data.titulo.trim(),
       editorial: data.editorial.trim(),
       anio: Number(data.anio),
+      fecha: data.fecha,
       grupo_id, // 🔥 AHORA SÍ SE USA
     };
 

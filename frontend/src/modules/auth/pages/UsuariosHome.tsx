@@ -204,7 +204,11 @@ export default function UsuariosHome() {
       errors.rol = "Debe seleccionar un rol valido";
     }
 
-    if (usuarioAEditar?.id === user?.id && !isSameRol(usuarioAEditar.rol, editForm.rol)) {
+    if (
+      usuarioAEditar &&
+      usuarioAEditar.id === user?.id &&
+      !isSameRol(usuarioAEditar.rol, editForm.rol)
+    ) {
       errors.rol = "No puede cambiar el rol de su propia cuenta";
     }
 
