@@ -56,13 +56,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  function syncStoredAuth() {
     const stored = getStoredAuth();
     if (stored) {
       setUser(stored.user);
       setToken(stored.token);
+      return;
     }
+
+    setUser(null);
+    setToken(null);
+  }
+
+  useEffect(() => {
+    syncStoredAuth();
     setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    function handleStorage(event: StorageEvent) {
+      if (event.key === AUTH_KEY) {
+        syncStoredAuth();
+      }
+    }
+
+    function handleFocus() {
+      syncStoredAuth();
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        syncStoredAuth();
+      }
+    }
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   function persistUser(updatedUser: User) {
