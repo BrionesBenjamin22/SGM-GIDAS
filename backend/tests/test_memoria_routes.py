@@ -35,7 +35,26 @@ class MemoriaRoutesTestCase(unittest.TestCase):
         response = self.client.get("/memorias/1")
 
         self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.get_json()["error"], "Token requerido")
+        self.assertEqual(response.get_json()["error"]["code"], "AUTH_REQUIRED")
+
+    def test_exportar_excel_error_no_expone_traceback(self):
+        with patch(
+            "modules.shared.services.middleware.AuthService.verify_token",
+            return_value={"sub": "2", "rol": "GESTOR"}
+        ), patch(
+            "modules.memorias.controllers.memoria_controller.ExportService.generar_excel_memoria",
+            side_effect=ValueError("detalle interno sensible")
+        ):
+            response = self.client.get(
+                "/memorias/1/versiones/2/exportar-excel",
+                headers=self._headers()
+            )
+
+        body = response.get_json()
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(body["error"]["code"], "VALIDATION_ERROR")
+        self.assertNotIn("traceback", body)
+        self.assertNotIn("detalle interno sensible", body["error"]["message"])
 
     def test_get_snapshot_investigadores_con_rol_lectura_devuelve_200(self):
         with patch(
@@ -326,10 +345,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(
-            response.get_json()["error"],
-            "No tiene permisos suficientes"
-        )
+        self.assertEqual(response.get_json()["error"]["code"], "FORBIDDEN")
         mock_create.assert_not_called()
 
     def test_post_con_rol_admin_devuelve_201(self):
@@ -389,10 +405,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(
-            response.get_json()["error"],
-            "No tiene permisos suficientes"
-        )
+        self.assertEqual(response.get_json()["error"]["code"], "FORBIDDEN")
         mock_delete.assert_not_called()
 
     def test_delete_con_rol_admin_devuelve_200(self):
@@ -429,10 +442,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(
-            response.get_json()["error"],
-            "No tiene permisos suficientes"
-        )
+        self.assertEqual(response.get_json()["error"]["code"], "FORBIDDEN")
         mock_reopen.assert_not_called()
 
     def test_reopen_con_rol_admin_devuelve_200(self):

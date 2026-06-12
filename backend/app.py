@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask
 from extension import db, migrate, limiter
 from flask_cors import CORS
 from config import get_config_class
@@ -6,6 +6,7 @@ import logging
 from modules import blueprints
 from modules import models_registry  # noqa: F401
 from werkzeug.middleware.proxy_fix import ProxyFix
+from modules.shared.controllers.responses import error_response
 
 
 logging.basicConfig(level=logging.INFO)
@@ -37,9 +38,11 @@ def create_app():
 
     @app.errorhandler(429)
     def ratelimit_handler(_error):
-        return jsonify({
-            "error": "Demasiadas solicitudes. Intenta nuevamente en unos minutos."
-        }), 429
+        return error_response(
+            "RATE_LIMIT_EXCEEDED",
+            message="Lo sentimos, recibimos demasiadas solicitudes. Intente nuevamente en unos minutos.",
+            status_code=429,
+        )
 
     @app.after_request
     def add_security_headers(response):

@@ -45,7 +45,8 @@ class AuthMiddlewareTestCase(unittest.TestCase):
                 response, status_code = endpoint()
 
         self.assertEqual(status_code, 403)
-        self.assertEqual(response.get_json()["error"], "No tiene permisos suficientes")
+        self.assertEqual(response.get_json()["error"]["code"], "FORBIDDEN")
+        self.assertIn("no tiene permisos", response.get_json()["error"]["message"])
 
     def test_middleware_no_refleja_origin_manual(self):
         @self.app.route("/privado")
@@ -59,6 +60,7 @@ class AuthMiddlewareTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.get_json()["error"]["code"], "AUTH_REQUIRED")
         self.assertNotIn("Access-Control-Allow-Origin", response.headers)
 
     def test_controller_reutiliza_payload_del_contexto(self):

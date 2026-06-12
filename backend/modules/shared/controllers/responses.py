@@ -11,6 +11,10 @@ DEFAULT_ERROR_MESSAGES = {
     "AUTH_REQUIRED": "Lo sentimos, debe iniciar sesion para continuar.",
     "FORBIDDEN": "Lo sentimos, no tiene permisos para realizar esta accion.",
     "NOT_FOUND": "Lo sentimos, no pudimos encontrar la informacion solicitada.",
+    "RATE_LIMIT_EXCEEDED": (
+        "Lo sentimos, recibimos demasiadas solicitudes. "
+        "Intente nuevamente en unos minutos."
+    ),
     "INTERNAL_ERROR": (
         "Lo sentimos, no pudimos completar la operacion. "
         "Intente nuevamente."

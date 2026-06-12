@@ -1,3 +1,5 @@
+import logging
+
 from flask import Request, Response, jsonify, g
 from modules.grupo.services.programa_actividades_service import (
     crear_planificacion_grupo,
@@ -6,6 +8,10 @@ from modules.grupo.services.programa_actividades_service import (
     listar_planificaciones,
     obtener_planificacion_por_id
 )
+from modules.shared.controllers.responses import error_response
+
+
+logger = logging.getLogger(__name__)
 
 
 class PlanificacionGrupoController:
@@ -19,10 +25,9 @@ class PlanificacionGrupoController:
             return jsonify(plan.serialize()), 201
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 400
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            return jsonify({"error": f"Internal Error: {str(e)}"}), 500
+        except Exception:
+            logger.exception("Error interno al crear planificacion de grupo")
+            return error_response("INTERNAL_ERROR", status_code=500)
 
     @staticmethod
     def listar(req: Request) -> Response:
@@ -30,10 +35,9 @@ class PlanificacionGrupoController:
             activos = req.args.get("activos")
             planes = listar_planificaciones(activos)
             return jsonify([p.serialize() for p in planes]), 200
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            return jsonify({"error": f"Internal Error: {str(e)}"}), 500
+        except Exception:
+            logger.exception("Error interno al listar planificaciones de grupo")
+            return error_response("INTERNAL_ERROR", status_code=500)
 
     @staticmethod
     def obtener_por_id(req: Request, id: int) -> Response:

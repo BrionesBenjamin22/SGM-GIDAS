@@ -1,9 +1,13 @@
-import traceback
+import logging
 
 from flask import jsonify, request, g, send_file
 
 from modules.memorias.services.memoria_service import MemoriaService
 from modules.memorias.services.exportacion_service_impl import ExportService
+from modules.shared.controllers.responses import error_response
+
+
+logger = logging.getLogger(__name__)
 
 
 class MemoriaController:
@@ -243,13 +247,12 @@ class MemoriaController:
                 download_name=f"memoria_{anio}_v{numero_version}.xlsx",
                 mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-        except Exception as e:
-            trace = traceback.format_exc()
-            print(trace)
-            return jsonify({
-                "error": str(e),
-                "traceback": trace,
-            }), 400
+        except ValueError:
+            logger.exception("Error de validacion al exportar memoria")
+            return error_response("VALIDATION_ERROR", status_code=400)
+        except Exception:
+            logger.exception("Error interno al exportar memoria")
+            return error_response("INTERNAL_ERROR", status_code=500)
 
     @staticmethod
     def create():
