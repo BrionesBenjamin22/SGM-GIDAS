@@ -14,6 +14,26 @@ modulares para registrar la metadata de SQLAlchemy durante el arranque. La
 carpeta legacy previa a la modularizacion fue eliminada; los imports historicos
 ya no forman parte del contrato interno del backend.
 
+## Versionado de API
+
+Los blueprints se registran de forma dual:
+
+- Rutas legacy sin prefijo, mantenidas temporalmente por compatibilidad.
+- Rutas versionadas bajo `/api/v1`.
+
+Toda respuesta servida desde `/api/v1` debe incluir el header:
+
+```text
+API-Version: v1
+```
+
+Regla de compatibilidad:
+
+- Cambios compatibles permanecen en v1: campos opcionales, endpoints nuevos y filtros nuevos.
+- Cambios incompatibles deben ir a una version nueva, por ejemplo v2.
+- Las rutas legacy se mantienen durante la migracion del frontend y no deben
+  recibir nuevos contratos incompatibles.
+
 ## Modulos
 
 - `auth`: usuarios, roles, personas asociadas, login, registro y cambio de

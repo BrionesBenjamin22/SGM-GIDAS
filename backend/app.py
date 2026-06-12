@@ -7,6 +7,10 @@ from modules import models_registry  # noqa: F401
 from werkzeug.middleware.proxy_fix import ProxyFix
 from modules.shared.controllers.pagination import register_legacy_list_pagination
 from modules.shared.controllers.responses import error_response
+from modules.shared.routes.versioning import (
+    register_api_version_header,
+    register_blueprints,
+)
 from modules.shared.services.logging_config import (
     configure_logging,
     get_logger,
@@ -39,8 +43,8 @@ def create_app():
     limiter.init_app(app)
 
 
-    for bp in blueprints:
-        app.register_blueprint(bp)
+    register_blueprints(app, blueprints)
+    register_api_version_header(app)
 
     @app.errorhandler(429)
     def ratelimit_handler(_error):
