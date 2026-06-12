@@ -1,4 +1,4 @@
-from flask import Request, Response, jsonify, request
+from flask import Request, Response, g, jsonify, request
 
 from modules.auth.services.auth_service import AuthService
 
@@ -20,6 +20,9 @@ class AuthController:
 
     @staticmethod
     def _get_payload_from_request(req: Request = None) -> dict:
+        if hasattr(g, "current_user_payload"):
+            return g.current_user_payload
+
         token = AuthController._get_token_from_request(req)
         return AuthService.verify_token(token)
 
