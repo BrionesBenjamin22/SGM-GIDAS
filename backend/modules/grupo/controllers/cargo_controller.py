@@ -1,6 +1,11 @@
 from flask import request, jsonify, g
 from modules.grupo.services.cargos_service import CargoService
 from modules.grupo.models.directivos import Cargo
+from modules.shared.controllers.pagination import (
+    pagination_requested,
+    parse_pagination_params,
+)
+from modules.shared.controllers.responses import error_response, paginated_response
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
@@ -9,9 +14,25 @@ class CargoController:
     @staticmethod
     def get_all():
         try:
+            if pagination_requested(request.args):
+                params = parse_pagination_params(request.args)
+                cargos, total = CargoService.get_page(**params)
+                return paginated_response(
+                    cargos,
+                    page=params["page"],
+                    per_page=params["per_page"],
+                    total=total,
+                    meta={
+                        "activos": params["activos"],
+                        "orden": params["orden"],
+                    },
+                )
+
             return jsonify(CargoService.get_all(request.args.get("activos", "true"))), 200
+        except ValueError as e:
+            return error_response("VALIDATION_ERROR", message=str(e), status_code=400)
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            return error_response("INTERNAL_ERROR", status_code=500)
 
     @staticmethod
     def get_by_id(cargo_id):

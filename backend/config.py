@@ -143,6 +143,18 @@ class Config:
         min_value=50,
         max_value=1000,
     )
+    PAGINATION_DEFAULT_PER_PAGE = _parse_int_env_range(
+        "PAGINATION_DEFAULT_PER_PAGE",
+        default=9,
+        min_value=1,
+        max_value=100,
+    )
+    PAGINATION_MAX_PER_PAGE = _parse_int_env_range(
+        "PAGINATION_MAX_PER_PAGE",
+        default=100,
+        min_value=9,
+        max_value=500,
+    )
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
     SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False") == "True"

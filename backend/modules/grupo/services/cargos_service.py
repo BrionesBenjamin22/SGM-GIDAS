@@ -1,20 +1,36 @@
 from sqlalchemy import func
 from extension import db
 from modules.grupo.models.directivos import Cargo
+from modules.shared.controllers.pagination import paginate_query
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 class CargoService:
 
     @staticmethod
-    def get_all(activos="true"):
+    def _build_query(activos="true", orden="asc"):
         query = Cargo.query
         if activos == "true":
             query = query.filter(Cargo.deleted_at.is_(None))
         elif activos == "false":
             query = query.filter(Cargo.deleted_at.isnot(None))
-        cargos = query.order_by(Cargo.nombre.asc()).all()
+
+        order_column = Cargo.nombre.desc() if orden == "desc" else Cargo.nombre.asc()
+        return query.order_by(order_column)
+
+    @staticmethod
+    def get_all(activos="true", orden="asc"):
+        cargos = CargoService._build_query(activos, orden).all()
         return [c.serialize() for c in cargos]
+
+    @staticmethod
+    def get_page(page: int, per_page: int, activos="true", orden="asc"):
+        cargos, total = paginate_query(
+            CargoService._build_query(activos, orden),
+            page,
+            per_page,
+        )
+        return [c.serialize() for c in cargos], total
 
     @staticmethod
     def get_by_id(cargo_id: int):

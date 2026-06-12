@@ -97,3 +97,21 @@ Helpers disponibles:
 Durante la migracion, los endpoints legacy pueden conservar respuestas directas
 si el frontend actual depende de ese contrato. Los endpoints nuevos o versionados
 deben responder con `data`, `meta` y `error`.
+
+## Contrato de paginacion de listados
+
+Los listados migrados deben aceptar estos parametros:
+
+- `page`: pagina solicitada, entero positivo. Valor por defecto `1`.
+- `per_page`: elementos por pagina, entero positivo. Valor por defecto `9`.
+- `activos`: filtro de estado. Valores validos `true`, `false` o `all`.
+- `orden`: direccion de ordenamiento. Valores validos `asc` o `desc`.
+
+El limite general se configura con:
+
+- `PAGINATION_DEFAULT_PER_PAGE`: por defecto `9`, alineado a homes.
+- `PAGINATION_MAX_PER_PAGE`: por defecto `100`.
+
+Durante la migracion incremental, un endpoint existente puede mantener su lista
+plana si el cliente no envia `page` ni `per_page`. Cuando el cliente envia alguno
+de esos parametros, el endpoint debe responder con `data`, `meta` y `error`.
