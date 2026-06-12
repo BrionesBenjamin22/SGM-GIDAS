@@ -352,6 +352,10 @@ function mapBackendMessage(
     return `No se puede eliminar ${cleanEntity} porque tiene registros asociados.`;
   }
 
+  if (message.includes("inactivo") || message.includes("eliminado")) {
+    return `No se puede editar ${cleanEntity} porque esta inactivo.`;
+  }
+
   return null;
 }
 
@@ -430,7 +434,7 @@ function CatalogPanel({
 
   const [deleteTarget, setDeleteTarget] = useState<CatalogItem | null>(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
   const [currentPage, setCurrentPage] = useState(1);
   const [errorMessage, setErrorMessage] = useState("");
   const [toast, setToast] = useState<ToastState>({
@@ -564,6 +568,15 @@ function CatalogPanel({
   };
 
   const handleUpdate = async (id: number) => {
+    const item = items.find((current) => current.id === id);
+    if (item && isInactive(item)) {
+      const message = `No se puede editar el registro de ${def.label} porque esta inactivo.`;
+      setEditId(null);
+      setErrorMessage(message);
+      showToast(message, "error");
+      return;
+    }
+
     if (!editName.trim()) {
       setErrorMessage("El nombre no puede estar vacio.");
       return;
@@ -593,6 +606,13 @@ function CatalogPanel({
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    if (isInactive(deleteTarget)) {
+      const message = `No se puede eliminar el registro de ${def.label} porque ya esta inactivo.`;
+      setDeleteTarget(null);
+      setErrorMessage(message);
+      showToast(message, "error");
+      return;
+    }
 
     try {
       await deleteCatalogItem(def.endpoint, deleteTarget.id);
@@ -826,36 +846,40 @@ function CatalogPanel({
                         : "Sin fecha disponible"}
                     </div>
 
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => {
-                        setEditId(item.id);
-                        setEditName(getDisplayName(item));
-                        setEditDesc(def.descField ? ((item[def.descField] as string) ?? "") : "");
-                        setEditFkId(getFkId(item));
-                        setErrorMessage("");
-                      }}
-                      title="Editar"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Pencil size={14} /> Editar
-                      </span>
-                    </Button>
+                    {!isInactive(item) && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setEditId(item.id);
+                          setEditName(getDisplayName(item));
+                          setEditDesc(def.descField ? ((item[def.descField] as string) ?? "") : "");
+                          setEditFkId(getFkId(item));
+                          setErrorMessage("");
+                        }}
+                        title="Editar"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Pencil size={14} /> Editar
+                        </span>
+                      </Button>
+                    )}
 
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setDeleteTarget(item)}
-                      className="text-red-600 hover:bg-red-50"
-                      title="Eliminar"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Trash2 size={14} /> Eliminar
-                      </span>
-                    </Button>
+                    {!isInactive(item) && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setDeleteTarget(item)}
+                        className="text-red-600 hover:bg-red-50"
+                        title="Eliminar"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Trash2 size={14} /> Eliminar
+                        </span>
+                      </Button>
+                    )}
                   </div>
                 </div>
               )}
