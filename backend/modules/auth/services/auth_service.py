@@ -15,6 +15,36 @@ class AuthService:
         )
 
     @staticmethod
+    def _with_optional_audience(payload: dict) -> dict:
+        if Config.JWT_AUDIENCE:
+            return {**payload, "aud": Config.JWT_AUDIENCE}
+        return payload
+
+    @staticmethod
+    def _decode_access_token(token: str) -> dict:
+        decode_kwargs = {
+            "issuer": Config.JWT_ISSUER,
+            "algorithms": [Config.JWT_ALGORITHM],
+        }
+
+        if Config.JWT_AUDIENCE:
+            decode_kwargs["audience"] = Config.JWT_AUDIENCE
+        else:
+            decode_kwargs["options"] = {"verify_aud": False}
+
+        return jwt.decode(token, Config.JWT_SECRET, **decode_kwargs)
+
+    @staticmethod
+    def _decode_refresh_token(token: str) -> dict:
+        return jwt.decode(
+            token,
+            Config.REFRESH_SECRET,
+            issuer=Config.JWT_ISSUER,
+            algorithms=[Config.JWT_ALGORITHM],
+            options={"verify_aud": False},
+        )
+
+    @staticmethod
     def _get_user_or_error(user_id: int, solo_activos: bool = False) -> Usuario:
         user = db.session.get(Usuario, user_id)
 
@@ -28,18 +58,18 @@ class AuthService:
 
     @staticmethod
     def generate_tokens(user: Usuario) -> dict:
-        access_payload = {
+        access_payload = AuthService._with_optional_audience({
             "sub": str(user.id),
             "nombre_usuario": user.nombre_usuario,
             "rol": user.rol.nombre,   
             "exp": AuthService._access_token_expires_at(),
-            "iss": "auth-service"
-        }
+            "iss": Config.JWT_ISSUER
+        })
 
         refresh_payload = {
             "sub": str(user.id),
             "exp": datetime.datetime.utcnow() + datetime.timedelta(days=7),
-            "iss": "auth-service"
+            "iss": Config.JWT_ISSUER
         }
 
         access_token = jwt.encode(
@@ -173,22 +203,18 @@ class AuthService:
     @staticmethod
     def refresh_access_token(refresh_token: str) -> str:
         try:
-            payload = jwt.decode(
-                refresh_token,
-                Config.REFRESH_SECRET,
-                algorithms=[Config.JWT_ALGORITHM]
-            )
+            payload = AuthService._decode_refresh_token(refresh_token)
 
             user_id = int(payload["sub"])
             user = AuthService._get_user_or_error(user_id, solo_activos=True)
 
-            new_access_payload = {
+            new_access_payload = AuthService._with_optional_audience({
                 "sub": str(user.id),
                 "nombre_usuario": user.nombre_usuario,
                 "rol": user.rol.nombre,   # 🔥 AGREGAR ESTO
                 "exp": AuthService._access_token_expires_at(),
-                "iss": "auth-service"
-            }
+                "iss": Config.JWT_ISSUER
+            })
 
             return jwt.encode(
                 new_access_payload,
@@ -207,11 +233,7 @@ class AuthService:
     @staticmethod
     def verify_token(token: str) -> dict:
         try:
-            return jwt.decode(
-                token,
-                Config.JWT_SECRET,
-                algorithms=[Config.JWT_ALGORITHM]
-            )
+            return AuthService._decode_access_token(token)
         except jwt.ExpiredSignatureError:
             raise Exception("Token expirado")
         except jwt.InvalidTokenError:

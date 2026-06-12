@@ -40,6 +40,58 @@ class AuthTokenExpirationTestCase(unittest.TestCase):
             after + datetime.timedelta(minutes=15, seconds=1),
         )
 
+    def test_verify_token_rechaza_token_sin_issuer(self):
+        token = jwt.encode(
+            {
+                "sub": "7",
+                "rol": "GESTOR",
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=5),
+            },
+            Config.JWT_SECRET,
+            algorithm=Config.JWT_ALGORITHM,
+        )
+
+        with self.assertRaisesRegex(Exception, "Token inv"):
+            AuthService.verify_token(token)
+
+    def test_verify_token_rechaza_issuer_incorrecto(self):
+        token = jwt.encode(
+            {
+                "sub": "7",
+                "rol": "GESTOR",
+                "iss": "otro-servicio",
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=5),
+            },
+            Config.JWT_SECRET,
+            algorithm=Config.JWT_ALGORITHM,
+        )
+
+        with self.assertRaisesRegex(Exception, "Token inv"):
+            AuthService.verify_token(token)
+
+    def test_generate_tokens_incluye_y_valida_audience_si_esta_configurada(self):
+        with patch.object(Config, "JWT_AUDIENCE", "gidas-api"):
+            tokens = AuthService.generate_tokens(self._make_user())
+            payload = AuthService.verify_token(tokens["access_token"])
+
+        self.assertEqual(payload["aud"], "gidas-api")
+
+    def test_verify_token_rechaza_audience_faltante_si_esta_configurada(self):
+        token = jwt.encode(
+            {
+                "sub": "7",
+                "rol": "GESTOR",
+                "iss": Config.JWT_ISSUER,
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=5),
+            },
+            Config.JWT_SECRET,
+            algorithm=Config.JWT_ALGORITHM,
+        )
+
+        with patch.object(Config, "JWT_AUDIENCE", "gidas-api"):
+            with self.assertRaisesRegex(Exception, "Token inv"):
+                AuthService.verify_token(token)
+
     def test_parse_int_env_range_rechaza_valor_invalido(self):
         with patch.dict("os.environ", {"JWT_EXPIRATION_MINUTES": "abc"}):
             with self.assertRaisesRegex(RuntimeError, "numero entero"):

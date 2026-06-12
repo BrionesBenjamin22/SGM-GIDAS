@@ -101,6 +101,8 @@ class Config:
     JWT_SECRET = os.getenv("JWT_SECRET") or SECRET_KEY
     REFRESH_SECRET = os.getenv("REFRESH_SECRET") or SECRET_KEY
     JWT_ALGORITHM = "HS256"
+    JWT_ISSUER = os.getenv("JWT_ISSUER", "auth-service")
+    JWT_AUDIENCE = os.getenv("JWT_AUDIENCE") or None
     JWT_EXPIRATION_MINUTES = _parse_int_env_range(
         "JWT_EXPIRATION_MINUTES",
         default=60,

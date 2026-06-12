@@ -156,6 +156,8 @@ Variables importantes:
 - SECRET_KEY
 - JWT_SECRET
 - REFRESH_SECRET
+- JWT_ISSUER
+- JWT_AUDIENCE
 - DATABASE_URL
 - FRONTEND_URL
 - FRONTEND_URLS
@@ -165,6 +167,8 @@ Variables importantes:
 - POSTGRES_PASSWORD
 
 JWT_EXPIRATION_MINUTES controla la duracion real del access token. Debe ser un numero entero entre 5 y 1440 minutos. Si no se define, el backend usa 60 minutos.
+
+JWT_ISSUER identifica al emisor esperado de tokens y por defecto usa auth-service. JWT_AUDIENCE es opcional: cuando se define, el backend la incluye en los access tokens y rechaza tokens destinados a otra audiencia.
 
 Valor por defecto de base de datos:
 postgresql://postgres:postgres@localhost:5432/gidas_db
@@ -240,6 +244,8 @@ Variables obligatorias en produccion:
 - SECRET_KEY
 - JWT_SECRET
 - REFRESH_SECRET
+- JWT_ISSUER
+- JWT_AUDIENCE
 - DATABASE_URL
 - FRONTEND_URL
 - FRONTEND_URLS
