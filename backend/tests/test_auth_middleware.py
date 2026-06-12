@@ -42,10 +42,24 @@ class AuthMiddlewareTestCase(unittest.TestCase):
                 "modules.shared.services.middleware.AuthService.verify_token",
                 return_value={"sub": "12", "rol": "LECTURA"},
             ):
-                response = endpoint()
+                response, status_code = endpoint()
 
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(status_code, 403)
         self.assertEqual(response.get_json()["error"], "No tiene permisos suficientes")
+
+    def test_middleware_no_refleja_origin_manual(self):
+        @self.app.route("/privado")
+        @requiere_auth
+        def privado():
+            return {"ok": True}
+
+        response = self.app.test_client().get(
+            "/privado",
+            headers={"Origin": "https://origen-no-permitido.example"},
+        )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertNotIn("Access-Control-Allow-Origin", response.headers)
 
     def test_controller_reutiliza_payload_del_contexto(self):
         with self.app.test_request_context("/perfil"):
