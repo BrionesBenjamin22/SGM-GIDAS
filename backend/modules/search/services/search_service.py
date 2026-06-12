@@ -57,6 +57,25 @@ class SearchService:
             data.setdefault("eliminado", False)
         return data
 
+    @staticmethod
+    def apply_deleted_filter(query, model, eliminados: str):
+        if not hasattr(model, "deleted_at") or eliminados == "all":
+            return query
+
+        if eliminados == "true":
+            return query.filter(model.deleted_at.isnot(None))
+
+        return query.filter(model.deleted_at.is_(None))
+
+    @staticmethod
+    def bounded_results(query, model, eliminados: str, max_scan_per_model: int):
+        query = SearchService.apply_deleted_filter(query, model, eliminados)
+
+        if hasattr(model, "id"):
+            query = query.order_by(model.id.asc())
+
+        return query.limit(max_scan_per_model).all()
+
     # ==================================================
     # SEARCH PRINCIPAL
     # ==================================================
@@ -64,7 +83,8 @@ class SearchService:
     def search(
         query_text: str,
         orden: str = "alf_asc",
-        eliminados: str = "false"
+        eliminados: str = "false",
+        max_scan_per_model: int = 300
     ):
 
         if not query_text or len(query_text.strip()) < 2:
@@ -76,9 +96,13 @@ class SearchService:
         # ==================================================
         # PERSONAL
         # ==================================================
-        personal_results = db.session.query(Personal)\
-            .options(joinedload(Personal.tipo_personal))\
-            .all()
+        personal_results = SearchService.bounded_results(
+            db.session.query(Personal)
+            .options(joinedload(Personal.tipo_personal)),
+            Personal,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for p in personal_results:
             if not SearchService.matches_deleted_filter(p, eliminados):
@@ -98,13 +122,17 @@ class SearchService:
         # ==================================================
         # BECARIOS
         # ==================================================
-        becario_results = db.session.query(Becario)\
-        .options(
-            joinedload(Becario.tipo_formacion),
-            joinedload(Becario.participaciones_proyecto)
-                .joinedload(BecarioProyecto.proyecto)
-        )\
-        .all()
+        becario_results = SearchService.bounded_results(
+            db.session.query(Becario)
+            .options(
+                joinedload(Becario.tipo_formacion),
+                joinedload(Becario.participaciones_proyecto)
+                    .joinedload(BecarioProyecto.proyecto)
+            ),
+            Becario,
+            eliminados,
+            max_scan_per_model,
+        )
 
 
         for b in becario_results:
@@ -137,13 +165,17 @@ class SearchService:
         # ==================================================
         # BECAS
         # ==================================================
-        beca_results = db.session.query(Beca)\
+        beca_results = SearchService.bounded_results(
+            db.session.query(Beca)
             .options(
                 joinedload(Beca.fuente_financiamiento),
                 joinedload(Beca.becarios)
                     .joinedload(Beca_Becario.becario)
-            )\
-            .all()
+            ),
+            Beca,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for beca in beca_results:
             if not SearchService.matches_deleted_filter(beca, eliminados):
@@ -202,18 +234,22 @@ class SearchService:
         # ==================================================
         # INVESTIGADORES
         # ==================================================
-        investigador_results = db.session.query(Investigador)\
-        .options(
-            joinedload(Investigador.tipo_dedicacion),
-            joinedload(Investigador.categoria_utn),
-            joinedload(Investigador.programa_incentivos),
-            joinedload(Investigador.grupo_utn),
-            joinedload(Investigador.participaciones_proyecto)
-                .joinedload(InvestigadorProyecto.proyecto),
-            joinedload(Investigador.participaciones_relevantes),
-            joinedload(Investigador.trabajos_reunion_cientifica)
-        )\
-        .all()
+        investigador_results = SearchService.bounded_results(
+            db.session.query(Investigador)
+            .options(
+                joinedload(Investigador.tipo_dedicacion),
+                joinedload(Investigador.categoria_utn),
+                joinedload(Investigador.programa_incentivos),
+                joinedload(Investigador.grupo_utn),
+                joinedload(Investigador.participaciones_proyecto)
+                    .joinedload(InvestigadorProyecto.proyecto),
+                joinedload(Investigador.participaciones_relevantes),
+                joinedload(Investigador.trabajos_reunion_cientifica)
+            ),
+            Investigador,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for i in investigador_results:
             if not SearchService.matches_deleted_filter(i, eliminados):
@@ -256,14 +292,18 @@ class SearchService:
         # ==================================================
         # ACTIVIDADES DE DOCENCIA
         # ==================================================
-        actividad_results = db.session.query(ActividadDocencia)\
+        actividad_results = SearchService.bounded_results(
+            db.session.query(ActividadDocencia)
             .options(
                 joinedload(ActividadDocencia.investigador),
                 joinedload(ActividadDocencia.investigadores_grado)
                     .joinedload(InvestigadorActividadGrado.grado_academico),
                 joinedload(ActividadDocencia.rol_actividad)
-            )\
-            .all()
+            ),
+            ActividadDocencia,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for a in actividad_results:
             if not SearchService.matches_deleted_filter(a, eliminados):
@@ -305,7 +345,8 @@ class SearchService:
         # PROYECTOS DE INVESTIGACIÓN (por nombre)
         # ==================================================
 
-        proyecto_results = db.session.query(ProyectoInvestigacion)\
+        proyecto_results = SearchService.bounded_results(
+            db.session.query(ProyectoInvestigacion)
             .options(
                 joinedload(ProyectoInvestigacion.tipo_proyecto),
                 joinedload(ProyectoInvestigacion.grupo_utn),
@@ -314,8 +355,11 @@ class SearchService:
                     .joinedload(InvestigadorProyecto.investigador),
                 joinedload(ProyectoInvestigacion.participaciones_becario)
                     .joinedload(BecarioProyecto.becario)
-            )\
-            .all()
+            ),
+            ProyectoInvestigacion,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for proyecto in proyecto_results:
             if not SearchService.matches_deleted_filter(proyecto, eliminados):
@@ -367,9 +411,13 @@ class SearchService:
         # TIPO PROYECTO
         # ==================================================
 
-        tipo_proyecto_results = db.session.query(TipoProyecto)\
-            .options(joinedload(TipoProyecto.proyectos_investigacion))\
-            .all()
+        tipo_proyecto_results = SearchService.bounded_results(
+            db.session.query(TipoProyecto)
+            .options(joinedload(TipoProyecto.proyectos_investigacion)),
+            TipoProyecto,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for tipo in tipo_proyecto_results:
             if not SearchService.matches_deleted_filter(tipo, eliminados):
@@ -406,9 +454,13 @@ class SearchService:
         # EQUIPAMIENTO
         # ==================================================
 
-        equipamiento_results = db.session.query(Equipamiento)\
-            .options(joinedload(Equipamiento.grupo_utn))\
-            .all()
+        equipamiento_results = SearchService.bounded_results(
+            db.session.query(Equipamiento)
+            .options(joinedload(Equipamiento.grupo_utn)),
+            Equipamiento,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for e in equipamiento_results:
             if not SearchService.matches_deleted_filter(e, eliminados):
@@ -436,12 +488,16 @@ class SearchService:
         # DOCUMENTACIÓN BIBLIOGRÁFICA
         # ==================================================
 
-        documentos = db.session.query(DocumentacionBibliografica)\
+        documentos = SearchService.bounded_results(
+            db.session.query(DocumentacionBibliografica)
             .options(
                 joinedload(DocumentacionBibliografica.autores),
                 joinedload(DocumentacionBibliografica.grupo_utn)
-            )\
-            .all()
+            ),
+            DocumentacionBibliografica,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for doc in documentos:
             if not SearchService.matches_deleted_filter(doc, eliminados):
@@ -479,9 +535,13 @@ class SearchService:
         # AUTORES
         # ==================================================
 
-        autores = db.session.query(Autor)\
-            .options(joinedload(Autor.libros))\
-            .all()
+        autores = SearchService.bounded_results(
+            db.session.query(Autor)
+            .options(joinedload(Autor.libros)),
+            Autor,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for autor in autores:
             if not SearchService.matches_deleted_filter(autor, eliminados):
@@ -519,9 +579,13 @@ class SearchService:
         # TIPO EROGACIÓN
         # ==================================================
 
-        tipos_erogacion = db.session.query(TipoErogacion)\
-            .options(joinedload(TipoErogacion.erogaciones))\
-            .all()
+        tipos_erogacion = SearchService.bounded_results(
+            db.session.query(TipoErogacion)
+            .options(joinedload(TipoErogacion.erogaciones)),
+            TipoErogacion,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for tipo in tipos_erogacion:
             if not SearchService.matches_deleted_filter(tipo, eliminados):
@@ -571,7 +635,12 @@ class SearchService:
         # FUENTE DE FINANCIAMIENTO
         # ==================================================
 
-        fuentes = db.session.query(FuenteFinanciamiento).all()
+        fuentes = SearchService.bounded_results(
+            db.session.query(FuenteFinanciamiento),
+            FuenteFinanciamiento,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for fuente in fuentes:
             if not SearchService.matches_deleted_filter(fuente, eliminados):
@@ -588,7 +657,7 @@ class SearchService:
                         "monto_destinado": p.monto_destinado,
                         "url": f"/proyectos/{p.id}"
                     }
-                    for p in fuente.proyectos_investigacion.all()
+                    for p in fuente.proyectos_investigacion.limit(5).all()
                 ]
 
                 resultados.append(SearchService.with_status(fuente, {
@@ -608,9 +677,13 @@ class SearchService:
         # PARTICIPACIÓN RELEVANTE
         # ==================================================
 
-        participaciones = db.session.query(ParticipacionRelevante)\
-            .options(joinedload(ParticipacionRelevante.investigador))\
-            .all()
+        participaciones = SearchService.bounded_results(
+            db.session.query(ParticipacionRelevante)
+            .options(joinedload(ParticipacionRelevante.investigador)),
+            ParticipacionRelevante,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for pr in participaciones:
             if not SearchService.matches_deleted_filter(pr, eliminados):
@@ -640,12 +713,16 @@ class SearchService:
         # REGISTROS DE PROPIEDAD
         # ==================================================
 
-        registros = db.session.query(RegistrosPropiedad)\
+        registros = SearchService.bounded_results(
+            db.session.query(RegistrosPropiedad)
             .options(
                 joinedload(RegistrosPropiedad.tipo_registro),
                 joinedload(RegistrosPropiedad.grupo_utn)
-            )\
-            .all()
+            ),
+            RegistrosPropiedad,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for r in registros:
             if not SearchService.matches_deleted_filter(r, eliminados):
@@ -676,9 +753,13 @@ class SearchService:
         # TIPO REGISTRO PROPIEDAD
         # ==================================================
 
-        tipos_registro = db.session.query(TipoRegistroPropiedad)\
-            .options(joinedload(TipoRegistroPropiedad.registros_propiedad))\
-            .all()
+        tipos_registro = SearchService.bounded_results(
+            db.session.query(TipoRegistroPropiedad)
+            .options(joinedload(TipoRegistroPropiedad.registros_propiedad)),
+            TipoRegistroPropiedad,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for tipo in tipos_registro:
             if not SearchService.matches_deleted_filter(tipo, eliminados):
@@ -714,12 +795,16 @@ class SearchService:
         # TRANSFERENCIA SOCIO PRODUCTIVA
         # ==================================================
 
-        transferencias = db.session.query(TransferenciaSocioProductiva)\
+        transferencias = SearchService.bounded_results(
+            db.session.query(TransferenciaSocioProductiva)
             .options(
                 joinedload(TransferenciaSocioProductiva.tipo_contrato_transferencia),
                 joinedload(TransferenciaSocioProductiva.grupo_utn)
-            )\
-            .all()
+            ),
+            TransferenciaSocioProductiva,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for t in transferencias:
             if not SearchService.matches_deleted_filter(t, eliminados):
@@ -763,9 +848,13 @@ class SearchService:
         # TIPO CONTRATO TRANSFERENCIA
         # ==================================================
 
-        tipos_contrato = db.session.query(TipoContrato)\
-            .options(joinedload(TipoContrato.transferencias))\
-            .all()
+        tipos_contrato = SearchService.bounded_results(
+            db.session.query(TipoContrato)
+            .options(joinedload(TipoContrato.transferencias)),
+            TipoContrato,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for tipo in tipos_contrato:
             if not SearchService.matches_deleted_filter(tipo, eliminados):
@@ -802,7 +891,12 @@ class SearchService:
         # TIPO PERSONAL
         # ==================================================
 
-        tipos_personal = db.session.query(TipoPersonal).all()
+        tipos_personal = SearchService.bounded_results(
+            db.session.query(TipoPersonal),
+            TipoPersonal,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for tipo in tipos_personal:
             if not SearchService.matches_deleted_filter(tipo, eliminados):
@@ -820,7 +914,7 @@ class SearchService:
                         "activo": p.activo,
                         "url": f"/personal/{p.id}"
                     }
-                    for p in tipo.personal.all()
+                    for p in tipo.personal.limit(5).all()
                 ]
 
                 resultados.append(SearchService.with_status(tipo, {
@@ -840,13 +934,17 @@ class SearchService:
         # TRABAJO REUNIÓN CIENTÍFICA
         # ==================================================
 
-        trabajos_reunion = db.session.query(TrabajoReunionCientifica)\
+        trabajos_reunion = SearchService.bounded_results(
+            db.session.query(TrabajoReunionCientifica)
             .options(
                 joinedload(TrabajoReunionCientifica.tipo_reunion_cientifica),
                 joinedload(TrabajoReunionCientifica.investigadores),
                 joinedload(TrabajoReunionCientifica.grupo_utn)
-            )\
-            .all()
+            ),
+            TrabajoReunionCientifica,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for tr in trabajos_reunion:
             if not SearchService.matches_deleted_filter(tr, eliminados):
@@ -899,13 +997,17 @@ class SearchService:
         # TRABAJOS EN REVISTAS CON REFERATO
         # ==================================================
 
-        trabajos_revista = db.session.query(TrabajosRevistasReferato)\
+        trabajos_revista = SearchService.bounded_results(
+            db.session.query(TrabajosRevistasReferato)
             .options(
                 joinedload(TrabajosRevistasReferato.grupo_utn),
                 joinedload(TrabajosRevistasReferato.tipo_reunion),
                 joinedload(TrabajosRevistasReferato.investigadores)
-            )\
-            .all()
+            ),
+            TrabajosRevistasReferato,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for tr in trabajos_revista:
             if not SearchService.matches_deleted_filter(tr, eliminados):
@@ -959,14 +1061,18 @@ class SearchService:
         # DIRECTIVOS
         # ==================================================
 
-        directivo_results = db.session.query(Directivo)\
+        directivo_results = SearchService.bounded_results(
+            db.session.query(Directivo)
             .options(
                 joinedload(Directivo.participaciones_grupo)
                     .joinedload(DirectivoGrupo.cargo),
                 joinedload(Directivo.participaciones_grupo)
                     .joinedload(DirectivoGrupo.grupo_utn)
-            )\
-            .all()
+            ),
+            Directivo,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for d in directivo_results:
             if not SearchService.matches_deleted_filter(d, eliminados):
@@ -1004,11 +1110,15 @@ class SearchService:
         # ARTICULOS DE DIVULGACION
         # ==================================================
 
-        articulos = db.session.query(ArticuloDivulgacion)\
+        articulos = SearchService.bounded_results(
+            db.session.query(ArticuloDivulgacion)
             .options(
                 joinedload(ArticuloDivulgacion.grupo_utn)
-            )\
-            .all()
+            ),
+            ArticuloDivulgacion,
+            eliminados,
+            max_scan_per_model,
+        )
 
         for a in articulos:
             if not SearchService.matches_deleted_filter(a, eliminados):

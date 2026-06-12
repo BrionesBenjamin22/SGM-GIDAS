@@ -1,6 +1,7 @@
-from flask import Blueprint
+from flask import Blueprint, current_app
 from modules.search.controllers.search_controller import SearchController
 from modules.shared.services.middleware import requiere_rol
+from extension import limiter
 
 search_bp = Blueprint(
     "search",
@@ -9,6 +10,7 @@ search_bp = Blueprint(
 
 
 @search_bp.route("/search/", methods=["GET"], strict_slashes=False)
+@limiter.limit(lambda: current_app.config["SEARCH_LIMIT"])
 @requiere_rol("ADMIN", "GESTOR", "LECTURA")
 def buscar():
     """

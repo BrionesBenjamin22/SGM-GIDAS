@@ -122,6 +122,25 @@ class Config:
     AUTH_REFRESH_LIMIT = os.getenv("AUTH_REFRESH_LIMIT", "30 per minute")
     AUTH_REGISTER_LIMIT = os.getenv("AUTH_REGISTER_LIMIT", "5 per hour")
     AUTH_CHANGE_PASSWORD_LIMIT = os.getenv("AUTH_CHANGE_PASSWORD_LIMIT", "10 per hour")
+    SEARCH_LIMIT = os.getenv("SEARCH_LIMIT", "30 per minute")
+    SEARCH_MAX_QUERY_LENGTH = _parse_int_env_range(
+        "SEARCH_MAX_QUERY_LENGTH",
+        default=80,
+        min_value=10,
+        max_value=200,
+    )
+    SEARCH_MAX_PER_PAGE = _parse_int_env_range(
+        "SEARCH_MAX_PER_PAGE",
+        default=50,
+        min_value=9,
+        max_value=100,
+    )
+    SEARCH_MAX_SCAN_PER_MODEL = _parse_int_env_range(
+        "SEARCH_MAX_SCAN_PER_MODEL",
+        default=300,
+        min_value=50,
+        max_value=1000,
+    )
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
     SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False") == "True"
