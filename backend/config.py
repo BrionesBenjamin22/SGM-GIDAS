@@ -28,6 +28,29 @@ def _is_insecure_secret(value: str | None) -> bool:
     return normalized in insecure_values or len(value.strip()) < 32
 
 
+def _parse_int_env_range(
+    name: str,
+    default: int,
+    min_value: int,
+    max_value: int,
+) -> int:
+    raw_value = os.getenv(name)
+    if raw_value is None or raw_value.strip() == "":
+        return default
+
+    try:
+        value = int(raw_value)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} debe ser un numero entero") from exc
+
+    if value < min_value or value > max_value:
+        raise RuntimeError(
+            f"{name} debe estar entre {min_value} y {max_value} minutos"
+        )
+
+    return value
+
+
 def _require_production_security(config_class):
     if config_class.APP_ENV not in {"production", "prod"}:
         return
@@ -78,7 +101,12 @@ class Config:
     JWT_SECRET = os.getenv("JWT_SECRET") or SECRET_KEY
     REFRESH_SECRET = os.getenv("REFRESH_SECRET") or SECRET_KEY
     JWT_ALGORITHM = "HS256"
-    JWT_EXPIRATION_MINUTES = int(os.getenv("JWT_EXPIRATION_MINUTES", 60))
+    JWT_EXPIRATION_MINUTES = _parse_int_env_range(
+        "JWT_EXPIRATION_MINUTES",
+        default=60,
+        min_value=5,
+        max_value=1440,
+    )
     RATELIMIT_STORAGE_URI = os.getenv("RATELIMIT_STORAGE_URI", "memory://")
     RATELIMIT_DEFAULT = os.getenv("RATELIMIT_DEFAULT", "120 per minute")
     RATELIMIT_HEADERS_ENABLED = os.getenv("RATELIMIT_HEADERS_ENABLED", "True") == "True"

@@ -9,6 +9,12 @@ from config import Config
 class AuthService:
 
     @staticmethod
+    def _access_token_expires_at() -> datetime.datetime:
+        return datetime.datetime.utcnow() + datetime.timedelta(
+            minutes=Config.JWT_EXPIRATION_MINUTES
+        )
+
+    @staticmethod
     def _get_user_or_error(user_id: int, solo_activos: bool = False) -> Usuario:
         user = db.session.get(Usuario, user_id)
 
@@ -26,7 +32,7 @@ class AuthService:
             "sub": str(user.id),
             "nombre_usuario": user.nombre_usuario,
             "rol": user.rol.nombre,   
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30),
+            "exp": AuthService._access_token_expires_at(),
             "iss": "auth-service"
         }
 
@@ -180,7 +186,7 @@ class AuthService:
                 "sub": str(user.id),
                 "nombre_usuario": user.nombre_usuario,
                 "rol": user.rol.nombre,   # 🔥 AGREGAR ESTO
-                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30),
+                "exp": AuthService._access_token_expires_at(),
                 "iss": "auth-service"
             }
 

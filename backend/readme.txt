@@ -164,6 +164,8 @@ Variables importantes:
 - POSTGRES_USER
 - POSTGRES_PASSWORD
 
+JWT_EXPIRATION_MINUTES controla la duracion real del access token. Debe ser un numero entero entre 5 y 1440 minutos. Si no se define, el backend usa 60 minutos.
+
 Valor por defecto de base de datos:
 postgresql://postgres:postgres@localhost:5432/gidas_db
 
