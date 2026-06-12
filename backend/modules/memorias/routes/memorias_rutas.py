@@ -1,4 +1,5 @@
-from flask import Blueprint
+from flask import Blueprint, current_app
+from extension import limiter
 
 from modules.memorias.controllers.memoria_controller import MemoriaController
 from modules.shared.services.middleware import requiere_rol
@@ -169,6 +170,7 @@ def get_visitas_snapshot(memoria_id, memoria_version_id):
 
 
 @memoria_bp.route("/<int:memoria_id>/versiones/<int:memoria_version_id>/exportar-excel", methods=["GET"])
+@limiter.limit(lambda: current_app.config["EXPORT_LIMIT"])
 @requiere_rol("ADMIN", "GESTOR")
 def exportar_excel(memoria_id, memoria_version_id):
     return MemoriaController.exportar_excel(

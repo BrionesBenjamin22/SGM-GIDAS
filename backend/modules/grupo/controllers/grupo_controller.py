@@ -1,3 +1,5 @@
+import logging
+
 from flask import jsonify, request, g, send_file
 from modules.grupo.services.grupo_service import (
     crear_grupo_utn,
@@ -7,6 +9,10 @@ from modules.grupo.services.grupo_service import (
     restaurar_grupo_utn
 )
 from modules.memorias.services.exportacion_service_impl import ExportService
+from modules.shared.controllers.responses import error_response
+
+
+logger = logging.getLogger(__name__)
 
 class GrupoUtnController:
 
@@ -81,11 +87,22 @@ class GrupoUtnController:
             
     @staticmethod
     def exportar_excel():
-        archivo = ExportService.generar_excel_grupo(1)
+        try:
+            grupo = obtener_grupo_utn()
+            if not grupo:
+                return error_response("NOT_FOUND", status_code=404)
 
-        return send_file(
-            archivo,
-            as_attachment=True,
-            download_name="reporte_GIDAS.xlsx",
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+            archivo = ExportService.generar_excel_grupo(grupo.id)
+
+            return send_file(
+                archivo,
+                as_attachment=True,
+                download_name="reporte_GIDAS.xlsx",
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        except ValueError:
+            logger.exception("Error de validacion al exportar grupo UTN")
+            return error_response("VALIDATION_ERROR", status_code=400)
+        except Exception:
+            logger.exception("Error interno al exportar grupo UTN")
+            return error_response("INTERNAL_ERROR", status_code=500)

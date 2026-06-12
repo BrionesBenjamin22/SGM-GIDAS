@@ -122,6 +122,7 @@ class Config:
     AUTH_REFRESH_LIMIT = os.getenv("AUTH_REFRESH_LIMIT", "30 per minute")
     AUTH_REGISTER_LIMIT = os.getenv("AUTH_REGISTER_LIMIT", "5 per hour")
     AUTH_CHANGE_PASSWORD_LIMIT = os.getenv("AUTH_CHANGE_PASSWORD_LIMIT", "10 per hour")
+    EXPORT_LIMIT = os.getenv("EXPORT_LIMIT", "10 per hour")
     SEARCH_LIMIT = os.getenv("SEARCH_LIMIT", "30 per minute")
     SEARCH_MAX_QUERY_LENGTH = _parse_int_env_range(
         "SEARCH_MAX_QUERY_LENGTH",

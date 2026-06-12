@@ -1,4 +1,5 @@
-from flask import Blueprint, request
+from flask import Blueprint, current_app, request
+from extension import limiter
 from modules.grupo.controllers.grupo_controller import GrupoUtnController
 from modules.shared.services.middleware import requiere_rol
 
@@ -48,6 +49,7 @@ def restaurar():
     return GrupoUtnController.restaurar()
 
 @grupo_utn_bp.route("/exportar-excel", methods=["GET"])
+@limiter.limit(lambda: current_app.config["EXPORT_LIMIT"])
 @requiere_rol("ADMIN", "GESTOR")
 def exportar():
     return GrupoUtnController.exportar_excel()
