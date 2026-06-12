@@ -4,6 +4,11 @@
 
 Establecer reglas de trabajo consistentes para acelerar el desarrollo y reducir retrabajo entre frontend y backend.
 
+## Tareas del agente
+
+- Al iniciar una sesion de trabajo, revisar las tareas pendientes ubicadas en `docs/agents-tasks` antes de modificar codigo.
+- Al finalizar una tarea, preguntar si existen tareas faltantes para agregar a `docs/agents-tasks`.
+
 ## Convenciones de navegacion
 
 - En edicion: volver siempre al detalle con `successMessage`.
