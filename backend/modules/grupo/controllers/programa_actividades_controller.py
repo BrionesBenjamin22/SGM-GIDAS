@@ -1,5 +1,3 @@
-import logging
-
 from flask import Request, Response, jsonify, g
 from modules.grupo.services.programa_actividades_service import (
     crear_planificacion_grupo,
@@ -9,9 +7,10 @@ from modules.grupo.services.programa_actividades_service import (
     obtener_planificacion_por_id
 )
 from modules.shared.controllers.responses import error_response
+from modules.shared.services.logging_config import get_logger
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class PlanificacionGrupoController:

@@ -84,6 +84,7 @@ def _require_production_security(config_class):
 
 class Config:
     APP_ENV = os.getenv("APP_ENV", "local")
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
     SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_urlsafe(48)
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
     FRONTEND_URLS = _parse_csv_env(os.getenv("FRONTEND_URLS")) or [FRONTEND_URL]

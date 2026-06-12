@@ -3,6 +3,10 @@ from modules.personal.services.personal_completo_service import (
     listar_personal_completo,
     obtener_personal_por_tipo
 )
+from modules.shared.services.logging_config import get_logger
+
+
+logger = get_logger(__name__)
 
 
 class PersonalCompletoController:
@@ -15,7 +19,7 @@ class PersonalCompletoController:
             data = listar_personal_completo(activos, tipo)
             return jsonify(data), 200
         except Exception as e:
-            print("ERROR EN PERSONAL COMPLETO:", e)
+            logger.exception("Error al listar personal completo")
             raise
 
     @staticmethod

@@ -2,20 +2,25 @@ from flask import Flask
 from extension import db, migrate, limiter
 from flask_cors import CORS
 from config import get_config_class
-import logging
 from modules import blueprints
 from modules import models_registry  # noqa: F401
 from werkzeug.middleware.proxy_fix import ProxyFix
 from modules.shared.controllers.responses import error_response
+from modules.shared.services.logging_config import (
+    configure_logging,
+    get_logger,
+    register_request_logging,
+)
 
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(get_config_class())
+    configure_logging(app.config["APP_ENV"], app.config["LOG_LEVEL"])
+    register_request_logging(app)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     CORS(

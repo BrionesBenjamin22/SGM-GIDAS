@@ -1,5 +1,3 @@
-import logging
-
 from flask import jsonify, request, g, send_file
 from modules.grupo.services.grupo_service import (
     crear_grupo_utn,
@@ -10,9 +8,10 @@ from modules.grupo.services.grupo_service import (
 )
 from modules.memorias.services.exportacion_service_impl import ExportService
 from modules.shared.controllers.responses import error_response
+from modules.shared.services.logging_config import get_logger
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 class GrupoUtnController:
 
