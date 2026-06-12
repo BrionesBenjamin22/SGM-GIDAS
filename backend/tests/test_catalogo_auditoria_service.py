@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime
 from unittest.mock import patch
 
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 class CatalogoPrueba:

@@ -1,5 +1,5 @@
 import bcrypt
-from core.models.audit_mixin import AuditMixin
+from modules.shared.models.audit_mixin import AuditMixin
 from extension import db
 
 

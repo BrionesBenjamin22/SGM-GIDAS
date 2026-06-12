@@ -1,9 +1,9 @@
 from datetime import datetime, date
 
-from core.models.equipamiento import Equipamiento, EquipamientoMemoriaVersion
-from core.models.grupo import GrupoInvestigacionUtn
-from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
+from modules.recursos.models.equipamiento import Equipamiento, EquipamientoMemoriaVersion
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.shared.services.auditoria_service import AuditoriaService
+from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
 
 

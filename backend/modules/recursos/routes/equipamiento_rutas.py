@@ -1,6 +1,6 @@
 from flask import Blueprint
-from core.controllers.equipamiento_controller import EquipamientoController
-from core.services.middleware import requiere_rol
+from modules.recursos.controllers.equipamiento_controller import EquipamientoController
+from modules.shared.services.middleware import requiere_rol
 
 equipamiento_bp = Blueprint(
     "equipamiento",

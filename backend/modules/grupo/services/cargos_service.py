@@ -1,7 +1,7 @@
 from sqlalchemy import func
 from extension import db
-from core.models.directivos import Cargo
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.grupo.models.directivos import Cargo
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 class CargoService:

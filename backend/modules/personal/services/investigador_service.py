@@ -3,12 +3,12 @@ from datetime import date
 from sqlalchemy.exc import IntegrityError
 
 from extension import db
-from core.models.personal import Investigador, TipoDedicacion, InvestigadorHorasHistorial, InvestigadorMemoriaVersion
-from core.models.categoria_utn import CategoriaUtn
-from core.models.programa_incentivos import ProgramaIncentivos
-from core.models.grupo import GrupoInvestigacionUtn
-from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import (
+from modules.personal.models.personal import Investigador, TipoDedicacion, InvestigadorHorasHistorial, InvestigadorMemoriaVersion
+from modules.catalogos.models.categoria_utn import CategoriaUtn
+from modules.grupo.models.programa_incentivos import ProgramaIncentivos
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.shared.services.auditoria_service import AuditoriaService
+from modules.memorias.services.memoria_periodo_service import (
     validar_fecha_alta_grupo,
     estuvo_activo_en_periodo_memoria,
 )

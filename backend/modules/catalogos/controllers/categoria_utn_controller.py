@@ -1,13 +1,13 @@
 from flask import Request, Response, jsonify, g
-from core.services.categoria_utn_service import (
+from modules.catalogos.services.categoria_utn_service import (
     crear_categoria_utn,
     actualizar_categoria_utn,
     eliminar_categoria_utn,
     listar_categorias_utn,
     obtener_categoria_utn_por_id
 )   
-from core.models.categoria_utn import CategoriaUtn
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.catalogos.models.categoria_utn import CategoriaUtn
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 class CategoriaUtnController:

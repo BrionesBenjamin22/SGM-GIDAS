@@ -3,8 +3,8 @@ from datetime import datetime
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from core.models.auditoria_campo import AuditoriaCampo
-from core.services.becas_service import BecaService
+from modules.shared.models.auditoria_campo import AuditoriaCampo
+from modules.recursos.services.becas_service import BecaService
 
 
 class BecaHistorialTestCase(unittest.TestCase):
@@ -29,10 +29,10 @@ class BecaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.becas_service._get_beca_activa_or_404",
+            "modules.recursos.services.becas_service._get_beca_activa_or_404",
             return_value=SimpleNamespace(id=3)
         ), patch(
-            "core.services.auditoria_service.AuditoriaCampo",
+            "modules.shared.services.auditoria_service.AuditoriaCampo",
             new=SimpleNamespace(
                 query=fake_query,
                 entidad=None,

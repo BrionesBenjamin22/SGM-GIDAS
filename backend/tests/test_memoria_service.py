@@ -3,23 +3,23 @@ from datetime import date, datetime
 from contextlib import ExitStack
 from unittest.mock import patch
 
-from core.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
-from core.services.memoria_service import MemoriaService
+from modules.memorias.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
+from modules.memorias.services.memoria_service import MemoriaService
 
 
 class MemoriaServiceTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.add_patcher = patch("core.services.memoria_service.db.session.add")
-        self.flush_patcher = patch("core.services.memoria_service.db.session.flush")
-        self.commit_patcher = patch("core.services.memoria_service.db.session.commit")
-        self.rollback_patcher = patch("core.services.memoria_service.db.session.rollback")
-        self.get_patcher = patch("core.services.memoria_service.db.session.get")
+        self.add_patcher = patch("modules.memorias.services.memoria_service.db.session.add")
+        self.flush_patcher = patch("modules.memorias.services.memoria_service.db.session.flush")
+        self.commit_patcher = patch("modules.memorias.services.memoria_service.db.session.commit")
+        self.rollback_patcher = patch("modules.memorias.services.memoria_service.db.session.rollback")
+        self.get_patcher = patch("modules.memorias.services.memoria_service.db.session.get")
         self.validar_unicidad_patcher = patch(
-            "core.services.memoria_service.MemoriaService._validar_unicidad_anual"
+            "modules.memorias.services.memoria_service.MemoriaService._validar_unicidad_anual"
         )
         self.validar_activa_patcher = patch(
-            "core.services.memoria_service.MemoriaService._validar_unica_memoria_activa"
+            "modules.memorias.services.memoria_service.MemoriaService._validar_unica_memoria_activa"
         )
 
         self.mock_add = self.add_patcher.start()
@@ -259,22 +259,22 @@ class MemoriaServiceTestCase(unittest.TestCase):
             return []
 
         patch_targets = [
-            "core.services.memoria_service.obtener_snapshots_investigadores_por_memoria_version",
-            "core.services.memoria_service.obtener_snapshots_becarios_por_memoria_version",
-            "core.services.memoria_service.obtener_snapshots_personal_por_memoria_version",
-            "core.services.memoria_service.ProyectoInvestigacionService.obtener_snapshots_por_memoria_version",
-            "core.services.memoria_service.ActividadDocenciaService.obtener_snapshots_por_memoria_version",
-            "core.services.memoria_service.ParticipacionRelevanteService.obtener_snapshots_por_memoria_version",
-            "core.services.memoria_service.DocumentacionBibliograficaService.obtener_snapshots_por_memoria_version",
-            "core.services.memoria_service.EquipamientoService.obtener_snapshots_por_memoria_version",
-            "core.services.memoria_service.ErogacionService.obtener_snapshots_por_memoria_version",
-            "core.services.memoria_service.TransferenciaSocioProductivaService.obtener_snapshots_por_memoria_version",
-            "core.services.memoria_service.TrabajoReunionCientificaService.obtener_snapshots_por_memoria_version",
-            "core.services.memoria_service.TrabajosRevistasReferatoService.obtener_snapshots_por_memoria_version",
-            "core.services.memoria_service.DistincionRecibidaService.obtener_snapshots_por_memoria_version",
-            "core.services.memoria_service.RegistrosPropiedadService.obtener_snapshots_por_memoria_version",
-            "core.services.memoria_service.ArticuloDivulgacionService.obtener_snapshots_por_memoria_version",
-            "core.services.memoria_service.obtener_snapshots_visitas_por_memoria_version",
+            "modules.memorias.services.memoria_service.obtener_snapshots_investigadores_por_memoria_version",
+            "modules.memorias.services.memoria_service.obtener_snapshots_becarios_por_memoria_version",
+            "modules.memorias.services.memoria_service.obtener_snapshots_personal_por_memoria_version",
+            "modules.memorias.services.memoria_service.ProyectoInvestigacionService.obtener_snapshots_por_memoria_version",
+            "modules.memorias.services.memoria_service.ActividadDocenciaService.obtener_snapshots_por_memoria_version",
+            "modules.memorias.services.memoria_service.ParticipacionRelevanteService.obtener_snapshots_por_memoria_version",
+            "modules.memorias.services.memoria_service.DocumentacionBibliograficaService.obtener_snapshots_por_memoria_version",
+            "modules.memorias.services.memoria_service.EquipamientoService.obtener_snapshots_por_memoria_version",
+            "modules.memorias.services.memoria_service.ErogacionService.obtener_snapshots_por_memoria_version",
+            "modules.memorias.services.memoria_service.TransferenciaSocioProductivaService.obtener_snapshots_por_memoria_version",
+            "modules.memorias.services.memoria_service.TrabajoReunionCientificaService.obtener_snapshots_por_memoria_version",
+            "modules.memorias.services.memoria_service.TrabajosRevistasReferatoService.obtener_snapshots_por_memoria_version",
+            "modules.memorias.services.memoria_service.DistincionRecibidaService.obtener_snapshots_por_memoria_version",
+            "modules.memorias.services.memoria_service.RegistrosPropiedadService.obtener_snapshots_por_memoria_version",
+            "modules.memorias.services.memoria_service.ArticuloDivulgacionService.obtener_snapshots_por_memoria_version",
+            "modules.memorias.services.memoria_service.obtener_snapshots_visitas_por_memoria_version",
         ]
 
         with ExitStack() as stack:
@@ -323,7 +323,7 @@ class MemoriaServiceTestCase(unittest.TestCase):
         self.mock_get.side_effect = get_side_effect
 
         with patch(
-            "core.services.memoria_service."
+            "modules.memorias.services.memoria_service."
             "ProyectoInvestigacionService.obtener_snapshots_por_memoria_version",
             side_effect=lambda version_id: [{"id": version_id}]
         ) as mock_snapshots:

@@ -1,6 +1,6 @@
 from flask import Blueprint, current_app
-from core.controllers.auth_controller import AuthController
-from core.services.middleware import requiere_rol
+from modules.auth.controllers.auth_controller import AuthController
+from modules.shared.services.middleware import requiere_rol
 from extension import limiter
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")

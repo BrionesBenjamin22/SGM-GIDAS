@@ -1,7 +1,7 @@
 from flask import jsonify, request, g
-from core.services.rol_actividad_service import RolActividadService
-from core.models.actividad_docencia import RolActividad
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.produccion.services.rol_actividad_service import RolActividadService
+from modules.produccion.models.actividad_docencia import RolActividad
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 class RolActividadController:

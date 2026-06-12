@@ -1,13 +1,13 @@
 from flask import Request, Response, jsonify, g
-from core.services.tipo_formacion_service import (
+from modules.personal.services.tipo_formacion_service import (
     crear_tipo_formacion,
     actualizar_tipo_formacion,
     eliminar_tipo_formacion,
     listar_tipos_formacion,
     obtener_tipo_formacion_por_id
 )
-from core.models.personal import TipoFormacion
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.personal.models.personal import TipoFormacion
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 class TipoFormacionController:

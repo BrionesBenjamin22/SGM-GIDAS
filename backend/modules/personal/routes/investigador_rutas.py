@@ -1,6 +1,6 @@
 from flask import Blueprint, request
-from core.controllers.investigador_controller import InvestigadorController
-from core.services.middleware import requiere_rol
+from modules.personal.controllers.investigador_controller import InvestigadorController
+from modules.shared.services.middleware import requiere_rol
 
 investigador_bp = Blueprint(
     "investigador",

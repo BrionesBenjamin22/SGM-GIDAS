@@ -3,14 +3,14 @@ from datetime import datetime, date
 from sqlalchemy import or_
 
 from extension import db
-from core.models.registro_patente import (
+from modules.produccion.models.registro_patente import (
     RegistrosPropiedad,
     TipoRegistroPropiedad,
     RegistrosPropiedadMemoriaVersion,
 )
-from core.models.grupo import GrupoInvestigacionUtn
-from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import esta_en_periodo_memoria
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.shared.services.auditoria_service import AuditoriaService
+from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 
 
 class RegistrosPropiedadService:

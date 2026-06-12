@@ -1,5 +1,5 @@
-from core.controllers.grado_academico_controller import GradoAcademicoController
-from core.services.middleware import requiere_rol
+from modules.produccion.controllers.grado_academico_controller import GradoAcademicoController
+from modules.shared.services.middleware import requiere_rol
 from flask import Blueprint
 
 grado_academico_bp = Blueprint(

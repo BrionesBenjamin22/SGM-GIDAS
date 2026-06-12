@@ -1,12 +1,12 @@
 from flask import jsonify, request, g, send_file
-from core.services.grupo_service import (
+from modules.grupo.services.grupo_service import (
     crear_grupo_utn,
     obtener_grupo_utn,
     actualizar_grupo_utn,
     eliminar_grupo_utn,
     restaurar_grupo_utn
 )
-from core.services.exportacion_service_impl import ExportService
+from modules.memorias.services.exportacion_service_impl import ExportService
 
 class GrupoUtnController:
 

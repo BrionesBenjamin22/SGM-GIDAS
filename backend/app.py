@@ -3,8 +3,8 @@ from extension import db, migrate, limiter
 from flask_cors import CORS
 from config import get_config_class
 import logging
-from core.routes import blueprints
-from core.models.audit_mixin import AuditMixin
+from modules import blueprints
+from modules import models_registry  # noqa: F401
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 

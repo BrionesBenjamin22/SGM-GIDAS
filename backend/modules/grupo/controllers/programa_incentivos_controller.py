@@ -1,13 +1,13 @@
 from flask import Request, Response, jsonify, g
-from core.services.programa_incentivos_service import (
+from modules.grupo.services.programa_incentivos_service import (
     crear_programa_incentivos,
     actualizar_programa_incentivos,
     eliminar_programa_incentivos,
     listar_programas_incentivos,
     obtener_programa_incentivos_por_id
 )
-from core.models.programa_incentivos import ProgramaIncentivos
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.grupo.models.programa_incentivos import ProgramaIncentivos
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 class ProgramaIncentivosController:

@@ -1,5 +1,5 @@
 from flask import jsonify, request
-from core.services.personal_completo_service import (
+from modules.personal.services.personal_completo_service import (
     listar_personal_completo,
     obtener_personal_por_tipo
 )

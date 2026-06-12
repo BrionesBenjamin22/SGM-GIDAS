@@ -1,5 +1,5 @@
 from flask import jsonify, request
-from core.services.search_service import SearchService
+from modules.search.services.search_service import SearchService
 
 
 class SearchController:

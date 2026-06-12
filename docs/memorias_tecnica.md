@@ -365,11 +365,11 @@ Resultado esperado:
 - no permitir generacion de Excel sin snapshot
 
 ## Archivos clave del backend
-- `backend/core/models/memorias.py`
-- `backend/core/services/memoria_service.py`
-- `backend/core/services/memoria_periodo_service.py`
-- `backend/core/controllers/memoria_controller.py`
-- `backend/core/routes/memorias_rutas.py`
+- `backend/modules/memorias/models/memorias.py`
+- `backend/modules/memorias/services/memoria_service.py`
+- `backend/modules/memorias/services/memoria_periodo_service.py`
+- `backend/modules/memorias/controllers/memoria_controller.py`
+- `backend/modules/memorias/routes/memorias_rutas.py`
 
 ## Archivos clave del frontend
 - `frontend/src/services/memoriasService.ts`

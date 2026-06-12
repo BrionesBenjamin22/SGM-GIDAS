@@ -1,15 +1,15 @@
-from core.models.personal import Personal, Becario, Investigador
-from core.models.transferencia_socio import TransferenciaSocioProductiva
-from core.models.proyecto_investigacion import ProyectoInvestigacion
-from core.models.documentacion_autores import DocumentacionBibliografica, Autor
-from core.models.articulo_divulgacion import ArticuloDivulgacion
-from core.models.trabajo_reunion import TrabajoReunionCientifica
-from core.models.equipamiento import Equipamiento
-from core.models.visita_grupo import VisitaAcademica
-from core.models.trabajo_revista import TrabajosRevistasReferato
-from core.models.participacion_relevante import ParticipacionRelevante
-from core.models.erogacion import Erogacion
-from core.models.becas import Beca
+from modules.personal.models.personal import Personal, Becario, Investigador
+from modules.transferencia.models.transferencia_socio import TransferenciaSocioProductiva
+from modules.proyectos.models.proyecto_investigacion import ProyectoInvestigacion
+from modules.produccion.models.documentacion_autores import DocumentacionBibliografica, Autor
+from modules.produccion.models.articulo_divulgacion import ArticuloDivulgacion
+from modules.produccion.models.trabajo_reunion import TrabajoReunionCientifica
+from modules.recursos.models.equipamiento import Equipamiento
+from modules.grupo.models.visita_grupo import VisitaAcademica
+from modules.produccion.models.trabajo_revista import TrabajosRevistasReferato
+from modules.proyectos.models.participacion_relevante import ParticipacionRelevante
+from modules.recursos.models.erogacion import Erogacion
+from modules.recursos.models.becas import Beca
 
 
 

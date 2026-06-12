@@ -1,7 +1,7 @@
 from extension import db
 from sqlalchemy import func
-from core.models.programa_incentivos import ProgramaIncentivos
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.grupo.models.programa_incentivos import ProgramaIncentivos
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 def _validar_nombre(nombre, programa_id=None):

@@ -1,8 +1,8 @@
 from sqlalchemy import func
 
 from extension import db
-from core.models.personal import TipoDedicacion
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.personal.models.personal import TipoDedicacion
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 def _validar_id_positivo(tipo_dedicacion_id):

@@ -1,7 +1,7 @@
 from flask import Blueprint
 
-from core.controllers.memoria_controller import MemoriaController
-from core.services.middleware import requiere_rol
+from modules.memorias.controllers.memoria_controller import MemoriaController
+from modules.shared.services.middleware import requiere_rol
 
 
 memoria_bp = Blueprint(

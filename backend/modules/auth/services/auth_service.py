@@ -1,7 +1,7 @@
 import jwt
 import datetime
-from core.models.persona import Persona
-from core.models.usuario import Usuario, RolUsuario
+from modules.auth.models.persona import Persona
+from modules.auth.models.usuario import Usuario, RolUsuario
 from extension import db
 from config import Config
 

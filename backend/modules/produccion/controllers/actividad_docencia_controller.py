@@ -1,5 +1,5 @@
 from flask import jsonify, request, g
-from core.services.actividad_docencia_service import (
+from modules.produccion.services.actividad_docencia_service import (
     ActividadDocenciaService
 )
 

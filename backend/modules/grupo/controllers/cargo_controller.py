@@ -1,7 +1,7 @@
 from flask import request, jsonify, g
-from core.services.cargos_service import CargoService
-from core.models.directivos import Cargo
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.grupo.services.cargos_service import CargoService
+from modules.grupo.models.directivos import Cargo
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 class CargoController:

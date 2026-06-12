@@ -1,6 +1,6 @@
 from sqlalchemy import or_
 
-from core.models.personal import Personal, Becario, Investigador
+from modules.personal.models.personal import Personal, Becario, Investigador
 
 
 # =====================================================

@@ -2,14 +2,14 @@ from datetime import datetime
 from sqlalchemy import func
 from sqlalchemy import extract, or_
 from extension import db
-from core.models.becas import (
+from modules.recursos.models.becas import (
     Beca,
     Beca_Becario,
 )
-from core.models.personal import Becario
-from core.models.fuente_financiamiento import FuenteFinanciamiento
-from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import validar_fecha_alta_grupo
+from modules.personal.models.personal import Becario
+from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
+from modules.shared.services.auditoria_service import AuditoriaService
+from modules.memorias.services.memoria_periodo_service import validar_fecha_alta_grupo
 
 
 # =====================================================

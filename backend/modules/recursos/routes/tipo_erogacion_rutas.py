@@ -1,6 +1,6 @@
 from flask import Blueprint
-from core.controllers.tipo_erogacion_controller import TipoErogacionController
-from core.services.middleware import requiere_rol
+from modules.recursos.controllers.tipo_erogacion_controller import TipoErogacionController
+from modules.shared.services.middleware import requiere_rol
 
 tipo_erogacion_bp = Blueprint(
     "tipo_erogacion",

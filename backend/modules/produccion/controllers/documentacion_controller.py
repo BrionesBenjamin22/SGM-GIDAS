@@ -1,5 +1,5 @@
 from flask import jsonify, request, g
-from core.services.documentacion_service import (
+from modules.produccion.services.documentacion_service import (
     DocumentacionBibliograficaService
 )
 

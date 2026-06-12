@@ -1,6 +1,6 @@
 from flask import Blueprint
-from core.controllers.cargo_controller import CargoController
-from core.services.middleware import requiere_rol
+from modules.grupo.controllers.cargo_controller import CargoController
+from modules.shared.services.middleware import requiere_rol
 
 cargo_bp = Blueprint("cargo", __name__, url_prefix="/cargos")
 

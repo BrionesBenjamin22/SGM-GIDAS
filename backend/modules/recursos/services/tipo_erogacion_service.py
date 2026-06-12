@@ -1,7 +1,7 @@
 from sqlalchemy import func
 
-from core.models.erogacion import TipoErogacion
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.recursos.models.erogacion import TipoErogacion
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from extension import db
 
 

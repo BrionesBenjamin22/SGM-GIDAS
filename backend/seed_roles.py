@@ -1,6 +1,6 @@
 from app import app
 from extension import db
-from core.models.usuario import RolUsuario
+from modules.auth.models.usuario import RolUsuario
 
 
 def seed_roles():

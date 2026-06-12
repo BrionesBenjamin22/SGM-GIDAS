@@ -1,7 +1,7 @@
 from sqlalchemy import func
 
-from core.models.proyecto_investigacion import TipoProyecto
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.proyectos.models.proyecto_investigacion import TipoProyecto
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from extension import db
 
 

@@ -1,6 +1,6 @@
 from flask import Blueprint
-from core.controllers.autores_controller import AutorController
-from core.services.middleware import requiere_rol
+from modules.produccion.controllers.autores_controller import AutorController
+from modules.shared.services.middleware import requiere_rol
 
 autor_bp = Blueprint(
     "autor",

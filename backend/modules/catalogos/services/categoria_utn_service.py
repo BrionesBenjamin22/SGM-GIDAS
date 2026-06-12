@@ -1,6 +1,6 @@
 from extension import db
-from core.models.categoria_utn import CategoriaUtn
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.catalogos.models.categoria_utn import CategoriaUtn
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 def crear_categoria_utn(data, user_id=None):

@@ -1,13 +1,13 @@
 from flask import Request, Response, jsonify, g
-from core.services.fuente_financiamiento_service import (
+from modules.catalogos.services.fuente_financiamiento_service import (
     crear_fuente_financiamiento,
     actualizar_fuente_financiamiento,
     eliminar_fuente_financiamiento,
     listar_fuentes_financiamiento,
     obtener_fuente_financiamiento_por_id
 )
-from core.models.fuente_financiamiento import FuenteFinanciamiento
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 class FuenteFinanciamientoController:

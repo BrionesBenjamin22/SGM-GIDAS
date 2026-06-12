@@ -1,6 +1,6 @@
 from flask import Blueprint
-from core.controllers.tipo_proyecto_controller import TipoProyectoController
-from core.services.middleware import requiere_rol
+from modules.proyectos.controllers.tipo_proyecto_controller import TipoProyectoController
+from modules.shared.services.middleware import requiere_rol
 
 tipo_proyecto_bp = Blueprint(
     "tipo_proyecto",

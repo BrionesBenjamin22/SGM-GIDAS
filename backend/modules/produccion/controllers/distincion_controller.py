@@ -1,5 +1,5 @@
 from flask import jsonify, request, g
-from core.services.distincion_service import DistincionRecibidaService
+from modules.produccion.services.distincion_service import DistincionRecibidaService
 
 
 class DistincionRecibidaController:

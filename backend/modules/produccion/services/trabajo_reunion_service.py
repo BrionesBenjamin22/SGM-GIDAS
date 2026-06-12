@@ -2,15 +2,15 @@ from datetime import date, datetime
 
 from sqlalchemy import or_
 
-from core.models.grupo import GrupoInvestigacionUtn
-from core.models.personal import Investigador
-from core.models.trabajo_reunion import (
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.personal.models.personal import Investigador
+from modules.produccion.models.trabajo_reunion import (
     TrabajoReunionCientifica,
     TipoReunion,
     TrabajoReunionCientificaMemoriaVersion,
 )
-from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import esta_en_periodo_memoria
+from modules.shared.services.auditoria_service import AuditoriaService
+from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 
 

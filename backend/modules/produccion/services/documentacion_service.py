@@ -1,14 +1,14 @@
 from datetime import datetime
 
-from core.models.grupo import GrupoInvestigacionUtn
-from core.models.documentacion_autores import (
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.produccion.models.documentacion_autores import (
     DocumentacionBibliografica,
     Autor,
     DocumentacionBibliograficaMemoriaVersion,
     DocumentacionBibliograficaAutorMemoriaVersion,
 )
-from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import esta_en_periodo_memoria
+from modules.shared.services.auditoria_service import AuditoriaService
+from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 
 

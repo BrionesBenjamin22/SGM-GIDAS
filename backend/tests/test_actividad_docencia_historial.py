@@ -3,9 +3,9 @@ from datetime import date, datetime
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from core.models.actividad_docencia import ActividadDocencia, InvestigadorActividadGrado
-from core.models.auditoria_campo import AuditoriaCampo
-from core.services.actividad_docencia_service import ActividadDocenciaService
+from modules.produccion.models.actividad_docencia import ActividadDocencia, InvestigadorActividadGrado
+from modules.shared.models.auditoria_campo import AuditoriaCampo
+from modules.produccion.services.actividad_docencia_service import ActividadDocenciaService
 
 
 class ActividadDocenciaHistorialTestCase(unittest.TestCase):
@@ -99,10 +99,10 @@ class ActividadDocenciaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.actividad_docencia_service.ActividadDocenciaService._obtener_actividad",
+            "modules.produccion.services.actividad_docencia_service.ActividadDocenciaService._obtener_actividad",
             return_value=actividad
         ), patch(
-            "core.services.actividad_docencia_service.AuditoriaService.obtener_historial_entidad",
+            "modules.produccion.services.actividad_docencia_service.AuditoriaService.obtener_historial_entidad",
             return_value=[
                 {
                     "id": 9,
@@ -150,10 +150,10 @@ class ActividadDocenciaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.actividad_docencia_service.ActividadDocenciaService._obtener_actividad",
+            "modules.produccion.services.actividad_docencia_service.ActividadDocenciaService._obtener_actividad",
             return_value=SimpleNamespace(id=1, investigadores_grado=[])
         ), patch(
-            "core.services.auditoria_service.AuditoriaCampo",
+            "modules.shared.services.auditoria_service.AuditoriaCampo",
             new=SimpleNamespace(
                 query=fake_query,
                 entidad=None,

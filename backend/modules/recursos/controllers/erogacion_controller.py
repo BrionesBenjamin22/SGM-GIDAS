@@ -1,5 +1,5 @@
 from flask import jsonify, request, g
-from core.services.erogacion_service import ErogacionService
+from modules.recursos.services.erogacion_service import ErogacionService
 
 
 class ErogacionController:

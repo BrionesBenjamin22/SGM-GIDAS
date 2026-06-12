@@ -1,6 +1,6 @@
 from flask import Blueprint
-from core.controllers.tipo_reunion_controller import TipoReunionController
-from core.services.middleware import requiere_rol
+from modules.produccion.controllers.tipo_reunion_controller import TipoReunionController
+from modules.shared.services.middleware import requiere_rol
 
 tipo_reunion_bp = Blueprint(
     "tipo_reunion",

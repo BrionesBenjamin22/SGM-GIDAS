@@ -3,20 +3,20 @@ from datetime import date, datetime
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from core.models.auditoria_campo import AuditoriaCampo
-from core.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
-from core.services.memoria_service import MemoriaService
-from core.services.transferencia_service import TransferenciaSocioProductivaService
+from modules.shared.models.auditoria_campo import AuditoriaCampo
+from modules.memorias.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
+from modules.memorias.services.memoria_service import MemoriaService
+from modules.transferencia.services.transferencia_service import TransferenciaSocioProductivaService
 
 
 class TransferenciaMemoriaHistorialTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.add_patcher = patch("core.services.transferencia_service.db.session.add")
-        self.flush_patcher = patch("core.services.transferencia_service.db.session.flush")
+        self.add_patcher = patch("modules.transferencia.services.transferencia_service.db.session.add")
+        self.flush_patcher = patch("modules.transferencia.services.transferencia_service.db.session.flush")
         self.commit_patcher = patch("extension.db.session.commit")
         self.rollback_patcher = patch("extension.db.session.rollback")
-        self.get_patcher = patch("core.services.memoria_service.db.session.get")
+        self.get_patcher = patch("modules.memorias.services.memoria_service.db.session.get")
 
         self.mock_add = self.add_patcher.start()
         self.mock_flush = self.flush_patcher.start()
@@ -78,7 +78,7 @@ class TransferenciaMemoriaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.transferencia_service.TransferenciaSocioProductiva",
+            "modules.transferencia.services.transferencia_service.TransferenciaSocioProductiva",
             new=SimpleNamespace(
                 query=fake_query,
                 deleted_at=SimpleNamespace(is_=lambda *_: None)
@@ -119,37 +119,37 @@ class TransferenciaMemoriaHistorialTestCase(unittest.TestCase):
         self.mock_get.return_value = memoria
 
         with patch(
-            "core.services.memoria_service.snapshot_investigadores_para_memoria_version"
+            "modules.memorias.services.memoria_service.snapshot_investigadores_para_memoria_version"
         ), patch(
-            "core.services.memoria_service.snapshot_becarios_para_memoria_version"
+            "modules.memorias.services.memoria_service.snapshot_becarios_para_memoria_version"
         ), patch(
-            "core.services.memoria_service.snapshot_personal_para_memoria_version"
+            "modules.memorias.services.memoria_service.snapshot_personal_para_memoria_version"
         ), patch(
-            "core.services.memoria_service.ProyectoInvestigacionService.snapshot_para_memoria_version"
+            "modules.memorias.services.memoria_service.ProyectoInvestigacionService.snapshot_para_memoria_version"
         ), patch(
-            "core.services.memoria_service.ActividadDocenciaService.snapshot_para_memoria_version"
+            "modules.memorias.services.memoria_service.ActividadDocenciaService.snapshot_para_memoria_version"
         ), patch(
-            "core.services.memoria_service.ParticipacionRelevanteService.snapshot_para_memoria_version"
+            "modules.memorias.services.memoria_service.ParticipacionRelevanteService.snapshot_para_memoria_version"
         ), patch(
-            "core.services.memoria_service.DocumentacionBibliograficaService.snapshot_para_memoria_version"
+            "modules.memorias.services.memoria_service.DocumentacionBibliograficaService.snapshot_para_memoria_version"
         ), patch(
-            "core.services.memoria_service.EquipamientoService.snapshot_para_memoria_version"
+            "modules.memorias.services.memoria_service.EquipamientoService.snapshot_para_memoria_version"
         ), patch(
-            "core.services.memoria_service.ErogacionService.snapshot_para_memoria_version"
+            "modules.memorias.services.memoria_service.ErogacionService.snapshot_para_memoria_version"
         ), patch(
-            "core.services.memoria_service.TransferenciaSocioProductivaService.snapshot_para_memoria_version"
+            "modules.memorias.services.memoria_service.TransferenciaSocioProductivaService.snapshot_para_memoria_version"
         ) as mock_snapshot, patch(
-            "core.services.memoria_service.TrabajoReunionCientificaService.snapshot_para_memoria_version"
+            "modules.memorias.services.memoria_service.TrabajoReunionCientificaService.snapshot_para_memoria_version"
         ), patch(
-            "core.services.memoria_service.TrabajosRevistasReferatoService.snapshot_para_memoria_version"
+            "modules.memorias.services.memoria_service.TrabajosRevistasReferatoService.snapshot_para_memoria_version"
         ), patch(
-            "core.services.memoria_service.DistincionRecibidaService.snapshot_para_memoria_version"
+            "modules.memorias.services.memoria_service.DistincionRecibidaService.snapshot_para_memoria_version"
         ), patch(
-            "core.services.memoria_service.RegistrosPropiedadService.snapshot_para_memoria_version"
+            "modules.memorias.services.memoria_service.RegistrosPropiedadService.snapshot_para_memoria_version"
         ), patch(
-            "core.services.memoria_service.ArticuloDivulgacionService.snapshot_para_memoria_version"
+            "modules.memorias.services.memoria_service.ArticuloDivulgacionService.snapshot_para_memoria_version"
         ), patch(
-            "core.services.memoria_service.snapshot_visitas_para_memoria_version"
+            "modules.memorias.services.memoria_service.snapshot_visitas_para_memoria_version"
         ):
             resultado = MemoriaService.change_status(
                 1,
@@ -181,10 +181,10 @@ class TransferenciaMemoriaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.transferencia_service.db.session.get",
+            "modules.transferencia.services.transferencia_service.db.session.get",
             return_value=SimpleNamespace(id=7)
         ), patch(
-            "core.services.auditoria_service.AuditoriaCampo",
+            "modules.shared.services.auditoria_service.AuditoriaCampo",
             new=SimpleNamespace(
                 query=fake_query,
                 entidad=None,
@@ -215,7 +215,7 @@ class TransferenciaMemoriaHistorialTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.transferencia_service.TransferenciaSocioProductivaMemoriaVersion",
+            "modules.transferencia.services.transferencia_service.TransferenciaSocioProductivaMemoriaVersion",
             new=SimpleNamespace(
                 query=fake_query,
                 memoria_version_id=None,

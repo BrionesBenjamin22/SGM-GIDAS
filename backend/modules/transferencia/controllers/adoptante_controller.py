@@ -1,5 +1,5 @@
 from flask import request, jsonify, g
-from core.services.adoptante_service import AdoptanteService
+from modules.transferencia.services.adoptante_service import AdoptanteService
 
 class AdoptanteController:
     @staticmethod

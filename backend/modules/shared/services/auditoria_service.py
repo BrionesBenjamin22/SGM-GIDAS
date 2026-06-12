@@ -2,7 +2,7 @@ from datetime import date, datetime
 from enum import Enum
 
 from extension import db
-from core.models.auditoria_campo import AuditoriaCampo
+from modules.shared.models.auditoria_campo import AuditoriaCampo
 
 
 class AuditoriaService:

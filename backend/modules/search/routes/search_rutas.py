@@ -1,6 +1,6 @@
 from flask import Blueprint
-from core.controllers.search_controller import SearchController
-from core.services.middleware import requiere_rol
+from modules.search.controllers.search_controller import SearchController
+from modules.shared.services.middleware import requiere_rol
 
 search_bp = Blueprint(
     "search",

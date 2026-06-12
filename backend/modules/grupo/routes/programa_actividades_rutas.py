@@ -1,8 +1,8 @@
 from flask import Blueprint, request
-from core.controllers.programa_actividades_controller import (
+from modules.grupo.controllers.programa_actividades_controller import (
     PlanificacionGrupoController
 )
-from core.services.middleware import requiere_rol
+from modules.shared.services.middleware import requiere_rol
 
 planificacion_grupo_bp = Blueprint(
     "planificacion_grupo",

@@ -1,5 +1,5 @@
 from flask import jsonify, request, g
-from core.services.becas_service import BecaService
+from modules.recursos.services.becas_service import BecaService
 
 
 class BecaController:

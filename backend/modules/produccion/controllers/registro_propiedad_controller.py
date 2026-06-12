@@ -1,5 +1,5 @@
 from flask import jsonify, request, g
-from core.services.registro_propiedad_service import RegistrosPropiedadService
+from modules.produccion.services.registro_propiedad_service import RegistrosPropiedadService
 
 
 class RegistrosPropiedadController:

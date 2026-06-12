@@ -1,11 +1,11 @@
 from datetime import date
 
 from extension import db
-from core.models.personal import Becario, TipoFormacion, BecarioHorasHistorial, BecarioMemoriaVersion
-from core.models.grupo import GrupoInvestigacionUtn
-from core.models.proyecto_investigacion import ProyectoInvestigacion
-from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import (
+from modules.personal.models.personal import Becario, TipoFormacion, BecarioHorasHistorial, BecarioMemoriaVersion
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.proyectos.models.proyecto_investigacion import ProyectoInvestigacion
+from modules.shared.services.auditoria_service import AuditoriaService
+from modules.memorias.services.memoria_periodo_service import (
     validar_fecha_alta_grupo,
     estuvo_activo_en_periodo_memoria,
 )

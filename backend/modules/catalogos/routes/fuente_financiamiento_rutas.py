@@ -1,6 +1,6 @@
 from flask import Blueprint, request
-from core.controllers.fuente_financiamiento_controller import FuenteFinanciamientoController
-from core.services.middleware import requiere_rol
+from modules.catalogos.controllers.fuente_financiamiento_controller import FuenteFinanciamientoController
+from modules.shared.services.middleware import requiere_rol
 
 fuente_financiamiento_bp = Blueprint(
     "fuente_financiamiento",

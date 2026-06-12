@@ -1,5 +1,5 @@
 from flask import Request, Response, jsonify, g
-from core.services.investigador_service import (
+from modules.personal.services.investigador_service import (
     crear_investigador,
     actualizar_investigador,
     eliminar_investigador,

@@ -9,9 +9,10 @@ archivos por responsabilidad tecnica interna:
 - `routes`: blueprints Flask, permisos y endpoints.
 
 `modules/__init__.py` expone el registro central de blueprints usado por la
-aplicacion. Las carpetas antiguas `core/models`, `core/services`,
-`core/controllers` y `core/routes` quedan como fachadas de compatibilidad para
-imports historicos.
+aplicacion. `modules/models_registry.py` importa explicitamente los modelos
+modulares para registrar la metadata de SQLAlchemy durante el arranque. La
+carpeta legacy previa a la modularizacion fue eliminada; los imports historicos
+ya no forman parte del contrato interno del backend.
 
 ## Modulos
 
@@ -37,9 +38,9 @@ imports historicos.
 
 - Las nuevas funcionalidades deben agregarse dentro del modulo de dominio
   correspondiente.
-- Los imports nuevos deben preferir `modules.<modulo>...`.
-- Los imports `core.*` se mantienen solo para compatibilidad durante la
-  migracion.
+- Los imports deben usar `modules.<modulo>...`.
+- No agregar nuevas fachadas legacy; cualquier compatibilidad historica debe
+  resolverse migrando el import al modulo correspondiente.
 - Los endpoints deben declarar permisos en `routes` y delegar reglas de negocio
   a `services`.
 - Todo cambio con historial o auditoria debe reutilizar los servicios de

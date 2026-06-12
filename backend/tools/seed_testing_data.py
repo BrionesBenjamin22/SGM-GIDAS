@@ -7,12 +7,12 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from app import app
 from extension import db
-from core.models.categoria_utn import CategoriaUtn
-from core.models.fuente_financiamiento import FuenteFinanciamiento
-from core.models.grupo import GrupoInvestigacionUtn
-from core.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
-from core.models.persona import Persona
-from core.models.personal import (
+from modules.catalogos.models.categoria_utn import CategoriaUtn
+from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.memorias.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
+from modules.auth.models.persona import Persona
+from modules.personal.models.personal import (
     Becario,
     BecarioHorasHistorial,
     Investigador,
@@ -22,15 +22,15 @@ from core.models.personal import (
     TipoDedicacion,
     TipoFormacion,
 )
-from core.models.programa_incentivos import ProgramaIncentivos
-from core.models.proyecto_investigacion import (
+from modules.grupo.models.programa_incentivos import ProgramaIncentivos
+from modules.proyectos.models.proyecto_investigacion import (
     BecarioProyecto,
     InvestigadorProyecto,
     ProyectoInvestigacion,
     TipoProyecto,
 )
-from core.models.tipo_personal import TipoPersonal
-from core.models.usuario import RolUsuario, Usuario
+from modules.personal.models.tipo_personal import TipoPersonal
+from modules.auth.models.usuario import RolUsuario, Usuario
 
 
 TEST_PASSWORD = "Testing123!"

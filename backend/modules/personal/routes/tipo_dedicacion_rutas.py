@@ -1,6 +1,6 @@
 from flask import Blueprint, request
-from core.controllers.tipo_dedicacion_controller import TipoDedicacionController
-from core.services.middleware import requiere_rol
+from modules.personal.controllers.tipo_dedicacion_controller import TipoDedicacionController
+from modules.shared.services.middleware import requiere_rol
 
 tipo_dedicacion_bp = Blueprint(
     "tipo_dedicacion",

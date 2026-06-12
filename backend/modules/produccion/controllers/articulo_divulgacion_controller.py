@@ -1,5 +1,5 @@
 from flask import g, jsonify, request
-from core.services.articulo_divulgacion_service import ArticuloDivulgacionService
+from modules.produccion.services.articulo_divulgacion_service import ArticuloDivulgacionService
 
 
 class ArticuloDivulgacionController:

@@ -1,5 +1,5 @@
 from flask import Request, Response, jsonify, g
-from core.services.visita_service import (
+from modules.grupo.services.visita_service import (
     crear_visita_academica,
     actualizar_visita_academica,
     eliminar_visita_academica,

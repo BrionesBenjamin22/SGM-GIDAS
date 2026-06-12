@@ -1,5 +1,5 @@
 from flask import jsonify, request, g
-from core.services.proyecto_investigacion_service import ProyectoInvestigacionService
+from modules.proyectos.services.proyecto_investigacion_service import ProyectoInvestigacionService
 
 
 class ProyectoInvestigacionController:

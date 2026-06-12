@@ -1,5 +1,5 @@
 from flask import jsonify, request
-from core.services.autores_service import AutorService
+from modules.produccion.services.autores_service import AutorService
 
 class AutorController:
 

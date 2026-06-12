@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from core.models.actividad_docencia import (
+from modules.produccion.models.actividad_docencia import (
     ActividadDocencia,
     ActividadDocenciaGradoMemoriaVersion,
     ActividadDocenciaMemoriaVersion,
@@ -8,9 +8,9 @@ from core.models.actividad_docencia import (
     InvestigadorActividadGrado,
     RolActividad,
 )
-from core.models.personal import Investigador
-from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
+from modules.personal.models.personal import Investigador
+from modules.shared.services.auditoria_service import AuditoriaService
+from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
 
 

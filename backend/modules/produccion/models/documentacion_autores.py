@@ -1,6 +1,6 @@
 import datetime
 from extension import db
-from core.models.audit_mixin import AuditMixin
+from modules.shared.models.audit_mixin import AuditMixin
 
 autor_libro = db.Table('autorxlibro', 
                        db.Column('id_autor', db.Integer, db.ForeignKey('autor.id'), primary_key=True),

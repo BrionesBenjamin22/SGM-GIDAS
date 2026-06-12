@@ -2,19 +2,19 @@
 from extension import db
 from sqlalchemy import func, or_
 
-from core.models.distinciones import DistincionRecibida
-from core.models.proyecto_investigacion import (
+from modules.produccion.models.distinciones import DistincionRecibida
+from modules.proyectos.models.proyecto_investigacion import (
     ProyectoInvestigacion,
     TipoProyecto,
     InvestigadorProyecto,
     BecarioProyecto,
     ProyectoInvestigacionMemoriaVersion
 )
-from core.models.grupo import GrupoInvestigacionUtn
-from core.models.fuente_financiamiento import FuenteFinanciamiento
-from core.models.personal import Becario, Investigador
-from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
+from modules.personal.models.personal import Becario, Investigador
+from modules.shared.services.auditoria_service import AuditoriaService
+from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 
 
 class ProyectoInvestigacionService:
@@ -208,7 +208,7 @@ class ProyectoInvestigacionService:
         proyecto = ProyectoInvestigacion.query.get(proyecto_id)
 
         if not proyecto:
-            raise Exception("Proyecto de investigaciÃ³n no encontrado")
+            raise Exception("Proyecto de investigacion no encontrado")
 
         return proyecto.serialize()
 

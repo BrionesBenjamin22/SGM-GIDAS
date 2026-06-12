@@ -2,8 +2,8 @@ import datetime
 import re
 from sqlalchemy.orm import validates
 from extension import db
-from core.models.trabajo_reunion import TipoReunion
-from core.models.audit_mixin import AuditMixin
+from modules.produccion.models.trabajo_reunion import TipoReunion
+from modules.shared.models.audit_mixin import AuditMixin
 
 
 investigador_x_trabajo_revista = db.Table(

@@ -1,7 +1,7 @@
 from flask import jsonify, request, g
-from core.services.tipo_erogacion_service import TipoErogacionService
-from core.models.erogacion import TipoErogacion
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.recursos.services.tipo_erogacion_service import TipoErogacionService
+from modules.recursos.models.erogacion import TipoErogacion
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 class TipoErogacionController:
 

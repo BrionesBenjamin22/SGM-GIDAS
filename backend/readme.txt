@@ -28,13 +28,13 @@ Estructura principal
   Configuracion de entorno, base de datos, CORS y JWT.
 - extension.py
   Inicializacion compartida de SQLAlchemy y Migrate.
-- core/models
+- modules/*/models
   Entidades del dominio, tablas auxiliares de auditoria y tablas snapshot de memoria.
-- core/services
+- modules/*/services
   Logica de negocio, validaciones, historiales, snapshots y exportacion.
-- core/controllers
+- modules/*/controllers
   Adaptacion HTTP entre rutas y servicios.
-- core/routes
+- modules/*/routes
   Blueprints y definicion de endpoints.
 - migrations
   Historial de migraciones Alembic.

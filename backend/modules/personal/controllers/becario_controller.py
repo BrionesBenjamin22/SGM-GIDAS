@@ -1,5 +1,5 @@
 from flask import Request, Response, jsonify, g
-from core.services.becario_service import (
+from modules.personal.services.becario_service import (
     crear_becario,
     actualizar_becario,
     eliminar_becario,

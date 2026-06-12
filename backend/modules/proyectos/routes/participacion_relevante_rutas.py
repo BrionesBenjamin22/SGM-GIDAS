@@ -1,8 +1,8 @@
 from flask import Blueprint
-from core.controllers.participacion_relevante_controller import (
+from modules.proyectos.controllers.participacion_relevante_controller import (
     ParticipacionRelevanteController
 )
-from core.services.middleware import requiere_rol
+from modules.shared.services.middleware import requiere_rol
 
 participacion_relevante_bp = Blueprint(
     "participacion_relevante",

@@ -1,8 +1,8 @@
 from flask import Blueprint, request
-from core.controllers.programa_incentivos_controller import (
+from modules.grupo.controllers.programa_incentivos_controller import (
     ProgramaIncentivosController
 )
-from core.services.middleware import requiere_rol
+from modules.shared.services.middleware import requiere_rol
 
 programa_incentivos_bp = Blueprint(
     "programa_incentivos",

@@ -1,6 +1,6 @@
 from flask import Blueprint, request
-from core.controllers.grupo_controller import GrupoUtnController
-from core.services.middleware import requiere_rol
+from modules.grupo.controllers.grupo_controller import GrupoUtnController
+from modules.shared.services.middleware import requiere_rol
 
 grupo_utn_bp = Blueprint(
     "grupo_utn",

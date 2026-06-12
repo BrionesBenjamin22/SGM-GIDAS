@@ -1,14 +1,14 @@
 from datetime import datetime, date
 
 from extension import db
-from core.models.visita_grupo import (
+from modules.grupo.models.visita_grupo import (
     VisitaAcademica,
     VisitaAcademicaMemoriaVersion,
 )
-from core.models.grupo import GrupoInvestigacionUtn
-from core.models.trabajo_reunion import TipoReunion
-from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import esta_en_periodo_memoria
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.produccion.models.trabajo_reunion import TipoReunion
+from modules.shared.services.auditoria_service import AuditoriaService
+from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 
 
 def _validar_payload(data: dict):

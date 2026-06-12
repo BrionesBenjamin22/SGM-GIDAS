@@ -1,7 +1,7 @@
 from flask import Blueprint
 
-from core.controllers.dashboard_controller import DashboardController
-from core.services.middleware import requiere_rol
+from modules.dashboard.controllers.dashboard_controller import DashboardController
+from modules.shared.services.middleware import requiere_rol
 
 
 dashboard_bp = Blueprint(

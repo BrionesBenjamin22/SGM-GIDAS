@@ -1,13 +1,13 @@
 from flask import Request, Response, jsonify, g
-from core.services.tipo_personal_service import (
+from modules.personal.services.tipo_personal_service import (
     crear_tipo_personal,
     actualizar_tipo_personal,
     eliminar_tipo_personal,
     listar_tipos,
     obtener_tipo_por_id
 )
-from core.models.tipo_personal import TipoPersonal
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.personal.models.tipo_personal import TipoPersonal
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 class TipoPersonalController:

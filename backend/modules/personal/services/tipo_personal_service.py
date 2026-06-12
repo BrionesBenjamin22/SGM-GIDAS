@@ -1,6 +1,6 @@
 from extension import db
-from core.models.tipo_personal import TipoPersonal
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.personal.models.tipo_personal import TipoPersonal
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 def crear_tipo_personal(data, user_id=None):

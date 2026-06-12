@@ -1,6 +1,6 @@
 from flask import Blueprint
-from core.controllers.directivo_controller import DirectivoController
-from core.services.middleware import requiere_rol
+from modules.grupo.controllers.directivo_controller import DirectivoController
+from modules.shared.services.middleware import requiere_rol
 
 directivo_bp = Blueprint(
     "directivo",

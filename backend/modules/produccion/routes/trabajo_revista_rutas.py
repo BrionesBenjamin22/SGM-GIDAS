@@ -1,8 +1,8 @@
 from flask import Blueprint
-from core.controllers.trabajo_revista_controller import (
+from modules.produccion.controllers.trabajo_revista_controller import (
     TrabajosRevistasReferatoController
 )
-from core.services.middleware import requiere_rol
+from modules.shared.services.middleware import requiere_rol
 
 trabajos_revistas_referato_bp = Blueprint(
     "trabajos_revistas_referato",

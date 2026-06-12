@@ -1,6 +1,6 @@
 from flask import Blueprint
-from core.controllers.distincion_controller import DistincionRecibidaController
-from core.services.middleware import requiere_rol
+from modules.produccion.controllers.distincion_controller import DistincionRecibidaController
+from modules.shared.services.middleware import requiere_rol
 
 distincion_recibida_bp = Blueprint(
     "distincion_recibida",

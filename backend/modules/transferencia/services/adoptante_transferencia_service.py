@@ -1,4 +1,4 @@
-from core.models.transferencia_socio import (
+from modules.transferencia.models.transferencia_socio import (
     AdoptanteTransferencia,
     Adoptante,
     TransferenciaSocioProductiva

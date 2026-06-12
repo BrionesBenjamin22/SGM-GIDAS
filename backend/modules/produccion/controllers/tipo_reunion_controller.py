@@ -1,6 +1,6 @@
 from flask import jsonify, request, g
-from core.models.trabajo_reunion import TipoReunion
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.produccion.models.trabajo_reunion import TipoReunion
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from extension import db
 
 

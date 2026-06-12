@@ -1,7 +1,7 @@
 from datetime import datetime
 from extension import db
 
-from core.models.transferencia_socio import (
+from modules.transferencia.models.transferencia_socio import (
     Adoptante,
     TransferenciaSocioProductiva,
     TipoContrato,
@@ -9,9 +9,9 @@ from core.models.transferencia_socio import (
     TransferenciaSocioProductivaMemoriaVersion,
     AdoptanteTransferenciaMemoriaVersion,
 )
-from core.models.grupo import GrupoInvestigacionUtn
-from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.shared.services.auditoria_service import AuditoriaService
+from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 
 
 class TransferenciaSocioProductivaService:

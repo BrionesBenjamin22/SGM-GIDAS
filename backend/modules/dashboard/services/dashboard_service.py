@@ -1,17 +1,17 @@
 from collections import Counter, defaultdict
 from datetime import date, datetime
 
-from core.models.becas import Beca, Beca_Becario
-from core.models.erogacion import Erogacion
-from core.models.fuente_financiamiento import FuenteFinanciamiento
-from core.models.grupo import GrupoInvestigacionUtn
-from core.models.personal import Becario, Investigador, Personal
-from core.models.proyecto_investigacion import (
+from modules.recursos.models.becas import Beca, Beca_Becario
+from modules.recursos.models.erogacion import Erogacion
+from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.personal.models.personal import Becario, Investigador, Personal
+from modules.proyectos.models.proyecto_investigacion import (
     BecarioProyecto,
     InvestigadorProyecto,
     ProyectoInvestigacion,
 )
-from core.models.transferencia_socio import TransferenciaSocioProductiva
+from modules.transferencia.models.transferencia_socio import TransferenciaSocioProductiva
 
 
 class DashboardService:

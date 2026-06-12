@@ -1,13 +1,13 @@
-﻿from datetime import datetime, date
+from datetime import datetime, date
 
 from extension import db
-from core.models.articulo_divulgacion import (
+from modules.produccion.models.articulo_divulgacion import (
     ArticuloDivulgacion,
     ArticuloDivulgacionMemoriaVersion,
 )
-from core.models.grupo import GrupoInvestigacionUtn
-from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import esta_en_periodo_memoria
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.shared.services.auditoria_service import AuditoriaService
+from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 
 
 class ArticuloDivulgacionService:

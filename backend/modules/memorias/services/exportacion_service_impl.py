@@ -10,26 +10,26 @@ from openpyxl.utils import column_index_from_string
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import joinedload, selectinload
 
-from core.models.actividad_docencia import ActividadDocencia, InvestigadorActividadGrado
-from core.models.articulo_divulgacion import ArticuloDivulgacion
-from core.models.becas import Beca, Beca_Becario
-from core.models.directivos import DirectivoGrupo
-from core.models.distinciones import DistincionRecibida
-from core.models.documentacion_autores import DocumentacionBibliografica
-from core.models.equipamiento import Equipamiento
-from core.models.erogacion import Erogacion
-from core.models.grupo import GrupoInvestigacionUtn
-from core.models.participacion_relevante import ParticipacionRelevante
-from core.models.personal import Becario, Investigador, Personal
-from core.models.proyecto_investigacion import ProyectoInvestigacion, InvestigadorProyecto, BecarioProyecto
-from core.models.registro_patente import RegistrosPropiedad
-from core.models.trabajo_reunion import TrabajoReunionCientifica
-from core.models.trabajo_revista import TrabajosRevistasReferato
-from core.models.transferencia_socio import TransferenciaSocioProductiva, AdoptanteTransferencia
-from core.models.visita_grupo import VisitaAcademica
-from core.models.programa_actividades import PlanificacionGrupo
-from core.models.memorias import EstadoMemoria
-from core.services.memoria_service import MemoriaService
+from modules.produccion.models.actividad_docencia import ActividadDocencia, InvestigadorActividadGrado
+from modules.produccion.models.articulo_divulgacion import ArticuloDivulgacion
+from modules.recursos.models.becas import Beca, Beca_Becario
+from modules.grupo.models.directivos import DirectivoGrupo
+from modules.produccion.models.distinciones import DistincionRecibida
+from modules.produccion.models.documentacion_autores import DocumentacionBibliografica
+from modules.recursos.models.equipamiento import Equipamiento
+from modules.recursos.models.erogacion import Erogacion
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.proyectos.models.participacion_relevante import ParticipacionRelevante
+from modules.personal.models.personal import Becario, Investigador, Personal
+from modules.proyectos.models.proyecto_investigacion import ProyectoInvestigacion, InvestigadorProyecto, BecarioProyecto
+from modules.produccion.models.registro_patente import RegistrosPropiedad
+from modules.produccion.models.trabajo_reunion import TrabajoReunionCientifica
+from modules.produccion.models.trabajo_revista import TrabajosRevistasReferato
+from modules.transferencia.models.transferencia_socio import TransferenciaSocioProductiva, AdoptanteTransferencia
+from modules.grupo.models.visita_grupo import VisitaAcademica
+from modules.grupo.models.programa_actividades import PlanificacionGrupo
+from modules.memorias.models.memorias import EstadoMemoria
+from modules.memorias.services.memoria_service import MemoriaService
 
 
 class ExportService:

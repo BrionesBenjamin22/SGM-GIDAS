@@ -1,6 +1,6 @@
 from flask import Blueprint
-from core.controllers.adoptante_controller import AdoptanteController
-from core.services.middleware import requiere_rol
+from modules.transferencia.controllers.adoptante_controller import AdoptanteController
+from modules.shared.services.middleware import requiere_rol
 
 adoptante_bp = Blueprint(
     "adoptante",

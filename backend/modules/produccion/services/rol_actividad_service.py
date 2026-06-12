@@ -1,5 +1,5 @@
-from core.models.actividad_docencia import RolActividad
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.produccion.models.actividad_docencia import RolActividad
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from extension import db
 from sqlalchemy import func
 

@@ -1,9 +1,9 @@
 from flask import Blueprint
-from core.controllers.transferencia_socio_controller import (
+from modules.transferencia.controllers.transferencia_socio_controller import (
     TransferenciaSocioProductivaController
 )
 
-from core.services.middleware import requiere_rol
+from modules.shared.services.middleware import requiere_rol
 
 transferencia_socio_productiva_bp = Blueprint(
     "transferencia_socio_productiva",

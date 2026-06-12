@@ -1,6 +1,6 @@
 from sqlalchemy import func
-from core.models.registro_patente import TipoRegistroPropiedad
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.produccion.models.registro_patente import TipoRegistroPropiedad
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from extension import db
 
 

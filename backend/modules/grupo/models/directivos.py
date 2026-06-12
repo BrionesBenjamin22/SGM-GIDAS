@@ -1,5 +1,5 @@
 from extension import db
-from core.models.audit_mixin import AuditMixin
+from modules.shared.models.audit_mixin import AuditMixin
 
 
 class DirectivoGrupo(db.Model, AuditMixin):

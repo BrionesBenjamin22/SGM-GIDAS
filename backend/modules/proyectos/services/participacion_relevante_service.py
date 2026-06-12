@@ -1,13 +1,13 @@
 from datetime import date, datetime
 import unicodedata
 
-from core.models.participacion_relevante import (
+from modules.proyectos.models.participacion_relevante import (
     ParticipacionRelevante,
     ParticipacionRelevanteMemoriaVersion,
 )
-from core.models.personal import Investigador
-from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import esta_en_periodo_memoria
+from modules.personal.models.personal import Investigador
+from modules.shared.services.auditoria_service import AuditoriaService
+from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 
 

@@ -1,5 +1,5 @@
 from extension import db
-from core.models.grupo import GrupoInvestigacionUtn
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
 
 
 def crear_grupo_utn(data, user_id):

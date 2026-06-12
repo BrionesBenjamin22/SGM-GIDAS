@@ -1,4 +1,4 @@
-from core.models.documentacion_autores import DocumentacionBibliografica, Autor
+from modules.produccion.models.documentacion_autores import DocumentacionBibliografica, Autor
 from extension import db
 
 

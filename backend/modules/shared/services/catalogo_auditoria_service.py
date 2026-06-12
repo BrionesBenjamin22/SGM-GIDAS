@@ -1,4 +1,4 @@
-from core.services.auditoria_service import AuditoriaService
+from modules.shared.services.auditoria_service import AuditoriaService
 
 
 class CatalogoAuditoriaService:

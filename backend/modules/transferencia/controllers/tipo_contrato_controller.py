@@ -1,7 +1,7 @@
 from flask import jsonify, request, g
-from core.services.tipo_contrato_service import TipoContratoService
-from core.models.transferencia_socio import TipoContrato
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.transferencia.services.tipo_contrato_service import TipoContratoService
+from modules.transferencia.models.transferencia_socio import TipoContrato
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 class TipoContratoController:

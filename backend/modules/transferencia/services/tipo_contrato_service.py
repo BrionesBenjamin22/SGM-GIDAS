@@ -1,5 +1,5 @@
-from core.models.transferencia_socio import TipoContrato
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.transferencia.models.transferencia_socio import TipoContrato
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from extension import db
 from sqlalchemy import func
 

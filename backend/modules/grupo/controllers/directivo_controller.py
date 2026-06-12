@@ -1,5 +1,5 @@
 from flask import jsonify, request, g
-from core.services.directivo_service import DirectivoGrupoService
+from modules.grupo.services.directivo_service import DirectivoGrupoService
 
 
 class DirectivoController:

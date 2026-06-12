@@ -1,8 +1,8 @@
 from extension import db
 from datetime import date
-from core.models.trabajo_reunion import investigador_x_trabajo_reunion
-from core.models.trabajo_revista import investigador_x_trabajo_revista
-from core.models.audit_mixin import AuditMixin
+from modules.produccion.models.trabajo_reunion import investigador_x_trabajo_reunion
+from modules.produccion.models.trabajo_revista import investigador_x_trabajo_revista
+from modules.shared.models.audit_mixin import AuditMixin
 
 # =====================================================
 # PERSONAL

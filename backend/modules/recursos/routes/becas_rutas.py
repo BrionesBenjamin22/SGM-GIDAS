@@ -1,6 +1,6 @@
 from flask import Blueprint
-from core.controllers.becas_controller import BecaController
-from core.services.middleware import requiere_rol
+from modules.recursos.controllers.becas_controller import BecaController
+from modules.shared.services.middleware import requiere_rol
 
 beca_bp = Blueprint("beca", __name__, url_prefix="/becas")
 

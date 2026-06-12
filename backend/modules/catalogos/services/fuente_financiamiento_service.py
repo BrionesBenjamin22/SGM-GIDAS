@@ -1,6 +1,6 @@
 from extension import db
-from core.models.fuente_financiamiento import FuenteFinanciamiento
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 def crear_fuente_financiamiento(data, user_id=None):

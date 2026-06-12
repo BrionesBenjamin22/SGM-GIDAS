@@ -1,7 +1,7 @@
 from datetime import date
 
 from extension import db
-from core.models.audit_mixin import AuditMixin
+from modules.shared.models.audit_mixin import AuditMixin
 
 class ActividadDocencia(db.Model, AuditMixin):
     __tablename__ = 'actividad_y_catedra_posgrado'

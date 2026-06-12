@@ -1,7 +1,7 @@
 from extension import db
 from sqlalchemy import func
-from core.models.actividad_docencia import GradoAcademico
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.produccion.models.actividad_docencia import GradoAcademico
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 class GradoAcademicoService:

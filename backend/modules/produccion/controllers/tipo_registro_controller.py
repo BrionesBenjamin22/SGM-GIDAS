@@ -1,7 +1,7 @@
 from flask import jsonify, request, g
-from core.services.tipo_registro_service import TipoRegistroPropiedadService
-from core.models.registro_patente import TipoRegistroPropiedad
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.produccion.services.tipo_registro_service import TipoRegistroPropiedadService
+from modules.produccion.models.registro_patente import TipoRegistroPropiedad
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 class TipoRegistroPropiedadController:
 

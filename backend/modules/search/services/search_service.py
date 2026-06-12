@@ -2,22 +2,22 @@ from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 from datetime import datetime
 from extension import db
-from core.models.fuente_financiamiento import FuenteFinanciamiento
-from core.models.participacion_relevante import ParticipacionRelevante
-from core.models.personal import Personal, Becario, Investigador
-from core.models.proyecto_investigacion import ProyectoInvestigacion, BecarioProyecto, InvestigadorProyecto, TipoProyecto
-from core.models.actividad_docencia import ActividadDocencia, InvestigadorActividadGrado
-from core.models.articulo_divulgacion import ArticuloDivulgacion
-from core.models.equipamiento import Equipamiento
-from core.models.transferencia_socio import TipoContrato, TransferenciaSocioProductiva
-from core.models.erogacion import Erogacion, TipoErogacion
-from core.models.registro_patente import RegistrosPropiedad, TipoRegistroPropiedad
-from core.models.documentacion_autores import DocumentacionBibliografica, Autor
-from core.models.tipo_personal import TipoPersonal
-from core.models.trabajo_reunion import TrabajoReunionCientifica
-from core.models.trabajo_revista import TrabajosRevistasReferato
-from core.models.directivos import Directivo, DirectivoGrupo, Cargo
-from core.models.becas import Beca, Beca_Becario
+from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
+from modules.proyectos.models.participacion_relevante import ParticipacionRelevante
+from modules.personal.models.personal import Personal, Becario, Investigador
+from modules.proyectos.models.proyecto_investigacion import ProyectoInvestigacion, BecarioProyecto, InvestigadorProyecto, TipoProyecto
+from modules.produccion.models.actividad_docencia import ActividadDocencia, InvestigadorActividadGrado
+from modules.produccion.models.articulo_divulgacion import ArticuloDivulgacion
+from modules.recursos.models.equipamiento import Equipamiento
+from modules.transferencia.models.transferencia_socio import TipoContrato, TransferenciaSocioProductiva
+from modules.recursos.models.erogacion import Erogacion, TipoErogacion
+from modules.produccion.models.registro_patente import RegistrosPropiedad, TipoRegistroPropiedad
+from modules.produccion.models.documentacion_autores import DocumentacionBibliografica, Autor
+from modules.personal.models.tipo_personal import TipoPersonal
+from modules.produccion.models.trabajo_reunion import TrabajoReunionCientifica
+from modules.produccion.models.trabajo_revista import TrabajosRevistasReferato
+from modules.grupo.models.directivos import Directivo, DirectivoGrupo, Cargo
+from modules.recursos.models.becas import Beca, Beca_Becario
 import unicodedata
 
 

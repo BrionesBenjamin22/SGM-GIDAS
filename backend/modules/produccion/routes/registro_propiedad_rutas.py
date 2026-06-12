@@ -1,6 +1,6 @@
 from flask import Blueprint
-from core.controllers.registro_propiedad_controller import RegistrosPropiedadController
-from core.services.middleware import requiere_rol
+from modules.produccion.controllers.registro_propiedad_controller import RegistrosPropiedadController
+from modules.shared.services.middleware import requiere_rol
 
 registros_propiedad_bp = Blueprint(
     "registros_propiedad",

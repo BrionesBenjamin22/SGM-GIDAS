@@ -1,56 +1,56 @@
 from datetime import datetime
 
 from extension import db
-from core.models.memorias import Memoria, MemoriaVersion, EstadoMemoria
-from core.services.investigador_service import (
+from modules.memorias.models.memorias import Memoria, MemoriaVersion, EstadoMemoria
+from modules.personal.services.investigador_service import (
     obtener_snapshots_investigadores_por_memoria_version,
     snapshot_investigadores_para_memoria_version,
 )
-from core.services.becario_service import (
+from modules.personal.services.becario_service import (
     snapshot_becarios_para_memoria_version,
     obtener_snapshots_becarios_por_memoria_version,
 )
-from core.services.personal_service import (
+from modules.personal.services.personal_service import (
     snapshot_personal_para_memoria_version,
     obtener_snapshots_personal_por_memoria_version,
 )
-from core.services.proyecto_investigacion_service import (
+from modules.proyectos.services.proyecto_investigacion_service import (
     ProyectoInvestigacionService,
 )
-from core.services.actividad_docencia_service import (
+from modules.produccion.services.actividad_docencia_service import (
     ActividadDocenciaService,
 )
-from core.services.participacion_relevante_service import (
+from modules.proyectos.services.participacion_relevante_service import (
     ParticipacionRelevanteService,
 )
-from core.services.documentacion_service import (
+from modules.produccion.services.documentacion_service import (
     DocumentacionBibliograficaService,
 )
-from core.services.equipamiento_service import (
+from modules.recursos.services.equipamiento_service import (
     EquipamientoService,
 )
-from core.services.erogacion_service import (
+from modules.recursos.services.erogacion_service import (
     ErogacionService,
 )
-from core.services.transferencia_service import (
+from modules.transferencia.services.transferencia_service import (
     TransferenciaSocioProductivaService,
 )
-from core.services.trabajo_reunion_service import (
+from modules.produccion.services.trabajo_reunion_service import (
     TrabajoReunionCientificaService,
 )
-from core.services.trabajo_revista_service import (
+from modules.produccion.services.trabajo_revista_service import (
     TrabajosRevistasReferatoService,
 )
-from core.services.distincion_service import (
+from modules.produccion.services.distincion_service import (
     DistincionRecibidaService,
 )
-from core.services.registro_propiedad_service import (
+from modules.produccion.services.registro_propiedad_service import (
     RegistrosPropiedadService,
 )
-from core.services.articulo_divulgacion_service import (
+from modules.produccion.services.articulo_divulgacion_service import (
     ArticuloDivulgacionService,
 )
-from core.services.visita_service import (
+from modules.grupo.services.visita_service import (
     obtener_snapshots_visitas_por_memoria_version,
     snapshot_visitas_para_memoria_version,
 )

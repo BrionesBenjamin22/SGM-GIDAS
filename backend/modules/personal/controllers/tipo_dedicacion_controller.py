@@ -1,13 +1,13 @@
 from flask import Request, Response, jsonify, g
-from core.services.tipo_dedicacion_service import (
+from modules.personal.services.tipo_dedicacion_service import (
     crear_tipo_dedicacion,
     actualizar_tipo_dedicacion,
     eliminar_tipo_dedicacion,
     listar_tipos_dedicacion,
     obtener_tipo_dedicacion_por_id
 )
-from core.models.personal import TipoDedicacion
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.personal.models.personal import TipoDedicacion
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
 class TipoDedicacionController:

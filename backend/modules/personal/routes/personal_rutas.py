@@ -1,6 +1,6 @@
 from flask import Blueprint, request
-from core.controllers.personal_controller import PersonalController
-from core.services.middleware import requiere_rol
+from modules.personal.controllers.personal_controller import PersonalController
+from modules.shared.services.middleware import requiere_rol
 
 personal_bp = Blueprint(
     "personal",

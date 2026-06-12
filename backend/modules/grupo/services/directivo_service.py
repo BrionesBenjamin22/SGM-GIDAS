@@ -1,8 +1,8 @@
 from datetime import datetime
 from extension import db
 from sqlalchemy.orm import joinedload
-from core.models.directivos import Directivo, DirectivoGrupo, Cargo
-from core.models.grupo import GrupoInvestigacionUtn
+from modules.grupo.models.directivos import Directivo, DirectivoGrupo, Cargo
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
 
 
 class DirectivoGrupoService:

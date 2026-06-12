@@ -1,6 +1,6 @@
 from extension import db
-from core.models.programa_actividades import PlanificacionGrupo
-from core.models.grupo import GrupoInvestigacionUtn
+from modules.grupo.models.programa_actividades import PlanificacionGrupo
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
 
 
 def _validar_user_id(user_id):

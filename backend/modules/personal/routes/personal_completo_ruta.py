@@ -1,6 +1,6 @@
 from flask import Blueprint
-from core.controllers.personal_completo_controller import PersonalCompletoController
-from core.services.middleware import requiere_rol
+from modules.personal.controllers.personal_completo_controller import PersonalCompletoController
+from modules.shared.services.middleware import requiere_rol
 
 personal_completo_bp = Blueprint(
     "personal_completo",

@@ -2,7 +2,7 @@ from datetime import date
 
 from flask import jsonify, request
 
-from core.services.dashboard_service import DashboardService
+from modules.dashboard.services.dashboard_service import DashboardService
 
 
 class DashboardController:

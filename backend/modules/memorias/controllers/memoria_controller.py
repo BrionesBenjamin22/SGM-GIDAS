@@ -2,8 +2,8 @@ import traceback
 
 from flask import jsonify, request, g, send_file
 
-from core.services.memoria_service import MemoriaService
-from core.services.exportacion_service_impl import ExportService
+from modules.memorias.services.memoria_service import MemoriaService
+from modules.memorias.services.exportacion_service_impl import ExportService
 
 
 class MemoriaController:

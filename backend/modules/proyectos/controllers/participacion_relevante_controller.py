@@ -1,5 +1,5 @@
 from flask import jsonify, request, g
-from core.services.participacion_relevante_service import (
+from modules.proyectos.services.participacion_relevante_service import (
     ParticipacionRelevanteService
 )
 

@@ -1,4 +1,4 @@
-from core.models.transferencia_socio import Adoptante
+from modules.transferencia.models.transferencia_socio import Adoptante
 from extension import db
 from datetime import datetime
 

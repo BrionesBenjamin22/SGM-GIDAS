@@ -1,6 +1,6 @@
 from flask import Blueprint, request
-from core.controllers.categoria_utn_controller import CategoriaUtnController
-from core.services.middleware import requiere_rol
+from modules.catalogos.controllers.categoria_utn_controller import CategoriaUtnController
+from modules.shared.services.middleware import requiere_rol
 
 categoria_utn_bp = Blueprint(
     "categoria_utn",

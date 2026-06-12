@@ -2,13 +2,13 @@ from datetime import date, datetime
 
 from sqlalchemy import or_
 
-from core.models.distinciones import (
+from modules.produccion.models.distinciones import (
     DistincionRecibida,
     DistincionRecibidaMemoriaVersion,
 )
-from core.models.proyecto_investigacion import ProyectoInvestigacion
-from core.services.auditoria_service import AuditoriaService
-from core.services.memoria_periodo_service import esta_en_periodo_memoria
+from modules.proyectos.models.proyecto_investigacion import ProyectoInvestigacion
+from modules.shared.services.auditoria_service import AuditoriaService
+from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 
 

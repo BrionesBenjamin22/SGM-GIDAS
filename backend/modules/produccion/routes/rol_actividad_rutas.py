@@ -1,6 +1,6 @@
-from core.controllers.rol_actividad_controller import RolActividadController
+from modules.produccion.controllers.rol_actividad_controller import RolActividadController
 from flask import Blueprint
-from core.services.middleware import requiere_rol
+from modules.shared.services.middleware import requiere_rol
 
 rol_actividad_bp = Blueprint('rol_actividad', __name__)
 

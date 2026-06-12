@@ -1,6 +1,6 @@
 from flask import Blueprint, request
-from core.controllers.becario_controller import BecarioController
-from core.services.middleware import requiere_rol
+from modules.personal.controllers.becario_controller import BecarioController
+from modules.shared.services.middleware import requiere_rol
 
 becario_bp = Blueprint(
     "becario",

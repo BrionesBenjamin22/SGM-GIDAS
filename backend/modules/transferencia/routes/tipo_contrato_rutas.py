@@ -1,6 +1,6 @@
 from flask import Blueprint
-from core.controllers.tipo_contrato_controller import TipoContratoController
-from core.services.middleware import requiere_rol
+from modules.transferencia.controllers.tipo_contrato_controller import TipoContratoController
+from modules.shared.services.middleware import requiere_rol
 
 tipo_contrato_bp = Blueprint(
     "tipo_contrato",

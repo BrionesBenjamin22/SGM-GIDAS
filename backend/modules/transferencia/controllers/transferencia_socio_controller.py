@@ -1,5 +1,5 @@
 from flask import jsonify, request, g
-from core.services.transferencia_service import (
+from modules.transferencia.services.transferencia_service import (
     TransferenciaSocioProductivaService
 )
 

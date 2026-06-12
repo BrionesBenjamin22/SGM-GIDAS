@@ -1,5 +1,5 @@
 from flask import jsonify, request, g
-from core.services.equipamiento_service import EquipamientoService
+from modules.recursos.services.equipamiento_service import EquipamientoService
 
 
 class EquipamientoController:

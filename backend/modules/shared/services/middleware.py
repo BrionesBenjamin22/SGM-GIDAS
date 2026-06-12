@@ -1,6 +1,6 @@
 from functools import wraps
 from flask import request, jsonify, g, make_response
-from core.services.auth_service import AuthService
+from modules.auth.services.auth_service import AuthService
 
 
 def _add_cors_headers(response):

@@ -1,12 +1,12 @@
 from flask import Request, Response, jsonify, g
-from core.services.personal_service import (
+from modules.personal.services.personal_service import (
     crear_personal,
     actualizar_personal,
     eliminar_personal_por_rol,
     listar_personal,
     obtener_historial_personal_por_rol
 )
-from core.services.personal_completo_service import (
+from modules.personal.services.personal_completo_service import (
     obtener_personal_por_tipo
 )
 

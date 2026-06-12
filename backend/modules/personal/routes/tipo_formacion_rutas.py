@@ -1,6 +1,6 @@
 from flask import Blueprint, request
-from core.controllers.tipo_formacion_controller import TipoFormacionController
-from core.services.middleware import requiere_rol
+from modules.personal.controllers.tipo_formacion_controller import TipoFormacionController
+from modules.shared.services.middleware import requiere_rol
 
 tipo_formacion_becario_bp = Blueprint(
     "tipo_formacion",

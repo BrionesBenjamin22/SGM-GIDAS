@@ -1,5 +1,5 @@
 from flask import Request, Response, jsonify, g
-from core.services.programa_actividades_service import (
+from modules.grupo.services.programa_actividades_service import (
     crear_planificacion_grupo,
     actualizar_planificacion_grupo,
     eliminar_planificacion_grupo,

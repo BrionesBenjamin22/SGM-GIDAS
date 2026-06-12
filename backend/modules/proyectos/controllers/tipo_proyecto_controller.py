@@ -1,7 +1,7 @@
 from flask import jsonify, request, g
-from core.services.tipo_proyecto_service import TipoProyectoService
-from core.models.proyecto_investigacion import TipoProyecto
-from core.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.proyectos.services.tipo_proyecto_service import TipoProyectoService
+from modules.proyectos.models.proyecto_investigacion import TipoProyecto
+from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 class TipoProyectoController:
 

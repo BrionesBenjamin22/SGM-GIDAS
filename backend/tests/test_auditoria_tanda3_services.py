@@ -3,22 +3,22 @@ from datetime import date
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from core.models.becas import Beca
-from core.models.distinciones import DistincionRecibida
-from core.models.erogacion import Erogacion
-from core.models.transferencia_socio import TransferenciaSocioProductiva
-from core.models.trabajo_reunion import TrabajoReunionCientifica
-from core.models.trabajo_revista import TrabajosRevistasReferato
-from core.services.becas_service import BecaService
-from core.services.distincion_service import DistincionRecibidaService
-from core.services.erogacion_service import ErogacionService
-from core.services.transferencia_service import (
+from modules.recursos.models.becas import Beca
+from modules.produccion.models.distinciones import DistincionRecibida
+from modules.recursos.models.erogacion import Erogacion
+from modules.transferencia.models.transferencia_socio import TransferenciaSocioProductiva
+from modules.produccion.models.trabajo_reunion import TrabajoReunionCientifica
+from modules.produccion.models.trabajo_revista import TrabajosRevistasReferato
+from modules.recursos.services.becas_service import BecaService
+from modules.produccion.services.distincion_service import DistincionRecibidaService
+from modules.recursos.services.erogacion_service import ErogacionService
+from modules.transferencia.services.transferencia_service import (
     TransferenciaSocioProductivaService,
 )
-from core.services.trabajo_reunion_service import (
+from modules.produccion.services.trabajo_reunion_service import (
     TrabajoReunionCientificaService,
 )
-from core.services.trabajo_revista_service import (
+from modules.produccion.services.trabajo_revista_service import (
     TrabajosRevistasReferatoService,
 )
 
@@ -55,10 +55,10 @@ class AuditoriaTanda3ServicesTestCase(unittest.TestCase):
         erogacion.updated_by = None
 
         with patch(
-            "core.services.erogacion_service.ErogacionService._get_activa_or_404",
+            "modules.recursos.services.erogacion_service.ErogacionService._get_activa_or_404",
             return_value=erogacion
         ), patch(
-            "core.services.erogacion_service.AuditoriaService.registrar_cambios"
+            "modules.recursos.services.erogacion_service.AuditoriaService.registrar_cambios"
         ) as mock_registrar:
             resultado = ErogacionService.update(
                 1,
@@ -85,15 +85,15 @@ class AuditoriaTanda3ServicesTestCase(unittest.TestCase):
         beca.updated_by = None
 
         with patch(
-            "core.services.becas_service._get_beca_activa_or_404",
+            "modules.recursos.services.becas_service._get_beca_activa_or_404",
             return_value=beca
         ), patch(
-            "core.services.becas_service._validar_beca_unica"
+            "modules.recursos.services.becas_service._validar_beca_unica"
         ), patch(
-            "core.services.becas_service._validar_fuente_financiamiento",
+            "modules.recursos.services.becas_service._validar_fuente_financiamiento",
             return_value=3
         ), patch(
-            "core.services.becas_service.AuditoriaService.registrar_cambios"
+            "modules.recursos.services.becas_service.AuditoriaService.registrar_cambios"
         ) as mock_registrar:
             resultado = BecaService.update(
                 2,
@@ -125,15 +125,15 @@ class AuditoriaTanda3ServicesTestCase(unittest.TestCase):
         distincion.updated_by = None
 
         with patch(
-            "core.services.distincion_service.DistincionRecibidaService._get_activa_or_404",
+            "modules.produccion.services.distincion_service.DistincionRecibidaService._get_activa_or_404",
             return_value=distincion
         ), patch(
-            "core.services.distincion_service.DistincionRecibidaService._validar_no_duplicado"
+            "modules.produccion.services.distincion_service.DistincionRecibidaService._validar_no_duplicado"
         ), patch(
-            "core.services.distincion_service.DistincionRecibidaService._validar_proyecto",
+            "modules.produccion.services.distincion_service.DistincionRecibidaService._validar_proyecto",
             return_value=8
         ), patch(
-            "core.services.distincion_service.AuditoriaService.registrar_cambios"
+            "modules.produccion.services.distincion_service.AuditoriaService.registrar_cambios"
         ) as mock_registrar:
             resultado = DistincionRecibidaService.update(
                 3,
@@ -169,10 +169,10 @@ class AuditoriaTanda3ServicesTestCase(unittest.TestCase):
         transferencia.updated_by = None
 
         with patch(
-            "core.services.transferencia_service.db.session.get",
+            "modules.transferencia.services.transferencia_service.db.session.get",
             return_value=transferencia
         ), patch(
-            "core.services.transferencia_service.AuditoriaService.registrar_cambios"
+            "modules.transferencia.services.transferencia_service.AuditoriaService.registrar_cambios"
         ) as mock_registrar:
             resultado = TransferenciaSocioProductivaService.update(
                 4,
@@ -207,18 +207,18 @@ class AuditoriaTanda3ServicesTestCase(unittest.TestCase):
         trabajo.updated_by = None
 
         with patch(
-            "core.services.trabajo_reunion_service.TrabajoReunionCientificaService._get_activo_or_404",
+            "modules.produccion.services.trabajo_reunion_service.TrabajoReunionCientificaService._get_activo_or_404",
             return_value=trabajo
         ), patch(
-            "core.services.trabajo_reunion_service.TrabajoReunionCientificaService._validar_no_duplicado"
+            "modules.produccion.services.trabajo_reunion_service.TrabajoReunionCientificaService._validar_no_duplicado"
         ), patch(
-            "core.services.trabajo_reunion_service.TrabajoReunionCientificaService._validar_tipo_reunion",
+            "modules.produccion.services.trabajo_reunion_service.TrabajoReunionCientificaService._validar_tipo_reunion",
             return_value=3
         ), patch(
-            "core.services.trabajo_reunion_service.TrabajoReunionCientificaService._validar_grupo",
+            "modules.produccion.services.trabajo_reunion_service.TrabajoReunionCientificaService._validar_grupo",
             return_value=4
         ), patch(
-            "core.services.trabajo_reunion_service.AuditoriaService.registrar_cambios"
+            "modules.produccion.services.trabajo_reunion_service.AuditoriaService.registrar_cambios"
         ) as mock_registrar:
             resultado = TrabajoReunionCientificaService.update(
                 5,
@@ -255,18 +255,18 @@ class AuditoriaTanda3ServicesTestCase(unittest.TestCase):
         trabajo.updated_by = None
 
         with patch(
-            "core.services.trabajo_revista_service.TrabajosRevistasReferatoService._get_activo_or_404",
+            "modules.produccion.services.trabajo_revista_service.TrabajosRevistasReferatoService._get_activo_or_404",
             return_value=trabajo
         ), patch(
-            "core.services.trabajo_revista_service.TrabajosRevistasReferatoService._validar_no_duplicado"
+            "modules.produccion.services.trabajo_revista_service.TrabajosRevistasReferatoService._validar_no_duplicado"
         ), patch(
-            "core.services.trabajo_revista_service.TrabajosRevistasReferatoService._validar_grupo",
+            "modules.produccion.services.trabajo_revista_service.TrabajosRevistasReferatoService._validar_grupo",
             return_value=5
         ), patch(
-            "core.services.trabajo_revista_service.TrabajosRevistasReferatoService._validar_tipo_reunion",
+            "modules.produccion.services.trabajo_revista_service.TrabajosRevistasReferatoService._validar_tipo_reunion",
             return_value=6
         ), patch(
-            "core.services.trabajo_revista_service.AuditoriaService.registrar_cambios"
+            "modules.produccion.services.trabajo_revista_service.AuditoriaService.registrar_cambios"
         ) as mock_registrar:
             resultado = TrabajosRevistasReferatoService.update(
                 6,
@@ -300,15 +300,15 @@ class AuditoriaTanda3ServicesTestCase(unittest.TestCase):
         beca.updated_by = None
 
         with patch(
-            "core.services.becas_service._get_beca_activa_or_404",
+            "modules.recursos.services.becas_service._get_beca_activa_or_404",
             return_value=beca
         ), patch(
-            "core.services.becas_service._validar_beca_unica"
+            "modules.recursos.services.becas_service._validar_beca_unica"
         ), patch(
-            "core.services.becas_service._validar_fuente_financiamiento",
+            "modules.recursos.services.becas_service._validar_fuente_financiamiento",
             return_value=2
         ), patch(
-            "core.services.becas_service.AuditoriaService.registrar_cambios"
+            "modules.recursos.services.becas_service.AuditoriaService.registrar_cambios"
         ) as mock_registrar:
             BecaService.update(
                 7,
