@@ -45,3 +45,55 @@ ya no forman parte del contrato interno del backend.
   a `services`.
 - Todo cambio con historial o auditoria debe reutilizar los servicios de
   `shared` y las reglas existentes de `memorias` cuando corresponda.
+
+## Contrato de respuestas API
+
+Las nuevas rutas y las migraciones progresivas deben usar los helpers de
+`modules.shared.controllers.responses` para responder con una estructura estable.
+El contrato base de exito es:
+
+```json
+{
+  "data": {},
+  "meta": {},
+  "error": null
+}
+```
+
+El contrato paginado agrega metadata estandar:
+
+```json
+{
+  "data": [],
+  "meta": {
+    "page": 1,
+    "per_page": 9,
+    "total": 42,
+    "total_pages": 5
+  },
+  "error": null
+}
+```
+
+El contrato de error evita exponer detalles internos:
+
+```json
+{
+  "data": null,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente.",
+    "details": {}
+  }
+}
+```
+
+Helpers disponibles:
+
+- `success_response(data=None, meta=None, status_code=200)`.
+- `paginated_response(data, page, per_page, total, meta=None, status_code=200)`.
+- `error_response(code, message=None, details=None, status_code=400)`.
+
+Durante la migracion, los endpoints legacy pueden conservar respuestas directas
+si el frontend actual depende de ese contrato. Los endpoints nuevos o versionados
+deben responder con `data`, `meta` y `error`.
