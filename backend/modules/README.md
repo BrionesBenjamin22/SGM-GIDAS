@@ -115,3 +115,9 @@ El limite general se configura con:
 Durante la migracion incremental, un endpoint existente puede mantener su lista
 plana si el cliente no envia `page` ni `per_page`. Cuando el cliente envia alguno
 de esos parametros, el endpoint debe responder con `data`, `meta` y `error`.
+
+Los listados legacy que todavia devuelven una lista JSON plana quedan cubiertos
+por `register_legacy_list_pagination(app)`: si reciben `page` o `per_page`, la
+respuesta se adapta al contrato paginado. Este mecanismo da compatibilidad
+transversal para todos los endpoints GET de listado mientras cada modulo se
+optimiza progresivamente a paginacion a nivel de query.

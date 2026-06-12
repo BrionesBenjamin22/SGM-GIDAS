@@ -5,6 +5,7 @@ from config import get_config_class
 from modules import blueprints
 from modules import models_registry  # noqa: F401
 from werkzeug.middleware.proxy_fix import ProxyFix
+from modules.shared.controllers.pagination import register_legacy_list_pagination
 from modules.shared.controllers.responses import error_response
 from modules.shared.services.logging_config import (
     configure_logging,
@@ -64,6 +65,8 @@ def create_app():
                 "max-age=31536000; includeSubDomains"
             )
         return response
+
+    register_legacy_list_pagination(app)
 
     logger.info("Aplicación inicializada. Usa 'flask db upgrade' para crear/migrar tablas.")
 
