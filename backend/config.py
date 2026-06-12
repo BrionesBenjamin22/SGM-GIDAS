@@ -73,6 +73,11 @@ def _require_production_security(config_class):
     if config_class.CORS_ORIGINS == "*" or "*" in config_class.CORS_ORIGINS:
         raise RuntimeError("CORS_ORIGINS no puede usar '*' en produccion")
 
+    if config_class.RATELIMIT_STORAGE_URI.strip().lower() == "memory://":
+        raise RuntimeError(
+            "RATELIMIT_STORAGE_URI debe usar almacenamiento compartido en produccion"
+        )
+
     if not os.getenv("DATABASE_URL"):
         raise RuntimeError("DATABASE_URL es obligatorio en produccion")
 

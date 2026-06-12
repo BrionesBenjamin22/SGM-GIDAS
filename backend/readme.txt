@@ -162,6 +162,12 @@ Variables importantes:
 - FRONTEND_URL
 - FRONTEND_URLS
 - JWT_EXPIRATION_MINUTES
+- RATELIMIT_STORAGE_URI
+- RATELIMIT_DEFAULT
+- AUTH_LOGIN_LIMIT
+- AUTH_REFRESH_LIMIT
+- AUTH_REGISTER_LIMIT
+- AUTH_CHANGE_PASSWORD_LIMIT
 - POSTGRES_DB
 - POSTGRES_USER
 - POSTGRES_PASSWORD
@@ -169,6 +175,8 @@ Variables importantes:
 JWT_EXPIRATION_MINUTES controla la duracion real del access token. Debe ser un numero entero entre 5 y 1440 minutos. Si no se define, el backend usa 60 minutos.
 
 JWT_ISSUER identifica al emisor esperado de tokens y por defecto usa auth-service. JWT_AUDIENCE es opcional: cuando se define, el backend la incluye en los access tokens y rechaza tokens destinados a otra audiencia.
+
+RATELIMIT_STORAGE_URI define el almacenamiento usado por Flask-Limiter. En local y testing puede ser memory://, pero en produccion debe apuntar a un almacenamiento compartido como Redis. La aplicacion falla al iniciar en produccion si RATELIMIT_STORAGE_URI queda en memory://. Los endpoints de autenticacion tienen limites dedicados mediante AUTH_LOGIN_LIMIT, AUTH_REFRESH_LIMIT, AUTH_REGISTER_LIMIT y AUTH_CHANGE_PASSWORD_LIMIT.
 
 Valor por defecto de base de datos:
 postgresql://postgres:postgres@localhost:5432/gidas_db
@@ -249,6 +257,7 @@ Variables obligatorias en produccion:
 - DATABASE_URL
 - FRONTEND_URL
 - FRONTEND_URLS
+- RATELIMIT_STORAGE_URI
 
 Las claves SECRET_KEY, JWT_SECRET y REFRESH_SECRET deben tener al menos 32 caracteres y no pueden usar placeholders. La aplicacion falla al iniciar si detecta una configuracion insegura para produccion, CORS con comodin o ausencia de DATABASE_URL.
 
