@@ -100,6 +100,9 @@ class TipoErogacionService:
     def update(tipo_id: int, data: dict, user_id=None):
         data = TipoErogacionService._validar_data(data)
         tipo = TipoErogacionService._obtener_tipo_o_error(tipo_id)
+        if tipo.deleted_at is not None:
+            raise Exception("No se puede editar un tipo de erogacion inactivo")
+
         nombre = TipoErogacionService._validar_nombre(data.get("nombre"), tipo.id)
         cambios = CatalogoAuditoriaService.construir_cambios(tipo, {"nombre": nombre})
         tipo.nombre = nombre

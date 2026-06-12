@@ -51,6 +51,11 @@ class TipoReunionController:
             tipo = TipoReunion.query.get(tipo_id)
             if not tipo:
                 return jsonify({"error": "Tipo de reunión no encontrado"}), 404
+            if tipo.deleted_at is not None:
+                return jsonify({
+                    "error": "No se puede editar un tipo de reunion inactivo"
+                }), 400
+
             nombre = data.get("nombre", tipo.nombre)
             cambios = CatalogoAuditoriaService.construir_cambios(
                 tipo,

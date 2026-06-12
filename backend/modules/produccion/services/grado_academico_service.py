@@ -79,6 +79,9 @@ class GradoAcademicoService:
         GradoAcademicoService._validar_payload(data)
         grado = GradoAcademicoService._get_or_404(grado_id)
 
+        if grado.deleted_at is not None:
+            raise ValueError("No se puede editar un grado academico inactivo")
+
         if "nombre" in data:
             nombre = GradoAcademicoService._validar_nombre(data["nombre"])
 

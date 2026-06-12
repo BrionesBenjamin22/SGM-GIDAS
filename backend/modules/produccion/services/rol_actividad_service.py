@@ -91,6 +91,9 @@ class RolActividadService:
         RolActividadService._validar_payload(data)
         rol = RolActividadService._get_or_404(rol_id)
 
+        if rol.deleted_at is not None:
+            raise ValueError("No se puede editar un rol de actividad inactivo")
+
         if "nombre" in data:
             nombre = RolActividadService._validar_nombre(
                 data.get("nombre"),

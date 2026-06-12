@@ -84,6 +84,9 @@ def crear_tipo_dedicacion(data, user_id=None):
 def actualizar_tipo_dedicacion(id, data, user_id=None):
     data = _validar_data(data)
     tipo = _obtener_tipo_dedicacion_o_error(id)
+    if tipo.deleted_at is not None:
+        raise ValueError("No se puede editar un tipo de dedicacion inactivo.")
+
     nombre = _validar_nombre(data.get("nombre"), tipo_dedicacion_id=tipo.id)
 
     cambios = CatalogoAuditoriaService.construir_cambios(tipo, {"nombre": nombre})

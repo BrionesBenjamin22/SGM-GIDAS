@@ -84,6 +84,9 @@ def crear_tipo_formacion(data, user_id=None):
 def actualizar_tipo_formacion(id, data, user_id=None):
     data = _validar_data(data)
     tipo = _obtener_tipo_formacion_o_error(id)
+    if tipo.deleted_at is not None:
+        raise ValueError("No se puede editar un tipo de formacion inactivo.")
+
     nombre = _validar_nombre(data.get("nombre"), tipo_formacion_id=tipo.id)
 
     cambios = CatalogoAuditoriaService.construir_cambios(tipo, {"nombre": nombre})

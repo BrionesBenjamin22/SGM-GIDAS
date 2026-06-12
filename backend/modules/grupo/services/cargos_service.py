@@ -64,6 +64,9 @@ class CargoService:
         if not cargo:
             raise ValueError("Cargo no encontrado")
 
+        if cargo.deleted_at is not None:
+            raise ValueError("No se puede editar un cargo inactivo")
+
         if "nombre" in data:
             nombre = CargoService._validar_nombre(
                 data.get("nombre"),

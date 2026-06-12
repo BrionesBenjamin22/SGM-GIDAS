@@ -43,6 +43,9 @@ def actualizar_fuente_financiamiento(id, data, user_id=None):
     if not fuente:
         raise ValueError("Fuente de financiamiento no encontrada.")
 
+    if fuente.deleted_at is not None:
+        raise ValueError("No se puede editar una fuente de financiamiento inactiva.")
+
     nombre = data.get("nombre")
     if not nombre or not isinstance(nombre, str):
         raise ValueError("El nombre debe ser un texto no vacío.")

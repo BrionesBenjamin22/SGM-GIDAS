@@ -43,6 +43,9 @@ def actualizar_categoria_utn(id, data, user_id=None):
     if not nombre:
         raise ValueError("El nombre no puede estar vacío.")
 
+    if categoria.deleted_at is not None:
+        raise ValueError("No se puede editar una categoria UTN inactiva.")
+
     duplicado = CategoriaUtn.query.filter(
         CategoriaUtn.nombre == nombre,
         CategoriaUtn.id != id

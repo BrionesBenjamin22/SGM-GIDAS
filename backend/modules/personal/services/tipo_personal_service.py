@@ -43,6 +43,9 @@ def actualizar_tipo_personal(id, data, user_id=None):
     if not nombre:
         raise ValueError("El nombre no puede estar vacío.")
 
+    if tipo_personal.deleted_at is not None:
+        raise ValueError("No se puede editar un tipo de personal inactivo.")
+
     duplicado = TipoPersonal.query.filter(
         TipoPersonal.nombre == nombre,
         TipoPersonal.id != id

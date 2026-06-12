@@ -64,6 +64,9 @@ def actualizar_programa_incentivos(id, data, user_id=None):
     if not nombre:
         raise ValueError("El nombre no puede estar vacío.")
 
+    if programa.deleted_at is not None:
+        raise ValueError("No se puede editar un programa de incentivos inactivo.")
+
     duplicado = ProgramaIncentivos.query.filter(
         ProgramaIncentivos.nombre == nombre,
         ProgramaIncentivos.id != id

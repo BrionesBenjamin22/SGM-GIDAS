@@ -71,6 +71,9 @@ class TipoRegistroPropiedadService:
         if not tipo:
             raise Exception("Tipo de registro no encontrado")
 
+        if tipo.deleted_at is not None:
+            raise Exception("No se puede editar un tipo de registro inactivo")
+
         if "nombre" in data:
             nombre = TipoRegistroPropiedadService._validar_nombre(
                 data["nombre"],

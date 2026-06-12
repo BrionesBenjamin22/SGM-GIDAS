@@ -104,6 +104,9 @@ class TipoContratoService:
         TipoContratoService._validar_payload(data)
         tipo = TipoContratoService._get_or_404(tipo_contrato_id)
 
+        if tipo.deleted_at is not None:
+            raise ValueError("No se puede editar un tipo de contrato inactivo")
+
         if "nombre" in data:
             nombre = TipoContratoService._validar_nombre(
                 data["nombre"],
