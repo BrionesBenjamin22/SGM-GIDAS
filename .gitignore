@@ -6,3 +6,4 @@ skills-lock.json
 # Ignore the agents directory
 /.agents/
 /docs/agents-tasks/
+/tasks
