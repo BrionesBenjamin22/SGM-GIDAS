@@ -10,6 +10,7 @@ export interface CatalogItem {
     created_at?: string;
     creator_name?: string;
     deleted_at?: string;
+    deleted_by_nombre?: string | null;
     deleter_name?: string;
     activo?: boolean;
 

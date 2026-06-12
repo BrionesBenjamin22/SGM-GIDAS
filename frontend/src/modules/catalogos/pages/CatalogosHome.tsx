@@ -280,6 +280,38 @@ function getModifiedAt(item: CatalogItem) {
   );
 }
 
+function getDeletedAt(item: CatalogItem) {
+  return formatDate(item.deleted_at) || formatDate(item.updated_at);
+}
+
+function getDeletedBy(item: CatalogItem, history: CatalogHistoryItem[]) {
+  const fromItem = item.deleted_by_nombre || item.deleter_name;
+  if (typeof fromItem === "string" && fromItem.trim()) return fromItem;
+
+  const deletionHistory = history.find((entry) => {
+    if (entry.campo === "activo" && entry.valor_nuevo === false) return true;
+    if (entry.campo !== "accion_sistema") return false;
+
+    const payload = entry.valor_nuevo as { accion?: string } | null;
+    return payload?.accion === "inactivar" || payload?.accion === "eliminar";
+  });
+
+  return deletionHistory?.usuario_nombre || "usuario no informado";
+}
+
+function getAuditLabel(item: CatalogItem, history: CatalogHistoryItem[]) {
+  if (isInactive(item)) {
+    const deletedAt = getDeletedAt(item);
+    const deletedBy = getDeletedBy(item, history);
+    return deletedAt
+      ? `Eliminado ${deletedAt} por ${deletedBy}`
+      : `Eliminado por ${deletedBy}`;
+  }
+
+  const modifiedAt = getModifiedAt(item);
+  return modifiedAt ? `Modificado ${modifiedAt}` : "Sin fecha disponible";
+}
+
 function formatHistoryValue(value: unknown) {
   if (value === null || value === undefined || value === "") return "-";
   if (typeof value === "object") {
@@ -841,9 +873,7 @@ function CatalogPanel({
                     </div>
 
                     <div className="text-xs text-slate-500">
-                      {getModifiedAt(item)
-                        ? `Modificado ${getModifiedAt(item)}`
-                        : "Sin fecha disponible"}
+                      {getAuditLabel(item, historyByItem[item.id] ?? [])}
                     </div>
 
                     {!isInactive(item) && (
