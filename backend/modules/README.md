@@ -76,6 +76,30 @@ Regla de compatibilidad:
 - Todo cambio con historial o auditoria debe reutilizar los servicios de
   `shared` y las reglas existentes de `memorias` cuando corresponda.
 
+## Auth y sesiones refresh
+
+El modulo `auth` emite access tokens JWT de vida corta y refresh tokens de 7
+dias. Los refresh tokens se persisten en `refresh_token_session` guardando solo
+su hash SHA-256, nunca el token plano.
+
+Contrato operativo:
+
+- Login y registro emiten `access_token` y `refresh_token` y registran la
+  sesion refresh con `jti`, usuario, expiracion, user agent e IP cuando estan
+  disponibles.
+- `/api/v1/auth/refresh` rota el refresh token en cada uso: revoca el token
+  usado, crea una sesion nueva y devuelve `access_token` y `refresh_token`.
+- Un refresh token revocado, vencido, no registrado o asociado a usuario
+  inactivo se rechaza.
+- `/api/v1/auth/logout` revoca el refresh token enviado.
+- Cambiar contrasena o eliminar un usuario revoca sus sesiones refresh activas.
+
+Retencion recomendada:
+
+- Conservar sesiones vencidas o revocadas durante 90 dias para trazabilidad.
+- Purgar registros antiguos con una tarea de mantenimiento futura, filtrando por
+  `expires_at` y `revoked_at`.
+
 ## Contrato de respuestas API
 
 Las nuevas rutas y las migraciones progresivas deben usar los helpers de

@@ -75,11 +75,14 @@ function getLocalAuth() {
   return raw ? JSON.parse(raw) : null;
 }
 
-function updateStoredToken(newAccessToken: string) {
+function updateStoredToken(newAccessToken: string, newRefreshToken?: string) {
   const raw = localStorage.getItem(AUTH_KEY);
   if (!raw) return;
   const auth = JSON.parse(raw);
   auth.token = newAccessToken;
+  if (newRefreshToken) {
+    auth.refresh_token = newRefreshToken;
+  }
   localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
 }
 
@@ -119,7 +122,7 @@ async function tryRefreshToken(): Promise<string | null> {
 
       const data = await res.json();
       if (data.access_token) {
-        updateStoredToken(data.access_token);
+        updateStoredToken(data.access_token, data.refresh_token);
         return data.access_token as string;
       }
 

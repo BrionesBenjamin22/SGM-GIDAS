@@ -107,6 +107,14 @@ export async function cambiarPassword({
 }
 
 export function logout() {
+  const stored = getStoredAuth();
+  if (stored?.refresh_token) {
+    void http("/auth/logout", {
+      method: "POST",
+      body: JSON.stringify({ refresh_token: stored.refresh_token }),
+    }).catch(() => undefined);
+  }
+
   localStorage.removeItem(AUTH_KEY);
   window.location.href = "/login";
 }

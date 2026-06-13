@@ -34,6 +34,14 @@ class AuthController:
             )
 
     @staticmethod
+    def _request_metadata(req: Request = None) -> dict:
+        req = req or request
+        return {
+            "user_agent": req.headers.get("User-Agent"),
+            "ip_address": req.headers.get("X-Forwarded-For", req.remote_addr),
+        }
+
+    @staticmethod
     def primer_usuario():
         try:
             existe = AuthService.existe_primer_usuario()
@@ -70,7 +78,11 @@ class AuthController:
                 es_primer_usuario=es_primer_usuario
             )
 
-            tokens = AuthService.generate_tokens(user)
+            tokens = AuthService.generate_tokens(
+                user,
+                persist_refresh=True,
+                metadata=AuthController._request_metadata(req),
+            )
 
             return jsonify({
                 "mensaje": "Usuario creado exitosamente",
@@ -106,7 +118,8 @@ class AuthController:
         try:
             result = AuthService.login(
                 nombre_usuario=data["nombre_usuario"],
-                password=data["password"]
+                password=data["password"],
+                metadata=AuthController._request_metadata(request),
             )
 
             return jsonify({
@@ -147,9 +160,31 @@ class AuthController:
             return jsonify({"error": "Refresh token requerido"}), 401
 
         try:
-            new_access_token = AuthService.refresh_access_token(refresh_token)
-            return jsonify({"access_token": new_access_token}), 200
+            tokens = AuthService.refresh_tokens(
+                refresh_token,
+                metadata=AuthController._request_metadata(req),
+            )
+            return jsonify(tokens), 200
 
+        except Exception as e:
+            return jsonify({"error": str(e)}), 401
+
+    @staticmethod
+    def logout(req: Request = None) -> Response:
+        req = req or request
+        refresh_token = req.cookies.get("refresh_token")
+
+        if not refresh_token:
+            data = req.get_json(silent=True)
+            if data and data.get("refresh_token"):
+                refresh_token = data["refresh_token"]
+
+        if not refresh_token:
+            return jsonify({"error": "Refresh token requerido"}), 401
+
+        try:
+            AuthService.revoke_refresh_token(refresh_token, reason="logout")
+            return jsonify({"mensaje": "Sesion cerrada exitosamente"}), 200
         except Exception as e:
             return jsonify({"error": str(e)}), 401
 

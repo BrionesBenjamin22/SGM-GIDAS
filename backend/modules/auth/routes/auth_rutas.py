@@ -49,6 +49,12 @@ def refresh():
     return AuthController.refresh()
 
 
+@auth_bp.route("/logout", methods=["POST"])
+@limiter.limit(lambda: current_app.config["AUTH_REFRESH_LIMIT"])
+def logout():
+    return AuthController.logout()
+
+
 # -------------------------
 # Change password (POST según especificación del frontend)
 # -------------------------

@@ -87,6 +87,7 @@ class ApiVersioningTestCase(unittest.TestCase):
         rules = {rule.rule for rule in app.url_map.iter_rules()}
 
         self.assertIn(f"{API_V1_PREFIX}/auth/login", rules)
+        self.assertIn(f"{API_V1_PREFIX}/auth/logout", rules)
         self.assertIn(f"{API_V1_PREFIX}/auth/perfil", rules)
 
     def test_app_expone_nomenclatura_v1_por_dominio(self):

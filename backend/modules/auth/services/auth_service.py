@@ -1,6 +1,9 @@
 import jwt
 import datetime
+import hashlib
+import uuid
 from modules.auth.models.persona import Persona
+from modules.auth.models.refresh_token_session import RefreshTokenSession
 from modules.auth.models.usuario import Usuario, RolUsuario
 from extension import db
 from config import Config
@@ -13,6 +16,22 @@ class AuthService:
         return datetime.datetime.utcnow() + datetime.timedelta(
             minutes=Config.JWT_EXPIRATION_MINUTES
         )
+
+    @staticmethod
+    def _refresh_token_expires_at() -> datetime.datetime:
+        return datetime.datetime.utcnow() + datetime.timedelta(days=7)
+
+    @staticmethod
+    def _hash_refresh_token(token: str) -> str:
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _request_metadata(metadata: dict | None = None) -> dict:
+        metadata = metadata or {}
+        return {
+            "user_agent": (metadata.get("user_agent") or "")[:255] or None,
+            "ip_address": (metadata.get("ip_address") or "")[:45] or None,
+        }
 
     @staticmethod
     def _with_optional_audience(payload: dict) -> dict:
@@ -57,7 +76,7 @@ class AuthService:
         return user
 
     @staticmethod
-    def generate_tokens(user: Usuario) -> dict:
+    def _generate_access_token(user: Usuario) -> str:
         access_payload = AuthService._with_optional_audience({
             "sub": str(user.id),
             "nombre_usuario": user.nombre_usuario,
@@ -66,23 +85,74 @@ class AuthService:
             "iss": Config.JWT_ISSUER
         })
 
-        refresh_payload = {
-            "sub": str(user.id),
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(days=7),
-            "iss": Config.JWT_ISSUER
-        }
-
-        access_token = jwt.encode(
+        return jwt.encode(
             access_payload,
             Config.JWT_SECRET,
             algorithm=Config.JWT_ALGORITHM
         )
+
+    @staticmethod
+    def _generate_refresh_token(user: Usuario) -> tuple[str, str, datetime.datetime]:
+        jti = str(uuid.uuid4())
+        expires_at = AuthService._refresh_token_expires_at()
+        refresh_payload = {
+            "sub": str(user.id),
+            "jti": jti,
+            "exp": expires_at,
+            "iss": Config.JWT_ISSUER
+        }
 
         refresh_token = jwt.encode(
             refresh_payload,
             Config.REFRESH_SECRET,
             algorithm=Config.JWT_ALGORITHM
         )
+
+        return refresh_token, jti, expires_at
+
+    @staticmethod
+    def _store_refresh_session(
+        user: Usuario,
+        refresh_token: str,
+        jti: str,
+        expires_at: datetime.datetime,
+        metadata: dict | None = None,
+    ) -> RefreshTokenSession:
+        request_metadata = AuthService._request_metadata(metadata)
+        session = RefreshTokenSession(
+            user_id=user.id,
+            token_hash=AuthService._hash_refresh_token(refresh_token),
+            jti=jti,
+            expires_at=expires_at,
+            user_agent=request_metadata["user_agent"],
+            ip_address=request_metadata["ip_address"],
+        )
+        db.session.add(session)
+        db.session.flush()
+        return session
+
+    @staticmethod
+    def generate_tokens(
+        user: Usuario,
+        persist_refresh: bool = False,
+        metadata: dict | None = None,
+    ) -> dict:
+        access_token = AuthService._generate_access_token(user)
+        refresh_token, jti, expires_at = AuthService._generate_refresh_token(user)
+
+        if persist_refresh:
+            try:
+                AuthService._store_refresh_session(
+                    user,
+                    refresh_token,
+                    jti,
+                    expires_at,
+                    metadata,
+                )
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+                raise Exception("Error al registrar la sesion de usuario")
 
         return {
             "access_token": access_token,
@@ -101,7 +171,11 @@ class AuthService:
     # Login
     # -------------------------
     @staticmethod
-    def login(nombre_usuario: str, password: str) -> dict:
+    def login(
+        nombre_usuario: str,
+        password: str,
+        metadata: dict | None = None,
+    ) -> dict:
 
         user = Usuario.query.filter_by(
             nombre_usuario=nombre_usuario,
@@ -111,7 +185,11 @@ class AuthService:
         if not user or not user.verificar_password(password):
             raise Exception("Credenciales inválidas")
 
-        tokens = AuthService.generate_tokens(user)
+        tokens = AuthService.generate_tokens(
+            user,
+            persist_refresh=True,
+            metadata=metadata,
+        )
 
         return {
             "access_token": tokens["access_token"],
@@ -201,7 +279,95 @@ class AuthService:
     # Refresh token
     # -------------------------
     @staticmethod
+    def refresh_tokens(
+        refresh_token: str,
+        metadata: dict | None = None,
+    ) -> dict:
+        try:
+            payload = AuthService._decode_refresh_token(refresh_token)
+
+            user_id = int(payload["sub"])
+            jti = payload.get("jti")
+            user = AuthService._get_user_or_error(user_id, solo_activos=True)
+            current_session = RefreshTokenSession.query.filter_by(
+                token_hash=AuthService._hash_refresh_token(refresh_token)
+            ).first()
+
+            if not current_session:
+                raise Exception("Refresh token invalido")
+
+            if current_session.jti != jti:
+                raise Exception("Refresh token invalido")
+
+            if current_session.user_id != user.id:
+                raise Exception("Refresh token invalido")
+
+            if current_session.is_revoked:
+                raise Exception("Refresh token revocado")
+
+            if current_session.is_expired:
+                current_session.revoke("expired")
+                db.session.commit()
+                raise Exception("Refresh token expirado")
+
+            access_token = AuthService._generate_access_token(user)
+            new_refresh_token, new_jti, expires_at = AuthService._generate_refresh_token(user)
+            new_session = AuthService._store_refresh_session(
+                user,
+                new_refresh_token,
+                new_jti,
+                expires_at,
+                metadata,
+            )
+            current_session.revoke("rotated", replaced_by_id=new_session.id)
+            db.session.commit()
+
+            return {
+                "access_token": access_token,
+                "refresh_token": new_refresh_token,
+            }
+
+        except jwt.ExpiredSignatureError:
+            raise Exception("Refresh token expirado")
+        except jwt.InvalidTokenError:
+            raise Exception("Refresh token invalido")
+
+    @staticmethod
+    def revoke_refresh_token(refresh_token: str, reason: str = "logout"):
+        try:
+            payload = AuthService._decode_refresh_token(refresh_token)
+        except jwt.ExpiredSignatureError:
+            return
+        except jwt.InvalidTokenError:
+            raise Exception("Refresh token invalido")
+
+        session = RefreshTokenSession.query.filter_by(
+            token_hash=AuthService._hash_refresh_token(refresh_token)
+        ).first()
+
+        if not session:
+            raise Exception("Refresh token invalido")
+
+        if session.jti != payload.get("jti"):
+            raise Exception("Refresh token invalido")
+
+        if not session.is_revoked:
+            session.revoke(reason)
+            db.session.commit()
+
+    @staticmethod
+    def revoke_user_refresh_tokens(user_id: int, reason: str):
+        sessions = RefreshTokenSession.query.filter(
+            RefreshTokenSession.user_id == user_id,
+            RefreshTokenSession.revoked_at.is_(None),
+        ).all()
+
+        for session in sessions:
+            session.revoke(reason)
+
+    @staticmethod
     def refresh_access_token(refresh_token: str) -> str:
+        return AuthService.refresh_tokens(refresh_token)["access_token"]
         try:
             payload = AuthService._decode_refresh_token(refresh_token)
 
@@ -255,6 +421,7 @@ class AuthService:
             user.set_password(password_nueva)
 
         user.primer_login = False
+        AuthService.revoke_user_refresh_tokens(user.id, "password_changed")
 
         try:
             db.session.commit()
@@ -284,6 +451,7 @@ class AuthService:
                 raise Exception("Debe quedar al menos un administrador en el sistema")
 
         user.soft_delete(current_user_id)
+        AuthService.revoke_user_refresh_tokens(user.id, "user_deleted")
 
         try:
             db.session.commit()
