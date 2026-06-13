@@ -17,7 +17,7 @@ export type Uct = {
   }[];
 };
 
-const BASE = import.meta.env.VITE_API_URL;
+const BASE = import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL;
 
 export async function getUct() {
   if (!BASE) return null;

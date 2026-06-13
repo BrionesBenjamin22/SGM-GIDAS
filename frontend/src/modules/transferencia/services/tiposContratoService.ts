@@ -21,7 +21,7 @@ export const TIPOS_CONTRATO_STATIC = [
 
 /** Devuelve `true` cuando el frontend opera sin backend (modo mock). */
 export function isMockMode(): boolean {
-  const url = import.meta.env.VITE_API_URL;
+  const url = import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL;
   return !url || url === "";
 }
 

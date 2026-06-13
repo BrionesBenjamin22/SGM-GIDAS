@@ -71,7 +71,8 @@ El frontend usa variables publicas de Vite. Los archivos de referencia son:
 Variables principales:
 
 - `VITE_APP_ENV`: marca el ambiente visible para el build (`local`, `testing`, `production`).
-- `VITE_API_URL`: URL base de la API. Usar `http://localhost:5000` para backend local o `/api` cuando se accede por nginx.
+- `VITE_API_BASE_URL`: URL base versionada de la API. Usar `http://localhost:5000/api/v1` para backend local o `/api/v1` cuando se accede por nginx.
+- `VITE_API_URL`: variable legacy aceptada por compatibilidad. Si no termina en `/api/v1`, el cliente HTTP agrega el prefijo versionado.
 - `VITE_SERVER_FILTER_PERSONAL`: activa el filtrado del servidor para personal.
 
 Scripts por ambiente:
@@ -91,7 +92,7 @@ El frontend se construye con Dockerfile multi-stage:
 - `production`: sirve `dist` con Nginx no privilegiado en el puerto interno 8080.
 - `development`: ejecuta Vite para desarrollo local.
 
-En produccion debe usarse `VITE_API_URL=/api` para que el proxy Nginx del proyecto enrute la API sin exponer el backend al host. Las variables `VITE_*` son publicas y quedan embebidas en el bundle, por lo que no deben contener claves, tokens ni secretos.
+En produccion debe usarse `VITE_API_BASE_URL=/api/v1` para que el proxy Nginx del proyecto enrute la API versionada sin exponer el backend al host. Las variables `VITE_*` son publicas y quedan embebidas en el bundle, por lo que no deben contener claves, tokens ni secretos.
 
 Controles aplicados en produccion:
 
