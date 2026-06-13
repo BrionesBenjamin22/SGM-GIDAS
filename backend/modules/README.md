@@ -16,10 +16,20 @@ ya no forman parte del contrato interno del backend.
 
 ## Versionado de API
 
-Los blueprints se registran de forma dual:
+Los blueprints se registran unicamente bajo `/api/v1`. No hay endpoints
+publicos legacy sin prefijo.
 
-- Rutas legacy sin prefijo, mantenidas temporalmente por compatibilidad.
-- Rutas versionadas bajo `/api/v1`.
+La nomenclatura versionada se centraliza en
+`modules.shared.routes.versioning.VERSIONED_PREFIXES`, agrupando endpoints por
+dominio cuando corresponde. Ejemplos:
+
+- `/api/v1/catalogos/fuente-financiamiento`
+- `/api/v1/personal/investigadores`
+- `/api/v1/recursos/becas`
+- `/api/v1/produccion/articulos-divulgacion`
+- `/api/v1/proyectos`
+- `/api/v1/transferencia/transferencias`
+- `/api/v1/grupo/cargos`
 
 Toda respuesta servida desde `/api/v1` debe incluir el header:
 
@@ -31,8 +41,8 @@ Regla de compatibilidad:
 
 - Cambios compatibles permanecen en v1: campos opcionales, endpoints nuevos y filtros nuevos.
 - Cambios incompatibles deben ir a una version nueva, por ejemplo v2.
-- Las rutas legacy se mantienen durante la migracion del frontend y no deben
-  recibir nuevos contratos incompatibles.
+- El frontend debe consumir la API con base versionada, por ejemplo
+  `VITE_API_BASE_URL=/api/v1` o una URL equivalente que termine en `/api/v1`.
 
 ## Modulos
 
@@ -114,9 +124,8 @@ Helpers disponibles:
 - `paginated_response(data, page, per_page, total, meta=None, status_code=200)`.
 - `error_response(code, message=None, details=None, status_code=400)`.
 
-Durante la migracion, los endpoints legacy pueden conservar respuestas directas
-si el frontend actual depende de ese contrato. Los endpoints nuevos o versionados
-deben responder con `data`, `meta` y `error`.
+Los endpoints nuevos o versionados deben responder con `data`, `meta` y
+`error`.
 
 ## Contrato de paginacion de listados
 
@@ -136,7 +145,7 @@ Durante la migracion incremental, un endpoint existente puede mantener su lista
 plana si el cliente no envia `page` ni `per_page`. Cuando el cliente envia alguno
 de esos parametros, el endpoint debe responder con `data`, `meta` y `error`.
 
-Los listados legacy que todavia devuelven una lista JSON plana quedan cubiertos
+Los listados que todavia devuelven una lista JSON plana quedan cubiertos
 por `register_legacy_list_pagination(app)`: si reciben `page` o `per_page`, la
 respuesta se adapta al contrato paginado. Este mecanismo da compatibilidad
 transversal para todos los endpoints GET de listado mientras cada modulo se

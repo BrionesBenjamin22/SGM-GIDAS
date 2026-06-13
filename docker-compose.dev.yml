@@ -30,7 +30,7 @@ services:
     security_opt: !override []
     pids_limit: 0
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/api/v1/health || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -44,6 +44,7 @@ services:
       - ./frontend/${FRONTEND_ENV_FILE:-.env}
     environment:
       VITE_APP_ENV: ${VITE_APP_ENV:-local}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:5000/api/v1}
       VITE_API_URL: ${VITE_API_URL:-http://localhost:5000}
       VITE_SERVER_FILTER_PERSONAL: ${VITE_SERVER_FILTER_PERSONAL:-true}
     ports: !override

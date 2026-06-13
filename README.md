@@ -344,8 +344,8 @@ http://localhost:5173
 ```
 
 Nota:
-- si corrés frontend y backend por separado sin `nginx`, el frontend debe apuntar al backend mediante `VITE_API_URL`
-- si usás `nginx`, podés trabajar con rutas relativas como `/api`
+- si corrés frontend y backend por separado sin `nginx`, el frontend debe apuntar al backend mediante `VITE_API_BASE_URL=http://localhost:5000/api/v1`
+- si usás `nginx`, podés trabajar con rutas relativas como `/api/v1`
 
 ---
 
@@ -433,14 +433,18 @@ redis://redis:6379/0
 Variables importantes:
 
 - `VITE_APP_ENV`
+- `VITE_API_BASE_URL`
 - `VITE_API_URL`
 
 Ejemplos comunes:
 
 - con backend local:
-  - `VITE_API_URL=http://localhost:5000`
+  - `VITE_API_BASE_URL=http://localhost:5000/api/v1`
 - con proxy:
-  - `VITE_API_URL=/api`
+  - `VITE_API_BASE_URL=/api/v1`
+
+`VITE_API_URL` se mantiene como compatibilidad legacy. Si se usa y no termina
+en `/api/v1`, el cliente HTTP agrega el prefijo versionado.
 
 Scripts utiles:
 
@@ -477,7 +481,7 @@ El sistema incorpora medidas operativas y de seguridad:
 - control de permisos por rol
 - CORS restringido por `FRONTEND_URLS` en produccion
 - rate limiting en backend, Redis y `nginx`
-- healthcheck del backend en `/health`
+- healthcheck del backend en `/api/v1/health`
 - validacion de secretos obligatorios en produccion
 - rechazo de placeholders o claves cortas en produccion
 - frontend estatico servido por Nginx no privilegiado
@@ -489,14 +493,18 @@ El sistema incorpora medidas operativas y de seguridad:
 Endpoint:
 
 ```http
-GET /health
+GET /api/v1/health
 ```
 
 Respuesta esperada:
 
 ```json
 {
-  "status": "ok"
+  "data": {
+    "status": "ok"
+  },
+  "error": null,
+  "meta": {}
 }
 ```
 

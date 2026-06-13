@@ -32,7 +32,7 @@ class ExportacionesSeguridadTestCase(unittest.TestCase):
             "modules.grupo.controllers.grupo_controller.ExportService.generar_excel_grupo"
         ) as mock_generar:
             response = self.client.get(
-                "/grupo-utn/exportar-excel",
+                "/api/v1/grupo/grupo-utn/exportar-excel",
                 headers=self._headers(),
             )
 
@@ -51,7 +51,7 @@ class ExportacionesSeguridadTestCase(unittest.TestCase):
             side_effect=RuntimeError("ruta interna sensible"),
         ):
             response = self.client.get(
-                "/grupo-utn/exportar-excel",
+                "/api/v1/grupo/grupo-utn/exportar-excel",
                 headers=self._headers(),
             )
 
@@ -67,7 +67,7 @@ class ExportacionesSeguridadTestCase(unittest.TestCase):
             side_effect=ValueError("detalle interno sensible"),
         ):
             response = self.client.get(
-                "/memorias/1/versiones/2/exportar-excel",
+                "/api/v1/memorias/1/versiones/2/exportar-excel",
                 headers=self._headers(),
             )
 

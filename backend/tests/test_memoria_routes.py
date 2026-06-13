@@ -25,14 +25,14 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             "modules.memorias.controllers.memoria_controller.MemoriaService.get_all",
             return_value=[]
         ) as mock_get_all:
-            response = self.client.get("/memorias", headers=self._headers())
+            response = self.client.get("/api/v1/memorias", headers=self._headers())
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), [])
         mock_get_all.assert_called_once_with("true")
 
     def test_get_by_id_sin_token_devuelve_401(self):
-        response = self.client.get("/memorias/1")
+        response = self.client.get("/api/v1/memorias/1")
 
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.get_json()["error"]["code"], "AUTH_REQUIRED")
@@ -46,7 +46,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             side_effect=ValueError("detalle interno sensible")
         ):
             response = self.client.get(
-                "/memorias/1/versiones/2/exportar-excel",
+                "/api/v1/memorias/1/versiones/2/exportar-excel",
                 headers=self._headers()
             )
 
@@ -65,7 +65,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value=[{"investigador_id": 1}]
         ) as mock_get_snapshot:
             response = self.client.get(
-                "/memorias/1/versiones/2/investigadores",
+                "/api/v1/memorias/1/versiones/2/investigadores",
                 headers=self._headers()
             )
 
@@ -82,7 +82,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value=[{"becario_id": 1}]
         ) as mock_get_snapshot:
             response = self.client.get(
-                "/memorias/1/versiones/2/becarios",
+                "/api/v1/memorias/1/versiones/2/becarios",
                 headers=self._headers()
             )
 
@@ -99,7 +99,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value=[{"personal_id": 1}]
         ) as mock_get_snapshot:
             response = self.client.get(
-                "/memorias/1/versiones/2/personal",
+                "/api/v1/memorias/1/versiones/2/personal",
                 headers=self._headers()
             )
 
@@ -116,7 +116,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value=[{"proyecto_investigacion_id": 1}]
         ) as mock_get_snapshot:
             response = self.client.get(
-                "/memorias/1/versiones/2/proyectos",
+                "/api/v1/memorias/1/versiones/2/proyectos",
                 headers=self._headers()
             )
 
@@ -133,7 +133,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value=[{"actividad_docencia_id": 1}]
         ) as mock_get_snapshot:
             response = self.client.get(
-                "/memorias/1/versiones/2/actividades-docencia",
+                "/api/v1/memorias/1/versiones/2/actividades-docencia",
                 headers=self._headers()
             )
 
@@ -150,7 +150,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value=[{"participacion_relevante_id": 1}]
         ) as mock_get_snapshot:
             response = self.client.get(
-                "/memorias/1/versiones/2/participaciones-relevantes",
+                "/api/v1/memorias/1/versiones/2/participaciones-relevantes",
                 headers=self._headers()
             )
 
@@ -167,7 +167,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value=[{"documentacion_bibliografica_id": 1}]
         ) as mock_get_snapshot:
             response = self.client.get(
-                "/memorias/1/versiones/2/documentacion-bibliografica",
+                "/api/v1/memorias/1/versiones/2/documentacion-bibliografica",
                 headers=self._headers()
             )
 
@@ -184,7 +184,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value=[{"equipamiento_id": 1}]
         ) as mock_get_snapshot:
             response = self.client.get(
-                "/memorias/1/versiones/2/equipamiento",
+                "/api/v1/memorias/1/versiones/2/equipamiento",
                 headers=self._headers()
             )
 
@@ -201,7 +201,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value=[{"erogacion_id": 1}]
         ) as mock_get_snapshot:
             response = self.client.get(
-                "/memorias/1/versiones/2/erogaciones",
+                "/api/v1/memorias/1/versiones/2/erogaciones",
                 headers=self._headers()
             )
 
@@ -218,7 +218,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value=[{"transferencia_id": 1}]
         ) as mock_get_snapshot:
             response = self.client.get(
-                "/memorias/1/versiones/2/transferencias",
+                "/api/v1/memorias/1/versiones/2/transferencias",
                 headers=self._headers()
             )
 
@@ -235,7 +235,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value=[{"trabajo_reunion_id": 1}]
         ) as mock_get_snapshot:
             response = self.client.get(
-                "/memorias/1/versiones/2/trabajos-reunion-cientifica",
+                "/api/v1/memorias/1/versiones/2/trabajos-reunion-cientifica",
                 headers=self._headers()
             )
 
@@ -252,7 +252,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value=[{"trabajo_revista_id": 1}]
         ) as mock_get_snapshot:
             response = self.client.get(
-                "/memorias/1/versiones/2/trabajos-revistas",
+                "/api/v1/memorias/1/versiones/2/trabajos-revistas",
                 headers=self._headers()
             )
 
@@ -269,7 +269,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value=[{"distincion_id": 1}]
         ) as mock_get_snapshot:
             response = self.client.get(
-                "/memorias/1/versiones/2/distinciones",
+                "/api/v1/memorias/1/versiones/2/distinciones",
                 headers=self._headers()
             )
 
@@ -286,7 +286,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value=[{"registro_propiedad_id": 1}]
         ) as mock_get_snapshot:
             response = self.client.get(
-                "/memorias/1/versiones/2/registros-propiedad",
+                "/api/v1/memorias/1/versiones/2/registros-propiedad",
                 headers=self._headers()
             )
 
@@ -303,7 +303,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value=[{"articulo_divulgacion_id": 1}]
         ) as mock_get_snapshot:
             response = self.client.get(
-                "/memorias/1/versiones/2/articulos-divulgacion",
+                "/api/v1/memorias/1/versiones/2/articulos-divulgacion",
                 headers=self._headers()
             )
 
@@ -320,7 +320,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value=[{"visita_academica_id": 1}]
         ) as mock_get_snapshot:
             response = self.client.get(
-                "/memorias/1/versiones/2/visitas-academicas",
+                "/api/v1/memorias/1/versiones/2/visitas-academicas",
                 headers=self._headers()
             )
 
@@ -336,7 +336,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             "modules.memorias.controllers.memoria_controller.MemoriaService.create"
         ) as mock_create:
             response = self.client.post(
-                "/memorias",
+                "/api/v1/memorias",
                 json={
                     "periodo_inicio": "2026-01-01",
                     "periodo_fin": "2026-12-31"
@@ -361,7 +361,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
                 "periodo_fin": "2026-12-31"
             }
             response = self.client.post(
-                "/memorias",
+                "/api/v1/memorias",
                 json=payload,
                 headers=self._headers()
             )
@@ -380,7 +380,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
         ) as mock_change_status:
             payload = {"estado": "cerrada"}
             response = self.client.put(
-                "/memorias/1/estado",
+                "/api/v1/memorias/1/estado",
                 json=payload,
                 headers=self._headers()
             )
@@ -400,7 +400,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             "modules.memorias.controllers.memoria_controller.MemoriaService.delete"
         ) as mock_delete:
             response = self.client.delete(
-                "/memorias/1",
+                "/api/v1/memorias/1",
                 headers=self._headers()
             )
 
@@ -417,7 +417,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value={"message": "Memoria eliminada correctamente"}
         ) as mock_delete:
             response = self.client.delete(
-                "/memorias/1",
+                "/api/v1/memorias/1",
                 headers=self._headers()
             )
 
@@ -436,7 +436,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             "modules.memorias.controllers.memoria_controller.MemoriaService.reopen"
         ) as mock_reopen:
             response = self.client.put(
-                "/memorias/1/reabrir",
+                "/api/v1/memorias/1/reabrir",
                 json={"fecha_apertura": "2026-03-05"},
                 headers=self._headers()
             )
@@ -455,7 +455,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
         ) as mock_reopen:
             payload = {"fecha_apertura": "2026-03-05"}
             response = self.client.put(
-                "/memorias/1/reabrir",
+                "/api/v1/memorias/1/reabrir",
                 json=payload,
                 headers=self._headers()
             )
