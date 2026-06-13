@@ -26,22 +26,24 @@ export default function CambiarPasswordPage() {
     setError(null);
 
     if (!esPrimerLogin && !passwordActual.trim()) {
-      setError("Debes ingresar tu contraseña actual");
+      setError("Ingrese su contraseña actual para continuar.");
       return;
     }
 
     if (passwordNueva.length < 6) {
-      setError("La nueva contraseña debe tener al menos 6 caracteres");
+      setError("La nueva contraseña debe tener al menos 6 caracteres.");
       return;
     }
 
     if (passwordNueva !== passwordConfirmacion) {
-      setError("Las contraseñas no coinciden");
+      setError(
+        "La nueva contraseña y la confirmación no coinciden. Revise ambos campos."
+      );
       return;
     }
 
     if (!esPrimerLogin && passwordNueva === passwordActual) {
-      setError("La nueva contraseña debe ser diferente a la actual");
+      setError("La nueva contraseña debe ser diferente a la actual.");
       return;
     }
 
@@ -59,7 +61,10 @@ export default function CambiarPasswordPage() {
         nav("/", { replace: true });
       }, 1500);
     } catch (err: any) {
-      setError(err?.message ?? "Error al cambiar la contraseña");
+      setError(
+        err?.message ??
+          "Lo sentimos, no pudimos cambiar la contraseña. Verifique los datos e intente nuevamente."
+      );
     } finally {
       setLoading(false);
     }
@@ -192,7 +197,10 @@ export default function CambiarPasswordPage() {
               </div>
 
               {error && (
-                <div className="bg-rose-50 text-rose-600 text-sm px-4 py-3 rounded-lg border border-rose-100 flex items-center gap-2">
+                <div
+                  role="alert"
+                  className="bg-rose-50 text-rose-600 text-sm px-4 py-3 rounded-lg border border-rose-100 flex items-center gap-2"
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="16"

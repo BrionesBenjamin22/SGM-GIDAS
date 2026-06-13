@@ -1,4 +1,4 @@
-import { http } from "@/lib/http";
+import { HttpError, http } from "@/lib/http";
 
 export type Rol = "ADMIN" | "GESTOR" | "LECTURA";
 
@@ -24,6 +24,36 @@ type BackendLoginResponse = {
 };
 
 const AUTH_KEY = "gidas_auth_current_session";
+const LOGIN_ERROR_MESSAGE =
+  "Lo sentimos, no pudimos iniciar sesión. Verifique su usuario y contraseña e intente nuevamente.";
+const CONNECTION_ERROR_MESSAGE =
+  "Lo sentimos, no pudimos conectar con el servidor. Intente nuevamente en unos minutos.";
+const CHANGE_PASSWORD_ERROR_MESSAGE =
+  "Lo sentimos, no pudimos cambiar la contraseña. Verifique los datos e intente nuevamente.";
+
+function getBackendErrorMessage(error: HttpError): string | null {
+  const body = error.body;
+
+  if (typeof body === "string") {
+    return body.trim() || null;
+  }
+
+  if (body && typeof body === "object") {
+    const parsedBody = body as Record<string, unknown>;
+    const errorMessage = parsedBody.error;
+    const message = parsedBody.message;
+
+    if (typeof errorMessage === "string" && errorMessage.trim()) {
+      return errorMessage;
+    }
+
+    if (typeof message === "string" && message.trim()) {
+      return message;
+    }
+  }
+
+  return null;
+}
 
 function storeAuth(auth: AuthResponse) {
   localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
@@ -38,13 +68,23 @@ export async function login(
   usuario: string,
   password: string
 ): Promise<AuthResponse> {
-  const responseBack = await http<BackendLoginResponse>("/auth/login", {
-    method: "POST",
-    body: JSON.stringify({
-      nombre_usuario: usuario,
-      password,
-    }),
-  });
+  let responseBack: BackendLoginResponse;
+
+  try {
+    responseBack = await http<BackendLoginResponse>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        nombre_usuario: usuario,
+        password,
+      }),
+    });
+  } catch (error) {
+    if (error instanceof HttpError && error.status === 401) {
+      throw new Error(LOGIN_ERROR_MESSAGE);
+    }
+
+    throw new Error(CONNECTION_ERROR_MESSAGE);
+  }
 
   const auth: AuthResponse = {
     user: responseBack.user,
@@ -100,10 +140,19 @@ export async function cambiarPassword({
     body.password_actual = passwordActual;
   }
 
-  await http("/auth/cambiar-password", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+  try {
+    await http("/auth/cambiar-password", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  } catch (error) {
+    if (error instanceof HttpError) {
+      const backendMessage = getBackendErrorMessage(error);
+      throw new Error(backendMessage ?? CHANGE_PASSWORD_ERROR_MESSAGE);
+    }
+
+    throw new Error(CONNECTION_ERROR_MESSAGE);
+  }
 }
 
 export function logout() {

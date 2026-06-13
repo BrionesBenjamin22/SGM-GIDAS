@@ -365,33 +365,6 @@ class AuthService:
         for session in sessions:
             session.revoke(reason)
 
-    @staticmethod
-    def refresh_access_token(refresh_token: str) -> str:
-        return AuthService.refresh_tokens(refresh_token)["access_token"]
-        try:
-            payload = AuthService._decode_refresh_token(refresh_token)
-
-            user_id = int(payload["sub"])
-            user = AuthService._get_user_or_error(user_id, solo_activos=True)
-
-            new_access_payload = AuthService._with_optional_audience({
-                "sub": str(user.id),
-                "nombre_usuario": user.nombre_usuario,
-                "rol": user.rol.nombre,   # 🔥 AGREGAR ESTO
-                "exp": AuthService._access_token_expires_at(),
-                "iss": Config.JWT_ISSUER
-            })
-
-            return jwt.encode(
-                new_access_payload,
-                Config.JWT_SECRET,
-                algorithm=Config.JWT_ALGORITHM
-            )
-
-        except jwt.ExpiredSignatureError:
-            raise Exception("Refresh token expirado")
-        except jwt.InvalidTokenError:
-            raise Exception("Refresh token inválido")
 
     # -------------------------
     # Verificar token

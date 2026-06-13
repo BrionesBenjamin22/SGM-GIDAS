@@ -30,6 +30,12 @@ export default function LoginPage() {
 async function handleSubmit(e: FormEvent) {
   e.preventDefault();
   setError(null);
+
+  if (!usuario.trim() || !password.trim()) {
+    setError("Complete usuario y contraseña para ingresar al sistema.");
+    return;
+  }
+
   setLoading(true);
 
   try {
@@ -42,7 +48,10 @@ async function handleSubmit(e: FormEvent) {
 
     nav(from, { replace: true });
   } catch (err: any) {
-    setError(err?.message ?? "Credenciales incorrectas");
+    setError(
+      err?.message ??
+        "Lo sentimos, no pudimos iniciar sesión. Verifique los datos e intente nuevamente."
+    );
   } finally {
     setLoading(false);
   }
@@ -104,7 +113,7 @@ async function handleSubmit(e: FormEvent) {
 
           {/* MENSAJE DE ERROR */}
           {error && (
-            <div className="bg-rose-50 text-rose-600 text-sm px-4 py-2 rounded-lg border border-rose-100 flex items-center gap-2">
+            <div role="alert" className="bg-rose-50 text-rose-600 text-sm px-4 py-2 rounded-lg border border-rose-100 flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
                 {error}
             </div>
