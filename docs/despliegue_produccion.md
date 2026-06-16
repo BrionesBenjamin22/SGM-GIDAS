@@ -134,7 +134,7 @@ docker compose --env-file .env.production logs -f backend
 Ver healthcheck por HTTPS:
 
 ```bash
-curl -i https://gidas.example.com/api/health
+curl -i https://gidas.example.com/api/v1/health
 ```
 
 ## Notas de seguridad
