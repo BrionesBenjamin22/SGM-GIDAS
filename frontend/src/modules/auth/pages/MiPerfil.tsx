@@ -223,7 +223,7 @@ export default function MiPerfil() {
             Cambiar contraseña
           </Button>
 
-          <Button variant="secondary" onClick={() => nav("/")}>
+          <Button variant="secondary" onClick={() => nav("/inicio")}>
             Volver
           </Button>
         </div>

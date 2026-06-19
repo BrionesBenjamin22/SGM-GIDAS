@@ -58,7 +58,7 @@ export default function CambiarPasswordPage() {
       setExitoso(true);
 
       setTimeout(() => {
-        nav("/", { replace: true });
+        nav("/inicio", { replace: true });
       }, 1500);
     } catch (err: any) {
       setError(

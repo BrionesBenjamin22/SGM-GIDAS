@@ -11,7 +11,7 @@ type Item = {
 };
 
 const baseItems: Item[] = [
-  { label: "Inicio", to: "/" },
+  { label: "Inicio", to: "/inicio" },
   {
     label: "Personal",
     children: [

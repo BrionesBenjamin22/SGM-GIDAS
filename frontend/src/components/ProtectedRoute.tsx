@@ -33,7 +33,7 @@ export default function ProtectedRoute({
       (requiredRole === "ADMIN" ? isAdmin() : user.rol === requiredRole);
 
     if (!tieneRol) {
-      return <Navigate to="/" replace />;
+      return <Navigate to="/inicio" replace />;
     }
   }
 

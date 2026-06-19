@@ -113,11 +113,22 @@ El archivo `docker-compose.dev.yml` es un override: debe ejecutarse junto con
 
 ## Inicio de sesion
 
-Al iniciar la aplicacion, las rutas protegidas muestran primero el login. Una
+El flujo publico y autenticado se organiza asi:
+
+- `/`: landing publica del sistema.
+- `/login`: formulario de acceso.
+- `/registro`: configuracion del administrador inicial, disponible solo si no existen usuarios.
+- `/inicio`: home operativo protegido.
+
+Al abrir una ruta protegida, el sistema muestra primero el login. Una
 sesion almacenada se valida contra `GET /api/v1/auth/perfil` antes de permitir
 el renderizado del layout y sus vistas. Si la validacion falla, la sesion local
 se elimina y el usuario permanece en el login. El backend tambien rechaza en
 esa validacion cuentas inactivas o eliminadas.
+
+La landing reutiliza el componente `Footer` existente sin modificarlo. Landing
+y login consultan el estado de configuracion inicial; el enlace de registro no
+se renderiza salvo que el backend confirme que todavia no existe ningun usuario.
 
 ## Historial de directivos
 

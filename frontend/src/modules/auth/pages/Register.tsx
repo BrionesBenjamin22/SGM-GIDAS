@@ -2,10 +2,13 @@ import { FormEvent, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { CheckCircle } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { SYSTEM_SETUP_QUERY_KEY } from "@/modules/auth/hooks/useSystemSetup";
 
 export default function RegisterPage() {
   const { register, esPrimerUsuario } = useAuth();
   const nav = useNavigate();
+  const queryClient = useQueryClient();
 
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
@@ -38,6 +41,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(nombre, email, password);
+      queryClient.setQueryData(SYSTEM_SETUP_QUERY_KEY, false);
       setRegistroExitoso(true);
       // Después de 2 segundos, redirigir al login
       setTimeout(() => {

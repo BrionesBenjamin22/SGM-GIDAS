@@ -1,29 +1,19 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { AlertCircle, ArrowLeft, Eye, EyeOff, LoaderCircle, LogIn } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-
-// Iconos mostrar/ocultar contraseña
-const EyeIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-);
-const EyeOffIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7c.68 0 1.35-.09 1.99-.27"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
-);
-const banner = () => (
-  <img src="https://img.freepik.com/foto-gratis/fondo-concepto-big-data-conexion-red-wireframeshapes-abstracto-poligonal-linea-punto_90220-496.jpg?t=st=1767944670~exp=1767948270~hmac=8406b8b4e6a0fbdf1fe6016484dec238a4056fa43d9a3dd46543de2258b855c1&w=2000" alt="Banner" className="w-full h-32 object-cover mb-6 rounded-lg"/>
-);
+import { useSystemSetup } from "@/modules/auth/hooks/useSystemSetup";
 
 export default function LoginPage() {
   const { login, user, loading: sessionLoading } = useAuth();
+  const { data: needsInitialAdmin, isFetching: setupFetching } = useSystemSetup();
   const nav = useNavigate();
-  const location = useLocation() as any;
-  const from = location.state?.from?.pathname || "/";
+  const location = useLocation() as { state?: { from?: { pathname?: string } } };
+  const from = location.state?.from?.pathname || "/inicio";
 
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
-  
   const [showPassword, setShowPassword] = useState(false);
-  
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -33,120 +23,133 @@ export default function LoginPage() {
     }
   }, [from, nav, sessionLoading, user]);
 
-async function handleSubmit(e: FormEvent) {
-  e.preventDefault();
-  setError(null);
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    setError(null);
 
-  if (!usuario.trim() || !password.trim()) {
-    setError("Complete usuario y contraseña para ingresar al sistema.");
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const auth = await login(usuario, password);
-
-    if (auth.user.primer_login) {
-      nav("/cambiar-password", { replace: true });
+    if (!usuario.trim() || !password.trim()) {
+      setError("Complete usuario y contraseña para ingresar al sistema.");
       return;
     }
 
-    nav(from, { replace: true });
-  } catch (err: any) {
-    setError(
-      err?.message ??
-        "Lo sentimos, no pudimos iniciar sesión. Verifique los datos e intente nuevamente."
-    );
-  } finally {
-    setLoading(false);
+    setLoading(true);
+    try {
+      const auth = await login(usuario, password);
+      nav(auth.user.primer_login ? "/cambiar-password" : from, { replace: true });
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Lo sentimos, no pudimos iniciar sesión. Verifique los datos e intente nuevamente."
+      );
+    } finally {
+      setLoading(false);
+    }
   }
-}
 
   return (
-    <div className="min-h-screen grid place-items-center bg-[#F6F6FB] px-4">
-      <div className="card w-full max-w-md bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-        
-        <div className="text-center mb-8">
-            {banner()}
-            <h1 className="text-2xl font-bold text-slate-900">Bienvenido al sistema UCT</h1>
-            <p className="text-slate-500 text-sm mt-1">Ingresa tus datos para acceder</p>
-        </div>
+    <div className="min-h-screen bg-[#F6F6FB] px-4 py-8 sm:py-12">
+      <div className="mx-auto w-full max-w-md">
+        <Link
+          to="/"
+          className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-950"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Volver a la página principal
+        </Link>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* INPUT USUARIO */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-              Nombre de Usuario
-            </label>
-            <input
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all"
-              type="text"
-              required
-              value={usuario}
-              onChange={(e) => setUsuario(e.target.value)}
-              placeholder="Ej: juanperez"
-              autoComplete="username"
-            />
+        <div className="card w-full border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-5 grid h-12 w-12 place-items-center rounded-lg bg-slate-950 text-white">
+              <LogIn className="h-6 w-6" aria-hidden="true" />
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900">Iniciar sesión</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Ingrese sus credenciales para acceder al sistema.
+            </p>
           </div>
 
-          {/* INPUT PASSWORD */}
-          <div>
-            <div className="flex justify-between items-center mb-1.5">
-                <label className="block text-sm font-semibold text-slate-700">
-                Contraseña
-                </label>
-            </div>
-            
-            <div className="relative">
-                <input
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all pr-10"
-                type={showPassword ? "text" : "password"}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label htmlFor="usuario" className="mb-1.5 block text-sm font-semibold text-slate-700">
+                Nombre de usuario
+              </label>
+              <input
+                id="usuario"
+                className="w-full rounded-lg border border-slate-300 px-4 py-2.5 outline-none transition focus:border-transparent focus:ring-2 focus:ring-slate-900"
+                type="text"
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                value={usuario}
+                onChange={(event) => setUsuario(event.target.value)}
+                placeholder="Ej: juanperez"
+                autoComplete="username"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="mb-1.5 block text-sm font-semibold text-slate-700">
+                Contraseña
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2.5 pr-11 outline-none transition focus:border-transparent focus:ring-2 focus:ring-slate-900"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
                 />
                 <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-6 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                  title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  aria-pressed={showPassword}
                 >
-                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" aria-hidden="true" />
+                  ) : (
+                    <Eye className="h-5 w-5" aria-hidden="true" />
+                  )}
                 </button>
+              </div>
             </div>
-          </div>
 
-          {/* MENSAJE DE ERROR */}
-          {error && (
-            <div role="alert" className="bg-rose-50 text-rose-600 text-sm px-4 py-2 rounded-lg border border-rose-100 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
-                {error}
-            </div>
+            {error && (
+              <div role="alert" className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || sessionLoading}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? (
+                <>
+                  <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
+                  Ingresando...
+                </>
+              ) : (
+                "Ingresar"
+              )}
+            </button>
+          </form>
+
+          {needsInitialAdmin === true && !setupFetching && (
+            <p className="mt-7 text-center text-sm text-slate-600">
+              El sistema aún no está configurado.{" "}
+              <Link to="/registro" className="font-semibold text-slate-950 hover:underline">
+                Crear administrador inicial
+              </Link>
+            </p>
           )}
-
-          {/* BOTÓN INGRESAR */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-full bg-slate-900 text-white font-medium py-3 hover:bg-slate-800 disabled:opacity-70 disabled:cursor-not-allowed transition-all shadow-lg shadow-slate-900/20"
-          >
-            {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    Ingresando...
-                </span>
-            ) : "Ingresar"}
-          </button>
-        </form>
-
-        {/* FOOTER */}
-        <p className="mt-8 text-center text-sm text-slate-600">
-          ¿No tenés cuenta?{" "}
-          <Link to="/registro" className="font-semibold text-slate-900 hover:underline">
-            Registrate aquí
-          </Link>
-        </p>
+        </div>
       </div>
     </div>
   );
