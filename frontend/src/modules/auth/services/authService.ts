@@ -191,5 +191,5 @@ export function logout() {
   }
 
   localStorage.removeItem(AUTH_KEY);
-  window.location.href = "/login";
+  window.location.href = "/";
 }
