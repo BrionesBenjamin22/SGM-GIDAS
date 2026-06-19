@@ -110,3 +110,11 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 
 El archivo `docker-compose.dev.yml` es un override: debe ejecutarse junto con
 `docker-compose.yml` para que todos los servicios compartan la misma red.
+
+## Inicio de sesion
+
+Al iniciar la aplicacion, las rutas protegidas muestran primero el login. Una
+sesion almacenada se valida contra `GET /api/v1/auth/perfil` antes de permitir
+el renderizado del layout y sus vistas. Si la validacion falla, la sesion local
+se elimina y el usuario permanece en el login. El backend tambien rechaza en
+esa validacion cuentas inactivas o eliminadas.

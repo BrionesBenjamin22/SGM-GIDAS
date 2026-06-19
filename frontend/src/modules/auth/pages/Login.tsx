@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
@@ -14,7 +14,7 @@ const banner = () => (
 );
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, user, loading: sessionLoading } = useAuth();
   const nav = useNavigate();
   const location = useLocation() as any;
   const from = location.state?.from?.pathname || "/";
@@ -26,6 +26,12 @@ export default function LoginPage() {
   
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!sessionLoading && user) {
+      nav(user.primer_login ? "/cambiar-password" : from, { replace: true });
+    }
+  }, [from, nav, sessionLoading, user]);
 
 async function handleSubmit(e: FormEvent) {
   e.preventDefault();

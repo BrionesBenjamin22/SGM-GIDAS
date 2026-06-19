@@ -137,7 +137,7 @@ class AuthController:
         try:
             payload = AuthController._get_payload_from_request(req)
             user_id = int(payload["sub"])
-            user = AuthService.get_user_by_id(user_id)
+            user = AuthService.get_user_by_id(user_id, solo_activos=True)
 
             return jsonify(user.serialize()), 200
 

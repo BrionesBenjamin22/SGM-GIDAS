@@ -10,6 +10,7 @@ import {
   register as registerService,
   logout as logoutService,
   getStoredAuth,
+  restoreSession,
   esPrimerUsuario as esPrimerUsuarioService,
   cambiarPassword as cambiarPasswordService,
   type User,
@@ -56,48 +57,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  function syncStoredAuth() {
-    const stored = getStoredAuth();
-    if (stored) {
-      setUser(stored.user);
-      setToken(stored.token);
-      return;
+  useEffect(() => {
+    let active = true;
+
+    async function initializeSession() {
+      setLoading(true);
+      const stored = await restoreSession();
+
+      if (!active) return;
+
+      setUser(stored?.user ?? null);
+      setToken(stored?.token ?? null);
+      setLoading(false);
     }
 
-    setUser(null);
-    setToken(null);
-  }
+    void initializeSession();
 
-  useEffect(() => {
-    syncStoredAuth();
-    setLoading(false);
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
-    function handleStorage(event: StorageEvent) {
+    async function handleStorage(event: StorageEvent) {
       if (event.key === AUTH_KEY) {
-        syncStoredAuth();
-      }
-    }
-
-    function handleFocus() {
-      syncStoredAuth();
-    }
-
-    function handleVisibilityChange() {
-      if (document.visibilityState === "visible") {
-        syncStoredAuth();
+        setLoading(true);
+        const stored = await restoreSession();
+        setUser(stored?.user ?? null);
+        setToken(stored?.token ?? null);
+        setLoading(false);
       }
     }
 
     window.addEventListener("storage", handleStorage);
-    window.addEventListener("focus", handleFocus);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.removeEventListener("storage", handleStorage);
-      window.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 

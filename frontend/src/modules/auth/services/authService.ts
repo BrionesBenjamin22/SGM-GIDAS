@@ -61,7 +61,33 @@ function storeAuth(auth: AuthResponse) {
 
 export function getStoredAuth(): AuthResponse | null {
   const raw = localStorage.getItem(AUTH_KEY);
-  return raw ? (JSON.parse(raw) as AuthResponse) : null;
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw) as AuthResponse;
+  } catch {
+    localStorage.removeItem(AUTH_KEY);
+    return null;
+  }
+}
+
+export async function restoreSession(): Promise<AuthResponse | null> {
+  const stored = getStoredAuth();
+  if (!stored?.token) return null;
+
+  try {
+    const user = await http<User>("/auth/perfil", { method: "GET" });
+    const refreshed = getStoredAuth();
+    const auth = {
+      ...(refreshed ?? stored),
+      user,
+    };
+
+    return auth;
+  } catch {
+    localStorage.removeItem(AUTH_KEY);
+    return null;
+  }
 }
 
 export async function login(

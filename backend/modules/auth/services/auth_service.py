@@ -445,9 +445,9 @@ class AuthService:
         ).all()
     
     @staticmethod
-    def get_user_by_id(user_id: int):
-        """Obtener un usuario por ID"""
-        return AuthService._get_user_or_error(user_id)
+    def get_user_by_id(user_id: int, solo_activos: bool = False):
+        """Obtener un usuario por ID."""
+        return AuthService._get_user_or_error(user_id, solo_activos=solo_activos)
     
     @staticmethod
     def update_user(user_id: int, data: dict, current_user_id: int):
