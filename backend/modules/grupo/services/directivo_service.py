@@ -191,21 +191,37 @@ class DirectivoGrupoService:
     @staticmethod
     def get_por_grupo(grupo_id: int):
 
-        grupo = GrupoInvestigacionUtn.query.get(grupo_id)
+        grupo = db.session.get(GrupoInvestigacionUtn, grupo_id)
 
         if not grupo or grupo.deleted_at is not None:
             raise ValueError("Grupo no encontrado.")
 
+        participaciones = (
+            DirectivoGrupo.query.options(
+                joinedload(DirectivoGrupo.directivo),
+                joinedload(DirectivoGrupo.cargo)
+            )
+            .filter(
+                DirectivoGrupo.id_grupo_utn == grupo_id,
+                DirectivoGrupo.deleted_at.is_(None)
+            )
+            .order_by(
+                DirectivoGrupo.fecha_inicio.desc(),
+                DirectivoGrupo.id.desc()
+            )
+            .all()
+        )
+
         return [
             {
+                "id": p.id,
                 "id_directivo": p.directivo.id,
                 "nombre_apellido": p.directivo.nombre_apellido,
                 "cargo": p.cargo.nombre,
                 "fecha_inicio": str(p.fecha_inicio),
                 "fecha_fin": str(p.fecha_fin) if p.fecha_fin else None
             }
-            for p in grupo.participaciones_directivos
-            if p.deleted_at is None
+            for p in participaciones
         ]
 
 

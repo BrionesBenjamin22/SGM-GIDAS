@@ -7,12 +7,16 @@ export type Directivo = {
 };
 
 export type DirectivoActual = {
-  id: number;
   id_directivo: number;
   nombre_apellido: string;
   cargo: string;
   fecha_inicio: string;
   fecha_fin?: string | null;
+};
+
+export type DirectivoPeriodo = DirectivoActual & {
+  id: number;
+  fecha_fin: string | null;
 };
 
 export type UpdateDirectivoPayload = {
@@ -54,6 +58,12 @@ export function asignarDirectivo(payload: {
 
 export function getDirectivosActuales(grupoId: number) {
   return http<DirectivoActual[]>(`/directivos/grupo/${grupoId}/actuales`, {
+    method: "GET",
+  });
+}
+
+export function getHistorialDirectivos(grupoId: number) {
+  return http<DirectivoPeriodo[]>(`/directivos/grupo/${grupoId}`, {
     method: "GET",
   });
 }

@@ -247,6 +247,22 @@ El backend se construye con Dockerfile multi-stage:
 
 En produccion el entrypoint aplica migraciones, ejecuta el seed inicial de roles e inicia la API con Gunicorn. El servidor de desarrollo de Flask queda reservado para ambientes no productivos.
 
+Historial de directivos por grupo
+
+- Endpoint: GET /api/v1/grupo/directivos/grupo/<grupo_id>
+- Permisos: ADMIN, GESTOR y LECTURA.
+- Devuelve todos los periodos directivos activos en trazabilidad, incluidos los finalizados.
+- Orden: fecha_inicio descendente e id descendente.
+- Campos: id, id_directivo, nombre_apellido, cargo, fecha_inicio y fecha_fin.
+- Las relaciones directivo y cargo se precargan para evitar consultas N+1.
+
+Seed inicial
+
+El entrypoint ejecuta `python seed_roles.py` despues de aplicar migraciones.
+El script es idempotente y garantiza los roles base junto con los cargos
+`Director` y `Vicedirector`. Si uno de esos cargos existe con soft delete, el
+seed lo restaura.
+
 Variables obligatorias en produccion:
 - APP_ENV=production
 - SECRET_KEY

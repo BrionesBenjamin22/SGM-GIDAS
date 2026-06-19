@@ -118,3 +118,10 @@ sesion almacenada se valida contra `GET /api/v1/auth/perfil` antes de permitir
 el renderizado del layout y sus vistas. Si la validacion falla, la sesion local
 se elimina y el usuario permanece en el login. El backend tambien rechaza en
 esa validacion cuentas inactivas o eliminadas.
+
+## Historial de directivos
+
+El home de la UCT ofrece un popover no modal para consultar los periodos del
+equipo directivo. La consulta se realiza al abrirlo mediante
+`GET /api/v1/grupo/directivos/grupo/:grupoId` y presenta 3 registros por pagina.
+El popover no usa backdrop y permite continuar interactuando con la pagina.

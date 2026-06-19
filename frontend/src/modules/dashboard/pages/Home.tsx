@@ -7,6 +7,7 @@ import Button from "@/components/Button";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 import { useAuth } from "@/context/AuthContext";
+import DirectivosHistoryPopover from "@/modules/grupo/components/DirectivosHistoryPopover";
 import { ArrowUp } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -151,6 +152,8 @@ export default function Home() {
 
           {uct && (
             <div className="flex gap-2">
+              <DirectivosHistoryPopover grupoId={uct.id} />
+
               {canEditUct && (
                 <Button
                   variant="secondary"
