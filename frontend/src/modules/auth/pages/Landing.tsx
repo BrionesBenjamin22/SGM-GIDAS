@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { ArrowRight, BookOpenCheck, History, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
-import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 import { useSystemSetup } from "@/modules/auth/hooks/useSystemSetup";
 
@@ -99,7 +98,6 @@ export default function Landing() {
         </section>
       </main>
 
-      <Footer />
     </div>
   );
 }
