@@ -1,8 +1,9 @@
 import os
+import secrets
 from dotenv import load_dotenv
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-env_file = os.getenv("ENV_FILE", ".env.local")
+env_file = os.getenv("ENV_FILE", ".env")
 load_dotenv(os.path.join(basedir, env_file))
 
 
@@ -11,8 +12,80 @@ def _parse_csv_env(value: str | None) -> list[str]:
         return []
     return [item.strip() for item in value.split(",") if item.strip()]
 
+
+def _is_insecure_secret(value: str | None) -> bool:
+    if not value:
+        return True
+    normalized = value.strip().lower()
+    insecure_values = {
+        "change-me",
+        "changeme",
+        "replace-with-secure-secret",
+        "secret",
+        "dev-secret",
+        "test-secret",
+    }
+    return normalized in insecure_values or len(value.strip()) < 32
+
+
+def _parse_int_env_range(
+    name: str,
+    default: int,
+    min_value: int,
+    max_value: int,
+) -> int:
+    raw_value = os.getenv(name)
+    if raw_value is None or raw_value.strip() == "":
+        return default
+
+    try:
+        value = int(raw_value)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} debe ser un numero entero") from exc
+
+    if value < min_value or value > max_value:
+        raise RuntimeError(
+            f"{name} debe estar entre {min_value} y {max_value} minutos"
+        )
+
+    return value
+
+
+def _require_production_security(config_class):
+    if config_class.APP_ENV not in {"production", "prod"}:
+        return
+
+    required_secrets = {
+        "SECRET_KEY": config_class.SECRET_KEY,
+        "JWT_SECRET": config_class.JWT_SECRET,
+        "REFRESH_SECRET": config_class.REFRESH_SECRET,
+    }
+    missing_or_insecure = [
+        key for key, value in required_secrets.items() if _is_insecure_secret(value)
+    ]
+
+    if missing_or_insecure:
+        raise RuntimeError(
+            "Configuracion insegura para produccion. Revise: "
+            + ", ".join(missing_or_insecure)
+        )
+
+    if config_class.CORS_ORIGINS == "*" or "*" in config_class.CORS_ORIGINS:
+        raise RuntimeError("CORS_ORIGINS no puede usar '*' en produccion")
+
+    if config_class.RATELIMIT_STORAGE_URI.strip().lower() == "memory://":
+        raise RuntimeError(
+            "RATELIMIT_STORAGE_URI debe usar almacenamiento compartido en produccion"
+        )
+
+    if not os.getenv("DATABASE_URL"):
+        raise RuntimeError("DATABASE_URL es obligatorio en produccion")
+
+
 class Config:
-    SECRET_KEY = os.getenv("SECRET_KEY") 
+    APP_ENV = os.getenv("APP_ENV", "local")
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+    SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_urlsafe(48)
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
     FRONTEND_URLS = _parse_csv_env(os.getenv("FRONTEND_URLS")) or [FRONTEND_URL]
     CORS_ORIGINS = FRONTEND_URLS
@@ -34,7 +107,14 @@ class Config:
     JWT_SECRET = os.getenv("JWT_SECRET") or SECRET_KEY
     REFRESH_SECRET = os.getenv("REFRESH_SECRET") or SECRET_KEY
     JWT_ALGORITHM = "HS256"
-    JWT_EXPIRATION_MINUTES = int(os.getenv("JWT_EXPIRATION_MINUTES", 60))
+    JWT_ISSUER = os.getenv("JWT_ISSUER", "auth-service")
+    JWT_AUDIENCE = os.getenv("JWT_AUDIENCE") or None
+    JWT_EXPIRATION_MINUTES = _parse_int_env_range(
+        "JWT_EXPIRATION_MINUTES",
+        default=60,
+        min_value=5,
+        max_value=1440,
+    )
     RATELIMIT_STORAGE_URI = os.getenv("RATELIMIT_STORAGE_URI", "memory://")
     RATELIMIT_DEFAULT = os.getenv("RATELIMIT_DEFAULT", "120 per minute")
     RATELIMIT_HEADERS_ENABLED = os.getenv("RATELIMIT_HEADERS_ENABLED", "True") == "True"
@@ -43,6 +123,41 @@ class Config:
     AUTH_REFRESH_LIMIT = os.getenv("AUTH_REFRESH_LIMIT", "30 per minute")
     AUTH_REGISTER_LIMIT = os.getenv("AUTH_REGISTER_LIMIT", "5 per hour")
     AUTH_CHANGE_PASSWORD_LIMIT = os.getenv("AUTH_CHANGE_PASSWORD_LIMIT", "10 per hour")
+    EXPORT_LIMIT = os.getenv("EXPORT_LIMIT", "10 per hour")
+    SEARCH_LIMIT = os.getenv("SEARCH_LIMIT", "30 per minute")
+    SEARCH_MAX_QUERY_LENGTH = _parse_int_env_range(
+        "SEARCH_MAX_QUERY_LENGTH",
+        default=80,
+        min_value=10,
+        max_value=200,
+    )
+    SEARCH_MAX_PER_PAGE = _parse_int_env_range(
+        "SEARCH_MAX_PER_PAGE",
+        default=50,
+        min_value=9,
+        max_value=100,
+    )
+    SEARCH_MAX_SCAN_PER_MODEL = _parse_int_env_range(
+        "SEARCH_MAX_SCAN_PER_MODEL",
+        default=300,
+        min_value=50,
+        max_value=1000,
+    )
+    PAGINATION_DEFAULT_PER_PAGE = _parse_int_env_range(
+        "PAGINATION_DEFAULT_PER_PAGE",
+        default=9,
+        min_value=1,
+        max_value=100,
+    )
+    PAGINATION_MAX_PER_PAGE = _parse_int_env_range(
+        "PAGINATION_MAX_PER_PAGE",
+        default=100,
+        min_value=9,
+        max_value=500,
+    )
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
+    SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False") == "True"
 
 
 class DevelopmentConfig(Config):
@@ -50,7 +165,28 @@ class DevelopmentConfig(Config):
     CORS_ORIGINS = "*"
 
 class DockerConfig(Config):
-    DEBUG = True
+    DEBUG = os.getenv("FLASK_DEBUG", "False") == "True"
+
+class TestingConfig(Config):
+    DEBUG = False
 
 class ProductionConfig(Config):
     DEBUG = False
+    SESSION_COOKIE_SECURE = True
+
+
+CONFIG_BY_ENV = {
+    "local": DevelopmentConfig,
+    "development": DevelopmentConfig,
+    "docker": DockerConfig,
+    "testing": TestingConfig,
+    "production": ProductionConfig,
+    "prod": ProductionConfig,
+}
+
+
+def get_config_class():
+    app_env = os.getenv("APP_ENV", "local").strip().lower()
+    config_class = CONFIG_BY_ENV.get(app_env, DevelopmentConfig)
+    _require_production_security(config_class)
+    return config_class

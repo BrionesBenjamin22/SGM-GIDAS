@@ -2,23 +2,23 @@ import unittest
 from datetime import date
 from unittest.mock import patch
 
-from core.models.equipamiento import Equipamiento
-from core.services.equipamiento_service import EquipamientoService
+from modules.recursos.models.equipamiento import Equipamiento
+from modules.recursos.services.equipamiento_service import EquipamientoService
 
 
 class EquipamientoServiceTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.commit_patcher = patch("core.services.equipamiento_service.db.session.commit")
-        self.rollback_patcher = patch("core.services.equipamiento_service.db.session.rollback")
+        self.commit_patcher = patch("modules.recursos.services.equipamiento_service.db.session.commit")
+        self.rollback_patcher = patch("modules.recursos.services.equipamiento_service.db.session.rollback")
         self.get_activo_patcher = patch(
-            "core.services.equipamiento_service.EquipamientoService._get_activo_or_404"
+            "modules.recursos.services.equipamiento_service.EquipamientoService._get_activo_or_404"
         )
         self.validar_grupo_patcher = patch(
-            "core.services.equipamiento_service.EquipamientoService._validar_grupo"
+            "modules.recursos.services.equipamiento_service.EquipamientoService._validar_grupo"
         )
         self.registrar_cambios_patcher = patch(
-            "core.services.equipamiento_service.AuditoriaService.registrar_cambios"
+            "modules.recursos.services.equipamiento_service.AuditoriaService.registrar_cambios"
         )
 
         self.mock_commit = self.commit_patcher.start()

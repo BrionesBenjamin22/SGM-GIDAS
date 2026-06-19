@@ -3,15 +3,15 @@ from datetime import date
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from core.models.becas import Beca
-from core.models.personal import Becario, Investigador
-from core.models.transferencia_socio import TransferenciaSocioProductiva
-from core.models.trabajo_reunion import TrabajoReunionCientifica
-from core.models.trabajo_revista import TrabajosRevistasReferato
-from core.services.becas_service import BecaService
-from core.services.transferencia_service import TransferenciaSocioProductivaService
-from core.services.trabajo_reunion_service import TrabajoReunionCientificaService
-from core.services.trabajo_revista_service import TrabajosRevistasReferatoService
+from modules.recursos.models.becas import Beca
+from modules.personal.models.personal import Becario, Investigador
+from modules.transferencia.models.transferencia_socio import TransferenciaSocioProductiva
+from modules.produccion.models.trabajo_reunion import TrabajoReunionCientifica
+from modules.produccion.models.trabajo_revista import TrabajosRevistasReferato
+from modules.recursos.services.becas_service import BecaService
+from modules.transferencia.services.transferencia_service import TransferenciaSocioProductivaService
+from modules.produccion.services.trabajo_reunion_service import TrabajoReunionCientificaService
+from modules.produccion.services.trabajo_revista_service import TrabajosRevistasReferatoService
 
 
 class AuditoriaRelacionesServicesTestCase(unittest.TestCase):
@@ -46,16 +46,16 @@ class AuditoriaRelacionesServicesTestCase(unittest.TestCase):
         becario.deleted_at = None
 
         with patch(
-            "core.services.becas_service._get_beca_activa_or_404",
+            "modules.recursos.services.becas_service._get_beca_activa_or_404",
             return_value=beca
         ), patch(
-            "core.services.becas_service.db.session.get",
+            "modules.recursos.services.becas_service.db.session.get",
             return_value=becario
         ), patch(
-            "core.services.becas_service._get_relacion_activa",
+            "modules.recursos.services.becas_service._get_relacion_activa",
             return_value=None
         ), patch(
-            "core.services.becas_service.AuditoriaService.registrar_evento_relacion"
+            "modules.recursos.services.becas_service.AuditoriaService.registrar_evento_relacion"
         ) as mock_evento:
             resultado = BecaService.vincular_becario(
                 1,
@@ -87,13 +87,13 @@ class AuditoriaRelacionesServicesTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.becas_service._get_relacion_activa",
+            "modules.recursos.services.becas_service._get_relacion_activa",
             return_value=relacion
         ), patch(
-            "core.services.becas_service._get_beca_activa_or_404",
+            "modules.recursos.services.becas_service._get_beca_activa_or_404",
             return_value=beca
         ), patch(
-            "core.services.becas_service.AuditoriaService.registrar_evento_relacion"
+            "modules.recursos.services.becas_service.AuditoriaService.registrar_evento_relacion"
         ) as mock_evento:
             resultado = BecaService.desvincular_becario(1, 7, user_id=11)
 
@@ -132,17 +132,17 @@ class AuditoriaRelacionesServicesTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.transferencia_service.db.session.get",
+            "modules.transferencia.services.transferencia_service.db.session.get",
             return_value=transferencia
         ), patch(
-            "core.services.transferencia_service.db.session.query",
+            "modules.transferencia.services.transferencia_service.db.session.query",
             side_effect=[
                 fake_query_adoptantes,
                 fake_query_participacion,
                 fake_query_participacion
             ]
         ), patch(
-            "core.services.transferencia_service.AuditoriaService.registrar_evento_relacion"
+            "modules.transferencia.services.transferencia_service.AuditoriaService.registrar_evento_relacion"
         ) as mock_evento:
             resultado = TransferenciaSocioProductivaService.add_adoptantes(
                 2,
@@ -186,13 +186,13 @@ class AuditoriaRelacionesServicesTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.trabajo_reunion_service.TrabajoReunionCientificaService._get_activo_or_404",
+            "modules.produccion.services.trabajo_reunion_service.TrabajoReunionCientificaService._get_activo_or_404",
             return_value=trabajo
         ), patch(
-            "core.services.trabajo_reunion_service.db.session.query",
+            "modules.produccion.services.trabajo_reunion_service.db.session.query",
             return_value=fake_query
         ), patch(
-            "core.services.trabajo_reunion_service.AuditoriaService.registrar_evento_relacion"
+            "modules.produccion.services.trabajo_reunion_service.AuditoriaService.registrar_evento_relacion"
         ) as mock_evento:
             resultado = TrabajoReunionCientificaService.vincular_investigadores(
                 3,
@@ -238,13 +238,13 @@ class AuditoriaRelacionesServicesTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.trabajo_revista_service.TrabajosRevistasReferatoService._get_activo_or_404",
+            "modules.produccion.services.trabajo_revista_service.TrabajosRevistasReferatoService._get_activo_or_404",
             return_value=trabajo
         ), patch(
-            "core.services.trabajo_revista_service.db.session.query",
+            "modules.produccion.services.trabajo_revista_service.db.session.query",
             return_value=fake_query
         ), patch(
-            "core.services.trabajo_revista_service.AuditoriaService.registrar_evento_relacion"
+            "modules.produccion.services.trabajo_revista_service.AuditoriaService.registrar_evento_relacion"
         ) as mock_evento:
             resultado = TrabajosRevistasReferatoService.vincular_investigadores(
                 4,

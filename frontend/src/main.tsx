@@ -16,6 +16,7 @@ import NotFound from "@/pages/NotFound";
 // auth
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import Landing from "@/pages/Landing";
 import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
@@ -82,20 +83,20 @@ import MiPerfil from "./pages/MiPerfil";
 
 // Definición de rutas
 const router = createBrowserRouter([
+  { path: "/", element: <Landing /> },
   // rutas públicas (sin login)
   { path: "/login", element: <Login /> },
   { path: "/registro", element: <Register /> },
 
   // rutas protegidas (requieren estar logueado)
   {
-    path: "/",
     element: (
       <ProtectedRoute>
         <AppLayout />
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <Home /> },
+      { path: "inicio", element: <Home /> },
 
       { path: "busqueda", element: <SearchPage /> },
 

@@ -1,15 +1,2 @@
-import { useQuery } from "@tanstack/react-query";
-import {
-  getTiposErogacion,
-  type TipoErogacion,
-} from "@/services/tipoErogacionService";
-
-export function useTiposErogacion() {
-  const { data = [], isLoading, isError } = useQuery<TipoErogacion[]>({
-    queryKey: ["tipo-erogacion"],
-    queryFn: getTiposErogacion,
-    staleTime: 5 * 60_000,
-  });
-
-  return { tipos: data, isLoading, isError };
-}
+﻿// Compatibility wrapper for the modular frontend layout.
+export * from "@/modules/recursos/hooks/useTipoErogacion";

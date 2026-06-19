@@ -2,10 +2,10 @@ import unittest
 from unittest.mock import patch
 from types import SimpleNamespace
 
-from core.models.personal import Personal, Becario, Investigador
-from core.services.becario_service import actualizar_becario
-from core.services.investigador_service import actualizar_investigador
-from core.services.personal_service import actualizar_personal
+from modules.personal.models.personal import Personal, Becario, Investigador
+from modules.personal.services.becario_service import actualizar_becario
+from modules.personal.services.investigador_service import actualizar_investigador
+from modules.personal.services.personal_service import actualizar_personal
 
 
 class AuditoriaPersonalServicesTestCase(unittest.TestCase):
@@ -39,16 +39,16 @@ class AuditoriaPersonalServicesTestCase(unittest.TestCase):
         investigador.updated_by = None
 
         with patch(
-            "core.services.investigador_service._obtener_investigador_activo",
+            "modules.personal.services.investigador_service._obtener_investigador_activo",
             return_value=investigador
         ), patch(
-            "core.services.investigador_service._validar_tipo_dedicacion",
+            "modules.personal.services.investigador_service._validar_tipo_dedicacion",
             return_value=5
         ), patch(
-            "core.services.investigador_service._validar_grupo_utn",
+            "modules.personal.services.investigador_service._validar_grupo_utn",
             return_value=6
         ), patch(
-            "core.services.investigador_service.AuditoriaService.registrar_cambios"
+            "modules.personal.services.investigador_service.AuditoriaService.registrar_cambios"
         ) as mock_registrar:
             resultado = actualizar_investigador(
                 1,
@@ -81,16 +81,16 @@ class AuditoriaPersonalServicesTestCase(unittest.TestCase):
         becario.updated_by = None
 
         with patch(
-            "core.services.becario_service._get_activo_or_404",
+            "modules.personal.services.becario_service._get_activo_or_404",
             return_value=becario
         ), patch(
-            "core.services.becario_service.TipoFormacion",
+            "modules.personal.services.becario_service.TipoFormacion",
             new=SimpleNamespace(query=SimpleNamespace(get=lambda _: object()))
         ), patch(
-            "core.services.becario_service.GrupoInvestigacionUtn",
+            "modules.personal.services.becario_service.GrupoInvestigacionUtn",
             new=SimpleNamespace(query=SimpleNamespace(get=lambda _: object()))
         ), patch(
-            "core.services.becario_service.AuditoriaService.registrar_cambios"
+            "modules.personal.services.becario_service.AuditoriaService.registrar_cambios"
         ) as mock_registrar:
             resultado = actualizar_becario(
                 2,
@@ -123,16 +123,16 @@ class AuditoriaPersonalServicesTestCase(unittest.TestCase):
         personal.updated_by = None
 
         with patch(
-            "core.services.personal_service._resolver_entidad_por_rol",
+            "modules.personal.services.personal_service._resolver_entidad_por_rol",
             return_value=(personal, object(), "personal_id")
         ), patch(
-            "core.services.personal_service._validar_tipo_personal",
+            "modules.personal.services.personal_service._validar_tipo_personal",
             return_value=5
         ), patch(
-            "core.services.personal_service._validar_grupo_utn",
+            "modules.personal.services.personal_service._validar_grupo_utn",
             return_value=6
         ), patch(
-            "core.services.personal_service.AuditoriaService.registrar_cambios"
+            "modules.personal.services.personal_service.AuditoriaService.registrar_cambios"
         ) as mock_registrar:
             resultado = actualizar_personal(
                 3,
@@ -168,13 +168,13 @@ class AuditoriaPersonalServicesTestCase(unittest.TestCase):
         investigador.updated_by = None
 
         with patch(
-            "core.services.investigador_service._obtener_investigador_activo",
+            "modules.personal.services.investigador_service._obtener_investigador_activo",
             return_value=investigador
         ), patch(
-            "core.services.investigador_service._validar_grupo_utn",
+            "modules.personal.services.investigador_service._validar_grupo_utn",
             return_value=8
         ), patch(
-            "core.services.investigador_service.AuditoriaService.registrar_cambios"
+            "modules.personal.services.investigador_service.AuditoriaService.registrar_cambios"
         ) as mock_registrar:
             actualizar_investigador(
                 4,

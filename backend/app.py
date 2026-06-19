@@ -1,20 +1,31 @@
-from flask import Flask, jsonify
+from flask import Flask
 from extension import db, migrate, limiter
 from flask_cors import CORS
-from config import DevelopmentConfig
-import logging
-from core.routes import blueprints
-from core.models.audit_mixin import AuditMixin
+from config import get_config_class
+from modules import blueprints
+from modules import models_registry  # noqa: F401
 from werkzeug.middleware.proxy_fix import ProxyFix
+from modules.shared.controllers.pagination import register_legacy_list_pagination
+from modules.shared.controllers.responses import error_response
+from modules.shared.routes.versioning import (
+    register_api_version_header,
+    register_blueprints,
+)
+from modules.shared.services.logging_config import (
+    configure_logging,
+    get_logger,
+    register_request_logging,
+)
 
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object(DevelopmentConfig)
+    app.config.from_object(get_config_class())
+    configure_logging(app.config["APP_ENV"], app.config["LOG_LEVEL"])
+    register_request_logging(app)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     CORS(
@@ -32,14 +43,34 @@ def create_app():
     limiter.init_app(app)
 
 
-    for bp in blueprints:
-        app.register_blueprint(bp)
+    register_blueprints(app, blueprints)
+    register_api_version_header(app)
 
     @app.errorhandler(429)
     def ratelimit_handler(_error):
-        return jsonify({
-            "error": "Demasiadas solicitudes. Intenta nuevamente en unos minutos."
-        }), 429
+        return error_response(
+            "RATE_LIMIT_EXCEEDED",
+            message="Lo sentimos, recibimos demasiadas solicitudes. Intente nuevamente en unos minutos.",
+            status_code=429,
+        )
+
+    @app.after_request
+    def add_security_headers(response):
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault(
+            "Permissions-Policy",
+            "geolocation=(), microphone=(), camera=()"
+        )
+        if not app.config["DEBUG"]:
+            response.headers.setdefault(
+                "Strict-Transport-Security",
+                "max-age=31536000; includeSubDomains"
+            )
+        return response
+
+    register_legacy_list_pagination(app)
 
     logger.info("Aplicación inicializada. Usa 'flask db upgrade' para crear/migrar tablas.")
 
@@ -49,4 +80,4 @@ def create_app():
 app = create_app()
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=app.config["DEBUG"])

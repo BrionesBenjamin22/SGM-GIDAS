@@ -2,7 +2,7 @@ import unittest
 from datetime import date, datetime
 from types import SimpleNamespace
 
-from core.services.memoria_periodo_service import (
+from modules.memorias.services.memoria_periodo_service import (
     estuvo_activo_en_periodo_memoria,
 )
 

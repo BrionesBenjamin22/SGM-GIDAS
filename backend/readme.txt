@@ -28,13 +28,13 @@ Estructura principal
   Configuracion de entorno, base de datos, CORS y JWT.
 - extension.py
   Inicializacion compartida de SQLAlchemy y Migrate.
-- core/models
+- modules/*/models
   Entidades del dominio, tablas auxiliares de auditoria y tablas snapshot de memoria.
-- core/services
+- modules/*/services
   Logica de negocio, validaciones, historiales, snapshots y exportacion.
-- core/controllers
+- modules/*/controllers
   Adaptacion HTTP entre rutas y servicios.
-- core/routes
+- modules/*/routes
   Blueprints y definicion de endpoints.
 - migrations
   Historial de migraciones Alembic.
@@ -127,15 +127,56 @@ Regla operativa:
 - el Excel debe consumir la ultima version cerrada y no las tablas vivas
 
 Variables de entorno
-La aplicacion carga variables desde el archivo definido en ENV_FILE. Si no se informa, usa .env.local.
+La aplicacion carga variables desde el archivo definido en ENV_FILE. Si no se informa, usa .env.
+La clase de configuracion se selecciona con APP_ENV.
+
+Valores de APP_ENV soportados:
+- local
+- development
+- docker
+- testing
+- production
+- prod
+
+Archivos de referencia versionables:
+- .env.example
+- .env.testing.example
+- .env.production.example
+
+Archivos reales esperados:
+- .env para desarrollo local y compose de desarrollo
+- .env.docker como compatibilidad o configuracion alternativa explicita
+- .env.testing para testing
+- .env.production para produccion
+
+El archivo .env.docker del backend ya no es el default. El compose de desarrollo toma backend/.env cuando no se informa otro archivo con BACKEND_ENV_FILE. No se usa un .env.docker en la raiz del proyecto.
 
 Variables importantes:
+- APP_ENV
 - SECRET_KEY
 - JWT_SECRET
 - REFRESH_SECRET
+- JWT_ISSUER
+- JWT_AUDIENCE
 - DATABASE_URL
 - FRONTEND_URL
+- FRONTEND_URLS
 - JWT_EXPIRATION_MINUTES
+- RATELIMIT_STORAGE_URI
+- RATELIMIT_DEFAULT
+- AUTH_LOGIN_LIMIT
+- AUTH_REFRESH_LIMIT
+- AUTH_REGISTER_LIMIT
+- AUTH_CHANGE_PASSWORD_LIMIT
+- POSTGRES_DB
+- POSTGRES_USER
+- POSTGRES_PASSWORD
+
+JWT_EXPIRATION_MINUTES controla la duracion real del access token. Debe ser un numero entero entre 5 y 1440 minutos. Si no se define, el backend usa 60 minutos.
+
+JWT_ISSUER identifica al emisor esperado de tokens y por defecto usa auth-service. JWT_AUDIENCE es opcional: cuando se define, el backend la incluye en los access tokens y rechaza tokens destinados a otra audiencia.
+
+RATELIMIT_STORAGE_URI define el almacenamiento usado por Flask-Limiter. En local y testing puede ser memory://, pero en produccion debe apuntar a un almacenamiento compartido como Redis. La aplicacion falla al iniciar en produccion si RATELIMIT_STORAGE_URI queda en memory://. Los endpoints de autenticacion tienen limites dedicados mediante AUTH_LOGIN_LIMIT, AUTH_REFRESH_LIMIT, AUTH_REGISTER_LIMIT y AUTH_CHANGE_PASSWORD_LIMIT.
 
 Valor por defecto de base de datos:
 postgresql://postgres:postgres@localhost:5432/gidas_db
@@ -145,7 +186,7 @@ Ejecucion local
    python -m venv venv
 2. Instalar dependencias:
    pip install -r requirements.txt
-3. Configurar variables de entorno en .env.local.
+3. Configurar variables de entorno en .env.
 4. Aplicar migraciones:
    flask db upgrade
 5. Ejecutar la aplicacion:
@@ -177,8 +218,74 @@ Estos tests validan principalmente:
 - contrato HTTP basico entre rutas, controller y service
 
 Ejemplos de ejecucion:
-- python -m unittest discover -s tests -v
-- python -m unittest tests.test_memoria_service tests.test_memoria_routes -v
+- venv\Scripts\python -m unittest discover -s tests -v
+- venv\Scripts\python -m unittest tests.test_memoria_service tests.test_memoria_routes -v
+
+Datos ficticios de testing
+Para operar el frontend contra una base de testing con datos minimos, levantar el entorno de testing y ejecutar:
+- docker compose --env-file .env.testing -f docker-compose.yml -f docker-compose.dev.yml exec backend python tools/seed_testing_data.py
+
+El script crea usuarios de prueba, catalogos basicos, grupo, personas, proyecto y una memoria abierta.
+Credenciales generadas:
+- admin.testing / Testing123!
+- gestor.testing / Testing123!
+- lector.testing / Testing123!
+
+El script esta protegido para no ejecutarse accidentalmente sobre produccion: requiere APP_ENV=testing o ALLOW_TEST_SEED=true.
+
+Para consultar la base con psql desde Docker:
+- docker compose --env-file .env.testing -f docker-compose.yml -f docker-compose.dev.yml exec db psql -U postgres -d gidas_testing_db
+
+Si se ejecutan los tests con el Python global, pueden faltar dependencias locales como Flask-Limiter aunque esten declaradas en requirements.txt. Para validar el backend debe usarse el entorno virtual del modulo o instalar previamente requirements.txt en el interprete activo.
+
+Docker y produccion
+El backend se construye con Dockerfile multi-stage:
+- builder: compila wheels de dependencias.
+- runtime: instala dependencias desde wheels, copia la aplicacion y ejecuta con usuario no root.
+- development: conserva herramientas minimas para desarrollo local.
+- production: imagen final para despliegue.
+
+En produccion el entrypoint aplica migraciones, ejecuta el seed inicial de roles e inicia la API con Gunicorn. El servidor de desarrollo de Flask queda reservado para ambientes no productivos.
+
+Historial de directivos por grupo
+
+- Endpoint: GET /api/v1/grupo/directivos/grupo/<grupo_id>
+- Permisos: ADMIN, GESTOR y LECTURA.
+- Devuelve todos los periodos directivos activos en trazabilidad, incluidos los finalizados.
+- Orden: fecha_inicio descendente e id descendente.
+- Campos: id, id_directivo, nombre_apellido, cargo, fecha_inicio y fecha_fin.
+- Las relaciones directivo y cargo se precargan para evitar consultas N+1.
+
+Seed inicial
+
+El entrypoint ejecuta `python seed_roles.py` despues de aplicar migraciones.
+El script es idempotente y garantiza los roles base junto con los cargos
+`Director` y `Vicedirector`. Si uno de esos cargos existe con soft delete, el
+seed lo restaura.
+
+Variables obligatorias en produccion:
+- APP_ENV=production
+- SECRET_KEY
+- JWT_SECRET
+- REFRESH_SECRET
+- JWT_ISSUER
+- JWT_AUDIENCE
+- DATABASE_URL
+- FRONTEND_URL
+- FRONTEND_URLS
+- RATELIMIT_STORAGE_URI
+
+Las claves SECRET_KEY, JWT_SECRET y REFRESH_SECRET deben tener al menos 32 caracteres y no pueden usar placeholders. La aplicacion falla al iniciar si detecta una configuracion insegura para produccion, CORS con comodin o ausencia de DATABASE_URL.
+
+Controles de seguridad de API:
+- CORS restringido por FRONTEND_URLS en produccion.
+- rate limit global y limites especificos para autenticacion.
+- almacenamiento de rate limit en Redis interno para evitar contadores aislados por worker.
+- headers defensivos: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy y HSTS cuando DEBUG esta desactivado.
+- cookies de sesion con HttpOnly, SameSite y Secure en produccion.
+- ejecucion en contenedor no root, filesystem read-only desde Compose y capacidades Linux reducidas.
+
+No se deben versionar archivos .env reales. Los archivos .env.example y .env.production.example son plantillas y sus valores deben reemplazarse antes de desplegar.
 
 Alcance actual de los tests
 Los tests estan orientados a logica de backend y contratos del sistema. No reemplazan:

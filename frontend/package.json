@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:testing": "vite --mode testing",
     "build": "vite build",
+    "build:testing": "vite build --mode testing",
+    "build:production": "vite build --mode production",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },

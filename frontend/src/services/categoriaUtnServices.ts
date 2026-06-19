@@ -1,10 +1,2 @@
-import { http } from "@/lib/http";
-
-export interface CategoriaUtn {
-  id: number;
-  nombre: string;
-}
-
-export function getCategoriasUtn() {
-  return http<CategoriaUtn[]>("/categoria-utn/");
-}
+﻿// Compatibility wrapper for the modular frontend layout.
+export * from "@/modules/catalogos/services/categoriaUtnServices";

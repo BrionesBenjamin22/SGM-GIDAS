@@ -1,10 +1,2 @@
-import { useQuery } from "@tanstack/react-query";
-import { getTiposFormacion } from "@/services/tiposFormacionServices";
-
-export function useTiposFormacion() {
-  return useQuery({
-    queryKey: ["tipos-formacion"],
-    queryFn: getTiposFormacion,
-    staleTime: Infinity,
-  });
-}
+﻿// Compatibility wrapper for the modular frontend layout.
+export * from "@/modules/personal/hooks/useTiposFormacion";

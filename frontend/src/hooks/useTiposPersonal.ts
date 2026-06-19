@@ -1,10 +1,2 @@
-import { useQuery } from "@tanstack/react-query";
-import { getTiposPersonal } from "@/services/tiposServices";
-
-export function useTiposPersonal() {
-  return useQuery({
-    queryKey: ["tipo-personal"],
-    queryFn: getTiposPersonal,
-    staleTime: Infinity,
-  });
-}
+﻿// Compatibility wrapper for the modular frontend layout.
+export * from "@/modules/personal/hooks/useTiposPersonal";

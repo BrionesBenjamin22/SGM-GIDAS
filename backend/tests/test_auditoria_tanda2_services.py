@@ -3,14 +3,14 @@ from datetime import date
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from core.models.actividad_docencia import ActividadDocencia
-from core.models.documentacion_autores import DocumentacionBibliografica
-from core.models.participacion_relevante import ParticipacionRelevante
-from core.models.proyecto_investigacion import ProyectoInvestigacion
-from core.services.actividad_docencia_service import ActividadDocenciaService
-from core.services.documentacion_service import DocumentacionBibliograficaService
-from core.services.participacion_relevante_service import ParticipacionRelevanteService
-from core.services.proyecto_investigacion_service import ProyectoInvestigacionService
+from modules.produccion.models.actividad_docencia import ActividadDocencia
+from modules.produccion.models.documentacion_autores import DocumentacionBibliografica
+from modules.proyectos.models.participacion_relevante import ParticipacionRelevante
+from modules.proyectos.models.proyecto_investigacion import ProyectoInvestigacion
+from modules.produccion.services.actividad_docencia_service import ActividadDocenciaService
+from modules.produccion.services.documentacion_service import DocumentacionBibliograficaService
+from modules.proyectos.services.participacion_relevante_service import ParticipacionRelevanteService
+from modules.proyectos.services.proyecto_investigacion_service import ProyectoInvestigacionService
 
 
 class AuditoriaTanda2ServicesTestCase(unittest.TestCase):
@@ -52,19 +52,19 @@ class AuditoriaTanda2ServicesTestCase(unittest.TestCase):
         )
 
         with patch(
-            "core.services.proyecto_investigacion_service.ProyectoInvestigacion",
+            "modules.proyectos.services.proyecto_investigacion_service.ProyectoInvestigacion",
             new=SimpleNamespace(query=fake_query)
         ), patch(
-            "core.services.proyecto_investigacion_service.TipoProyecto",
+            "modules.proyectos.services.proyecto_investigacion_service.TipoProyecto",
             new=SimpleNamespace(query=SimpleNamespace(get=lambda _: object()))
         ), patch(
-            "core.services.proyecto_investigacion_service.GrupoInvestigacionUtn",
+            "modules.proyectos.services.proyecto_investigacion_service.GrupoInvestigacionUtn",
             new=SimpleNamespace(query=SimpleNamespace(get=lambda _: object()))
         ), patch(
-            "core.services.proyecto_investigacion_service.FuenteFinanciamiento",
+            "modules.proyectos.services.proyecto_investigacion_service.FuenteFinanciamiento",
             new=SimpleNamespace(query=SimpleNamespace(get=lambda _: object()))
         ), patch(
-            "core.services.proyecto_investigacion_service.AuditoriaService.registrar_cambios"
+            "modules.proyectos.services.proyecto_investigacion_service.AuditoriaService.registrar_cambios"
         ) as mock_registrar:
             resultado = ProyectoInvestigacionService.update(
                 1,
@@ -100,21 +100,21 @@ class AuditoriaTanda2ServicesTestCase(unittest.TestCase):
         historial = SimpleNamespace(grado_academico_id=2, fecha_inicio=date(2024, 3, 1))
 
         with patch(
-            "core.services.actividad_docencia_service.ActividadDocenciaService._obtener_actividad",
+            "modules.produccion.services.actividad_docencia_service.ActividadDocenciaService._obtener_actividad",
             return_value=actividad
         ), patch(
-            "core.services.actividad_docencia_service.ActividadDocenciaService._validar_rol",
+            "modules.produccion.services.actividad_docencia_service.ActividadDocenciaService._validar_rol",
             return_value=SimpleNamespace(id=3)
         ), patch(
-            "core.services.actividad_docencia_service.ActividadDocenciaService._validar_grado",
+            "modules.produccion.services.actividad_docencia_service.ActividadDocenciaService._validar_grado",
             return_value=SimpleNamespace(id=4)
         ), patch(
-            "core.services.actividad_docencia_service.ActividadDocenciaService._obtener_historial_activo_unico",
+            "modules.produccion.services.actividad_docencia_service.ActividadDocenciaService._obtener_historial_activo_unico",
             return_value=historial
         ), patch(
-            "core.services.actividad_docencia_service.ActividadDocenciaService._validar_no_duplicado"
+            "modules.produccion.services.actividad_docencia_service.ActividadDocenciaService._validar_no_duplicado"
         ), patch(
-            "core.services.actividad_docencia_service.AuditoriaService.registrar_cambios"
+            "modules.produccion.services.actividad_docencia_service.AuditoriaService.registrar_cambios"
         ) as mock_registrar:
             resultado = ActividadDocenciaService.update(
                 2,
@@ -146,15 +146,15 @@ class AuditoriaTanda2ServicesTestCase(unittest.TestCase):
         part.updated_by = None
 
         with patch(
-            "core.services.participacion_relevante_service.ParticipacionRelevanteService._get_activa_or_404",
+            "modules.proyectos.services.participacion_relevante_service.ParticipacionRelevanteService._get_activa_or_404",
             return_value=part
         ), patch(
-            "core.services.participacion_relevante_service.ParticipacionRelevanteService._validar_no_duplicado"
+            "modules.proyectos.services.participacion_relevante_service.ParticipacionRelevanteService._validar_no_duplicado"
         ), patch(
-            "core.services.participacion_relevante_service.ParticipacionRelevanteService._validar_investigador",
+            "modules.proyectos.services.participacion_relevante_service.ParticipacionRelevanteService._validar_investigador",
             return_value=11
         ), patch(
-            "core.services.participacion_relevante_service.AuditoriaService.registrar_cambios"
+            "modules.proyectos.services.participacion_relevante_service.AuditoriaService.registrar_cambios"
         ) as mock_registrar:
             resultado = ParticipacionRelevanteService.update(
                 3,
@@ -185,10 +185,10 @@ class AuditoriaTanda2ServicesTestCase(unittest.TestCase):
         doc.updated_by = None
 
         with patch(
-            "core.services.documentacion_service.DocumentacionBibliograficaService._get_activo_or_404",
+            "modules.produccion.services.documentacion_service.DocumentacionBibliograficaService._get_activo_or_404",
             return_value=doc
         ), patch(
-            "core.services.documentacion_service.AuditoriaService.registrar_cambios"
+            "modules.produccion.services.documentacion_service.AuditoriaService.registrar_cambios"
         ) as mock_registrar:
             resultado = DocumentacionBibliograficaService.update(
                 4,

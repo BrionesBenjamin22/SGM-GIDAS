@@ -27,12 +27,12 @@ export function getMemoriaSectionFilter(
   return filter;
 }
 
-export function applyMemoriaSectionFilter<T extends { id: number | string }>(
+export function applyMemoriaSectionFilter<T extends { id?: number | string }>(
   list: T[],
   filter: MemoriaSectionFilter | null
 ): T[] {
   if (!filter) return list;
 
   const allowedIds = new Set(filter.ids.map((id) => String(id)));
-  return list.filter((item) => allowedIds.has(String(item.id)));
+  return list.filter((item) => item.id !== undefined && allowedIds.has(String(item.id)));
 }

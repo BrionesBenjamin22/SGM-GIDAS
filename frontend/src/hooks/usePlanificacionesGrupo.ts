@@ -1,17 +1,2 @@
-import { useQuery } from "@tanstack/react-query";
-import { getPlanificaciones } from "@/services/planificacionGrupoServices";
-
-export function usePlanificaciones(
-  activos: "true" | "false" | "all" = "true"
-) {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["planificaciones", activos],
-    queryFn: () => getPlanificaciones(activos),
-  });
-
-  return {
-    list: data ?? [],
-    isLoading,
-    isError,
-  };
-}
+﻿// Compatibility wrapper for the modular frontend layout.
+export * from "@/modules/grupo/hooks/usePlanificacionesGrupo";

@@ -4,6 +4,19 @@
 
 Establecer reglas de trabajo consistentes para acelerar el desarrollo y reducir retrabajo entre frontend y backend.
 
+## Tareas del agente
+
+- Las tareas del agente viven en `tasks/` organizadas por estado:
+  - `tasks/in-progress/`
+  - `tasks/pendient/`
+  - `tasks/finished/`
+- `docs/agents-tasks/` queda reemplazada por `tasks/`.
+- Al iniciar una sesion de trabajo, revisar primero `tasks/in-progress/` y luego `tasks/pendient/` antes de modificar codigo.
+- No modificar codigo antes de leer la tarea activa y comprender su estado actual.
+- Al pausar una tarea, dejarla en `tasks/in-progress/` y registrar archivos modificados, estado exacto, validaciones hechas y proximo paso.
+- Al finalizar una tarea, moverla a `tasks/finished/`, completar metadata de cierre y proponer mensaje de commit sin ejecutarlo.
+- Al finalizar una tarea, preguntar si existen tareas faltantes para agregar a `tasks/pendient/`.
+
 ## Convenciones de navegacion
 
 - En edicion: volver siempre al detalle con `successMessage`.

@@ -1,10 +1,2 @@
-import { useQuery } from "@tanstack/react-query";
-import { getProgramasIncentivos } from "@/services/programaIncentivosServices";
-
-export function useProgramasIncentivos() {
-  return useQuery({
-    queryKey: ["programas-incentivos"],
-    queryFn: getProgramasIncentivos,
-    staleTime: Infinity,
-  });
-}
+﻿// Compatibility wrapper for the modular frontend layout.
+export * from "@/modules/grupo/hooks/useProgramasIncentivos";
