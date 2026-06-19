@@ -105,5 +105,8 @@ Controles aplicados en produccion:
 Para desarrollo con Docker usar el compose de desarrollo desde la raiz del proyecto:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 ```
+
+El archivo `docker-compose.dev.yml` es un override: debe ejecutarse junto con
+`docker-compose.yml` para que todos los servicios compartan la misma red.

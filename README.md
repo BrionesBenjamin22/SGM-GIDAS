@@ -440,8 +440,12 @@ frontend. No deben contener secretos.
 Desarrollo local con Compose:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 ```
+
+`docker-compose.dev.yml` es un override y no debe ejecutarse solo. Si se omite
+`docker-compose.yml`, Redis no se crea y los servicios pueden quedar en redes
+distintas, provocando respuestas `502 Bad Gateway` desde Nginx.
 
 Produccion o entorno integrado:
 
