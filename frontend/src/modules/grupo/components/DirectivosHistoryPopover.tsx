@@ -44,7 +44,7 @@ export default function DirectivosHistoryPopover({ grupoId }: Props) {
           aria-label="Ver historial del equipo directivo"
         >
           <History className="h-4 w-4" aria-hidden="true" />
-          Historial directivo
+          Historial Directivos
         </button>
       </Popover.Trigger>
 
