@@ -1,9 +1,10 @@
-# Sistema GIDAS
+# Sistema de Gestion de Memorias Academicas
 
-Sistema web para la gestion integral de una Unidad Cientifico Tecnologica
-(UCT) o grupo de investigacion. Centraliza informacion institucional,
-academica, administrativa y de produccion cientifica, con foco en trazabilidad,
-auditoria y armado de memorias institucionales por periodo.
+Sistema web para registrar, consolidar, versionar y exportar memorias
+academicas de unidades cientifico-tecnologicas y grupos de investigacion.
+Centraliza la informacion institucional, academica, administrativa y de
+produccion cientifica que respalda cada memoria, con trazabilidad y auditoria
+de los cambios realizados durante su ciclo de vida.
 
 El sistema esta orientado a uso institucional controlado. No contiene datos
 productivos, credenciales ni secretos versionados; la configuracion sensible
@@ -13,8 +14,9 @@ debe mantenerse siempre en archivos `.env` locales o de despliegue.
 
 ## Objetivo
 
-GIDAS permite registrar, consultar, auditar y consolidar informacion del grupo
-para construir memorias institucionales cerradas y exportables.
+La plataforma permite registrar, consultar, auditar y consolidar informacion
+academica para construir memorias por periodo, mantener versiones historicas y
+generar entregables exportables.
 
 El dominio distingue tres niveles de informacion:
 
@@ -22,8 +24,9 @@ El dominio distingue tres niveles de informacion:
 - historial auditable de cambios
 - snapshots historicos asociados a memorias cerradas
 
-Una memoria cerrada debe operar sobre snapshots historicos, no sobre el estado
-vivo de las tablas principales.
+Una memoria cerrada opera sobre snapshots historicos y no sobre el estado vivo
+de las tablas principales. De esta manera, los cambios posteriores no alteran
+la informacion ya consolidada y presentada.
 
 ---
 
@@ -32,12 +35,14 @@ vivo de las tablas principales.
 - Autenticacion con roles `ADMIN`, `GESTOR` y `LECTURA`.
 - Sesiones con access tokens de vida corta y refresh tokens rotativos.
 - Gestion de usuarios, perfil y cambio de contrasena.
-- Gestion institucional de UCT, directivos, cargos, programas, planificaciones
-  y visitas academicas.
-- Gestion de personal, investigadores, becarios y personal asociado.
-- Gestion de proyectos de investigacion y participaciones relevantes.
-- Gestion de recursos: becas, equipamiento, erogaciones y tipos asociados.
-- Gestion de produccion academica y cientifica:
+- Gestion de memorias academicas por periodo, version y estado.
+- Generacion de snapshots historicos y exportacion a Excel.
+- Registro institucional de UCT, directivos, cargos, programas,
+  planificaciones y visitas academicas como fuentes de cada memoria.
+- Registro de personal, investigadores, becarios y personal asociado.
+- Registro de proyectos de investigacion y participaciones relevantes.
+- Registro de recursos: becas, equipamiento, erogaciones y tipos asociados.
+- Registro de produccion academica y cientifica:
   - actividades de docencia
   - documentacion bibliografica
   - trabajos en reuniones cientificas
@@ -49,7 +54,6 @@ vivo de las tablas principales.
 - Catalogos transversales.
 - Busqueda global.
 - Historial de cambios por entidad cuando el modulo lo expone.
-- Memorias con versiones, estados, snapshots y exportacion Excel.
 
 ---
 
@@ -120,7 +124,7 @@ Infraestructura:
 ## Estructura del repositorio
 
 ```text
-Sistema Gidas/
+sistema-memorias-academicas/
 |-- backend/
 |   |-- modules/
 |   |-- migrations/
@@ -129,10 +133,9 @@ Sistema Gidas/
 |-- frontend/
 |   |-- src/
 |   |   |-- modules/
-|   |   |-- pages/
-|   |   |-- services/
-|   |   |-- hooks/
 |   |   |-- components/
+|   |   |-- context/
+|   |   |-- lib/
 |   |   `-- layouts/
 |-- docs/
 |-- nginx/
@@ -147,8 +150,9 @@ Carpetas clave:
 - `backend/modules`: modulos backend por dominio, con modelos, rutas,
   controladores y servicios.
 - `frontend/src/modules`: implementacion modular frontend por dominio.
-- `frontend/src/pages`, `frontend/src/services` y `frontend/src/hooks`:
-  fachadas de compatibilidad para imports y rutas existentes.
+- `frontend/src/components`: componentes reutilizables entre modulos.
+- `frontend/src/context`, `frontend/src/lib` y `frontend/src/layouts`:
+  infraestructura transversal de la aplicacion.
 - `docs`: documentacion tecnica complementaria.
 - `tasks`: seguimiento operativo de tareas del agente.
 - `nginx`: configuracion del proxy reverso.
@@ -342,9 +346,11 @@ No deben versionarse:
 
 ---
 
-## Memorias institucionales
+## Memorias academicas
 
-El modulo de memorias es el nucleo funcional del sistema.
+El modulo de memorias es el nucleo funcional del sistema. Los demas modulos
+registran y organizan la informacion que luego se incorpora a cada memoria
+academica.
 
 Conceptos:
 
@@ -565,10 +571,11 @@ Documentos disponibles:
 
 ## Estado actual
 
-El sistema esta funcional como aplicacion institucional de laboratorio o grupo
-de investigacion. La arquitectura ya contempla modularidad, API versionada,
-auditoria, historial, roles, autenticacion con refresh token rotativo,
-compatibilidad Docker, healthchecks y separacion frontend/backend.
+El sistema esta funcional como plataforma de gestion de memorias academicas
+para laboratorios, unidades cientifico-tecnologicas y grupos de investigacion.
+La arquitectura contempla modularidad, API versionada, auditoria, historial,
+roles, autenticacion con refresh token rotativo, compatibilidad Docker,
+healthchecks y separacion frontend/backend.
 
 Estado observado en el repositorio:
 
