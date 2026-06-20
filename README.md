@@ -597,7 +597,6 @@ Puntos a seguir monitoreando:
 
 ## Licencia y uso
 
-Proyecto desarrollado con fines academicos e institucionales.
+Página desarrollada por Briones Benjamín, Falco Valentina y Quiroz Zoe. Como proyecto de Seminario Integrador para la facultad UTN-FRLP.
 
-El uso, despliegue y carga de datos reales deben realizarse conforme a las
-politicas internas de la organizacion responsable.
+El uso, despliegue y carga de datos reales deben realizarse conforme a las politicas internas de la organizacion responsable.
