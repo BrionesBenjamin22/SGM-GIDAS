@@ -1,0 +1,33 @@
+from flask import Blueprint, current_app
+from modules.search.controllers.search_controller import SearchController
+from modules.shared.services.middleware import requiere_rol
+from extension import limiter
+
+search_bp = Blueprint(
+    "search",
+    __name__
+)
+
+
+@search_bp.route("/search/", methods=["GET"], strict_slashes=False)
+@limiter.limit(lambda: current_app.config["SEARCH_LIMIT"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def buscar():
+    """
+    Endpoint principal de búsqueda global
+
+    GET /search?q=<texto>&orden=<orden>
+
+    Parámetros:
+        - q (requerido): texto a buscar
+        - orden (opcional):
+            alf_asc
+            alf_desc
+            fecha_asc
+            fecha_desc
+
+    Ejemplos:
+        GET /search?q=Perez
+        GET /search?q=UTN&orden=fecha_desc
+    """
+    return SearchController.buscar()

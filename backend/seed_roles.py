@@ -1,6 +1,8 @@
 from app import app
 from extension import db
-from core.models.usuario import RolUsuario
+from modules.auth.models.usuario import RolUsuario
+from modules.grupo.models.directivos import Cargo
+from sqlalchemy import func
 
 
 def seed_roles():
@@ -11,10 +13,36 @@ def seed_roles():
         if not existe:
             db.session.add(RolUsuario(nombre=nombre))
 
-    db.session.commit()
-    print("Roles iniciales verificados/cargados correctamente")
+
+
+def seed_cargos_directivos():
+    cargos = ["Director", "Vicedirector"]
+
+    for nombre in cargos:
+        existente = Cargo.query.filter(
+            func.lower(Cargo.nombre) == nombre.lower()
+        ).first()
+
+        if existente:
+            if existente.deleted_at is not None:
+                existente.restore()
+            continue
+
+        db.session.add(Cargo(nombre=nombre))
+
+
+def seed_initial_data():
+    try:
+        seed_roles()
+        seed_cargos_directivos()
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+    print("Roles y cargos iniciales verificados/cargados correctamente")
 
 
 if __name__ == "__main__":
     with app.app_context():
-        seed_roles()
+        seed_initial_data()

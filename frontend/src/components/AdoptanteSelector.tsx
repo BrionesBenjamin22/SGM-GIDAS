@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import Button from "@/components/Button";
-import { useAdoptantes, useCreateAdoptante } from "@/hooks/useAdoptantes";
-import type { Adoptante, AdoptantePayload } from "@/services/adoptantesServices";
+import SuccessToast from "@/components/SuccessToast";
+import { useAdoptantes, useCreateAdoptante } from "@/modules/transferencia/hooks/useAdoptantes";
+import type { Adoptante, AdoptantePayload } from "@/modules/transferencia/services/adoptantesServices";
 
 type Props = {
     selected: Adoptante[];
@@ -19,6 +20,8 @@ export default function AdoptanteSelector({ selected, onChange }: Props) {
     const [search, setSearch] = useState("");
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [showForm, setShowForm] = useState(false);
+    const [showError, setShowError] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
 
     // Adoptantes no seleccionados aún, filtrados por búsqueda
     const options = useMemo(() => {
@@ -55,7 +58,8 @@ export default function AdoptanteSelector({ selected, onChange }: Props) {
             setShowForm(false);
         } catch (err: any) {
             const msg = err?.body?.error ?? err?.message ?? "Error al crear el adoptante";
-            alert(msg);
+            setErrorMessage(msg);
+            setShowError(true);
         }
     };
 
@@ -176,6 +180,13 @@ export default function AdoptanteSelector({ selected, onChange }: Props) {
                     </div>
                 </div>
             )}
+
+            <SuccessToast
+                open={showError}
+                message={errorMessage}
+                onClose={() => setShowError(false)}
+                variant="error"
+            />
         </div>
     );
 }

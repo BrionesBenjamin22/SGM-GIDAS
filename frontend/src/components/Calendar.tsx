@@ -9,6 +9,7 @@ type DatePickerProps = {
   placeholder?: string;
   className?: string; // para pasar "input" o estilos propios
   helperText?: string; // ej: "DD/MM/YYYY"
+  disabled?: boolean;
 };
 
 const MONTHS_ES = [
@@ -23,6 +24,39 @@ function fmt(date: Date | null) {
   const m = (date.getMonth() + 1).toString().padStart(2, "0");
   const y = date.getFullYear();
   return `${d}/${m}/${y}`;
+}
+
+function stripTime(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function maskDateInput(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  const day = digits.slice(0, 2);
+  const month = digits.slice(2, 4);
+  const year = digits.slice(4, 8);
+
+  if (digits.length <= 2) return day;
+  if (digits.length <= 4) return `${day}/${month}`;
+  return `${day}/${month}/${year}`;
+}
+
+function parseDateInput(value: string) {
+  const trimmed = value.trim();
+  const slashMatch = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  const day = slashMatch ? Number(slashMatch[1]) : NaN;
+  const month = slashMatch ? Number(slashMatch[2]) : NaN;
+  const year = slashMatch ? Number(slashMatch[3]) : NaN;
+
+  if (!day || !month || !year) return null;
+
+  const parsed = new Date(year, month - 1, day);
+  const isValid =
+    parsed.getFullYear() === year &&
+    parsed.getMonth() === month - 1 &&
+    parsed.getDate() === day;
+
+  return isValid ? parsed : null;
 }
 
 function daysInMonth(year: number, monthIdx: number) {
@@ -47,10 +81,12 @@ export default function DatePicker({
   placeholder = "DD/MM/AAAA",
   className = "input",
   helperText = "DD/MM/AAAA",
+  disabled = false,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<Date>(() => value ?? new Date());
   const [temp, setTemp] = useState<Date | null>(value ?? null);
+  const [inputValue, setInputValue] = useState(() => fmt(value));
   const rootRef = useRef<HTMLDivElement>(null);
 
   // cerrar al click fuera
@@ -65,6 +101,7 @@ export default function DatePicker({
 
   useEffect(() => {
     setTemp(value ?? null);
+    setInputValue(fmt(value));
     if (value) setView(value);
   }, [value]);
 
@@ -87,31 +124,81 @@ export default function DatePicker({
     return cells;
   }, [view]);
 
-  const disabled = (d: Date) =>
+  const isDateDisabled = (d: Date) =>
     (minDate && d < stripTime(minDate)) || (maxDate && d > stripTime(maxDate));
 
-  function stripTime(d: Date) {
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  function commitTypedValue(nextValue: string) {
+    const maskedValue = maskDateInput(nextValue);
+    setInputValue(maskedValue);
+
+    if (!maskedValue) {
+      setTemp(null);
+      onChange(null);
+      return;
+    }
+
+    if (maskedValue.length < 10) return;
+
+    const parsed = parseDateInput(maskedValue);
+    if (!parsed || isDateDisabled(parsed)) return;
+
+    const normalized = stripTime(parsed);
+    setTemp(normalized);
+    setView(normalized);
+    onChange(normalized);
   }
 
   return (
     <div ref={rootRef} className="relative w-full">
       {label && <label className="block text-sm font-medium mb-2">{label}</label>}
 
-      {/* Input visual (readonly) */}
       <div className="relative">
         <input
-          readOnly
+          type="text"
           className={className}
-          value={fmt(value)}
+          value={inputValue}
           placeholder={placeholder}
-          onClick={() => setOpen((o) => !o)}
+          autoComplete="off"
+          inputMode="numeric"
+          maxLength={10}
+          onChange={(event) => commitTypedValue(event.target.value)}
+          onBlur={(event) => {
+            const parsed = parseDateInput(event.currentTarget.value);
+            if (parsed && !isDateDisabled(parsed)) {
+              const normalized = stripTime(parsed);
+              setInputValue(fmt(normalized));
+              setTemp(normalized);
+              setView(normalized);
+              onChange(normalized);
+              return;
+            }
+
+            setInputValue(fmt(value));
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
+              if (!disabled) setOpen(true);
+            }
+
+            if (event.key === "Enter") {
+              event.currentTarget.blur();
+              setOpen(false);
+            }
+
+            if (event.key === "Escape") {
+              setInputValue(fmt(value));
+              setOpen(false);
+            }
+          }}
+          disabled={disabled}
         />
         <button
           type="button"
           aria-label="Abrir calendario"
-          className="absolute top-1/2 -translate-y-1/2 right-2 rounded p-2 hover:bg-slate-100"
-          onClick={() => setOpen((o) => !o)}
+          className="absolute top-1/2 -translate-y-1/2 right-2 rounded p-2 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={() => !disabled && setOpen((o) => !o)}
+          disabled={disabled}
         >
           {/* ícono calendario */}
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -157,7 +244,7 @@ export default function DatePicker({
             {grid.map((d, i) => {
               if (!d) return <div key={i} className="h-8" />;
               const selected = isSameDay(d, temp);
-              const invalid = disabled(d);
+              const invalid = isDateDisabled(d);
               return (
                 <button
                   key={i}
@@ -190,6 +277,7 @@ export default function DatePicker({
               className="px-3 py-1.5 text-sm rounded bg-black text-white hover:opacity-90"
               onClick={() => {
                 onChange(temp ?? null);
+                setInputValue(fmt(temp ?? null));
                 setOpen(false);
               }}
             >

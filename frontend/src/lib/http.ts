@@ -1,16 +1,88 @@
-const BASE = import.meta.env.VITE_API_URL ?? "";
+const RAW_BASE =
+  import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL ?? "";
 const AUTH_KEY = "gidas_auth_current_session";
+
+const LEGACY_PATH_PREFIXES: Array<[string, string]> = [
+  ["/actividades-docencia", "/produccion/actividades-docencia"],
+  ["/adoptantes", "/transferencia/adoptantes"],
+  ["/articulos-divulgacion", "/produccion/articulos-divulgacion"],
+  ["/autores", "/produccion/autores"],
+  ["/becas", "/recursos/becas"],
+  ["/becarios", "/personal/becarios"],
+  ["/cargos", "/grupo/cargos"],
+  ["/categoria-utn", "/catalogos/categoria-utn"],
+  ["/directivos", "/grupo/directivos"],
+  ["/distinciones", "/produccion/distinciones"],
+  ["/documentacion-bibliografica", "/produccion/documentacion-bibliografica"],
+  ["/equipamiento", "/recursos/equipamiento"],
+  ["/erogaciones", "/recursos/erogaciones"],
+  ["/fuente-financiamiento", "/catalogos/fuente-financiamiento"],
+  ["/grado-academico", "/produccion/grado-academico"],
+  ["/grupos-utn", "/grupo/grupo-utn"],
+  ["/grupo-utn", "/grupo/grupo-utn"],
+  ["/investigadores", "/personal/investigadores"],
+  ["/participaciones-relevantes", "/proyectos/participaciones-relevantes"],
+  ["/personal-all", "/personal/all"],
+  ["/planificaciones", "/grupo/planificaciones"],
+  ["/programas-incentivos", "/grupo/programas-incentivos"],
+  ["/registros-propiedad", "/produccion/registros-propiedad"],
+  ["/rol-actividad", "/produccion/rol-actividad"],
+  ["/tipo-contrato", "/transferencia/tipo-contrato"],
+  ["/tipo-dedicacion", "/personal/tipo-dedicacion"],
+  ["/tipo-erogacion", "/recursos/tipo-erogacion"],
+  ["/tipo-formacion", "/personal/tipo-formacion"],
+  ["/tipo-personal", "/personal/tipo-personal"],
+  ["/tipo-registro-propiedad", "/produccion/tipo-registro-propiedad"],
+  ["/tipos-proyecto", "/proyectos/tipos-proyecto"],
+  ["/tipos-reunion-cientifica", "/produccion/tipos-reunion-cientifica"],
+  ["/trabajos-reunion-cientifica", "/produccion/trabajos-reunion-cientifica"],
+  ["/trabajos-revistas", "/produccion/trabajos-revistas"],
+  ["/transferencias", "/transferencia/transferencias"],
+  ["/visitas-academicas", "/grupo/visitas-academicas"],
+];
+
+function normalizeBase(base: string) {
+  const trimmed = base.replace(/\/+$/, "");
+  if (!trimmed) return "";
+  if (trimmed.endsWith("/api/v1")) return trimmed;
+  if (trimmed.endsWith("/api")) return `${trimmed}/v1`;
+  return `${trimmed}/api/v1`;
+}
+
+function normalizeApiPath(path: string) {
+  if (path.startsWith("/api/v1/") || path === "/api/v1") {
+    return path.replace(/^\/api\/v1/, "");
+  }
+
+  for (const [legacyPrefix, canonicalPrefix] of LEGACY_PATH_PREFIXES) {
+    const matchesPrefix =
+      path === legacyPrefix ||
+      path.startsWith(`${legacyPrefix}/`) ||
+      path.startsWith(`${legacyPrefix}?`);
+
+    if (matchesPrefix) {
+      return `${canonicalPrefix}${path.slice(legacyPrefix.length)}`;
+    }
+  }
+
+  return path;
+}
+
+const BASE = normalizeBase(RAW_BASE);
 
 function getLocalAuth() {
   const raw = localStorage.getItem(AUTH_KEY);
   return raw ? JSON.parse(raw) : null;
 }
 
-function updateStoredToken(newAccessToken: string) {
+function updateStoredToken(newAccessToken: string, newRefreshToken?: string) {
   const raw = localStorage.getItem(AUTH_KEY);
   if (!raw) return;
   const auth = JSON.parse(raw);
   auth.token = newAccessToken;
+  if (newRefreshToken) {
+    auth.refresh_token = newRefreshToken;
+  }
   localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
 }
 
@@ -50,7 +122,7 @@ async function tryRefreshToken(): Promise<string | null> {
 
       const data = await res.json();
       if (data.access_token) {
-        updateStoredToken(data.access_token);
+        updateStoredToken(data.access_token, data.refresh_token);
         return data.access_token as string;
       }
 
@@ -100,7 +172,7 @@ export async function http<T>(
   init: RequestInit = {},
   _isRetry = false
 ): Promise<T> {
-  const url = `${BASE}${path}`;
+  const url = `${BASE}${normalizeApiPath(path)}`;
 
   const headers = buildHeaders(init);
 
@@ -143,7 +215,7 @@ export async function httpDownload(
   init: RequestInit = {},
   _isRetry = false
 ): Promise<Response> {
-  const url = `${BASE}${path}`;
+  const url = `${BASE}${normalizeApiPath(path)}`;
 
   const headers = buildHeaders({
     ...init,

@@ -9,89 +9,94 @@ import { Navigate } from "react-router-dom";
 import "./styles/index.css";
 
 import AppLayout from "@/layouts/AppLayout";
-import Home from "@/pages/Home";
-import UctForm from "@/pages/UctForm";
-import NotFound from "@/pages/NotFound";
+import Home from "@/modules/dashboard/pages/Home";
+import UctForm from "@/modules/grupo/pages/UctForm";
+import NotFound from "@/modules/shared/pages/NotFound";
 
 // auth
-import Login from "@/pages/Login";
-import Register from "@/pages/Register";
+import Login from "@/modules/auth/pages/Login";
+import Register from "@/modules/auth/pages/Register";
+import Landing from "@/modules/auth/pages/Landing";
 import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 // nuevas páginas
-import PersonalLanding from "@/pages/PersonalHome"; // título + botón Agregar + Volver
-import Personal from "@/pages/PersonalForm";               // formulario de personal
-import PersonalDetalle from "./pages/PersonalDetalle";
-import ProyectosLanding from "./pages/ProyectosHome";
-import ProyectosForm from "./pages/ProyectosForm";
-import DocenciaLanding from "./pages/DocenciaHome";
-import DocenciaForm from "./pages/DocenciaForm";
-import DocenciaDetalle from "./pages/DocenciaDetalle";
-import TrabajosReunionHome from "./pages/TrabajosReunionHome";
-import TrabajosReunionForm from "./pages/TrabajosReunionForm";
-import ErogacionesLanding from "./pages/ErogacionesHome";
-import ErogacionesForm from "./pages/ErogacionesForm";
-import ErogacionesDetalle from "./pages/ErogacionesDetalle";
-import EquipamientoLanding from "./pages/EquipamientoHome";
-import EquipamientoForm from "./pages/EquipamientoForm";
-import EquipamientoDetalle from "./pages/EquipamientoDetalle";
-import ObjetosLanding from "./pages/ObjetosFinHome";
-import SearchPage from "./pages/SearchPage";
-import DocumentacionDetalle from "./pages/DocumentacionDetalle";
-import DocumentacionForm from "./pages/DocumentacionForm";
-import DocumentacionLanding from "./pages/DocumentacionHome";
-import PersonalForm from "@/pages/PersonalForm";
-import ProyectosDetalle from "./pages/ProyectosDetalle";
-import RegistrosPropiedadHome from "./pages/RegistrosPropiedadHome";
-import RegistrosPropiedadForm from "./pages/RegistrosPropiedadForm";
-import RegistrosPropiedadDetalle from "./pages/RegistrosPropiedadDetalle";
-import PlanificacionGrupoLanding from "./pages/PlanificacionesGrupoHome";
-import PlanificacionesGrupoForm from "./pages/PlanificacionesGrupoForm";
-import PlanificacionGrupoDetalle from "./pages/PlanificacionGrupoDetalle";
-import TrabajosReunionDetalle from "./pages/TrabajosReunionDetalle";
-import TrabajosRevistasHome from "./pages/TrabajosRevistasHome";
-import TrabajosRevistasForm from "./pages/TrabajosRevistasForm";
-import TrabajosRevistasDetalle from "./pages/TrabajosRevistasDetalle";
-import ArticulosDivulgacionLanding from "./pages/ArticulosDivulgacionHome";
-import ArticulosDivulgacionForm from "./pages/ArticulosDivulgacionForm";
-import ArticulosDivulgacionDetalle from "./pages/ArticulosDivulgacionDetalle";
-import TransferenciasForm from "./pages/TransferenciasForm";
-import TransferenciasDetalle from "./pages/TransferenciasDetalle";
-import TransferenciasHome from "./pages/TransferenciasHome";
-import DistincionesHome from "./pages/DistincionesHome";
-import DistincionesForm from "./pages/DistincionesForm";
-import DistincionesDetalle from "./pages/DistincionesDetalle";
-import ParticipacionesHome from "./pages/ParticipacionesHome";
-import ParticipacionesForm from "./pages/ParticipacionesForm";
-import ParticipacionesDetalle from "./pages/ParticipacionesDetalle";
-import VisitantesHome from "./pages/VisitantesHome";
-import VisitantesForm from "./pages/VisitantesForm";
-import VisitantesDetalle from "./pages/VisitantesDetalle";
+import PersonalLanding from "@/modules/personal/pages/PersonalHome"; // título + botón Agregar + Volver
+import Personal from "@/modules/personal/pages/PersonalForm";               // formulario de personal
+import PersonalDetalle from "@/modules/personal/pages/PersonalDetalle";
+import ProyectosLanding from "@/modules/proyectos/pages/ProyectosHome";
+import ProyectosForm from "@/modules/proyectos/pages/ProyectosForm";
+import DocenciaLanding from "@/modules/produccion/pages/DocenciaHome";
+import DocenciaForm from "@/modules/produccion/pages/DocenciaForm";
+import DocenciaDetalle from "@/modules/produccion/pages/DocenciaDetalle";
+import TrabajosReunionHome from "@/modules/produccion/pages/TrabajosReunionHome";
+import TrabajosReunionForm from "@/modules/produccion/pages/TrabajosReunionForm";
+import ErogacionesLanding from "@/modules/recursos/pages/ErogacionesHome";
+import ErogacionesForm from "@/modules/recursos/pages/ErogacionesForm";
+import ErogacionesDetalle from "@/modules/recursos/pages/ErogacionesDetalle";
+import EquipamientoLanding from "@/modules/recursos/pages/EquipamientoHome";
+import EquipamientoForm from "@/modules/recursos/pages/EquipamientoForm";
+import EquipamientoDetalle from "@/modules/recursos/pages/EquipamientoDetalle";
+import ObjetosLanding from "@/modules/catalogos/pages/ObjetosFinHome";
+import SearchPage from "@/modules/search/pages/SearchPage";
+import DocumentacionDetalle from "@/modules/produccion/pages/DocumentacionDetalle";
+import DocumentacionForm from "@/modules/produccion/pages/DocumentacionForm";
+import DocumentacionLanding from "@/modules/produccion/pages/DocumentacionHome";
+import PersonalForm from "@/modules/personal/pages/PersonalForm";
+import ProyectosDetalle from "@/modules/proyectos/pages/ProyectosDetalle";
+import RegistrosPropiedadHome from "@/modules/produccion/pages/RegistrosPropiedadHome";
+import RegistrosPropiedadForm from "@/modules/produccion/pages/RegistrosPropiedadForm";
+import RegistrosPropiedadDetalle from "@/modules/produccion/pages/RegistrosPropiedadDetalle";
+import PlanificacionGrupoLanding from "@/modules/grupo/pages/PlanificacionesGrupoHome";
+import PlanificacionesGrupoForm from "@/modules/grupo/pages/PlanificacionesGrupoForm";
+import PlanificacionGrupoDetalle from "@/modules/grupo/pages/PlanificacionGrupoDetalle";
+import TrabajosReunionDetalle from "@/modules/produccion/pages/TrabajosReunionDetalle";
+import TrabajosRevistasHome from "@/modules/produccion/pages/TrabajosRevistasHome";
+import TrabajosRevistasForm from "@/modules/produccion/pages/TrabajosRevistasForm";
+import TrabajosRevistasDetalle from "@/modules/produccion/pages/TrabajosRevistasDetalle";
+import ArticulosDivulgacionLanding from "@/modules/produccion/pages/ArticulosDivulgacionHome";
+import ArticulosDivulgacionForm from "@/modules/produccion/pages/ArticulosDivulgacionForm";
+import ArticulosDivulgacionDetalle from "@/modules/produccion/pages/ArticulosDivulgacionDetalle";
+import TransferenciasForm from "@/modules/transferencia/pages/TransferenciasForm";
+import TransferenciasDetalle from "@/modules/transferencia/pages/TransferenciasDetalle";
+import TransferenciasHome from "@/modules/transferencia/pages/TransferenciasHome";
+import DistincionesHome from "@/modules/produccion/pages/DistincionesHome";
+import DistincionesForm from "@/modules/produccion/pages/DistincionesForm";
+import DistincionesDetalle from "@/modules/produccion/pages/DistincionesDetalle";
+import ParticipacionesHome from "@/modules/proyectos/pages/ParticipacionesHome";
+import ParticipacionesForm from "@/modules/proyectos/pages/ParticipacionesForm";
+import ParticipacionesDetalle from "@/modules/proyectos/pages/ParticipacionesDetalle";
+import VisitantesHome from "@/modules/grupo/pages/VisitantesHome";
+import VisitantesForm from "@/modules/grupo/pages/VisitantesForm";
+import VisitantesDetalle from "@/modules/grupo/pages/VisitantesDetalle";
+import MemoriasHome from "@/modules/memorias/pages/MemoriasHome";
+import MemoriaForm from "@/modules/memorias/pages/MemoriaForm";
+import MemoriaDetalle from "@/modules/memorias/pages/MemoriaDetalle";
+import MemoriaVersionDetalle from "@/modules/memorias/pages/MemoriaVersionDetalle";
 
 // Gestión de usuarios
-import CambiarPassword from "./pages/CambiarPassword";
-import UsuariosHome from "./pages/UsuariosHome";
-import UsuariosForm from "./pages/UsuariosForm";
-import CatalogosHome from "./pages/CatalogosHome";
-import MiPerfil from "./pages/MiPerfil";
+import CambiarPassword from "@/modules/auth/pages/CambiarPassword";
+import UsuariosHome from "@/modules/auth/pages/UsuariosHome";
+import UsuariosForm from "@/modules/auth/pages/UsuariosForm";
+import CatalogosHome from "@/modules/catalogos/pages/CatalogosHome";
+import MiPerfil from "@/modules/auth/pages/MiPerfil";
 
 // Definición de rutas
 const router = createBrowserRouter([
+  { path: "/", element: <Landing /> },
   // rutas públicas (sin login)
   { path: "/login", element: <Login /> },
   { path: "/registro", element: <Register /> },
 
   // rutas protegidas (requieren estar logueado)
   {
-    path: "/",
     element: (
       <ProtectedRoute>
         <AppLayout />
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <Home /> },
+      { path: "inicio", element: <Home /> },
 
       { path: "busqueda", element: <SearchPage /> },
 
@@ -214,6 +219,22 @@ const router = createBrowserRouter([
       { path: "visitantes/nuevo", element: <VisitantesForm /> },
       { path: "visitantes/:id", element: <VisitantesDetalle /> },
       { path: "visitantes/:id/editar", element: <VisitantesForm /> },
+
+      // Memorias
+      { path: "memorias", element: <MemoriasHome /> },
+      {
+        path: "memorias/nueva",
+        element: (
+          <ProtectedRoute requiredRole="ADMIN">
+            <MemoriaForm />
+          </ProtectedRoute>
+        ),
+      },
+      { path: "memorias/:id", element: <MemoriaDetalle /> },
+      {
+        path: "memorias/:id/versiones/:versionId",
+        element: <MemoriaVersionDetalle />,
+      },
       
 
       // Gestión de Usuarios (solo admin)

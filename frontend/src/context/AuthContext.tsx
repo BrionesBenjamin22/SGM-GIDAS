@@ -10,12 +10,13 @@ import {
   register as registerService,
   logout as logoutService,
   getStoredAuth,
+  restoreSession,
   esPrimerUsuario as esPrimerUsuarioService,
   cambiarPassword as cambiarPasswordService,
   type User,
   type Rol,
   type AuthResponse,
-} from "@/services/authService";
+} from "@/modules/auth/services/authService";
 
 type AuthContextValue = {
   user: User | null;
@@ -57,12 +58,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = getStoredAuth();
-    if (stored) {
-      setUser(stored.user);
-      setToken(stored.token);
+    let active = true;
+
+    async function initializeSession() {
+      setLoading(true);
+      const stored = await restoreSession();
+
+      if (!active) return;
+
+      setUser(stored?.user ?? null);
+      setToken(stored?.token ?? null);
+      setLoading(false);
     }
-    setLoading(false);
+
+    void initializeSession();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    async function handleStorage(event: StorageEvent) {
+      if (event.key === AUTH_KEY) {
+        setLoading(true);
+        const stored = await restoreSession();
+        setUser(stored?.user ?? null);
+        setToken(stored?.token ?? null);
+        setLoading(false);
+      }
+    }
+
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+    };
   }, []);
 
   function persistUser(updatedUser: User) {
