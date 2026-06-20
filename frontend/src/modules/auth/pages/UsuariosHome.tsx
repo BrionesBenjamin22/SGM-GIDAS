@@ -279,7 +279,7 @@ export default function UsuariosHome() {
         <Button
           variant="primary"
           onClick={() => nav("/usuarios/nuevo")}
-          className="flex items-center gap-2"
+          className="flex self-start items-center justify-center gap-2 whitespace-nowrap lg:self-auto"
         >
           <Plus className="w-4 h-4" />
           Nuevo Usuario
