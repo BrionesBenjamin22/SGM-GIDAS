@@ -6,14 +6,14 @@ import Button from "@/components/Button";
 import DatePicker from "@/components/Calendar";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
-import { useTiposRegistroPropiedad } from "@/hooks/useTipoRegistroPropiedad";
-import { useUctGuard } from "@/hooks/useUctGuard";
+import { useTiposRegistroPropiedad } from "@/modules/produccion/hooks/useTipoRegistroPropiedad";
+import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 import { HttpError } from "@/lib/http";
 import {
   createRegistroPropiedad,
   getRegistroPropiedadById,
   updateRegistroPropiedad,
-} from "@/services/registrosPropiedadServices";
+} from "@/modules/produccion/services/registrosPropiedadServices";
 import { toTitleCase } from "@/utils/format";
 
 export default function RegistrosPropiedadForm() {

@@ -19,7 +19,7 @@ import {
   updateCatalogItem,
   type CatalogHistoryItem,
   type CatalogItem,
-} from "@/services/catalogoServices";
+} from "@/modules/catalogos/services/catalogoServices";
 import Button from "@/components/Button";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import ErrorText from "@/components/ErrorText";

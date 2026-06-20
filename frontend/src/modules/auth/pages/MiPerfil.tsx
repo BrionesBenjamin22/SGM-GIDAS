@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { User, KeyRound, Pencil, Save, X } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
-import { actualizarUsuario } from "@/services/usuariosService";
+import { actualizarUsuario } from "@/modules/auth/services/usuariosService";
 import { HttpError } from "@/lib/http";
 import Button from "@/components/Button";
 

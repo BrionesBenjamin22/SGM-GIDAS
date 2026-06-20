@@ -6,12 +6,12 @@ import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
 import { HttpError } from "@/lib/http";
-import { useUctGuard } from "@/hooks/useUctGuard";
+import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 import {
   createArticulo,
   getArticuloById,
   updateArticulo,
-} from "@/services/articulosDivulgacionServices";
+} from "@/modules/produccion/services/articulosDivulgacionServices";
 
 export default function ArticulosDivulgacionForm() {
   const { id } = useParams<{ id: string }>();

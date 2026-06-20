@@ -9,8 +9,8 @@ import SuccessToast from "@/components/SuccessToast";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { HttpError } from "@/lib/http";
 
-import { useDistinciones } from "@/hooks/useDistinciones";
-import type { Distincion } from "@/services/distincionesServices";
+import { useDistinciones } from "@/modules/produccion/hooks/useDistinciones";
+import type { Distincion } from "@/modules/produccion/services/distincionesServices";
 import { useAuth } from "@/context/AuthContext";
 import {
   applyMemoriaSectionFilter,

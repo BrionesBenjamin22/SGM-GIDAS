@@ -9,11 +9,11 @@ import Tarjeta from "@/components/Tarjeta";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { useAuth } from "@/context/AuthContext";
 import { HttpError } from "@/lib/http";
-import { useRegistrosPropiedad } from "@/hooks/useRegistrosPropiedad";
+import { useRegistrosPropiedad } from "@/modules/produccion/hooks/useRegistrosPropiedad";
 import {
   deleteRegistroPropiedad,
   type RegistroPropiedad,
-} from "@/services/registrosPropiedadServices";
+} from "@/modules/produccion/services/registrosPropiedadServices";
 import { toTitleCase } from "@/utils/format";
 import {
   applyMemoriaSectionFilter,

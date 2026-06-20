@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getTrabajosRevistas,
   type TrabajoRevista,
-} from "@/services/trabajosRevistasServices";
+} from "@/modules/produccion/services/trabajosRevistasServices";
 
 export function useTrabajosRevistas(
   activos: "true" | "false" | "all" = "true",

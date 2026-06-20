@@ -8,11 +8,11 @@ import SuccessToast from "@/components/SuccessToast";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { HttpError } from "@/lib/http";
 
-import { useTrabajosRevistas } from "@/hooks/useTrabajosRevistas";
+import { useTrabajosRevistas } from "@/modules/produccion/hooks/useTrabajosRevistas";
 import {
   deleteTrabajoRevista,
   type TrabajoRevista,
-} from "@/services/trabajosRevistasServices";
+} from "@/modules/produccion/services/trabajosRevistasServices";
 import { useAuth } from "@/context/AuthContext";
 import {
   applyMemoriaSectionFilter,

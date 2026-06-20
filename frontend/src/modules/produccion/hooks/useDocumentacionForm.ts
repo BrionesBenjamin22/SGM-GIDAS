@@ -7,11 +7,11 @@ import {
   removeAutorFromDocumento,
   type Documentacion,
   type DocumentacionPayload,
-} from "@/services/documentacionServices";
+} from "@/modules/produccion/services/documentacionServices";
 import {
   createAutor,
   type Autor,
-} from "@/services/autoresService";
+} from "@/modules/produccion/services/autoresService";
 
 const YEARS = Array.from({ length: 2030 - 1900 + 1 }, (_, i) => 1900 + i);
 

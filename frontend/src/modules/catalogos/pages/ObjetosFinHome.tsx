@@ -11,12 +11,12 @@ import {
   getErogaciones,
   deleteErogaciones,
   type Erogaciones,
-} from "@/services/erogacionesServices";
+} from "@/modules/recursos/services/erogacionesServices";
 import {
   getEquipamiento,
   deleteEquipamiento,
   type Equipamiento,
-} from "@/services/equipamientoServices";
+} from "@/modules/recursos/services/equipamientoServices";
 
 type Item =
   | (Erogaciones & { tipo: "Erogacion" })

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getBecas } from "@/services/becasService";
+import { getBecas } from "@/modules/recursos/services/becasService";
 
 export function useBecas() {
     return useQuery({

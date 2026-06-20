@@ -7,7 +7,7 @@ import {
     deleteAdoptante,
     type Adoptante,
     type AdoptantePayload,
-} from "@/services/adoptantesServices";
+} from "@/modules/transferencia/services/adoptantesServices";
 
 // ─── Queries ─────────────────────────────────────────────────
 

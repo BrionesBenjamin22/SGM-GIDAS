@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getActividadesDocencia,
   type ActividadDocencia,
-} from "@/services/actividadDocenciaServices";
+} from "@/modules/produccion/services/actividadDocenciaServices";
 
 export function useActividadDocencia(
   investigadorId?: number,

@@ -14,10 +14,10 @@ import {
   addAdoptantesToTransferencia,
   removeAdoptantesFromTransferencia,
   type Transferencia,
-} from "@/services/transferenciasServices";
-import type { Adoptante } from "@/services/adoptantesServices";
-import { useUctGuard } from "@/hooks/useUctGuard";
-import { useTiposContrato } from "@/hooks/useTransferencias";
+} from "@/modules/transferencia/services/transferenciasServices";
+import type { Adoptante } from "@/modules/transferencia/services/adoptantesServices";
+import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
+import { useTiposContrato } from "@/modules/transferencia/hooks/useTransferencias";
 
 export default function TransferenciasForm() {
   const navigate = useNavigate();

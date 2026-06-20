@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getDocumentacion,
   type Documentacion,
-} from "@/services/documentacionServices";
+} from "@/modules/produccion/services/documentacionServices";
 
 export function useDocumentacion(
   activos: "true" | "false" | "all" = "true"

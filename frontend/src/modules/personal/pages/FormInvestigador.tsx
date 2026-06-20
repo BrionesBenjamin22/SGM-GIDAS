@@ -3,14 +3,14 @@ import { useNavigate } from "react-router-dom";
 import Button from "@/components/Button";
 import Field from "@/components/Field";
 import Calendar from "@/components/Calendar";
-import { useUct } from "@/hooks/useUct";
-import { useDedicaciones } from "@/hooks/useDedicaciones";
-import { useCategoriasUtn } from "@/hooks/useCategoriasUtn";
-import { useProgramasIncentivos } from "@/hooks/useProgramasIncentivos";
+import { useUct } from "@/modules/grupo/hooks/useUct";
+import { useDedicaciones } from "@/modules/personal/hooks/useDedicaciones";
+import { useCategoriasUtn } from "@/modules/catalogos/hooks/useCategoriasUtn";
+import { useProgramasIncentivos } from "@/modules/grupo/hooks/useProgramasIncentivos";
 import {
   crearInvestigador,
   actualizarInvestigador,
-} from "@/services/investigadorServices";
+} from "@/modules/personal/services/investigadorServices";
 
 interface Props {
   initialData?: any;

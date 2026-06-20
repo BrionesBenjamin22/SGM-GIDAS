@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getDedicaciones } from "@/services/tiposServices";
+import { getDedicaciones } from "@/modules/catalogos/services/tiposServices";
 
 export function useDedicaciones() {
   return useQuery({

@@ -18,11 +18,11 @@ import {
   getTrabajoReunionById,
   vincularInvestigadoresTrabajo,
   desvincularInvestigadoresTrabajo,
-} from "@/services/trabajosReunionServices";
+} from "@/modules/produccion/services/trabajosReunionServices";
 
-import { useTiposReunion } from "@/hooks/useTiposReunion";
-import { useInvestigadores } from "@/hooks/useInvestigadores";
-import { useUctGuard } from "@/hooks/useUctGuard";
+import { useTiposReunion } from "@/modules/produccion/hooks/useTiposReunion";
+import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
+import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 
 export default function TrabajoReunionForm() {
   const { id } = useParams<{ id: string }>();

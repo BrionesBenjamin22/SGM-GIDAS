@@ -10,8 +10,8 @@ import {
   createEquipamiento,
   getEquipamientoById,
   updateEquipamiento,
-} from "@/services/equipamientoServices";
-import { useUctGuard } from "@/hooks/useUctGuard";
+} from "@/modules/recursos/services/equipamientoServices";
+import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 
 export default function EquipamientoForm() {
   const { id } = useParams<{ id: string }>();

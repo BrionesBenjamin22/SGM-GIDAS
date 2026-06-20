@@ -8,8 +8,8 @@ import {
   getDocumentacionById,
   getHistorialDocumentacionById,
   type Documentacion,
-} from "@/services/documentacionServices";
-import { useAuditoria } from "@/hooks/useAuditoria";
+} from "@/modules/produccion/services/documentacionServices";
+import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import { formatFecha } from "@/utils/formatFecha";
 import {

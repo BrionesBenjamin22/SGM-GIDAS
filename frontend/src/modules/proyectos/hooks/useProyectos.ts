@@ -13,7 +13,7 @@ import {
   type Proyecto,
   type InvestigadorVinculacionPayload,
   type ProyectosActivosFilter,
-} from "@/services/proyectosServices";
+} from "@/modules/proyectos/services/proyectosServices";
 
 const QUERY_KEY = ["proyectos"];
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUct } from "@/hooks/useUct";
+import { useUct } from "@/modules/grupo/hooks/useUct";
 import AlertDialog from "@/components/AlertDialog";
 
 /**

@@ -6,14 +6,14 @@ import HistorialCambiosCard from "@/components/HistorialCambiosCard";
 import SuccessToast from "@/components/SuccessToast";
 import { formatFecha } from "@/utils/formatFecha";
 import { toTitleCase } from "@/utils/format";
-import { useAuditoria } from "@/hooks/useAuditoria";
+import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import {
   getHistorialTrabajoRevistaById,
   getTrabajoRevistaById,
   type TrabajoRevista,
-} from "@/services/trabajosRevistasServices";
+} from "@/modules/produccion/services/trabajosRevistasServices";
 import { useAuth } from "@/context/AuthContext";
-import { useTiposReunion } from "@/hooks/useTiposReunion";
+import { useTiposReunion } from "@/modules/produccion/hooks/useTiposReunion";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,

@@ -8,8 +8,8 @@ import {
   getErogacionById,
   getHistorialErogacionById,
   type Erogacion,
-} from "@/services/erogacionesServices";
-import { useAuditoria } from "@/hooks/useAuditoria";
+} from "@/modules/recursos/services/erogacionesServices";
+import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import { formatFecha } from "@/utils/formatFecha";
 import {

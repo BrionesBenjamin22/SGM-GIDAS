@@ -7,8 +7,8 @@ import {
   createPlanificacion,
   getPlanificacionById,
   updatePlanificacion,
-} from "@/services/planificacionGrupoServices";
-import { useUctGuard } from "@/hooks/useUctGuard";
+} from "@/modules/grupo/services/planificacionGrupoServices";
+import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 
 export default function PlanificacionGrupoForm() {
   const navigate = useNavigate();

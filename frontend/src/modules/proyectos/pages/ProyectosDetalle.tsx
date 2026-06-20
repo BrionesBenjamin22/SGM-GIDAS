@@ -9,11 +9,11 @@ import {
   getHistorialProyectoById,
   reabrirProyecto,
   type Proyecto,
-} from "@/services/proyectosServices";
-import { useAuditoria } from "@/hooks/useAuditoria";
+} from "@/modules/proyectos/services/proyectosServices";
+import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
-import { useTiposProyecto } from "@/hooks/useTiposProyecto";
-import { useFuentesFinanciamiento } from "@/hooks/useFuenteFinanciamiento";
+import { useTiposProyecto } from "@/modules/proyectos/hooks/useTiposProyecto";
+import { useFuentesFinanciamiento } from "@/modules/catalogos/hooks/useFuenteFinanciamiento";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,

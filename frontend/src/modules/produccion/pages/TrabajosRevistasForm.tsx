@@ -18,11 +18,11 @@ import {
   getTrabajoRevistaById,
   vincularInvestigadoresRevista,
   desvincularInvestigadoresRevista,
-} from "@/services/trabajosRevistasServices";
+} from "@/modules/produccion/services/trabajosRevistasServices";
 
-import { useTiposReunion } from "@/hooks/useTiposReunion";
-import { useInvestigadores } from "@/hooks/useInvestigadores";
-import { useUctGuard } from "@/hooks/useUctGuard";
+import { useTiposReunion } from "@/modules/produccion/hooks/useTiposReunion";
+import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
+import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 
 export default function TrabajosRevistasForm() {
   const { id } = useParams<{ id: string }>();

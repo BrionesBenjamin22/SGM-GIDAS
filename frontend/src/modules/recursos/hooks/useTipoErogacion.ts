@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getTiposErogacion,
   type TipoErogacion,
-} from "@/services/tipoErogacionService";
+} from "@/modules/recursos/services/tipoErogacionService";
 
 export function useTiposErogacion() {
   const { data = [], isLoading, isError } = useQuery<TipoErogacion[]>({

@@ -1,7 +1,7 @@
 import { JSX } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import type { Rol } from "@/services/authService";
+import type { Rol } from "@/modules/auth/services/authService";
 
 interface ProtectedRouteProps {
   children: JSX.Element;

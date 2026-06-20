@@ -6,8 +6,8 @@ import { useState, useEffect } from "react";
 import {
   getPlanificacionById,
   type PlanificacionGrupo,
-} from "@/services/planificacionGrupoServices";
-import { useAuditoria } from "@/hooks/useAuditoria";
+} from "@/modules/grupo/services/planificacionGrupoServices";
+import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import {
   navigateBackFromMemoriaContext,

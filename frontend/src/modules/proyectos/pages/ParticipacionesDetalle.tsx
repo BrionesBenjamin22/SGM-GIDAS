@@ -7,10 +7,10 @@ import SuccessToast from "@/components/SuccessToast";
 import {
   getHistorialParticipacionById,
   getParticipacionById,
-} from "@/services/participacionesServices";
-import { useAuditoria } from "@/hooks/useAuditoria";
+} from "@/modules/proyectos/services/participacionesServices";
+import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
-import { useInvestigadores } from "@/hooks/useInvestigadores";
+import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,

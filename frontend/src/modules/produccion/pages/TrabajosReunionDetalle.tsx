@@ -5,15 +5,15 @@ import Button from "@/components/Button";
 import HistorialCambiosCard from "@/components/HistorialCambiosCard";
 import SuccessToast from "@/components/SuccessToast";
 import { formatFecha } from "@/utils/formatFecha";
-import { useAuditoria } from "@/hooks/useAuditoria";
+import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import {
   getHistorialTrabajoReunionById,
   getTrabajoReunionById,
   type TrabajoReunion,
-} from "@/services/trabajosReunionServices";
+} from "@/modules/produccion/services/trabajosReunionServices";
 import { useAuth } from "@/context/AuthContext";
 import { toTitleCase } from "@/utils/format";
-import { useTiposReunion } from "@/hooks/useTiposReunion";
+import { useTiposReunion } from "@/modules/produccion/hooks/useTiposReunion";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,

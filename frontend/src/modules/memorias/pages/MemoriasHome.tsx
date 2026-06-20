@@ -11,7 +11,7 @@ import {
   deleteMemoria,
   getMemorias,
   type Memoria,
-} from "@/services/memoriasService";
+} from "@/modules/memorias/services/memoriasService";
 import { formatFecha } from "@/utils/formatFecha";
 
 const ITEMS_PER_PAGE = 9;

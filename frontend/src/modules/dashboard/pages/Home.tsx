@@ -1,8 +1,8 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, type ReactNode } from "react";
-import { useUct } from "@/hooks/useUct";
-import { useDirectivos } from "@/hooks/useDirectivos";
-import { useDashboardResumen } from "@/hooks/useDashboardGeneral";
+import { useUct } from "@/modules/grupo/hooks/useUct";
+import { useDirectivos } from "@/modules/grupo/hooks/useDirectivos";
+import { useDashboardResumen } from "@/modules/dashboard/hooks/useDashboardGeneral";
 import Button from "@/components/Button";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";

@@ -8,12 +8,12 @@ import {
   getHistorialRegistroPropiedadById,
   getRegistroPropiedadById,
   type RegistroPropiedad,
-} from "@/services/registrosPropiedadServices";
+} from "@/modules/produccion/services/registrosPropiedadServices";
 import { formatFecha } from "@/utils/formatFecha";
-import { useAuditoria } from "@/hooks/useAuditoria";
+import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import { toTitleCase } from "@/utils/format";
-import { useTiposRegistroPropiedad } from "@/hooks/useTipoRegistroPropiedad";
+import { useTiposRegistroPropiedad } from "@/modules/produccion/hooks/useTipoRegistroPropiedad";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,

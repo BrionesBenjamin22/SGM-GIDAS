@@ -8,7 +8,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { HttpError } from "@/lib/http";
-import { useEquipamiento } from "@/hooks/useEquipamiento";
+import { useEquipamiento } from "@/modules/recursos/hooks/useEquipamiento";
 import { useAuth } from "@/context/AuthContext";
 import {
   applyMemoriaSectionFilter,

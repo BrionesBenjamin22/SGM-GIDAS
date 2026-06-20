@@ -2,15 +2,15 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "@/components/Button";
 import Field from "@/components/Field";
-import { useUct } from "@/hooks/useUct";
-import { useTiposFormacion } from "@/hooks/useTiposFormacion";
-import { crearBecario, actualizarBecario } from "@/services/becarioServices";
+import { useUct } from "@/modules/grupo/hooks/useUct";
+import { useTiposFormacion } from "@/modules/personal/hooks/useTiposFormacion";
+import { crearBecario, actualizarBecario } from "@/modules/personal/services/becarioServices";
 import { useQueryClient } from "@tanstack/react-query";
-import { useBecas } from "@/hooks/useBecas";
+import { useBecas } from "@/modules/recursos/hooks/useBecas";
 import {
   vincularBecarioABeca,
   desvincularBecarioDeBeca,
-} from "@/services/becasService";
+} from "@/modules/recursos/services/becasService";
 import Calendar from "@/components/Calendar";
 
 interface Props {

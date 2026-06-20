@@ -6,12 +6,12 @@ import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
 import { HttpError } from "@/lib/http";
-import { useInvestigadores } from "@/hooks/useInvestigadores";
+import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
 import {
   actualizarParticipacion,
   crearParticipacion,
   getParticipacionById,
-} from "@/services/participacionesServices";
+} from "@/modules/proyectos/services/participacionesServices";
 
 const FORMAS_PARTICIPACION = [
   { value: "jurado", label: "Jurado" },

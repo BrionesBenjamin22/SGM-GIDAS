@@ -3,7 +3,7 @@ import {
   eliminarDistincion,
   getDistinciones,
   type Distincion,
-} from "@/services/distincionesServices";
+} from "@/modules/produccion/services/distincionesServices";
 
 export function useDistinciones(
   activos: "true" | "false" | "all" = "true"

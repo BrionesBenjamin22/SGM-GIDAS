@@ -12,8 +12,8 @@ import {
   getTiposVisita,
   getVisitanteById,
   type TipoVisitaOption,
-} from "@/services/visitantesServices";
-import { useUctGuard } from "@/hooks/useUctGuard";
+} from "@/modules/grupo/services/visitantesServices";
+import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 
 export default function VisitantesForm() {
   const { id } = useParams<{ id: string }>();

@@ -3,7 +3,7 @@ import {
   getTiposProyecto,
   createTipoProyecto,
   type TipoProyecto,
-} from "@/services/tiposProyectoServices";
+} from "@/modules/proyectos/services/tiposProyectoServices";
 
 /* =========================
    GET ALL

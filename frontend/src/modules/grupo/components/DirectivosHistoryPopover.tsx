@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, History, RefreshCw, X } from "lucide-react";
 import { Popover } from "radix-ui";
-import { useHistorialDirectivos } from "@/hooks/useDirectivos";
+import { useHistorialDirectivos } from "@/modules/grupo/hooks/useDirectivos";
 
 const PAGE_SIZE = 3;
 

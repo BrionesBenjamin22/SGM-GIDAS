@@ -8,10 +8,10 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 
-import { useErogaciones } from "@/hooks/useErogaciones";
-import { useTiposErogacion } from "@/hooks/useTipoErogacion";
-import { useFuentesFinanciamiento } from "@/hooks/useFuenteFinanciamiento";
-import { deleteErogaciones } from "@/services/erogacionesServices";
+import { useErogaciones } from "@/modules/recursos/hooks/useErogaciones";
+import { useTiposErogacion } from "@/modules/recursos/hooks/useTipoErogacion";
+import { useFuentesFinanciamiento } from "@/modules/catalogos/hooks/useFuenteFinanciamiento";
+import { deleteErogaciones } from "@/modules/recursos/services/erogacionesServices";
 import { HttpError } from "@/lib/http";
 import { useAuth } from "@/context/AuthContext";
 import {

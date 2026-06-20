@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getTiposFormacion } from "@/services/tiposFormacionServices";
+import { getTiposFormacion } from "@/modules/personal/services/tiposFormacionServices";
 
 export function useTiposFormacion() {
   return useQuery({

@@ -8,8 +8,8 @@ import {
   getTransferenciaById,
   getHistorialTransferenciaById,
   type Transferencia,
-} from "@/services/transferenciasServices";
-import { useAuditoria } from "@/hooks/useAuditoria";
+} from "@/modules/transferencia/services/transferenciasServices";
+import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import { formatFecha } from "@/utils/formatFecha";
 import {

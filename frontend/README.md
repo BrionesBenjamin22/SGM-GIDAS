@@ -52,9 +52,9 @@ Modulos actuales:
 - `shared`
 - `transferencia`
 
-Las carpetas historicas `src/pages`, `src/services` y `src/hooks` siguen
-existiendo como fachadas de compatibilidad. Para codigo nuevo, preferir imports
-desde `@/modules/<modulo>/...`.
+Las implementaciones de dominio y sus imports residen directamente bajo
+`src/modules/<modulo>`. Las antiguas fachadas `src/pages`, `src/services` y
+`src/hooks` fueron retiradas para evitar dos rutas de acceso al mismo codigo.
 
 Los componentes reutilizables globales permanecen en `src/components`, el layout
 global en `src/layouts`, el contexto de autenticacion en `src/context` y los

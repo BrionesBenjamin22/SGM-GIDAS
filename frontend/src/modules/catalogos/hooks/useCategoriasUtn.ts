@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getCategoriasUtn } from "@/services/categoriaUtnServices";
+import { getCategoriasUtn } from "@/modules/catalogos/services/categoriaUtnServices";
 
 export function useCategoriasUtn() {
   return useQuery({

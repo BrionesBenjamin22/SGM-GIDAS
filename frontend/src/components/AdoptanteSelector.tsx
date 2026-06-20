@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import Button from "@/components/Button";
 import SuccessToast from "@/components/SuccessToast";
-import { useAdoptantes, useCreateAdoptante } from "@/hooks/useAdoptantes";
-import type { Adoptante, AdoptantePayload } from "@/services/adoptantesServices";
+import { useAdoptantes, useCreateAdoptante } from "@/modules/transferencia/hooks/useAdoptantes";
+import type { Adoptante, AdoptantePayload } from "@/modules/transferencia/services/adoptantesServices";
 
 type Props = {
     selected: Adoptante[];

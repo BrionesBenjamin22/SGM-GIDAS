@@ -4,13 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/Button";
 import HistorialCambiosCard from "@/components/HistorialCambiosCard";
 import SuccessToast from "@/components/SuccessToast";
-import { useAuditoria } from "@/hooks/useAuditoria";
+import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import {
   getHistorialVisitanteById,
   getTiposVisita,
   getVisitanteById,
-} from "@/services/visitantesServices";
+} from "@/modules/grupo/services/visitantesServices";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,

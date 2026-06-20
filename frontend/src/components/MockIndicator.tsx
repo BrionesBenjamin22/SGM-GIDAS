@@ -1,4 +1,4 @@
-import { isMockMode } from "@/services/tiposContratoService";
+import { isMockMode } from "@/modules/transferencia/services/tiposContratoService";
 
 /**
  * Banner informativo que se muestra cuando la app opera en modo mock

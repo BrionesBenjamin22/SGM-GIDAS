@@ -8,9 +8,9 @@ import {
   getEquipamientoById,
   getHistorialEquipamientoById,
   type Equipamiento,
-} from "@/services/equipamientoServices";
+} from "@/modules/recursos/services/equipamientoServices";
 import { formatFecha } from "@/utils/formatFecha";
-import { useAuditoria } from "@/hooks/useAuditoria";
+import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import {
   navigateBackFromMemoriaContext,

@@ -3,8 +3,8 @@ import {
   getArticulosDivulgacion,
   deleteArticulo,
   type ArticuloDivulgacion,
-} from "@/services/articulosDivulgacionServices";
-import { useUct } from "@/hooks/useUct";
+} from "@/modules/produccion/services/articulosDivulgacionServices";
+import { useUct } from "@/modules/grupo/hooks/useUct";
 
 export function useArticulosDivulgacion(
   activos: "true" | "false" | "all" = "true"

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getErogaciones, type Erogacion } from "@/services/erogacionesServices";
+import { getErogaciones, type Erogacion } from "@/modules/recursos/services/erogacionesServices";
 
 export function useErogaciones(
   activos: "true" | "false" | "all" = "true"

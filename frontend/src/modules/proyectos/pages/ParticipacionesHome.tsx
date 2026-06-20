@@ -19,7 +19,7 @@ import {
   eliminarParticipacion,
   getParticipaciones,
   type Participacion,
-} from "@/services/participacionesServices";
+} from "@/modules/proyectos/services/participacionesServices";
 
 const ITEMS_PER_PAGE = 9;
 

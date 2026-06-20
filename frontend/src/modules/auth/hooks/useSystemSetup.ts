@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { esPrimerUsuario } from "@/services/authService";
+import { esPrimerUsuario } from "@/modules/auth/services/authService";
 
 export const SYSTEM_SETUP_QUERY_KEY = ["system-setup"] as const;
 

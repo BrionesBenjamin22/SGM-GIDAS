@@ -7,7 +7,7 @@ import {
   eliminarVisitante,
   type Visitante,
   type VisitantePayload,
-} from "@/services/visitantesServices";
+} from "@/modules/grupo/services/visitantesServices";
 
 export function useVisitantes(
   activos: "true" | "false" | "all" = "true"

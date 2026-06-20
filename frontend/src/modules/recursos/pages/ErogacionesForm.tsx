@@ -10,10 +10,10 @@ import {
   createErogacion,
   getErogacionById,
   updateErogacion,
-} from "@/services/erogacionesServices";
-import { useUctGuard } from "@/hooks/useUctGuard";
-import { useTiposErogacion } from "@/hooks/useTipoErogacion";
-import { useFuentesFinanciamiento } from "@/hooks/useFuenteFinanciamiento";
+} from "@/modules/recursos/services/erogacionesServices";
+import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
+import { useTiposErogacion } from "@/modules/recursos/hooks/useTipoErogacion";
+import { useFuentesFinanciamiento } from "@/modules/catalogos/hooks/useFuenteFinanciamiento";
 
 export default function ErogacionesForm() {
   const navigate = useNavigate();

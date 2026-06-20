@@ -5,7 +5,7 @@ import {
   type SearchResult,
   type Orden,
   type EstadoBusqueda,
-} from "@/services/searchService";
+} from "@/modules/search/services/searchService";
 
 export function useSearch() {
   const [searchParams, setSearchParams] = useSearchParams();

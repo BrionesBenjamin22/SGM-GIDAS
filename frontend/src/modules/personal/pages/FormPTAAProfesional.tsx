@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
-import { useUct } from "@/hooks/useUct";
-import { useTiposPersonal } from "@/hooks/useTiposPersonal";
+import { useUct } from "@/modules/grupo/hooks/useUct";
+import { useTiposPersonal } from "@/modules/personal/hooks/useTiposPersonal";
 import {
   upsertPersonal,
   actualizarPersonal,
-} from "@/services/personalServices";
+} from "@/modules/personal/services/personalServices";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface Props {

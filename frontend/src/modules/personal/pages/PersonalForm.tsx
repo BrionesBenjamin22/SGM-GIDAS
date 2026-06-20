@@ -3,13 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import Button from "@/components/Button";
 import SuccessToast from "@/components/SuccessToast";
-import { useUctGuard } from "@/hooks/useUctGuard";
+import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 
 import FormPTAAProfesional from "./FormPTAAProfesional";
 import FormBecario from "./FormBecario";
 import FormInvestigador from "./FormInvestigador";
 
-import { getPersonalCompletoByRolAndId } from "@/services/personalCompletoServices";
+import { getPersonalCompletoByRolAndId } from "@/modules/personal/services/personalCompletoServices";
 
 type Tipo = "" | "PTAA" | "PROFESIONAL" | "BECARIO" | "INVESTIGADOR";
 

@@ -6,8 +6,8 @@ import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
-import { useDocumentacion } from "@/hooks/useDocumentacion";
-import { deleteDocumentacion } from "@/services/documentacionServices";
+import { useDocumentacion } from "@/modules/produccion/hooks/useDocumentacion";
+import { deleteDocumentacion } from "@/modules/produccion/services/documentacionServices";
 import { HttpError } from "@/lib/http";
 import { useAuth } from "@/context/AuthContext";
 import {

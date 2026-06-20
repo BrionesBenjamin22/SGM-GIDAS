@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getPlanificaciones,
   type Planificacion,
-} from "@/services/planificacionesServices";
+} from "@/modules/grupo/services/planificacionesServices";
 
 export function usePlanificaciones() {
   return useQuery<Planificacion[]>({

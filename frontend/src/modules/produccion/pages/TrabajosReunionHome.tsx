@@ -9,14 +9,14 @@ import SuccessToast from "@/components/SuccessToast";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { HttpError } from "@/lib/http";
 
-import { useTrabajosReunion } from "@/hooks/useTrabajosReunion";
-import { useTiposReunion } from "@/hooks/useTiposReunion";
-import { useInvestigadores } from "@/hooks/useInvestigadores";
+import { useTrabajosReunion } from "@/modules/produccion/hooks/useTrabajosReunion";
+import { useTiposReunion } from "@/modules/produccion/hooks/useTiposReunion";
+import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
 
 import {
   deleteTrabajoReunion,
   type TrabajoReunion,
-} from "@/services/trabajosReunionServices";
+} from "@/modules/produccion/services/trabajosReunionServices";
 import { useAuth } from "@/context/AuthContext";
 import { toTitleCase } from "@/utils/format";
 import {

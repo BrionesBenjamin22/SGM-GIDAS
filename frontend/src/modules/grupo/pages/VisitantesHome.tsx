@@ -14,7 +14,7 @@ import {
   eliminarVisitante,
   getVisitantes,
   type Visitante,
-} from "@/services/visitantesServices";
+} from "@/modules/grupo/services/visitantesServices";
 import {
   applyMemoriaSectionFilter,
   getMemoriaSectionFilter,

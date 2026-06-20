@@ -6,14 +6,14 @@ import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
 import { HttpError } from "@/lib/http";
-import { useInvestigadores } from "@/hooks/useInvestigadores";
-import { useGradosAcademicos } from "@/hooks/useGradoAcademico";
-import { useRolesActividadDocencia } from "@/hooks/useActividadDocenciaRol";
+import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
+import { useGradosAcademicos } from "@/modules/produccion/hooks/useGradoAcademico";
+import { useRolesActividadDocencia } from "@/modules/produccion/hooks/useActividadDocenciaRol";
 import {
   crearActividadDocencia,
   getActividadDocenciaById,
   actualizarActividadDocencia,
-} from "@/services/actividadDocenciaServices";
+} from "@/modules/produccion/services/actividadDocenciaServices";
 
 export default function FormDocenciaInvestigador() {
   const { id } = useParams<{ id: string }>();

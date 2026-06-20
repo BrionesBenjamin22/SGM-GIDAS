@@ -1,13 +1,13 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useSearch } from "@/hooks/useSearch";
-import { useUctGuard } from "@/hooks/useUctGuard";
+import { useSearch } from "@/modules/search/hooks/useSearch";
+import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 import { highlight } from "@/utils/highlight";
 import { Search, X, Filter, BookOpen, Users, Folder, FileText, Award, TrendingUp, Microscope, Briefcase, Calendar as CalendarIcon, Building, Zap } from "lucide-react";
 import { useState, useMemo } from "react";
 import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
-import { resolveFrontendUrl, type SearchResult } from "@/services/searchService";
+import { resolveFrontendUrl, type SearchResult } from "@/modules/search/services/searchService";
 
 // Configuración de colores e iconos por tipo de entidad
 const TYPE_CONFIG: Record<string, { color: string; bgColor: string; icon: React.ElementType }> = {

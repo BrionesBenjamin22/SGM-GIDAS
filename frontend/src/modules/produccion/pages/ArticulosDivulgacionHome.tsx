@@ -9,8 +9,8 @@ import SuccessToast from "@/components/SuccessToast";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { HttpError } from "@/lib/http";
 
-import { useArticulosDivulgacion } from "@/hooks/useArticulosDivulgacion";
-import type { ArticuloDivulgacion } from "@/services/articulosDivulgacionServices";
+import { useArticulosDivulgacion } from "@/modules/produccion/hooks/useArticulosDivulgacion";
+import type { ArticuloDivulgacion } from "@/modules/produccion/services/articulosDivulgacionServices";
 import { useAuth } from "@/context/AuthContext";
 import {
   applyMemoriaSectionFilter,

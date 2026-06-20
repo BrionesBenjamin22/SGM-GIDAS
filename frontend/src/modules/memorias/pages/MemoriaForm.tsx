@@ -6,7 +6,7 @@ import Field from "@/components/Field";
 import DatePicker from "@/components/Calendar";
 import SuccessToast from "@/components/SuccessToast";
 import { HttpError } from "@/lib/http";
-import { createMemoria } from "@/services/memoriasService";
+import { createMemoria } from "@/modules/memorias/services/memoriasService";
 
 export default function MemoriaForm() {
   const navigate = useNavigate();

@@ -8,12 +8,12 @@ import SuccessToast from "@/components/SuccessToast";
 import Tarjeta from "@/components/Tarjeta";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { useAuth } from "@/context/AuthContext";
-import { useProyectos } from "@/hooks/useProyectos";
+import { useProyectos } from "@/modules/proyectos/hooks/useProyectos";
 import {
   cerrarProyecto,
   reabrirProyecto,
   type Proyecto,
-} from "@/services/proyectosServices";
+} from "@/modules/proyectos/services/proyectosServices";
 import {
   applyMemoriaSectionFilter,
   getMemoriaSectionFilter,

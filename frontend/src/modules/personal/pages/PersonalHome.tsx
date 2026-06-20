@@ -6,9 +6,9 @@ import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
-import { usePersonal } from "@/hooks/usePersonal";
-import { eliminarPersonal } from "@/services/personalServices";
-import type { PersonalType } from "@/services/personalServices";
+import { usePersonal } from "@/modules/personal/hooks/usePersonal";
+import { eliminarPersonal } from "@/modules/personal/services/personalServices";
+import type { PersonalType } from "@/modules/personal/services/personalServices";
 import { useAuth } from "@/context/AuthContext";
 import {
   applyMemoriaSectionFilter,

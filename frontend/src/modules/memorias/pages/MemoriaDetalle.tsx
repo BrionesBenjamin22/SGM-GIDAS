@@ -12,7 +12,7 @@ import {
   reabrirMemoria,
   type Memoria,
   type MemoriaEstado,
-} from "@/services/memoriasService";
+} from "@/modules/memorias/services/memoriasService";
 import { formatFecha } from "@/utils/formatFecha";
 
 const formatFechaHora = (fecha?: string | null) => {

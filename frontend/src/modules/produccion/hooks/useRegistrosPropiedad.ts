@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getRegistrosPropiedad,
   type RegistroPropiedad,
-} from "@/services/registrosPropiedadServices";
+} from "@/modules/produccion/services/registrosPropiedadServices";
 
 export function useRegistrosPropiedad(
   activos: "true" | "false" | "all" = "true",

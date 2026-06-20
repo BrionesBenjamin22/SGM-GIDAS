@@ -10,12 +10,12 @@ import {
   crearDistincion,
   getDistincionById,
   actualizarDistincion,
-} from "@/services/distincionesServices";
+} from "@/modules/produccion/services/distincionesServices";
 import {
   getProyectos,
   type Proyecto,
-} from "@/services/proyectosServices";
-import { useUct } from "@/hooks/useUct";
+} from "@/modules/proyectos/services/proyectosServices";
+import { useUct } from "@/modules/grupo/hooks/useUct";
 
 export default function DistincionesForm() {
   const { id } = useParams<{ id: string }>();

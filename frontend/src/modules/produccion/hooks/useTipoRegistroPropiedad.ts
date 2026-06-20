@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getTiposRegistroPropiedad } from "@/services/tipoRegistroPropiedadServices";
+import { getTiposRegistroPropiedad } from "@/modules/produccion/services/tipoRegistroPropiedadServices";
 
 export function useTiposRegistroPropiedad() {
   const { data, isLoading, isError } = useQuery({

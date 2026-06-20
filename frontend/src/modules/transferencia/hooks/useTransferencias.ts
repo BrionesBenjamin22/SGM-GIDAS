@@ -9,8 +9,8 @@ import {
     removeAdoptantesFromTransferencia,
     type Transferencia,
     type TransferenciaPayload,
-} from "@/services/transferenciasServices";
-import { getTiposContrato, type TipoContratoItem } from "@/services/tiposContratoService";
+} from "@/modules/transferencia/services/transferenciasServices";
+import { getTiposContrato, type TipoContratoItem } from "@/modules/transferencia/services/tiposContratoService";
 
 // ─── Queries ─────────────────────────────────────────────────
 

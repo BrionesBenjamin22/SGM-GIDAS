@@ -7,11 +7,11 @@ import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
 import PersonalProyectoField from "@/components/PersonalProyectoField";
 import SuccessToast from "@/components/SuccessToast";
-import { useBecarios } from "@/hooks/useBecarios";
-import { useFuentesFinanciamiento } from "@/hooks/useFuenteFinanciamiento";
-import { useInvestigadores } from "@/hooks/useInvestigadores";
-import { useTiposProyecto } from "@/hooks/useTiposProyecto";
-import { useUct } from "@/hooks/useUct";
+import { useBecarios } from "@/modules/personal/hooks/useBecarios";
+import { useFuentesFinanciamiento } from "@/modules/catalogos/hooks/useFuenteFinanciamiento";
+import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
+import { useTiposProyecto } from "@/modules/proyectos/hooks/useTiposProyecto";
+import { useUct } from "@/modules/grupo/hooks/useUct";
 import { HttpError } from "@/lib/http";
 import {
   getProyectoById,
@@ -19,7 +19,7 @@ import {
   upsertProyectos,
   vincularBecarios,
   vincularInvestigadores,
-} from "@/services/proyectosServices";
+} from "@/modules/proyectos/services/proyectosServices";
 
 export default function ProyectosForm() {
   const { id } = useParams<{ id: string }>();

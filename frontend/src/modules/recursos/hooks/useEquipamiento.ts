@@ -5,8 +5,8 @@ import {
   updateEquipamiento,
   deleteEquipamiento,
   type Equipamiento,
-} from "@/services/equipamientoServices";
-import { getUct } from "@/services/uctServices";
+} from "@/modules/recursos/services/equipamientoServices";
+import { getUct } from "@/modules/grupo/services/uctServices";
 
 export function useEquipamiento(
   activos: "true" | "false" | "all" = "true"

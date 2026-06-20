@@ -8,8 +8,8 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 
-import { useTransferencias } from "@/hooks/useTransferencias";
-import { deleteTransferencia } from "@/services/transferenciasServices";
+import { useTransferencias } from "@/modules/transferencia/hooks/useTransferencias";
+import { deleteTransferencia } from "@/modules/transferencia/services/transferenciasServices";
 import { HttpError } from "@/lib/http";
 import { useAuth } from "@/context/AuthContext";
 import {

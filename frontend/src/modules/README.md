@@ -3,9 +3,8 @@
 Este directorio organiza la aplicacion React como monolito modular. Cada modulo
 agrupa la implementacion real de sus vistas, hooks y services por dominio.
 
-Las carpetas historicas `src/pages`, `src/services` y `src/hooks` quedan como
-fachadas de compatibilidad para evitar cambios masivos en el router principal y
-en imports existentes.
+El router y los consumidores importan directamente desde los modulos. No se
+mantienen fachadas paralelas en `src/pages`, `src/services` ni `src/hooks`.
 
 ## Capas por modulo
 
@@ -35,9 +34,8 @@ en imports existentes.
 
 - Las nuevas funcionalidades deben crearse directamente en
   `src/modules/<modulo>`.
-- Los imports nuevos deben preferir `@/modules/<modulo>/...`.
-- Los imports `@/pages`, `@/services` y `@/hooks` se mantienen para
-  compatibilidad durante la migracion.
+- Los imports deben usar `@/modules/<modulo>/...`.
+- No recrear fachadas en `@/pages`, `@/services` ni `@/hooks`.
 - El router principal, layout global, auth context, estilos base y componentes
   globales no deben modificarse sin una decision explicita del proyecto.
 - Cada modulo debe mantener services dedicados, tipos TypeScript, hooks,

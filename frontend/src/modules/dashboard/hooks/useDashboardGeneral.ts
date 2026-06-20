@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getDashboardResumen,
   type DashboardResumenParams,
-} from "@/services/dashboardGeneralService";
+} from "@/modules/dashboard/services/dashboardGeneralService";
 
 export function useDashboardResumen(params?: DashboardResumenParams) {
   return useQuery({

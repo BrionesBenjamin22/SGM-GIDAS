@@ -7,8 +7,8 @@ import SuccessToast from "@/components/SuccessToast";
 import {
   getDistincionById,
   getHistorialDistincionById,
-} from "@/services/distincionesServices";
-import { useAuditoria } from "@/hooks/useAuditoria";
+} from "@/modules/produccion/services/distincionesServices";
+import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import {
   navigateBackFromMemoriaContext,

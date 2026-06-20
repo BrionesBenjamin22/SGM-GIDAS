@@ -16,7 +16,7 @@ import {
   type User,
   type Rol,
   type AuthResponse,
-} from "@/services/authService";
+} from "@/modules/auth/services/authService";
 
 type AuthContextValue = {
   user: User | null;

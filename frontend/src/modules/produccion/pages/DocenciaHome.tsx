@@ -10,7 +10,7 @@ import {
   getActividadesDocencia,
   eliminarActividadDocencia,
   type ActividadDocencia,
-} from "@/services/actividadDocenciaServices";
+} from "@/modules/produccion/services/actividadDocenciaServices";
 import { toTitleCase } from "@/utils/format";
 import { useAuth } from "@/context/AuthContext";
 import {

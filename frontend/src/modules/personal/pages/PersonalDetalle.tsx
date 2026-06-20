@@ -8,14 +8,14 @@ import HistorialCambiosCard from "@/components/HistorialCambiosCard";
 import {
   getHistorialPersonalByRolAndId,
   getPersonalCompletoByRolAndId,
-} from "@/services/personalCompletoServices";
-import { useAuditoria } from "@/hooks/useAuditoria";
+} from "@/modules/personal/services/personalCompletoServices";
+import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
-import { useTiposFormacion } from "@/hooks/useTiposFormacion";
-import { useDedicaciones } from "@/hooks/useDedicaciones";
-import { useCategoriasUtn } from "@/hooks/useCategoriasUtn";
-import { useProgramasIncentivos } from "@/hooks/useProgramasIncentivos";
-import { useTiposPersonal } from "@/hooks/useTiposPersonal";
+import { useTiposFormacion } from "@/modules/personal/hooks/useTiposFormacion";
+import { useDedicaciones } from "@/modules/personal/hooks/useDedicaciones";
+import { useCategoriasUtn } from "@/modules/catalogos/hooks/useCategoriasUtn";
+import { useProgramasIncentivos } from "@/modules/grupo/hooks/useProgramasIncentivos";
+import { useTiposPersonal } from "@/modules/personal/hooks/useTiposPersonal";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,

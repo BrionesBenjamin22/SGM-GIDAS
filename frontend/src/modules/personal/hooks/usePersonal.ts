@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { getPersonal } from "@/services/personalServices";
-import type { PersonalItem, PersonalType } from "@/services/personalServices";
+import { getPersonal } from "@/modules/personal/services/personalServices";
+import type { PersonalItem, PersonalType } from "@/modules/personal/services/personalServices";
 
 export function usePersonal(
   tipo?: PersonalType,

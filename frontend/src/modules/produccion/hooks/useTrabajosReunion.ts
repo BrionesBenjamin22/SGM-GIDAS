@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getTrabajosReunion,
   type TrabajoReunion,
-} from "@/services/trabajosReunionServices";
+} from "@/modules/produccion/services/trabajosReunionServices";
 
 export function useTrabajosReunion(
   activos: "true" | "false" | "all" = "true",

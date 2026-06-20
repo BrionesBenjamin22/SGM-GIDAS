@@ -8,7 +8,7 @@ import {
   updateDirectivo,
   type DirectivoActual,
   type DirectivoPeriodo,
-} from "@/services/directivosServices";
+} from "@/modules/grupo/services/directivosServices";
 
 export function useDirectivos(grupoId?: number) {
   return useQuery<DirectivoActual[]>({

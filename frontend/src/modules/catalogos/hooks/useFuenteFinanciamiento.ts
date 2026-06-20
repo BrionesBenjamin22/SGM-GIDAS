@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getFuentesFinanciamiento,
   type FuenteFinanciamiento,
-} from "@/services/fuenteFinanciamientoService";
+} from "@/modules/catalogos/services/fuenteFinanciamientoService";
 
 export function useFuentesFinanciamiento() {
   const { data = [], isLoading, isError } = useQuery<FuenteFinanciamiento[]>({

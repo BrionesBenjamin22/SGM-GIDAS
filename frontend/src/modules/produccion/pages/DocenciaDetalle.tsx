@@ -7,10 +7,10 @@ import SuccessToast from "@/components/SuccessToast";
 import {
   getActividadDocenciaById,
   getHistorialActividadDocenciaById,
-} from "@/services/actividadDocenciaServices";
-import { useGradosAcademicos } from "@/hooks/useGradoAcademico";
-import { useRolesActividadDocencia } from "@/hooks/useActividadDocenciaRol";
-import { useAuditoria } from "@/hooks/useAuditoria";
+} from "@/modules/produccion/services/actividadDocenciaServices";
+import { useGradosAcademicos } from "@/modules/produccion/hooks/useGradoAcademico";
+import { useRolesActividadDocencia } from "@/modules/produccion/hooks/useActividadDocenciaRol";
+import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { toTitleCase } from "@/utils/format";
 import { useAuth } from "@/context/AuthContext";
 import {

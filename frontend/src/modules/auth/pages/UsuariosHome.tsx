@@ -8,11 +8,11 @@ import {
   type ActualizarUsuarioPayload,
   type Usuario,
   type UsuarioRol,
-} from "@/services/usuariosService";
+} from "@/modules/auth/services/usuariosService";
 import { useAuth } from "@/context/AuthContext";
 import { HttpError } from "@/lib/http";
 import Button from "@/components/Button";
-import type { Rol } from "@/services/authService";
+import type { Rol } from "@/modules/auth/services/authService";
 import {
   Users,
   Plus,

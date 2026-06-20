@@ -7,8 +7,8 @@ import SuccessToast from "@/components/SuccessToast";
 import {
   getArticuloById,
   getHistorialArticuloById,
-} from "@/services/articulosDivulgacionServices";
-import { useAuditoria } from "@/hooks/useAuditoria";
+} from "@/modules/produccion/services/articulosDivulgacionServices";
+import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import {
   navigateBackFromMemoriaContext,

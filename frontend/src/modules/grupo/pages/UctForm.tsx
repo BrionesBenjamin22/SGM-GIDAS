@@ -6,13 +6,13 @@ import Field from "@/components/Field";
 import ErrorText from "@/components/ErrorText";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
-import { useUct } from "@/hooks/useUct";
-import { useCargos } from "@/hooks/useCargos";
+import { useUct } from "@/modules/grupo/hooks/useUct";
+import { useCargos } from "@/modules/grupo/hooks/useCargos";
 import {
   useCrearYAsignarDirectivo,
   useActualizarDirectivo,
   useFinalizarDirectivo,
-} from "@/hooks/useDirectivos";
+} from "@/modules/grupo/hooks/useDirectivos";
 
 type DirectivoItem = {
   id?: number;

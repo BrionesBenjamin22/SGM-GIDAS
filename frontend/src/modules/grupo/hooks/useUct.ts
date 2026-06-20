@@ -4,7 +4,7 @@ import {
   getUct,
   upsertUct,
   type Uct,
-} from "@/services/uctServices";
+} from "@/modules/grupo/services/uctServices";
 
 type UctPayload = Omit<Uct, "id">;
 

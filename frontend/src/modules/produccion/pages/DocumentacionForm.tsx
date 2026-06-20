@@ -15,9 +15,9 @@ import {
   removeAutorFromDocumentacion,
   updateDocumentacion,
   type Autor,
-} from "@/services/documentacionServices";
-import { getAutores, createAutor } from "@/services/autoresService";
-import { useUctGuard } from "@/hooks/useUctGuard";
+} from "@/modules/produccion/services/documentacionServices";
+import { getAutores, createAutor } from "@/modules/produccion/services/autoresService";
+import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 
 export default function DocumentacionForm() {
   const { id } = useParams<{ id: string }>();

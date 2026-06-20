@@ -1,9 +1,9 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { crearUsuario, rolToRolId } from "@/services/usuariosService";
+import { crearUsuario, rolToRolId } from "@/modules/auth/services/usuariosService";
 import { HttpError } from "@/lib/http";
-import type { Rol } from "@/services/authService";
+import type { Rol } from "@/modules/auth/services/authService";
 import Button from "@/components/Button";
 import Field from "@/components/Field";
 import {

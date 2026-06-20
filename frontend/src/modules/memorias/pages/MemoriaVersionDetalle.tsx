@@ -4,7 +4,7 @@ import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/rea
 import Button from "@/components/Button";
 import SuccessToast from "@/components/SuccessToast";
 import { useAuth } from "@/context/AuthContext";
-import { useUct } from "@/hooks/useUct";
+import { useUct } from "@/modules/grupo/hooks/useUct";
 import {
   exportarExcelMemoria,
   getActividadesDocenciaSnapshot,
@@ -24,13 +24,13 @@ import {
   getTrabajosRevistasSnapshot,
   getTransferenciasSnapshot,
   getVisitasAcademicasSnapshot,
-} from "@/services/memoriasService";
+} from "@/modules/memorias/services/memoriasService";
 import {
   createPlanificacion,
   getPlanificaciones,
   updatePlanificacion,
   type PlanificacionGrupo,
-} from "@/services/planificacionGrupoServices";
+} from "@/modules/grupo/services/planificacionGrupoServices";
 import { formatFecha } from "@/utils/formatFecha";
 
 type SnapshotSection = {
