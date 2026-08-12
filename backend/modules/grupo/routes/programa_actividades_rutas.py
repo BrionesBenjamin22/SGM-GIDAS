@@ -25,6 +25,11 @@ def listar():
 def obtener(id):
     return PlanificacionGrupoController.obtener_por_id(request, id)
 
+@planificacion_grupo_bp.route("/<int:id>/historial", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def historial(id):
+    return PlanificacionGrupoController.historial(request, id)
+
 @planificacion_grupo_bp.route("/<int:id>", methods=["PUT"])
 @requiere_rol("ADMIN", "GESTOR")
 def actualizar(id):

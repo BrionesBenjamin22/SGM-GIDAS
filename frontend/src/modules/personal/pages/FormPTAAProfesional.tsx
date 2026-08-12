@@ -126,11 +126,26 @@ export default function FormPTAAProfesional({
     };
 
     if (isEdit && initialData?.id) {
-      await actualizarPersonal(
-        initialData.id,
-        payload,
-        tipo === "PROFESIONAL" ? "profesional" : "personal"
+      const original = {
+        nombre_apellido: initialData.nombre_apellido,
+        horas_semanales: Number(initialData.horas_semanales),
+        tipo_personal_id: Number(initialData.relaciones?.tipo_personal?.id ?? initialData.tipo_personal_id),
+        fecha_alta_grupo: initialData.fecha_alta_grupo,
+        grupo_utn_id: Number(initialData.grupo_utn_id ?? uct!.id),
+        activo: initialData.activo ?? true,
+      };
+      const changedPayload = Object.fromEntries(
+        Object.entries(payload).filter(
+          ([key, value]) => value !== original[key as keyof typeof original]
+        )
       );
+      if (Object.keys(changedPayload).length > 0) {
+        await actualizarPersonal(
+          initialData.id,
+          changedPayload,
+          tipo === "PROFESIONAL" ? "profesional" : "personal"
+        );
+      }
 
       await qc.invalidateQueries({
         queryKey: ["personal"],

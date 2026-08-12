@@ -138,7 +138,24 @@ export default function FormInvestigador({
     };
 
     if (isEdit && initialData?.id) {
-      await actualizarInvestigador(initialData.id, payload, "investigador");
+      const original = {
+        nombre_apellido: initialData.nombre_apellido,
+        horas_semanales: Number(initialData.horas_semanales),
+        tipo_dedicacion_id: Number(initialData.relaciones?.tipo_dedicacion?.id ?? initialData.tipo_dedicacion_id),
+        categoria_utn_id: Number(initialData.relaciones?.categoria_utn?.id ?? initialData.categoria_utn_id),
+        programa_incentivos_id: Number(initialData.relaciones?.programa_incentivos?.id ?? initialData.programa_incentivos_id),
+        fecha_alta_grupo: initialData.fecha_alta_grupo,
+        grupo_utn_id: Number(initialData.grupo_utn_id ?? uct!.id),
+        activo: initialData.activo ?? true,
+      };
+      const changedPayload = Object.fromEntries(
+        Object.entries(payload).filter(
+          ([key, value]) => value !== original[key as keyof typeof original]
+        )
+      );
+      if (Object.keys(changedPayload).length > 0) {
+        await actualizarInvestigador(initialData.id, changedPayload, "investigador");
+      }
 
       navigate(`/personal/investigador/${initialData.id}`, {
         replace: true,

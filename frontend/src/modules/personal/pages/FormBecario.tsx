@@ -7,10 +7,6 @@ import { useTiposFormacion } from "@/modules/personal/hooks/useTiposFormacion";
 import { crearBecario, actualizarBecario } from "@/modules/personal/services/becarioServices";
 import { useQueryClient } from "@tanstack/react-query";
 import { useBecas } from "@/modules/recursos/hooks/useBecas";
-import {
-  vincularBecarioABeca,
-  desvincularBecarioDeBeca,
-} from "@/modules/recursos/services/becasService";
 import Calendar from "@/components/Calendar";
 
 interface Props {
@@ -182,28 +178,38 @@ export default function FormBecario({ initialData, onCancel }: Props) {
       fecha_alta_grupo: formatDateStr(fechaAltaGrupo)!,
       grupo_utn_id: uct.id,
       activo,
+      becas: agregarBeca
+        ? becasVinculadas.map((beca) => ({
+            beca_id: Number(beca.becaId),
+            fecha_inicio: formatDateStr(beca.fechaInicio)!,
+            fecha_fin: formatDateStr(beca.fechaFin),
+            monto_percibido: beca.monto !== "" ? Number(beca.monto) : undefined,
+          }))
+        : [],
     };
 
     if (isEdit && initialData?.id) {
-      await actualizarBecario(initialData.id, payload);
-
-      for (const b of initialData.becas || []) {
-        await desvincularBecarioDeBeca(b.id, initialData.id).catch(() => {});
-      }
-
-      if (agregarBeca && becasVinculadas.length > 0) {
-        await Promise.all(
-          becasVinculadas.map((beca) => {
-            if (!beca.becaId) return Promise.resolve();
-            return vincularBecarioABeca(Number(beca.becaId), {
-              id_becario: initialData.id,
-              fecha_inicio: formatDateStr(beca.fechaInicio)!,
-              fecha_fin: formatDateStr(beca.fechaFin),
-              monto_percibido:
-                beca.monto !== "" ? Number(beca.monto) : undefined,
-            });
-          })
-        ).catch((err) => console.error("Error al actualizar becas", err));
+      const original = {
+        nombre_apellido: initialData.nombre_apellido,
+        horas_semanales: Number(initialData.horas_semanales),
+        tipo_formacion_id: Number(initialData.relaciones?.tipo_formacion?.id ?? initialData.tipo_formacion_id),
+        fecha_alta_grupo: initialData.fecha_alta_grupo,
+        grupo_utn_id: Number(initialData.grupo_utn_id ?? uct.id),
+        activo: initialData.activo ?? true,
+        becas: (initialData.becas || []).map((beca: any) => ({
+          beca_id: Number(beca.id),
+          fecha_inicio: beca.fecha_inicio,
+          fecha_fin: beca.fecha_fin || undefined,
+          monto_percibido: beca.monto_percibido ?? undefined,
+        })),
+      };
+      const changedPayload = Object.fromEntries(
+        Object.entries(payload).filter(([key, value]) =>
+          JSON.stringify(value) !== JSON.stringify(original[key as keyof typeof original])
+        )
+      );
+      if (Object.keys(changedPayload).length > 0) {
+        await actualizarBecario(initialData.id, changedPayload);
       }
 
       qc.invalidateQueries({ queryKey: ["personal"] });
@@ -220,23 +226,7 @@ export default function FormBecario({ initialData, onCancel }: Props) {
       return;
     }
 
-    const newBecario: any = await crearBecario(payload);
-    const createdId = newBecario.id;
-
-    if (createdId && agregarBeca && becasVinculadas.length > 0) {
-      await Promise.all(
-        becasVinculadas.map((beca) => {
-          if (!beca.becaId) return Promise.resolve();
-          return vincularBecarioABeca(Number(beca.becaId), {
-            id_becario: createdId,
-            fecha_inicio: formatDateStr(beca.fechaInicio)!,
-            fecha_fin: formatDateStr(beca.fechaFin),
-            monto_percibido:
-              beca.monto !== "" ? Number(beca.monto) : undefined,
-          });
-        })
-      ).catch((err) => console.error("Error al crear becas vinculadas", err));
-    }
+    await crearBecario(payload);
 
     qc.invalidateQueries({ queryKey: ["personal"] });
     qc.invalidateQueries({ queryKey: ["becarios"] });

@@ -30,11 +30,8 @@ class BecarioController:
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 400
 
-        except Exception as e:
-            return jsonify({
-                "error": "Error interno del servidor",
-                "detail": str(e)
-            }), 500
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
 
 
     # =====================================================
@@ -100,11 +97,8 @@ class BecarioController:
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 400
 
-        except Exception as e:
-            return jsonify({
-                "error": "Error interno del servidor",
-                "detail": str(e)
-            }), 500
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
 
     # =====================================================
     # SOFT DELETE
@@ -124,8 +118,5 @@ class BecarioController:
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 400
 
-        except Exception as e:
-            return jsonify({
-                "error": "Error interno del servidor",
-                "detail": str(e)
-            }), 500
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500

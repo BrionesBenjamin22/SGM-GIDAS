@@ -5,6 +5,7 @@ from flask import Flask
 
 from modules.search.controllers.search_controller import SearchController
 from modules.search.services.search_service import SearchService
+from tools.verify_search_retrieval import PROBES
 
 
 class _FakeColumn:
@@ -48,6 +49,12 @@ class _FakeQuery:
 
 
 class SearchServiceTestCase(unittest.TestCase):
+
+    def test_matriz_cubre_24_modulos_sin_duplicados(self):
+        modulos = [probe.modulo for probe in PROBES]
+        self.assertEqual(len(modulos), 24)
+        self.assertEqual(len(modulos), len(set(modulos)))
+        self.assertTrue(all(probe.url.startswith("/") for probe in PROBES))
 
     def test_bounded_results_filtra_activos_y_limita_consulta(self):
         query = _FakeQuery()
@@ -122,6 +129,7 @@ class SearchControllerTestCase(unittest.TestCase):
 
         body = response.get_json()
         self.assertEqual(status_code, 200)
+        self.assertEqual(response.headers["Cache-Control"], "private, no-store")
         self.assertEqual(body["resultados"], resultados[2:4])
         self.assertEqual(
             body["meta"],

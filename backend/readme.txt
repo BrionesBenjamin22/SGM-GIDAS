@@ -245,7 +245,7 @@ El backend se construye con Dockerfile multi-stage:
 - development: conserva herramientas minimas para desarrollo local.
 - production: imagen final para despliegue.
 
-En produccion el entrypoint aplica migraciones, ejecuta el seed inicial de roles e inicia la API con Gunicorn. El servidor de desarrollo de Flask queda reservado para ambientes no productivos.
+En produccion el servicio efimero `migrate` aplica migraciones, ejecuta el seed y concede permisos. Gunicorn inicia despues usando solamente `DATABASE_URL` de `gidas_app`, sin recibir credenciales administrativas.
 
 Historial de directivos por grupo
 
@@ -262,6 +262,19 @@ El entrypoint ejecuta `python seed_roles.py` despues de aplicar migraciones.
 El script es idempotente y garantiza los roles base junto con los cargos
 `Director` y `Vicedirector`. Si uno de esos cargos existe con soft delete, el
 seed lo restaura.
+
+Validacion de busqueda por modulo
+
+Con PostgreSQL y el backend local configurados, ejecutar
+`python tools/verify_search_retrieval.py`. El verificador es de solo lectura y
+exige recuperar un registro activo con ID, tipo y URL correctos para cada uno de
+los 24 modulos incluidos en la busqueda global.
+
+Observabilidad
+
+Produccion utiliza logs JSON en stdout con `X-Request-ID`, servicio, entorno y
+version. `/api/v1/health/live` valida el proceso y `/api/v1/health/ready` valida
+PostgreSQL y Redis. Los secretos se redactan como `[REDACTED]`.
 
 Variables obligatorias en produccion:
 - APP_ENV=production

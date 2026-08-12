@@ -4,7 +4,8 @@ from modules.grupo.services.programa_actividades_service import (
     actualizar_planificacion_grupo,
     eliminar_planificacion_grupo,
     listar_planificaciones,
-    obtener_planificacion_por_id
+    obtener_planificacion_por_id,
+    obtener_historial_planificacion,
 )
 from modules.shared.controllers.responses import error_response
 from modules.shared.services.logging_config import get_logger
@@ -52,12 +53,22 @@ class PlanificacionGrupoController:
     def actualizar(req: Request, id: int) -> Response:
         data = req.get_json()
         try:
-            plan = actualizar_planificacion_grupo(id, data)
+            plan = actualizar_planificacion_grupo(id, data, g.current_user_id)
             return jsonify(plan.serialize()), 200
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 400
         except Exception:
             return jsonify({"error": "Error interno del servidor"}), 500
+
+    @staticmethod
+    def historial(req: Request, id: int) -> Response:
+        try:
+            return jsonify(obtener_historial_planificacion(id)), 200
+        except ValueError as ve:
+            return jsonify({"error": str(ve)}), 404
+        except Exception:
+            logger.exception("Error interno al obtener historial de planificacion")
+            return error_response("INTERNAL_ERROR", status_code=500)
 
     @staticmethod
     def eliminar(req: Request, id: int) -> Response:

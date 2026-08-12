@@ -62,6 +62,9 @@ export default function UctForm() {
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [pendingUpdates, setPendingUpdates] = useState<Record<number, string>>({});
+  const [pendingFinalizations, setPendingFinalizations] = useState<Record<number, string>>({});
 
   const directivosActuales: DirectivoItem[] = useMemo(
     () => (uct?.directivos ?? []) as DirectivoItem[],
@@ -194,14 +197,32 @@ export default function UctForm() {
     if (!validate()) return;
 
     try {
-      await save({
+      setSubmitError("");
+      const uctPayload = {
         facultadRegional: data.facultadRegional.trim(),
         nombreSigla: data.nombreSigla.trim(),
         correo: data.correo.trim(),
         objetivos: data.objetivos.trim(),
-        director: "",
-        vicedirector: "",
-      });
+      };
+      const changedUctPayload = isEdit && uct
+        ? Object.fromEntries(
+            Object.entries(uctPayload).filter(
+              ([key, value]) => value !== uct[key as keyof typeof uctPayload]
+            )
+          )
+        : uctPayload;
+      if (!isEdit || Object.keys(changedUctPayload).length > 0) {
+        await save(changedUctPayload);
+      }
+
+      for (const [id, nombre_apellido] of Object.entries(pendingUpdates)) {
+        await actualizarDirectivo.mutateAsync({ id: Number(id), nombre_apellido });
+      }
+      for (const [id, fecha_fin] of Object.entries(pendingFinalizations)) {
+        await finalizarDirectivo.mutateAsync({ id_directivo: Number(id), fecha_fin });
+      }
+      setPendingUpdates({});
+      setPendingFinalizations({});
 
       if (grupoId && mostrarAltaDirectivos) {
         if (faltaDirector) {
@@ -233,26 +254,20 @@ export default function UctForm() {
       );
       setShowSuccess(true);
     } catch (err: any) {
-      alert(err.message || "Error al guardar");
+      setSubmitError(
+        err?.message || "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+      );
     }
   };
 
-  const handleEditarDirectivo = async () => {
+  const handleEditarDirectivo = () => {
     if (!editingId || !editingNombre.trim()) return;
-
-    try {
-      await actualizarDirectivo.mutateAsync({
-        id: editingId,
-        nombre_apellido: editingNombre.trim(),
-      });
-
-      setEditingId(null);
-      setEditingNombre("");
-      setSuccessMessage("Directivo actualizado correctamente.");
-      setShowSuccess(true);
-    } catch (err: any) {
-      alert(err.message || "Error al actualizar directivo");
-    }
+    setPendingUpdates((current) => ({
+      ...current,
+      [editingId]: editingNombre.trim(),
+    }));
+    setEditingId(null);
+    setEditingNombre("");
   };
 
   const abrirConfirmFinalizar = (directivo: DirectivoItem) => {
@@ -269,24 +284,14 @@ export default function UctForm() {
     setDirectivoAFinalizar(null);
   };
 
-  const handleFinalizarDirectivo = async () => {
+  const handleFinalizarDirectivo = () => {
     const directivoId =
       directivoAFinalizar?.id_directivo ?? directivoAFinalizar?.id;
 
     if (!directivoId || !fechaFin) return;
 
-    try {
-      await finalizarDirectivo.mutateAsync({
-        id_directivo: directivoId,
-        fecha_fin: fechaFin,
-      });
-
-      cerrarConfirmFinalizar();
-      setSuccessMessage("Cargo finalizado correctamente.");
-      setShowSuccess(true);
-    } catch (err: any) {
-      alert(err.message || "Error al finalizar cargo");
-    }
+    setPendingFinalizations((current) => ({ ...current, [directivoId]: fechaFin }));
+    cerrarConfirmFinalizar();
   };
 
   const inputClass = (field: string) =>
@@ -300,6 +305,7 @@ export default function UctForm() {
         onSubmit={onSubmit}
         className="rounded-2xl border border-slate-200 bg-white p-6 space-y-8"
       >
+        {submitError && <ErrorText>{submitError}</ErrorText>}
         <Field label="Facultad Regional">
           <>
             <input
@@ -483,12 +489,19 @@ export default function UctForm() {
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <p className="font-medium text-slate-900">
-                          {d.nombre_apellido}
+                          {directivoId && pendingUpdates[directivoId]
+                            ? pendingUpdates[directivoId]
+                            : d.nombre_apellido}
                         </p>
                         <p>{d.cargo}</p>
                         <p className="text-slate-500">
                           Inicio: {d.fecha_inicio || "—"}
                         </p>
+                        {directivoId && pendingFinalizations[directivoId] && (
+                          <p className="text-amber-700">
+                            Finalizacion pendiente: {pendingFinalizations[directivoId]}
+                          </p>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-3 pt-1">
@@ -557,6 +570,13 @@ export default function UctForm() {
               })}
             </div>
           </div>
+        )}
+
+        {(Object.keys(pendingUpdates).length > 0 ||
+          Object.keys(pendingFinalizations).length > 0) && (
+          <p className="text-sm text-amber-700">
+            Hay cambios del equipo directivo pendientes. Se aplicaran al guardar la UCT.
+          </p>
         )}
 
         {isEdit && !tieneDirectivos && !mostrarAltaDirectivos && (

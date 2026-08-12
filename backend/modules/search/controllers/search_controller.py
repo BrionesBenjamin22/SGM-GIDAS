@@ -47,7 +47,7 @@ class SearchController:
             offset = (page - 1) * per_page
             paginated_results = resultados[offset:offset + per_page]
 
-            return jsonify({
+            response = jsonify({
                 "query": query_text,
                 "orden": orden,
                 "eliminados": eliminados,
@@ -59,7 +59,9 @@ class SearchController:
                     "total": total_resultados,
                     "total_pages": total_pages,
                 },
-            }), 200
+            })
+            response.headers["Cache-Control"] = "private, no-store"
+            return response, 200
 
         except ValueError as e:
             return jsonify({"error": str(e)}), 400

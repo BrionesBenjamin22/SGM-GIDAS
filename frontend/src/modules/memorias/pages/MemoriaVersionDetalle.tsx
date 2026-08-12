@@ -242,11 +242,12 @@ export default function MemoriaVersionDetalle() {
     : undefined;
   const puedeEditarPrograma = versionCerrada && canEditRecords();
 
-  const { data: planificaciones = [], isLoading: isLoadingPlanificaciones } = useQuery({
+  const { data: planificacionesPage, isLoading: isLoadingPlanificaciones } = useQuery({
     queryKey: ["planificaciones", "true"],
     queryFn: () => getPlanificaciones("true"),
     enabled: puedeEditarPrograma && !!anioPrograma && !!uct?.id,
   });
+  const planificaciones = planificacionesPage?.data ?? [];
 
   const planificacionActual = useMemo<PlanificacionGrupo | undefined>(
     () =>

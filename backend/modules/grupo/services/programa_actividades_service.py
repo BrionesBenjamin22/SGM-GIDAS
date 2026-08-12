@@ -1,6 +1,7 @@
 from extension import db
 from modules.grupo.models.programa_actividades import PlanificacionGrupo
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.shared.services.auditoria_service import AuditoriaService
 
 
 def _validar_user_id(user_id):
@@ -80,16 +81,22 @@ def crear_planificacion_grupo(data, user_id):
         raise
 
 
-def actualizar_planificacion_grupo(id, data):
+def actualizar_planificacion_grupo(id, data, user_id):
     if not data:
         raise ValueError("Los datos no pueden estar vacios.")
 
+    _validar_user_id(user_id)
     planificacion = db.session.get(PlanificacionGrupo, id)
     if not planificacion or planificacion.deleted_at is not None:
         raise ValueError("Planificacion no encontrada.")
 
+    cambios = {}
     if "descripcion" in data:
-        planificacion.descripcion = _validar_descripcion(data["descripcion"])
+        descripcion = _validar_descripcion(data["descripcion"])
+        cambio = AuditoriaService.construir_cambio(planificacion.descripcion, descripcion)
+        if cambio:
+            cambios["descripcion"] = cambio
+            planificacion.descripcion = descripcion
 
     nuevo_anio = planificacion.anio
     if "anio" in data:
@@ -109,8 +116,24 @@ def actualizar_planificacion_grupo(id, data):
             planificacion_id=id
         )
 
-    planificacion.anio = nuevo_anio
-    planificacion.grupo_id = nuevo_grupo_id
+    cambio_anio = AuditoriaService.construir_cambio(planificacion.anio, nuevo_anio)
+    if cambio_anio:
+        cambios["anio"] = cambio_anio
+        planificacion.anio = nuevo_anio
+
+    cambio_grupo = AuditoriaService.construir_cambio(planificacion.grupo_id, nuevo_grupo_id)
+    if cambio_grupo:
+        cambios["grupo_id"] = cambio_grupo
+        planificacion.grupo_id = nuevo_grupo_id
+
+    if cambios:
+        planificacion.mark_updated(user_id)
+        AuditoriaService.registrar_cambios(
+            entidad="planificacion_grupo",
+            registro_id=planificacion.id,
+            cambios=cambios,
+            user_id=user_id,
+        )
 
     try:
         db.session.commit()
@@ -161,3 +184,13 @@ def obtener_planificacion_por_id(id):
     if not planificacion or planificacion.deleted_at is not None:
         raise ValueError("Planificacion no encontrada.")
     return planificacion
+
+
+def obtener_historial_planificacion(id):
+    planificacion = db.session.get(PlanificacionGrupo, id)
+    if not planificacion:
+        raise ValueError("Planificacion no encontrada.")
+    return AuditoriaService.obtener_historial_entidad(
+        entidad="planificacion_grupo",
+        registro_id=planificacion.id,
+    )

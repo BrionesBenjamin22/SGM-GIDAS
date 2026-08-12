@@ -1,147 +1,372 @@
-# Despliegue en produccion con Nginx y Certbot
+# Guia operativa de despliegue en servidor
 
-Esta guia deja el esquema recomendado para desplegar Sistema GIDAS en un servidor propio:
+Esta guia describe el despliegue manual de Sistema GIDAS en un servidor propio
+mediante Docker Compose. No implementa CI/CD ni activa HTTPS. La configuracion
+TLS se tratara cuando el laboratorio defina DNS, certificados y proxy.
+
+## 1. Arquitectura desplegada
 
 ```text
-Usuario -> HTTPS -> Nginx del servidor + Certbot -> http://127.0.0.1:8080 -> Nginx del compose -> frontend/backend
+Navegador -> Nginx :NGINX_PORT -> frontend / backend
+                                      |        |
+                                      |        +-> PostgreSQL
+                                      |        +-> Redis
+                                      +-> archivos estaticos
 ```
 
-El compose de la aplicacion no gestiona certificados. Expone el proxy interno en `127.0.0.1:8080` o en el puerto definido por `NGINX_PORT`, y el Nginx del servidor publica HTTPS en los puertos 80 y 443.
+Solo Nginx publica un puerto del host. PostgreSQL, Redis, backend y frontend
+permanecen accesibles unicamente dentro de la red de Compose.
 
-## Requisitos
+El arranque separa responsabilidades:
 
-- Dominio o subdominio asignado a la aplicacion, por ejemplo `gidas.example.com`.
-- Registro DNS `A` apuntando a la IP publica del servidor.
-- Puertos 80 y 443 abiertos hacia el servidor.
-- Docker y Docker Compose instalados.
-- Nginx y Certbot instalados en el servidor.
+- `migrate` usa `gidas_admin`, prepara el rol de aplicacion, aplica migraciones,
+  ejecuta el seed y concede permisos; luego termina.
+- `backend` usa `gidas_app` durante toda la operacion normal.
+- `frontend` sirve el build estatico.
+- `nginx` publica frontend y `/api/v1`.
 
-## Variables de entorno
+## 2. Requisitos del servidor
 
-Crear los archivos reales desde las plantillas:
+- Linux de 64 bits con hora sincronizada.
+- Docker Engine y el complemento Docker Compose.
+- Git o un mecanismo controlado para copiar una version del repositorio.
+- Espacio persistente para imágenes, volumen PostgreSQL, logs y respaldos.
+- IP fija o reserva DHCP en la LAN.
+- Puerto elegido para `NGINX_PORT` permitido por el firewall de la LAN.
+- Acceso administrativo restringido al operador del servidor.
+
+Comprobacion inicial:
+
+```bash
+docker --version
+docker compose version
+git --version
+df -h
+timedatectl status
+```
+
+## 3. Obtener una version identificable
+
+Desplegar una rama, tag o commit conocido. Registrar siempre el identificador:
+
+```bash
+git clone <URL_DEL_REPOSITORIO> sistema-gidas
+cd sistema-gidas
+git checkout <TAG_O_COMMIT_APROBADO>
+git rev-parse HEAD
+```
+
+No desplegar con modificaciones locales sin registrar:
+
+```bash
+git status --short
+```
+
+## 4. Crear la configuracion productiva
+
+Partir de las plantillas versionadas:
 
 ```bash
 cp .env.production.example .env.production
 cp backend/.env.production.example backend/.env.production
 cp frontend/.env.production.example frontend/.env.production
+chmod 600 .env.production backend/.env.production frontend/.env.production
 ```
 
-En `.env.production`, dejar el proxy interno del compose en un puerto no privilegiado:
+Los archivos reales no deben agregarse a Git ni copiarse a tickets o chats.
+
+### Archivo raiz `.env.production`
+
+Definir como minimo:
 
 ```env
+COMPOSE_SERVICE_PREFIX=gidas_prod
+COMPOSE_NETWORK=gidas_prod_network
+POSTGRES_VOLUME=gidas_prod_postgres_data
+POSTGRES_DB=gidas_db
+POSTGRES_ADMIN_USER=gidas_admin
+POSTGRES_ADMIN_PASSWORD=<CLAVE_ADMIN_ALEATORIA>
+POSTGRES_APP_USER=gidas_app
+POSTGRES_APP_PASSWORD=<CLAVE_APP_ALEATORIA_DISTINTA>
+MIGRATION_DATABASE_URL=postgresql://gidas_admin:<CLAVE_ADMIN_URL_ENCODED>@db:5432/gidas_db
 NGINX_PORT=8080
+BACKEND_ENV_FILE=.env.production
+FRONTEND_ENV_FILE=.env.production
+LOG_MAX_SIZE=10m
+LOG_MAX_FILES=5
 ```
 
-En `backend/.env.production`, reemplazar `gidas.example.com` por el dominio real:
+`NGINX_PORT=8080` publica el puerto en las interfaces del servidor. Limitar su
+acceso mediante firewall a la red del laboratorio. Si posteriormente se usa un
+proxy externo, debe revisarse la vinculacion a loopback antes de habilitarlo.
+
+Las contrasenas incluidas en URLs deben codificarse como URL. Para reducir
+errores operativos, se recomiendan contrasenas aleatorias compatibles con URI y
+almacenadas en un gestor de secretos.
+
+### Archivo `backend/.env.production`
+
+Definir como minimo:
 
 ```env
-FRONTEND_URL=https://gidas.example.com
-FRONTEND_URLS=https://gidas.example.com
-SESSION_COOKIE_SECURE=True
+APP_ENV=production
+LOG_LEVEL=INFO
+LOG_FORMAT=json
+SERVICE_NAME=gidas-backend
+APP_VERSION=<TAG_O_COMMIT>
+SECRET_KEY=<SECRETO_ALEATORIO_DE_32_O_MAS_CARACTERES>
+JWT_SECRET=<SECRETO_ALEATORIO_DISTINTO>
+REFRESH_SECRET=<SECRETO_ALEATORIO_DISTINTO>
+FRONTEND_URL=http://<IP_O_DNS_LAN>:8080
+FRONTEND_URLS=http://<IP_O_DNS_LAN>:8080
+DATABASE_URL=postgresql://gidas_app:<CLAVE_APP_URL_ENCODED>@db:5432/gidas_db
+RATELIMIT_STORAGE_URI=redis://redis:6379/0
 ```
 
-Tambien deben reemplazarse los placeholders de:
+Mientras el acceso sea HTTP, `SESSION_COOKIE_SECURE` no debe establecerse en
+`True`. Al activar HTTPS se actualizaran conjuntamente origen, cookies y proxy.
 
-- `SECRET_KEY`
-- `JWT_SECRET`
-- `REFRESH_SECRET`
-- `POSTGRES_PASSWORD`
-- `DATABASE_URL`
+El archivo del backend no debe contener la clave administrativa ni
+`MIGRATION_DATABASE_URL`.
 
-Las claves de aplicacion deben tener al menos 32 caracteres. El backend no inicia en produccion si conserva placeholders o configuracion insegura.
+### Archivo `frontend/.env.production`
 
-## Levantar la aplicacion
+Mantener la API en el mismo origen:
 
-Desde la raiz del proyecto:
+```env
+VITE_APP_ENV=production
+VITE_API_BASE_URL=/api/v1
+VITE_SERVER_FILTER_PERSONAL=true
+```
+
+Las variables `VITE_*` se incorporan al build y nunca deben contener secretos.
+
+## 5. Validar antes de iniciar
+
+Renderizar Compose permite detectar variables y estructura invalidas sin
+iniciar contenedores:
+
+```bash
+docker compose --env-file .env.production config --quiet
+docker compose --env-file .env.production config > /tmp/gidas-compose-rendered.yml
+```
+
+Revise el archivo renderizado localmente porque contiene valores sensibles y
+eliminelo al terminar. Confirme que:
+
+- `backend` usa la URL de `gidas_app`.
+- `migrate` usa la URL de `gidas_admin`.
+- no se publican puertos de PostgreSQL, Redis, backend ni frontend.
+- solo Nginx publica `NGINX_PORT`.
+- no quedan textos `replace-with` en los archivos reales.
+
+Validar la configuracion Nginx incluida usando su misma imagen, sin iniciar el
+stack:
+
+```bash
+docker run --rm -v "$PWD/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro" nginxinc/nginx-unprivileged:1.27-alpine nginx -t
+```
+
+## 6. Respaldo previo
+
+Si es el primer despliegue no existe informacion que respaldar. Para toda
+actualizacion posterior, crear un directorio fuera del repositorio y generar un
+dump antes de modificar servicios o migraciones:
+
+```bash
+mkdir -p ../gidas-backups
+docker compose --env-file .env.production exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > "../gidas-backups/gidas-$(date +%Y%m%d-%H%M%S).dump"
+```
+
+Verificar que el archivo exista, no este vacio y pueda ser listado:
+
+```bash
+ls -lh ../gidas-backups/
+docker compose --env-file .env.production exec -T db pg_restore --list < <ARCHIVO_DUMP> | head
+```
+
+Un respaldo no se considera valido hasta probar periodicamente su restauracion
+en una base aislada. No restaurar sobre el volumen activo sin una ventana de
+mantenimiento y un procedimiento aprobado.
+
+## 7. Primer arranque
+
+Construir e iniciar el stack:
 
 ```bash
 docker compose --env-file .env.production up --build -d
 ```
 
-Verificar estado:
+Compose espera PostgreSQL, ejecuta `migrate`, inicia el backend con el rol de
+aplicacion y finalmente habilita frontend y Nginx.
+
+Comprobar el resultado del servicio efimero y el estado general:
+
+```bash
+docker compose --env-file .env.production ps -a
+docker compose --env-file .env.production logs --tail=200 migrate
+docker compose --env-file .env.production logs --tail=200 backend nginx
+```
+
+`migrate` debe terminar con codigo `0`; no debe permanecer ejecutandose.
+
+## 8. Verificacion tecnica y funcional
+
+Desde el servidor:
+
+```bash
+curl -i http://127.0.0.1:8080/api/v1/health/live
+curl -i http://127.0.0.1:8080/api/v1/health/ready
+curl -I http://127.0.0.1:8080/
+```
+
+Resultados esperados:
+
+- liveness responde HTTP `200`.
+- readiness responde HTTP `200` con PostgreSQL y Redis disponibles.
+- el frontend responde HTTP `200`.
+- las respuestas de API incluyen `X-Request-ID`.
+
+Si `NGINX_PORT` no es `8080`, reemplazarlo en los comandos.
+
+Desde otro equipo autorizado de la LAN, verificar:
+
+```text
+http://<IP_O_DNS_DEL_SERVIDOR>:<NGINX_PORT>
+```
+
+Prueba funcional minima:
+
+1. Iniciar sesion con un usuario autorizado.
+2. Consultar al menos un listado y un detalle.
+3. Ejecutar una busqueda.
+4. Crear o editar un registro de prueba controlado.
+5. Confirmar historial y auditoria cuando correspondan.
+6. Cerrar sesion y comprobar que la sesion protegida no siga disponible.
+
+## 9. Comprobar la separacion PostgreSQL
+
+Verificar la identidad operativa del backend:
+
+```bash
+docker compose --env-file .env.production exec backend python -c "from app import app; from extension import db; from sqlalchemy import text; app.app_context().push(); print(db.session.execute(text('SELECT current_user')).scalar())"
+```
+
+El resultado esperado es `gidas_app`.
+
+Listar roles como administrador:
+
+```bash
+docker compose --env-file .env.production exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\\du"'
+```
+
+No usar `gidas_admin` como `DATABASE_URL` permanente del backend.
+
+## 10. Operacion cotidiana
+
+Estado y consumo:
 
 ```bash
 docker compose --env-file .env.production ps
+docker stats --no-stream
+docker system df
+df -h
 ```
 
-La aplicacion debe responder internamente en:
-
-```text
-http://127.0.0.1:8080
-```
-
-## Configurar Nginx externo
-
-Copiar la plantilla:
+Logs recientes:
 
 ```bash
-sudo cp nginx/gidas.external.conf.example /etc/nginx/sites-available/gidas
-```
-
-Editar el dominio:
-
-```bash
-sudo nano /etc/nginx/sites-available/gidas
-```
-
-Reemplazar:
-
-```text
-gidas.example.com
-```
-
-por el dominio real.
-
-Activar el sitio:
-
-```bash
-sudo ln -s /etc/nginx/sites-available/gidas /etc/nginx/sites-enabled/gidas
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-## Solicitar certificado
-
-Con DNS ya propagado:
-
-```bash
-sudo certbot --nginx -d gidas.example.com
-```
-
-Certbot detecta el bloque de Nginx, agrega la configuracion TLS y puede configurar redireccion automatica de HTTP a HTTPS.
-
-## Verificar renovacion
-
-```bash
-systemctl list-timers | grep certbot
-sudo certbot renew --dry-run
-```
-
-## Operacion
-
-Ver logs del proxy externo:
-
-```bash
-sudo tail -f /var/log/nginx/access.log /var/log/nginx/error.log
-```
-
-Ver logs del backend:
-
-```bash
+docker compose --env-file .env.production logs --since=30m --tail=200 backend nginx db redis
 docker compose --env-file .env.production logs -f backend
 ```
 
-Ver healthcheck por HTTPS:
+Reinicio controlado de un servicio:
 
 ```bash
-curl -i https://gidas.example.com/api/v1/health
+docker compose --env-file .env.production restart backend
 ```
 
-## Notas de seguridad
+No reiniciar PostgreSQL ni eliminar volúmenes como primera respuesta a una
+falla. Conservar el `X-Request-ID` mostrado en una respuesta fallida para buscar
+la solicitud asociada en los logs.
 
-- No exponer PostgreSQL a internet.
-- No exponer Redis a internet.
-- No exponer directamente el backend Flask/Gunicorn.
-- Publicar solo Nginx del servidor en 80 y 443.
-- Mantener `FRONTEND_URLS` restringido al dominio real.
-- No versionar archivos `.env` reales.
+## 11. Actualizacion manual
+
+1. Anunciar la ventana y confirmar espacio disponible.
+2. Crear y verificar el respaldo.
+3. Registrar el commit actualmente desplegado.
+4. Obtener el nuevo tag o commit aprobado.
+5. Revisar cambios de plantillas y actualizar los `.env` reales manualmente.
+6. Renderizar y revisar Compose.
+7. Construir e iniciar la nueva version.
+8. Revisar `migrate`, healthchecks y logs.
+9. Ejecutar la prueba funcional minima.
+10. Registrar version, fecha, operador y resultado.
+
+Comandos base:
+
+```bash
+git fetch --tags
+git checkout <NUEVO_TAG_O_COMMIT>
+docker compose --env-file .env.production config --quiet
+docker compose --env-file .env.production up --build -d
+docker compose --env-file .env.production ps -a
+```
+
+No ejecutar `docker compose down -v`: `-v` elimina el volumen persistente de
+PostgreSQL.
+
+## 12. Recuperacion ante una actualizacion fallida
+
+Si la migracion no comenzo o no cambio el esquema:
+
+1. Conservar logs y mensaje de error.
+2. Volver al commit anterior.
+3. Restaurar las variables compatibles con esa version.
+4. Reconstruir y validar.
+
+```bash
+git checkout <COMMIT_ANTERIOR>
+docker compose --env-file .env.production up --build -d
+```
+
+Si se aplicaron migraciones o hubo escrituras incompatibles, no improvisar un
+rollback. Detener el acceso, conservar el volumen y los logs, y decidir entre
+una migracion correctiva o restaurar el dump verificado en una base/volumen
+aislado. Documentar el incidente antes de reabrir el servicio.
+
+## 13. Seguridad operativa minima
+
+- Restringir SSH, Docker y archivos `.env` a operadores autorizados.
+- Permitir en firewall solo SSH administrativo y `NGINX_PORT` desde la LAN.
+- No publicar PostgreSQL, Redis, backend ni frontend.
+- Mantener credenciales administrativas y operativas distintas.
+- Rotar secretos de forma planificada y uno por vez.
+- Mantener respaldos cifrados, con retencion y prueba de restauracion.
+- Aplicar actualizaciones del sistema y Docker en ventanas controladas.
+- No cargar datos reales hasta completar prueba funcional y respaldo.
+- Tratar HTTP en LAN como una etapa temporal; no exponerlo a Internet.
+
+## 14. HTTPS y CI/CD
+
+HTTPS y CI/CD permanecen como etapas posteriores. Antes de activar HTTPS deben
+definirse DNS o IP estable, autoridad certificadora, ubicacion del proxy TLS,
+puertos y distribucion de confianza a los equipos cliente. Hasta entonces, el
+firewall debe limitar el acceso HTTP exclusivamente a la LAN autorizada.
+
+## 15. Registro recomendado de cada despliegue
+
+Conservar fuera del repositorio:
+
+```text
+fecha y hora:
+operador:
+servidor:
+tag o commit:
+respaldo verificado:
+resultado de migrate:
+resultado de health/live:
+resultado de health/ready:
+prueba funcional:
+incidencias y vuelta atras:
+```

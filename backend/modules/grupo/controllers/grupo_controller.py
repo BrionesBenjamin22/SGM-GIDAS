@@ -27,8 +27,8 @@ class GrupoUtnController:
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 400
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
 
 
     @staticmethod
@@ -41,8 +41,8 @@ class GrupoUtnController:
 
             return jsonify(grupo.serialize()), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
 
 
     @staticmethod
@@ -55,8 +55,8 @@ class GrupoUtnController:
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 400
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
 
 
     @staticmethod
@@ -70,8 +70,8 @@ class GrupoUtnController:
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 404
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
         
     @staticmethod
     def restaurar():
@@ -80,8 +80,8 @@ class GrupoUtnController:
             return jsonify(grupo.serialize()), 200
         except ValueError as ve:
                 return jsonify({"error": str(ve)}), 400
-        except Exception as e:
-                return jsonify({"error": str(e)}), 500
+        except Exception:
+                return jsonify({"error": "Error interno del servidor"}), 500
             
             
     @staticmethod

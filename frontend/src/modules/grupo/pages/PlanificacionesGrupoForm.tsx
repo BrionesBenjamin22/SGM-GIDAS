@@ -78,11 +78,26 @@ export default function PlanificacionGrupoForm() {
     if (!uct) return;
     if (!validate()) return;
 
-    await mutateAsync({
+    const payload = {
       descripcion: data.descripcion,
       anio: Number(data.anio),
       grupo_id: uct.id,
-    });
+    };
+
+    if (isEdit && planificacion) {
+      const changedPayload = Object.fromEntries(
+        Object.entries(payload).filter(
+          ([key, value]) => value !== planificacion[key as keyof typeof payload]
+        )
+      );
+      if (Object.keys(changedPayload).length === 0) {
+        navigate(`/planificaciones/${id}`);
+        return;
+      }
+      await mutateAsync(changedPayload);
+    } else {
+      await mutateAsync(payload);
+    }
 
     if (isEdit) {
       navigate(`/planificaciones/${id}`, {

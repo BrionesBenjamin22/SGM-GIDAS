@@ -26,6 +26,19 @@ type SearchResponse = {
   orden: Orden;
   total_resultados: number;
   resultados: BackendResult[];
+  meta: SearchMeta;
+};
+
+export type SearchMeta = {
+  page: number;
+  per_page: number;
+  total: number;
+  total_pages: number;
+};
+
+export type SearchPageResult = {
+  results: SearchResult[];
+  meta: SearchMeta;
 };
 
 /* ───────────────────────────────────────────
@@ -97,21 +110,33 @@ export async function searchAll(
   q: string,
   orden: Orden = "alf_asc",
   estado: EstadoBusqueda = "activos",
-): Promise<SearchResult[]> {
-  if (q.trim().length < 2) return [];
+  page = 1,
+  signal?: AbortSignal,
+): Promise<SearchPageResult> {
+  if (q.trim().length < 2) {
+    return { results: [], meta: { page: 1, per_page: 9, total: 0, total_pages: 1 } };
+  }
 
-  const params = new URLSearchParams({ q, orden });
+  const params = new URLSearchParams({
+    q: q.trim(),
+    orden,
+    page: String(page),
+    per_page: "9",
+  });
 
   const eliminados = mapEstadoToQueryValue(estado);
   if (eliminados !== null) {
     params.set("eliminados", eliminados);
   }
 
-  const data = await http<SearchResponse>(`/search/?${params.toString()}`);
+  const data = await http<SearchResponse>(`/search/?${params.toString()}`, { signal });
 
-  if (!data?.resultados) return [];
+  if (!data?.resultados) {
+    return { results: [], meta: { page, per_page: 9, total: 0, total_pages: 1 } };
+  }
 
-  return data.resultados.map((r) => ({
+  return {
+    results: data.resultados.map((r) => ({
     id: r.id,
     tipo: r.tipo,
     titulo: r.titulo,
@@ -120,5 +145,7 @@ export async function searchAll(
     href: resolveFrontendUrl(r.url),
     extra: r.extra,
     activo: typeof r.activo === "boolean" ? r.activo : null,
-  }));
+    })),
+    meta: data.meta,
+  };
 }

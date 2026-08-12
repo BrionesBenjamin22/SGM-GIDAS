@@ -85,6 +85,9 @@ def _require_production_security(config_class):
 class Config:
     APP_ENV = os.getenv("APP_ENV", "local")
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+    LOG_FORMAT = os.getenv("LOG_FORMAT", "json" if APP_ENV in {"production", "prod"} else "text")
+    SERVICE_NAME = os.getenv("SERVICE_NAME", "gidas-backend")
+    APP_VERSION = os.getenv("APP_VERSION", "development")
     SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_urlsafe(48)
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
     FRONTEND_URLS = _parse_csv_env(os.getenv("FRONTEND_URLS")) or [FRONTEND_URL]
@@ -124,7 +127,7 @@ class Config:
     AUTH_REGISTER_LIMIT = os.getenv("AUTH_REGISTER_LIMIT", "5 per hour")
     AUTH_CHANGE_PASSWORD_LIMIT = os.getenv("AUTH_CHANGE_PASSWORD_LIMIT", "10 per hour")
     EXPORT_LIMIT = os.getenv("EXPORT_LIMIT", "10 per hour")
-    SEARCH_LIMIT = os.getenv("SEARCH_LIMIT", "30 per minute")
+    SEARCH_LIMIT = os.getenv("SEARCH_LIMIT", "90 per minute")
     SEARCH_MAX_QUERY_LENGTH = _parse_int_env_range(
         "SEARCH_MAX_QUERY_LENGTH",
         default=80,

@@ -24,7 +24,11 @@ logger = get_logger(__name__)
 def create_app():
     app = Flask(__name__)
     app.config.from_object(get_config_class())
-    configure_logging(app.config["APP_ENV"], app.config["LOG_LEVEL"])
+    configure_logging(
+        app.config["APP_ENV"], app.config["LOG_LEVEL"],
+        app.config["LOG_FORMAT"], app.config["SERVICE_NAME"],
+        app.config["APP_VERSION"],
+    )
     register_request_logging(app)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 

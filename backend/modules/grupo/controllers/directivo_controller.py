@@ -27,8 +27,8 @@ class DirectivoController:
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 400
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
 
 
     # ==========================================
@@ -40,8 +40,8 @@ class DirectivoController:
             result = DirectivoGrupoService.get_all_srv()
             return jsonify(result), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
 
 
     # ==========================================
@@ -98,8 +98,8 @@ class DirectivoController:
         except ValueError as e:
             return jsonify({"error": str(e)}), 400
 
-        except Exception as e:
-            return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
 
 
     # ==========================================
@@ -125,8 +125,8 @@ class DirectivoController:
         except ValueError as e:
             return jsonify({"error": str(e)}), 400
 
-        except Exception as e:
-            return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
+        except Exception:
+            return jsonify({"error": "Error interno del servidor"}), 500
 
 
     # ==========================================

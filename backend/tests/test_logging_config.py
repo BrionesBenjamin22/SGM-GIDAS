@@ -1,10 +1,12 @@
 import logging
+import json
 import unittest
 
 from flask import Flask
 
 from modules.shared.services.logging_config import (
     SensitiveDataFilter,
+    JsonFormatter,
     configure_logging,
     get_logger,
     register_request_logging,
@@ -34,8 +36,10 @@ class LoggingConfigTestCase(unittest.TestCase):
             "test", logging.INFO, __file__, 1, "Operacion completada", (), None
         )
 
-        self.assertFalse(filtro.filter(record_token))
-        self.assertFalse(filtro.filter(record_password))
+        self.assertTrue(filtro.filter(record_token))
+        self.assertTrue(filtro.filter(record_password))
+        self.assertIn("[REDACTED]", record_token.getMessage())
+        self.assertIn("[REDACTED]", record_password.getMessage())
         self.assertTrue(filtro.filter(record_seguro))
 
     def test_configure_logging_define_handler_y_nivel(self):
@@ -65,6 +69,27 @@ class LoggingConfigTestCase(unittest.TestCase):
         self.assertIn("path=/ping", logs.output[0])
         self.assertIn("status=200", logs.output[0])
         self.assertNotIn("token=no-debe-loguearse", logs.output[0])
+
+    def test_json_formatter_incluye_contexto_operativo(self):
+        record = logging.LogRecord("test", logging.INFO, __file__, 1, "evento", (), None)
+        payload = json.loads(JsonFormatter("gidas", "production", "abc123").format(record))
+        self.assertEqual(payload["service"], "gidas")
+        self.assertEqual(payload["environment"], "production")
+        self.assertEqual(payload["version"], "abc123")
+        self.assertEqual(payload["message"], "evento")
+
+    def test_request_id_se_propaga_o_se_genera(self):
+        app = Flask(__name__)
+        register_request_logging(app)
+
+        @app.get("/ping")
+        def ping():
+            return {"ok": True}
+
+        supplied = app.test_client().get("/ping", headers={"X-Request-ID": "laboratorio-1"})
+        generated = app.test_client().get("/ping")
+        self.assertEqual(supplied.headers["X-Request-ID"], "laboratorio-1")
+        self.assertTrue(generated.headers["X-Request-ID"])
 
 
 if __name__ == "__main__":

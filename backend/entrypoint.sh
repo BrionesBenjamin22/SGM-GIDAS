@@ -27,11 +27,21 @@ done
 
 echo "PostgreSQL disponible"
 
-echo "Aplicando migraciones..."
-flask db upgrade
+if [ "${ENTRYPOINT_MODE:-serve}" = "migrate" ]; then
+  echo "Preparando rol de aplicacion..."
+  python tools/manage_database_roles.py prepare
 
-echo "Ejecutando seed inicial..."
-python seed_roles.py
+  echo "Aplicando migraciones..."
+  flask db upgrade
+
+  echo "Ejecutando seed inicial..."
+  python seed_roles.py
+
+  echo "Aplicando permisos de minimo privilegio..."
+  python tools/manage_database_roles.py grant
+  echo "Migraciones y permisos completados"
+  exit 0
+fi
 
 echo "Iniciando backend..."
 
