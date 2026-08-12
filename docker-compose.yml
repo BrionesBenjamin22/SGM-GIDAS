@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-gidas_db}
       POSTGRES_USER: ${POSTGRES_ADMIN_USER:-gidas_admin}
-      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?POSTGRES_ADMIN_PASSWORD es obligatoria}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -65,9 +65,9 @@ services:
       - ./backend/${BACKEND_ENV_FILE:-.env.production}
     environment:
       ENTRYPOINT_MODE: migrate
-      DATABASE_URL: ${MIGRATION_DATABASE_URL:-postgresql://gidas_admin:postgres@db:5432/gidas_db}
+      DATABASE_URL: ${MIGRATION_DATABASE_URL:?MIGRATION_DATABASE_URL es obligatoria}
       POSTGRES_APP_USER: ${POSTGRES_APP_USER:-gidas_app}
-      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:-postgres}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?POSTGRES_APP_PASSWORD es obligatoria}
       POSTGRES_DB: ${POSTGRES_DB:-gidas_db}
     networks:
       - gidas_network

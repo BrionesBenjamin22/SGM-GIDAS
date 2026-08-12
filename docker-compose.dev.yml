@@ -9,7 +9,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-gidas_db}
       POSTGRES_USER: ${POSTGRES_ADMIN_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?POSTGRES_ADMIN_PASSWORD es obligatoria}
     ports: !override
       - "${POSTGRES_PORT:-5433}:5432"
 
@@ -20,9 +20,9 @@ services:
     environment:
       ENTRYPOINT_MODE: migrate
       APP_ENV: ${APP_ENV:-docker}
-      DATABASE_URL: ${MIGRATION_DATABASE_URL:-postgresql://postgres:postgres@db:5432/gidas_db}
+      DATABASE_URL: ${MIGRATION_DATABASE_URL:?MIGRATION_DATABASE_URL es obligatoria}
       POSTGRES_APP_USER: ${POSTGRES_APP_USER:-gidas_app}
-      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:-gidas_app_dev}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?POSTGRES_APP_PASSWORD es obligatoria}
       POSTGRES_DB: ${POSTGRES_DB:-gidas_db}
     volumes:
       - ./backend:/app
@@ -38,7 +38,7 @@ services:
       FLASK_DEBUG: ${FLASK_DEBUG:-1}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       FRONTEND_URLS: ${FRONTEND_URLS:-http://localhost:5173,http://localhost:8080,http://localhost}
-      DATABASE_URL: ${DATABASE_URL:-postgresql://gidas_app:gidas_app_dev@db:5432/gidas_db}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL es obligatoria}
       RATELIMIT_STORAGE_URI: ${RATELIMIT_STORAGE_URI:-redis://redis:6379/0}
     ports: !override
       - "${BACKEND_PORT:-5000}:5000"
