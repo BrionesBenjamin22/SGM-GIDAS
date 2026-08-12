@@ -211,11 +211,17 @@ Prefijos principales:
 /api/v1/transferencia
 ```
 
-Healthcheck:
+Healthchecks:
 
 ```http
 GET /api/v1/health
+GET /api/v1/health/live
+GET /api/v1/health/ready
 ```
+
+`/health` y `/health/live` confirman que el proceso responde. `/health/ready`
+comprueba ademas PostgreSQL y Redis y es el endpoint utilizado por Compose para
+decidir si el backend esta listo para recibir trafico.
 
 Respuesta esperada:
 
@@ -560,7 +566,7 @@ formularios, historiales y exportacion.
 
 Documentos disponibles:
 
-- [Despliegue en produccion con Nginx y Certbot](./docs/despliegue_produccion.md)
+- [Guia operativa de despliegue en servidor](./docs/despliegue_produccion.md)
 - [Documentacion tecnica de memorias](./docs/memorias_tecnica.md)
 - [Resumen tecnico de plantilla Excel](./docs/excel_memoria_template_summary.md)
 - [Backend modular](./backend/modules/README.md)
