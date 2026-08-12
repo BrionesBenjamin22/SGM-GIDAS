@@ -42,17 +42,19 @@ export async function getUct() {
   }
 }
 
-export async function upsertUct(payload: Uct, exists: boolean) {
+export async function upsertUct(payload: Partial<Uct>, exists: boolean) {
   if (!BASE) return;
 
-  const body = {
-    nombre_unidad_academica: payload.facultadRegional,
-    nombre_sigla_grupo: payload.nombreSigla,
-    mail: payload.correo,
-    objetivo_desarrollo: payload.objetivos,
-    director: payload.director,
-    vicedirector: payload.vicedirector,
-  };
+  const body = Object.fromEntries(
+    [
+      ["nombre_unidad_academica", payload.facultadRegional],
+      ["nombre_sigla_grupo", payload.nombreSigla],
+      ["mail", payload.correo],
+      ["objetivo_desarrollo", payload.objetivos],
+      ["director", payload.director],
+      ["vicedirector", payload.vicedirector],
+    ].filter(([, value]) => value !== undefined)
+  );
 
   const method = exists ? "PUT" : "POST";
 

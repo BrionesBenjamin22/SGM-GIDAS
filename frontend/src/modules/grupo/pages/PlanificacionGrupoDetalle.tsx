@@ -4,9 +4,11 @@ import Button from "@/components/Button";
 import SuccessToast from "@/components/SuccessToast";
 import { useState, useEffect } from "react";
 import {
+  getHistorialPlanificacion,
   getPlanificacionById,
   type PlanificacionGrupo,
 } from "@/modules/grupo/services/planificacionGrupoServices";
+import HistorialCambiosCard from "@/components/HistorialCambiosCard";
 import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -32,6 +34,11 @@ export default function PlanificacionGrupoDetalle() {
   const [successMessage, setSuccessMessage] = useState("");
 
   const auditoria = useAuditoria(data);
+  const { data: historial = [], isLoading: isLoadingHistorial } = useQuery({
+    queryKey: ["planificacion-historial", id],
+    queryFn: () => getHistorialPlanificacion(Number(id)),
+    enabled: !!id,
+  });
 
   useEffect(() => {
     if (location.state?.successMessage) {
@@ -101,6 +108,13 @@ export default function PlanificacionGrupoDetalle() {
             </p>
           </div>
         </article>
+
+        <HistorialCambiosCard
+          items={historial}
+          isLoading={isLoadingHistorial}
+          updatedAt={data.updated_at}
+          updatedByName={data.updated_by_nombre}
+        />
 
         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
           <div className="mb-4">

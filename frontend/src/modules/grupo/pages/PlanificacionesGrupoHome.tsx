@@ -19,7 +19,8 @@ export default function PlanificacionGrupoLanding() {
   const puedeEliminar = canDeleteRecords();
 
   const [filtroActivos, setFiltroActivos] = useState<"true" | "false" | "all">("true");
-  const { list = [], isLoading, isError } = usePlanificaciones(filtroActivos);
+  const [page, setPage] = useState(1);
+  const { list = [], meta, isLoading, isError } = usePlanificaciones(filtroActivos, page);
 
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -132,7 +133,7 @@ export default function PlanificacionGrupoLanding() {
             Planificaciones
           </h2>
           <p className="text-xs text-slate-500 mt-2">
-            {list.length} resultados
+            {meta.total} resultados
           </p>
         </div>
 
@@ -140,7 +141,7 @@ export default function PlanificacionGrupoLanding() {
           <div className="flex items-center rounded-lg border border-slate-200 bg-white overflow-hidden">
             <button
               type="button"
-              onClick={() => setFiltroActivos("true")}
+              onClick={() => { setFiltroActivos("true"); setPage(1); }}
               className={`px-3 py-1.5 text-xs transition-colors ${
                 filtroActivos === "true"
                   ? "bg-slate-800 text-white"
@@ -152,7 +153,7 @@ export default function PlanificacionGrupoLanding() {
 
             <button
               type="button"
-              onClick={() => setFiltroActivos("all")}
+              onClick={() => { setFiltroActivos("all"); setPage(1); }}
               className={`px-3 py-1.5 text-xs border-l border-slate-200 transition-colors ${
                 filtroActivos === "all"
                   ? "bg-slate-800 text-white"
@@ -252,6 +253,30 @@ export default function PlanificacionGrupoLanding() {
           )
         )}
       </div>
+
+      {meta.total_pages > 1 && (
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+          >
+            Anterior
+          </Button>
+          <span className="text-sm text-slate-600">
+            Pagina {page} de {meta.total_pages}
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={page >= meta.total_pages}
+            onClick={() => setPage((current) => Math.min(meta.total_pages, current + 1))}
+          >
+            Siguiente
+          </Button>
+        </div>
+      )}
 
       <ConfirmDialog
         open={showConfirm}

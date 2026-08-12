@@ -13,6 +13,8 @@ interface PlanificacionGrupoBackend {
   created_by_nombre?: string | null;
   deleted_by?: number | string | null;
   deleted_by_nombre?: string | null;
+  updated_at?: string | null;
+  updated_by_nombre?: string | null;
 }
 
 export interface PlanificacionGrupo {
@@ -28,12 +30,28 @@ export interface PlanificacionGrupo {
   created_by_nombre?: string | null;
   deleted_by?: number | string | null;
   deleted_by_nombre?: string | null;
+  updated_at?: string | null;
+  updated_by_nombre?: string | null;
 }
 
 export interface PlanificacionGrupoPayload {
   descripcion: string;
   anio: number;
   grupo_id: number;
+}
+
+export interface HistorialPlanificacionItem {
+  id: number;
+  campo?: string;
+  fecha_cambio?: string | null;
+  usuario_nombre?: string | null;
+  valor_anterior?: unknown;
+  valor_nuevo?: unknown;
+}
+
+export interface PlanificacionesPage {
+  data: PlanificacionGrupo[];
+  meta: { page: number; per_page: number; total: number; total_pages: number };
 }
 
 function fromBackend(raw: PlanificacionGrupoBackend): PlanificacionGrupo {
@@ -50,21 +68,28 @@ function fromBackend(raw: PlanificacionGrupoBackend): PlanificacionGrupo {
     created_by_nombre: raw.created_by_nombre ?? null,
     deleted_by: raw.deleted_by ?? null,
     deleted_by_nombre: raw.deleted_by_nombre ?? null,
+    updated_at: raw.updated_at ?? null,
+    updated_by_nombre: raw.updated_by_nombre ?? null,
   };
 }
 
 // GET ALL
 export const getPlanificaciones = async (
-  activos: "true" | "false" | "all" = "true"
-): Promise<PlanificacionGrupo[]> => {
-  const raw = await http<PlanificacionGrupoBackend[]>(
-    `/planificaciones/?activos=${activos}`,
+  activos: "true" | "false" | "all" = "true",
+  page = 1,
+  perPage = 9,
+): Promise<PlanificacionesPage> => {
+  const response = await http<{
+    data: PlanificacionGrupoBackend[];
+    meta: PlanificacionesPage["meta"];
+  }>(
+    `/planificaciones/?activos=${activos}&page=${page}&per_page=${perPage}`,
     {
       method: "GET",
     }
   );
 
-  return raw.map(fromBackend);
+  return { data: response.data.map(fromBackend), meta: response.meta };
 };
 
 // GET BY ID
@@ -109,3 +134,8 @@ export const deletePlanificacion = async (id: number) => {
     method: "DELETE",
   });
 };
+
+export const getHistorialPlanificacion = (id: number) =>
+  http<HistorialPlanificacionItem[]>(`/planificaciones/${id}/historial`, {
+    method: "GET",
+  });

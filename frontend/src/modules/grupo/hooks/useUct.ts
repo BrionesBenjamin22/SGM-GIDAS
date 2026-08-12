@@ -6,7 +6,7 @@ import {
   type Uct,
 } from "@/modules/grupo/services/uctServices";
 
-type UctPayload = Omit<Uct, "id">;
+type UctPayload = Partial<Omit<Uct, "id">>;
 
 export function useUct() {
   const qc = useQueryClient();
@@ -26,7 +26,7 @@ export function useUct() {
         );
       }
 
-      return upsertUct(data as Uct, false);
+      return upsertUct(data, false);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["uct"] });
