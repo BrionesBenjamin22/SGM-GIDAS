@@ -45,10 +45,58 @@ Tambien deben reemplazarse los placeholders de:
 - `SECRET_KEY`
 - `JWT_SECRET`
 - `REFRESH_SECRET`
-- `POSTGRES_PASSWORD`
+- `POSTGRES_ADMIN_PASSWORD`
+- `POSTGRES_APP_PASSWORD`
 - `DATABASE_URL`
+- `MIGRATION_DATABASE_URL`
 
 Las claves de aplicacion deben tener al menos 32 caracteres. El backend no inicia en produccion si conserva placeholders o configuracion insegura.
+
+## Usuarios PostgreSQL
+
+Produccion utiliza dos identidades independientes:
+
+- `gidas_admin`: propietario inicial utilizado por PostgreSQL y por el servicio
+  efimero `migrate` para roles, Alembic, seed y permisos.
+- `gidas_app`: identidad permanente de Flask/Gunicorn, con DML sobre tablas y
+  secuencias pero sin permisos para crear bases, roles, esquemas o tablas.
+
+`.env.production` contiene las variables administrativas y no se versiona.
+`backend/.env.production` contiene solamente `DATABASE_URL` de `gidas_app`; no
+debe incluir `POSTGRES_ADMIN_PASSWORD` ni `MIGRATION_DATABASE_URL`.
+
+Compose exige que `migrate` finalice correctamente antes de iniciar backend.
+Las contrasenas deben ser distintas, aleatorias y almacenarse en el gestor de
+secretos del servidor.
+
+### Volumen existente
+
+No elimine ni recree el volumen. Haga primero una copia verificada:
+
+```bash
+docker compose --env-file .env.production exec -T db pg_dump -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -Fc > gidas-before-role-split.dump
+```
+
+Complete las nuevas variables reales, actualice `DATABASE_URL` y ejecute:
+
+```bash
+docker compose --env-file .env.production run --rm migrate
+docker compose --env-file .env.production up -d backend
+```
+
+Compruebe `SELECT current_user` desde el backend y verifique que una operacion
+DML representativa funciona. Una sentencia `CREATE TABLE` ejecutada como
+`gidas_app` debe ser rechazada. Si falla la validacion funcional, restaure
+temporalmente la URL anterior; no restaure el dump sobre el volumen activo sin
+una ventana y plan de recuperacion aprobados.
+
+### Rotacion
+
+Rote una identidad por vez. Para `gidas_app`, cambie su clave y `DATABASE_URL`,
+ejecute `migrate` y reinicie backend. Para `gidas_admin`, cambie primero la clave
+en PostgreSQL y luego actualice `POSTGRES_ADMIN_PASSWORD` y
+`MIGRATION_DATABASE_URL`. Valide healthcheck, login y escritura después de cada
+rotacion.
 
 ## Levantar la aplicacion
 

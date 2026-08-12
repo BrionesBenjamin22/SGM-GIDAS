@@ -245,7 +245,7 @@ El backend se construye con Dockerfile multi-stage:
 - development: conserva herramientas minimas para desarrollo local.
 - production: imagen final para despliegue.
 
-En produccion el entrypoint aplica migraciones, ejecuta el seed inicial de roles e inicia la API con Gunicorn. El servidor de desarrollo de Flask queda reservado para ambientes no productivos.
+En produccion el servicio efimero `migrate` aplica migraciones, ejecuta el seed y concede permisos. Gunicorn inicia despues usando solamente `DATABASE_URL` de `gidas_app`, sin recibir credenciales administrativas.
 
 Historial de directivos por grupo
 

@@ -3,8 +3,10 @@ services:
     image: postgres:16
     container_name: ${COMPOSE_SERVICE_PREFIX:-gidas}_db
     restart: unless-stopped
-    env_file:
-      - ./backend/${BACKEND_ENV_FILE:-.env.production}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gidas_db}
+      POSTGRES_USER: ${POSTGRES_ADMIN_USER:-gidas_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:-postgres}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -44,6 +46,34 @@ services:
       timeout: 5s
       retries: 5
 
+  migrate:
+    build:
+      context: ./backend
+      target: production
+    container_name: ${COMPOSE_SERVICE_PREFIX:-gidas}_migrate
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./backend/${BACKEND_ENV_FILE:-.env.production}
+    environment:
+      ENTRYPOINT_MODE: migrate
+      DATABASE_URL: ${MIGRATION_DATABASE_URL:-postgresql://gidas_admin:postgres@db:5432/gidas_db}
+      POSTGRES_APP_USER: ${POSTGRES_APP_USER:-gidas_app}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-gidas_db}
+    networks:
+      - gidas_network
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+
   backend:
     build:
       context: ./backend
@@ -51,12 +81,14 @@ services:
     container_name: ${COMPOSE_SERVICE_PREFIX:-gidas}_backend
     restart: unless-stopped
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     env_file:
       - ./backend/${BACKEND_ENV_FILE:-.env.production}
+    environment:
+      ENTRYPOINT_MODE: serve
     expose:
       - "5000"
     networks:
