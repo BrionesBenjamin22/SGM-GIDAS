@@ -101,6 +101,16 @@ Controles aplicados en produccion:
 - cache de assets estaticos versionados.
 - fallback SPA hacia `index.html`.
 - contenedor compatible con filesystem read-only, `no-new-privileges` y capacidades Linux reducidas desde Compose.
+- el cliente HTTP no imprime cuerpos de error ni respuestas del backend en la consola.
+- el estado local corrupto se descarta sin bloquear la aplicacion.
+- TypeScript se declara explicitamente para que el typecheck sea reproducible.
+- las dependencias deben mantenerse con `npm audit` sin vulnerabilidades conocidas.
+
+Los tokens se almacenan actualmente en `localStorage` por compatibilidad con el
+contrato vigente. Esto exige mantener el frontend libre de inyecciones de
+scripts. La migracion recomendada es conservar el refresh token exclusivamente
+en una cookie `HttpOnly`, `Secure` y `SameSite`, coordinando backend y frontend;
+no debe implementarse solo de un lado.
 
 Para desarrollo con Docker usar el compose de desarrollo desde la raiz del proyecto:
 

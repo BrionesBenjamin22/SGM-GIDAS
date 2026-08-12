@@ -72,13 +72,28 @@ const BASE = normalizeBase(RAW_BASE);
 
 function getLocalAuth() {
   const raw = localStorage.getItem(AUTH_KEY);
-  return raw ? JSON.parse(raw) : null;
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    localStorage.removeItem(AUTH_KEY);
+    return null;
+  }
 }
 
 function updateStoredToken(newAccessToken: string, newRefreshToken?: string) {
   const raw = localStorage.getItem(AUTH_KEY);
   if (!raw) return;
-  const auth = JSON.parse(raw);
+
+  let auth: Record<string, unknown>;
+  try {
+    auth = JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    localStorage.removeItem(AUTH_KEY);
+    return;
+  }
+
   auth.token = newAccessToken;
   if (newRefreshToken) {
     auth.refresh_token = newRefreshToken;
@@ -203,7 +218,6 @@ export async function http<T>(
   }
 
   if (!res.ok) {
-    console.error("ERROR BACKEND:", data);
     throw new HttpError(res.status, res.statusText, data);
   }
 
@@ -248,7 +262,6 @@ export async function httpDownload(
 
   if (!res.ok) {
     const data = await parseErrorResponse(res);
-    console.error("ERROR BACKEND:", data);
     throw new HttpError(res.status, res.statusText, data);
   }
 

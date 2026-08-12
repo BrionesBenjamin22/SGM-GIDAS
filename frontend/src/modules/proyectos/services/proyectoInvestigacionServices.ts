@@ -15,8 +15,7 @@ export const getProyectos = async (): Promise<Proyecto[]> => {
       codigo: String(p.codigo_proyecto),
       nombre: p.nombre_proyecto,
     }));
-  } catch (error) {
-    console.warn("Error fetching proyectos, using mock data:", error);
+  } catch {
     return MOCK_PROYECTOS;
   }
 };

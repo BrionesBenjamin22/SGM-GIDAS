@@ -111,7 +111,7 @@ export async function deleteAdoptante(id: number): Promise<void> {
         writeMock(readMock().filter((a) => a.id !== id));
         return;
     }
-    // Backend no tiene endpoint DELETE para adoptantes.
-    // Ver backend_gaps.md
-    console.warn("DELETE /adoptantes/:id no existe en el backend aún");
+    throw new Error(
+        "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+    );
 }
