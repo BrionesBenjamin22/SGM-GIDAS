@@ -20,6 +20,11 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    logging: &default_logging
+      driver: json-file
+      options:
+        max-size: ${LOG_MAX_SIZE:-10m}
+        max-file: ${LOG_MAX_FILES:-5}
 
   redis:
     image: redis:7-alpine
@@ -45,6 +50,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    logging: *default_logging
 
   migrate:
     build:
@@ -73,6 +79,7 @@ services:
     security_opt:
       - no-new-privileges:true
     pids_limit: 128
+    logging: *default_logging
 
   backend:
     build:
@@ -102,11 +109,12 @@ services:
       - no-new-privileges:true
     pids_limit: 256
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5000/api/v1/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/api/v1/health/ready || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
       start_period: 20s
+    logging: *default_logging
 
   frontend:
     build:
@@ -136,6 +144,7 @@ services:
     security_opt:
       - no-new-privileges:true
     pids_limit: 128
+    logging: *default_logging
 
   nginx:
     image: nginxinc/nginx-unprivileged:1.27-alpine
@@ -162,6 +171,7 @@ services:
     security_opt:
       - no-new-privileges:true
     pids_limit: 128
+    logging: *default_logging
 
 volumes:
   postgres_data:

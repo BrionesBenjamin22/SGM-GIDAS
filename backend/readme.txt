@@ -270,6 +270,12 @@ Con PostgreSQL y el backend local configurados, ejecutar
 exige recuperar un registro activo con ID, tipo y URL correctos para cada uno de
 los 24 modulos incluidos en la busqueda global.
 
+Observabilidad
+
+Produccion utiliza logs JSON en stdout con `X-Request-ID`, servicio, entorno y
+version. `/api/v1/health/live` valida el proceso y `/api/v1/health/ready` valida
+PostgreSQL y Redis. Los secretos se redactan como `[REDACTED]`.
+
 Variables obligatorias en produccion:
 - APP_ENV=production
 - SECRET_KEY

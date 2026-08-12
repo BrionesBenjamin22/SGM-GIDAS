@@ -167,6 +167,35 @@ sudo certbot renew --dry-run
 
 ## Operacion
 
+### Logs y estado operativo
+
+En produccion el backend emite JSON por `stdout`. Cada evento incluye servicio,
+entorno, version, nivel y, durante solicitudes, `request_id`, ruta, usuario y
+rol. Nginx propaga `X-Request-ID`; el backend lo devuelve al cliente para poder
+correlacionar un error reportado con los logs.
+
+Configure `APP_VERSION` con el tag o hash desplegado. Compose limita cada archivo
+de log a `LOG_MAX_SIZE` y conserva `LOG_MAX_FILES`; los valores iniciales son
+`10m` y `5`.
+
+Endpoints operativos:
+
+- `/api/v1/health/live`: confirma que el proceso responde, sin consultar dependencias.
+- `/api/v1/health/ready`: verifica PostgreSQL y Redis; responde 503 si alguno falla.
+- `/api/v1/health`: alias compatible de liveness.
+
+Diagnostico recomendado:
+
+```bash
+docker compose --env-file .env.production ps
+docker compose --env-file .env.production logs --tail=200 backend nginx db redis
+curl -i http://127.0.0.1:8080/api/v1/health/live
+curl -i http://127.0.0.1:8080/api/v1/health/ready
+```
+
+Esta base permite incorporar posteriormente un colector compatible con logs
+JSON, Loki u OpenTelemetry sin cambiar el contrato funcional de la API.
+
 Ver logs del proxy externo:
 
 ```bash
