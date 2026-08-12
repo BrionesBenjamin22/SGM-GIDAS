@@ -7,6 +7,14 @@ export interface BecarioPayload {
   grupo_utn_id: number;
   tipo_formacion_id: number;
   activo: boolean;
+  becas?: BecarioRelacionPayload[];
+}
+
+export interface BecarioRelacionPayload {
+  beca_id: number;
+  fecha_inicio: string;
+  fecha_fin?: string;
+  monto_percibido?: number;
 }
 
 export interface BecarioBeca {
@@ -36,7 +44,7 @@ export function crearBecario(payload: BecarioPayload) {
   });
 }
 
-export function actualizarBecario(id: number, payload: any) {
+export function actualizarBecario(id: number, payload: Partial<BecarioPayload>) {
   return http(`/becarios/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),

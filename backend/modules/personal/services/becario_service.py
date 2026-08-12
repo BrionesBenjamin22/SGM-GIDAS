@@ -1,10 +1,11 @@
-from datetime import date
+from datetime import date, datetime
 
 from extension import db
 from modules.personal.models.personal import Becario, TipoFormacion, BecarioHorasHistorial, BecarioMemoriaVersion
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.proyectos.models.proyecto_investigacion import ProyectoInvestigacion
 from modules.shared.services.auditoria_service import AuditoriaService
+from modules.recursos.models.becas import Beca, Beca_Becario
 from modules.memorias.services.memoria_periodo_service import (
     validar_fecha_alta_grupo,
     estuvo_activo_en_periodo_memoria,
@@ -173,6 +174,87 @@ def _get_activo_or_404(id: int):
     return becario
 
 
+def _parsear_fecha_relacion(valor, campo, permitir_none=False):
+    if valor in (None, "") and permitir_none:
+        return None
+    if not isinstance(valor, str):
+        raise ValueError(f"El campo '{campo}' debe tener formato YYYY-MM-DD.")
+    try:
+        return datetime.strptime(valor, "%Y-%m-%d").date()
+    except ValueError as exc:
+        raise ValueError(f"El campo '{campo}' debe tener formato YYYY-MM-DD.") from exc
+
+
+def _sincronizar_becas(becario, becas_data, user_id):
+    if not isinstance(becas_data, list):
+        raise ValueError("El campo 'becas' debe ser una lista.")
+
+    deseadas = {}
+    for item in becas_data:
+        if not isinstance(item, dict):
+            raise ValueError("Cada beca vinculada debe ser un objeto.")
+        beca_id = _validar_id_positivo(item.get("beca_id"), "beca_id")
+        if beca_id in deseadas:
+            raise ValueError("El campo 'becas' no puede contener IDs repetidos.")
+        beca = db.session.get(Beca, beca_id)
+        if not beca or beca.deleted_at is not None:
+            raise ValueError("Una de las becas seleccionadas no existe o esta eliminada.")
+        fecha_inicio = _parsear_fecha_relacion(item.get("fecha_inicio"), "fecha_inicio")
+        fecha_fin = _parsear_fecha_relacion(item.get("fecha_fin"), "fecha_fin", True)
+        if fecha_fin and fecha_fin < fecha_inicio:
+            raise ValueError("La fecha_fin no puede ser anterior a la fecha_inicio.")
+        monto = item.get("monto_percibido")
+        if monto is not None:
+            try:
+                monto = float(monto)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("El monto_percibido debe ser numerico.") from exc
+            if monto < 0:
+                raise ValueError("El monto_percibido no puede ser negativo.")
+        deseadas[beca_id] = (fecha_inicio, fecha_fin, monto)
+
+    activas = {
+        relacion.id_beca: relacion
+        for relacion in getattr(becario, "becas", [])
+        if relacion.deleted_at is None
+    }
+
+    for beca_id, relacion in activas.items():
+        if beca_id not in deseadas:
+            relacion.soft_delete(user_id)
+            AuditoriaService.registrar_evento_relacion(
+                "becario", becario.id, "becas", "desvincular",
+                {"beca_id": beca_id}, user_id,
+            )
+
+    for beca_id, valores in deseadas.items():
+        fecha_inicio, fecha_fin, monto = valores
+        relacion = activas.get(beca_id)
+        if relacion:
+            anterior = (relacion.fecha_inicio, relacion.fecha_fin, relacion.monto_percibido)
+            if anterior != valores:
+                relacion.fecha_inicio = fecha_inicio
+                relacion.fecha_fin = fecha_fin
+                relacion.monto_percibido = monto
+                relacion.mark_updated(user_id)
+                AuditoriaService.registrar_evento_relacion(
+                    "becario", becario.id, "becas", "actualizar",
+                    {"beca_id": beca_id, "fecha_inicio": fecha_inicio,
+                     "fecha_fin": fecha_fin, "monto_percibido": monto}, user_id,
+                )
+            continue
+        db.session.add(Beca_Becario(
+            id_beca=beca_id, id_becario=becario.id,
+            fecha_inicio=fecha_inicio, fecha_fin=fecha_fin,
+            monto_percibido=monto, created_by=user_id,
+        ))
+        AuditoriaService.registrar_evento_relacion(
+            "becario", becario.id, "becas", "vincular",
+            {"beca_id": beca_id, "fecha_inicio": fecha_inicio,
+             "fecha_fin": fecha_fin, "monto_percibido": monto}, user_id,
+        )
+
+
 # =====================================================
 # CREATE
 # =====================================================
@@ -224,6 +306,13 @@ def crear_becario(data: dict, user_id: int):
     if proyectos_ids:
         proyectos = _obtener_proyectos_validos(proyectos_ids)
         becario.participaciones_proyecto = proyectos
+
+    if "becas" in data:
+        try:
+            _sincronizar_becas(becario, data["becas"], user_id)
+        except Exception:
+            db.session.rollback()
+            raise
 
     try:
         db.session.commit()
@@ -339,6 +428,14 @@ def actualizar_becario(id: int, data: dict, user_id: int):
         proyectos_ids = _validar_proyectos_ids(data["proyectos"])
         proyectos = _obtener_proyectos_validos(proyectos_ids)
         becario.participaciones_proyecto = proyectos
+
+    if "becas" in data:
+        try:
+            _sincronizar_becas(becario, data["becas"], user_id)
+            becario.mark_updated(user_id)
+        except Exception:
+            db.session.rollback()
+            raise
 
     if cambios:
         becario.mark_updated(user_id)

@@ -24,7 +24,7 @@ export function crearInvestigador(payload: InvestigadorPayload) {
 
 export function actualizarInvestigador(
   id: number,
-  payload: any,
+  payload: Partial<InvestigadorPayload>,
   rol: string
 ) {
   return http(`/personal/${rol}/${id}`, {
