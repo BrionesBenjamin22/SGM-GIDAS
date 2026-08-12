@@ -307,10 +307,7 @@ def seed_testing_data():
     db.session.commit()
 
     print("Datos ficticios de testing cargados correctamente")
-    print("Usuarios disponibles:")
-    print(f"- admin.testing / {TEST_PASSWORD}")
-    print(f"- gestor.testing / {TEST_PASSWORD}")
-    print(f"- lector.testing / {TEST_PASSWORD}")
+    print("Usuarios de testing cargados; consulte la configuracion local para sus credenciales.")
 
 
 if __name__ == "__main__":

@@ -347,6 +347,19 @@ aislado. Documentar el incidente antes de reabrir el servicio.
 - No cargar datos reales hasta completar prueba funcional y respaldo.
 - Tratar HTTP en LAN como una etapa temporal; no exponerlo a Internet.
 
+### Rate limiting en el gateway
+
+Nginx aplica limites de solicitudes y conexiones antes de ejecutar
+`proxy_pass`. Cuando se supera un limite, responde directamente con `429`, un
+cuerpo JSON uniforme y `Retry-After: 30`. El campo `retry_after` del cuerpo usa
+el mismo valor en segundos y la respuesta incluye `Cache-Control: no-store`.
+
+Flask-Limiter se conserva como defensa adicional para accesos que pudieran
+evitar el gateway o para limites funcionales mas especificos. En produccion,
+PostgreSQL, Redis, frontend y backend no publican puertos; solo Nginx debe ser
+alcanzable desde la LAN. Por lo tanto, el rechazo normal por volumen se realiza
+en el gateway y no consume un worker de la aplicacion.
+
 ## 14. HTTPS y CI/CD
 
 HTTPS y CI/CD permanecen como etapas posteriores. Antes de activar HTTPS deben

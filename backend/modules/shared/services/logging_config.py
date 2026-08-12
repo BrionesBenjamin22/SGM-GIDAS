@@ -12,14 +12,19 @@ from werkzeug.exceptions import HTTPException
 
 TEXT_LOG_FORMAT = "%(asctime)s %(levelname)s [%(name)s] %(module)s.%(funcName)s:%(lineno)d - %(message)s"
 SENSITIVE_PATTERN = re.compile(
-    r"(?i)(authorization|password|contrasena|token|secret)(\s*[:=]\s*)([^\s,;]+)"
+    r'''(?ix)
+    (["']?(?:authorization|password|contrasena|contraseña|token|access_token|
+    refresh_token|secret|api_key|cookie|set-cookie)["']?\s*[:=]\s*)
+    (?:"[^"]*"|'[^']*'|[^\s,;}]+)
+    '''
 )
 BEARER_PATTERN = re.compile(r"(?i)(bearer\s+)([^\s,;]+)")
+REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
 
 
 def redact_sensitive(value: str) -> str:
     redacted = SENSITIVE_PATTERN.sub(
-        lambda match: f"{match.group(1)}{match.group(2)}[REDACTED]", value
+        lambda match: f"{match.group(1)}[REDACTED]", value
     )
     return BEARER_PATTERN.sub(lambda match: f"{match.group(1)}[REDACTED]", redacted)
 
@@ -42,6 +47,7 @@ class JsonFormatter(logging.Formatter):
         self.service = service
         self.environment = environment
         self.version = version
+        self.include_exception_details = environment not in {"production", "prod"}
 
     def format(self, record):
         payload = {
@@ -65,7 +71,11 @@ class JsonFormatter(logging.Formatter):
                 "role": getattr(g, "current_user_rol", None),
             })
         if record.exc_info:
-            payload["exception"] = self.formatException(record.exc_info)
+            payload["exception_type"] = record.exc_info[0].__name__
+            if self.include_exception_details:
+                payload["exception"] = redact_sensitive(
+                    self.formatException(record.exc_info)
+                )
         return json.dumps(payload, ensure_ascii=False, default=str)
 
 
@@ -99,7 +109,9 @@ def register_request_logging(app):
     @app.before_request
     def _start_request():
         incoming = request.headers.get("X-Request-ID", "").strip()
-        g.request_id = incoming[:128] if incoming else str(uuid.uuid4())
+        g.request_id = (
+            incoming if REQUEST_ID_PATTERN.fullmatch(incoming) else str(uuid.uuid4())
+        )
         g.request_started_at = time.perf_counter()
 
     @app.after_request
