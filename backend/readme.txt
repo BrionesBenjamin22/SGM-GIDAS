@@ -263,6 +263,13 @@ El script es idempotente y garantiza los roles base junto con los cargos
 `Director` y `Vicedirector`. Si uno de esos cargos existe con soft delete, el
 seed lo restaura.
 
+Validacion de busqueda por modulo
+
+Con PostgreSQL y el backend local configurados, ejecutar
+`python tools/verify_search_retrieval.py`. El verificador es de solo lectura y
+exige recuperar un registro activo con ID, tipo y URL correctos para cada uno de
+los 24 modulos incluidos en la busqueda global.
+
 Variables obligatorias en produccion:
 - APP_ENV=production
 - SECRET_KEY

@@ -67,7 +67,11 @@ export default function SearchPage() {
     error,
     clearAll,
     executeSearch,
+    executeImmediateSearch,
     hasSearched,
+    page,
+    setPage,
+    meta,
   } = useSearch();
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -90,13 +94,12 @@ export default function SearchPage() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    executeSearch();
+    executeImmediateSearch();
   };
 
   const handleOrdenChange = (newOrden: string) => {
     const val = newOrden as any;
     setOrden(val);
-    executeSearch(q, val);
   };
 
   // Función para extraer items relacionados con URLs del campo extra
@@ -480,7 +483,7 @@ export default function SearchPage() {
             </div>
             <p className="text-slate-500 font-medium text-lg">Comienza tu búsqueda</p>
             <p className="text-slate-400 text-sm mt-2 max-w-md mx-auto">
-              Ingresa al menos 2 caracteres y presiona Enter para buscar en todos los módulos del sistema.
+              Ingresa al menos 2 caracteres. Buscaremos automáticamente cuando dejes de escribir.
             </p>
           </div>
         )}
@@ -683,6 +686,32 @@ export default function SearchPage() {
               })}
             </div>
           </>
+        )}
+
+        {!loading && !error && hasSearched && meta.total_pages > 1 && (
+          <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+            >
+              Anterior
+            </Button>
+            <span className="text-sm text-slate-500">
+              Página {meta.page} de {meta.total_pages} · {meta.total} resultados
+            </span>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={page >= meta.total_pages}
+              onClick={() => setPage((current) => Math.min(meta.total_pages, current + 1))}
+            >
+              Siguiente
+            </Button>
+          </div>
         )}
       </div>
       {uctGuard}

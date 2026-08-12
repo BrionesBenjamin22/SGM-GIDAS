@@ -18,6 +18,7 @@ from modules.produccion.models.trabajo_reunion import TrabajoReunionCientifica
 from modules.produccion.models.trabajo_revista import TrabajosRevistasReferato
 from modules.grupo.models.directivos import Directivo, DirectivoGrupo, Cargo
 from modules.recursos.models.becas import Beca, Beca_Becario
+from modules.grupo.models.visita_grupo import VisitaAcademica
 import unicodedata
 
 
@@ -1148,6 +1149,53 @@ class SearchService:
                 }))
 
 
+
+        # ==================================================
+        # EROGACIONES
+        # ==================================================
+        erogaciones = SearchService.bounded_results(
+            db.session.query(Erogacion).options(
+                joinedload(Erogacion.tipo_erogacion),
+                joinedload(Erogacion.fuente_financiamiento),
+                joinedload(Erogacion.grupo_utn),
+            ), Erogacion, eliminados, max_scan_per_model,
+        )
+        for erogacion in erogaciones:
+            valores = [
+                str(erogacion.numero_erogacion or ""),
+                erogacion.tipo_erogacion.nombre if erogacion.tipo_erogacion else "",
+                erogacion.fuente_financiamiento.nombre if erogacion.fuente_financiamiento else "",
+            ]
+            if any(query_normalized in SearchService.normalize_text(valor) for valor in valores):
+                resultados.append(SearchService.with_status(erogacion, {
+                    "tipo": "Erogación",
+                    "id": erogacion.id,
+                    "titulo": f"Erogación {erogacion.numero_erogacion}",
+                    "subtitulo": erogacion.tipo_erogacion.nombre if erogacion.tipo_erogacion else None,
+                    "fecha": erogacion.fecha,
+                    "url": f"/erogaciones/{erogacion.id}",
+                }))
+
+        # ==================================================
+        # VISITAS ACADEMICAS
+        # ==================================================
+        visitas = SearchService.bounded_results(
+            db.session.query(VisitaAcademica).options(
+                joinedload(VisitaAcademica.tipo_visita),
+                joinedload(VisitaAcademica.grupo_utn),
+            ), VisitaAcademica, eliminados, max_scan_per_model,
+        )
+        for visita in visitas:
+            valores = [visita.razon, visita.procedencia]
+            if any(query_normalized in SearchService.normalize_text(valor) for valor in valores):
+                resultados.append(SearchService.with_status(visita, {
+                    "tipo": "Visita Académica",
+                    "id": visita.id,
+                    "titulo": visita.razon,
+                    "subtitulo": visita.procedencia,
+                    "fecha": visita.fecha,
+                    "url": f"/visitas-academicas/{visita.id}",
+                }))
 
         # ==================================================
         # ORDENAMIENTO GLOBAL
