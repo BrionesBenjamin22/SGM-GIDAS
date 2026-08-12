@@ -1,9 +1,19 @@
-from flask import Request, Response, g, jsonify, request
+﻿from flask import Request, Response, g, jsonify, request
 
 from modules.auth.services.auth_service import AuthService
+from modules.shared.controllers.responses import error_response
+from modules.shared.services.logging_config import get_logger
+
+
+logger = get_logger(__name__)
 
 
 class AuthController:
+
+    @staticmethod
+    def _unexpected_error(status_code: int = 500):
+        logger.exception("Error interno en operacion de autenticacion")
+        return error_response("INTERNAL_ERROR", status_code=status_code)
 
     @staticmethod
     def _get_token_from_request(req: Request = None) -> str:
@@ -46,8 +56,8 @@ class AuthController:
         try:
             existe = AuthService.existe_primer_usuario()
             return jsonify({"existe": existe}), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception:
+            return AuthController._unexpected_error(500)
 
     @staticmethod
     def register(req: Request = None) -> Response:
@@ -65,8 +75,8 @@ class AuthController:
                     return jsonify({
                         "error": "Token requerido. El sistema ya tiene usuarios registrados."
                     }), 403
-                except PermissionError as pe:
-                    return jsonify({"error": str(pe)}), 403
+                except PermissionError:
+                    return error_response("FORBIDDEN", status_code=403)
 
             user = AuthService.register(
                 nombre_usuario=data["nombre_usuario"],
@@ -97,8 +107,8 @@ class AuthController:
                 "refresh_token": tokens["refresh_token"]
             }), 201
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception:
+            return AuthController._unexpected_error(400)
 
     @staticmethod
     def primer_usuario() -> Response:
@@ -107,8 +117,8 @@ class AuthController:
             # El frontend espera { "existe": boolean } donde "existe" es True si YA HAY usuarios.
             # Por lo tanto, si es_primer_usuario es True, significa que "existe" = False
             return jsonify({"existe": not es_primero}), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception:
+            return AuthController._unexpected_error(500)
 
 
     @staticmethod
@@ -128,8 +138,8 @@ class AuthController:
                 "user": result["user"]
             }), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 401
+        except Exception:
+            return AuthController._unexpected_error(401)
 
     @staticmethod
     def perfil(req: Request = None):
@@ -143,8 +153,8 @@ class AuthController:
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 401
-        except Exception as e:
-            return jsonify({"error": str(e)}), 401
+        except Exception:
+            return AuthController._unexpected_error(401)
 
     @staticmethod
     def refresh(req: Request = None) -> Response:
@@ -166,8 +176,8 @@ class AuthController:
             )
             return jsonify(tokens), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 401
+        except Exception:
+            return AuthController._unexpected_error(401)
 
     @staticmethod
     def logout(req: Request = None) -> Response:
@@ -185,8 +195,8 @@ class AuthController:
         try:
             AuthService.revoke_refresh_token(refresh_token, reason="logout")
             return jsonify({"mensaje": "Sesion cerrada exitosamente"}), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 401
+        except Exception:
+            return AuthController._unexpected_error(401)
 
     @staticmethod
     def change_password(req: Request = None) -> Response:
@@ -232,8 +242,8 @@ class AuthController:
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 401
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception:
+            return AuthController._unexpected_error(400)
 
     @staticmethod
     def delete_user(user_id: int, req: Request = None):
@@ -251,8 +261,8 @@ class AuthController:
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 401
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception:
+            return AuthController._unexpected_error(400)
 
     @staticmethod
     def get_all_users(req: Request = None):
@@ -266,10 +276,10 @@ class AuthController:
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 401
-        except PermissionError as pe:
-            return jsonify({"error": str(pe)}), 403
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except PermissionError:
+            return error_response("FORBIDDEN", status_code=403)
+        except Exception:
+            return AuthController._unexpected_error(400)
 
     @staticmethod
     def get_user_by_id(user_id: int, req: Request = None):
@@ -286,8 +296,8 @@ class AuthController:
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 401
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception:
+            return AuthController._unexpected_error(404)
 
     @staticmethod
     def update_user(user_id: int, req: Request = None):
@@ -319,8 +329,8 @@ class AuthController:
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 401
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception:
+            return AuthController._unexpected_error(400)
 
     @staticmethod
     def create_user(req: Request = None):
@@ -365,7 +375,7 @@ class AuthController:
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 401
-        except PermissionError as pe:
-            return jsonify({"error": str(pe)}), 403
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except PermissionError:
+            return error_response("FORBIDDEN", status_code=403)
+        except Exception:
+            return AuthController._unexpected_error(400)

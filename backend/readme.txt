@@ -274,7 +274,15 @@ Observabilidad
 
 Produccion utiliza logs JSON en stdout con `X-Request-ID`, servicio, entorno y
 version. `/api/v1/health/live` valida el proceso y `/api/v1/health/ready` valida
-PostgreSQL y Redis. Los secretos se redactan como `[REDACTED]`.
+PostgreSQL y Redis. Los secretos se redactan como `[REDACTED]`. Los detalles de
+traceback se omiten en produccion y solo se conserva el tipo de excepcion. El
+`X-Request-ID` recibido se acepta unicamente si posee hasta 128 caracteres del
+conjunto alfanumerico, punto, guion, guion bajo o dos puntos; en otro caso se
+genera un UUID.
+
+No registrar cuerpos completos, query strings, credenciales, cookies, tokens ni
+datos personales. Las herramientas de testing tampoco deben imprimir
+contrasenas en consola.
 
 Variables obligatorias en produccion:
 - APP_ENV=production
@@ -297,6 +305,8 @@ Controles de seguridad de API:
 - headers defensivos: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy y HSTS cuando DEBUG esta desactivado.
 - cookies de sesion con HttpOnly, SameSite y Secure en produccion.
 - ejecucion en contenedor no root, filesystem read-only desde Compose y capacidades Linux reducidas.
+- autenticacion no refleja excepciones internas, detalles de persistencia ni la
+  existencia de usuarios, correos o tokens en sus respuestas de error.
 
 No se deben versionar archivos .env reales. Los archivos .env.example y .env.production.example son plantillas y sus valores deben reemplazarse antes de desplegar.
 
