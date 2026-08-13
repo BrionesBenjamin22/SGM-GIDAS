@@ -3,6 +3,7 @@ from sqlalchemy import func
 from modules.recursos.models.erogacion import TipoErogacion
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from extension import db
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 
 
 class TipoErogacionService:
@@ -10,40 +11,40 @@ class TipoErogacionService:
     @staticmethod
     def _validar_id_positivo(tipo_id):
         if isinstance(tipo_id, bool) or not isinstance(tipo_id, int):
-            raise Exception("El id debe ser un entero positivo")
+            raise ValidationError("El id debe ser un entero positivo")
 
         if tipo_id <= 0:
-            raise Exception("El id debe ser un entero positivo")
+            raise ValidationError("El id debe ser un entero positivo")
 
         return tipo_id
 
     @staticmethod
     def _validar_data(data):
         if data is None:
-            raise Exception("Los datos no pueden estar vacíos")
+            raise ValidationError("Los datos no pueden estar vacíos")
 
         if not isinstance(data, dict):
-            raise Exception("Los datos deben enviarse en un objeto válido")
+            raise ValidationError("Los datos deben enviarse en un objeto válido")
 
         if not data:
-            raise Exception("Los datos no pueden estar vacíos")
+            raise ValidationError("Los datos no pueden estar vacíos")
 
         return data
 
     @staticmethod
     def _validar_nombre(nombre, tipo_id=None):
         if nombre is None:
-            raise Exception("El nombre es obligatorio")
+            raise ValidationError("El nombre es obligatorio")
 
         if not isinstance(nombre, str):
-            raise Exception("El nombre debe ser texto")
+            raise ValidationError("El nombre debe ser texto")
 
         nombre = nombre.strip()
         if not nombre:
-            raise Exception("El nombre no puede estar vacío")
+            raise ValidationError("El nombre no puede estar vacío")
 
         if len(nombre) < 2:
-            raise Exception("El nombre debe tener al menos 2 caracteres")
+            raise ValidationError("El nombre debe tener al menos 2 caracteres")
 
         existe = TipoErogacion.query.filter(
             func.lower(TipoErogacion.nombre) == nombre.lower()
@@ -53,7 +54,7 @@ class TipoErogacionService:
             existe = existe.filter(TipoErogacion.id != tipo_id)
 
         if existe.first():
-            raise Exception("Ya existe un tipo de erogación con ese nombre")
+            raise ConflictError("Ya existe un tipo de erogación con ese nombre")
 
         return nombre
 
@@ -62,7 +63,7 @@ class TipoErogacionService:
         tipo_id = TipoErogacionService._validar_id_positivo(tipo_id)
         tipo = TipoErogacion.query.get(tipo_id)
         if not tipo:
-            raise Exception("Tipo de erogación no encontrado")
+            raise NotFoundError("Tipo de erogación no encontrado")
         return tipo
 
     @staticmethod
@@ -101,7 +102,7 @@ class TipoErogacionService:
         data = TipoErogacionService._validar_data(data)
         tipo = TipoErogacionService._obtener_tipo_o_error(tipo_id)
         if tipo.deleted_at is not None:
-            raise Exception("No se puede editar un tipo de erogacion inactivo")
+            raise ConflictError("No se puede editar un tipo de erogacion inactivo")
 
         nombre = TipoErogacionService._validar_nombre(data.get("nombre"), tipo.id)
         cambios = CatalogoAuditoriaService.construir_cambios(tipo, {"nombre": nombre})
@@ -121,7 +122,7 @@ class TipoErogacionService:
         tipo = TipoErogacionService._obtener_tipo_o_error(tipo_id)
 
         if len(tipo.erogaciones) > 0:
-            raise Exception(
+            raise ConflictError(
                 "No se puede eliminar el tipo de erogación porque está asociado a erogaciones"
             )
 

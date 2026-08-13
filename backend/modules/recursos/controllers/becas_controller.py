@@ -1,5 +1,6 @@
 from flask import jsonify, request, g
 from modules.recursos.services.becas_service import BecaService
+from modules.shared.controllers.responses import exception_response
 
 
 class BecaController:
@@ -12,8 +13,8 @@ class BecaController:
         try:
             data = BecaService.get_all(request.args.get("activos", "true"))
             return jsonify(data), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception as error:
+            return exception_response(error, operation="listar becas")
 
 
     # =========================
@@ -24,20 +25,16 @@ class BecaController:
         try:
             data = BecaService.get_by_id(beca_id)
             return jsonify(data), 200
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 404
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception as error:
+            return exception_response(error, operation="consultar beca")
 
     @staticmethod
     def get_historial(beca_id):
         try:
             data = BecaService.get_historial(beca_id)
             return jsonify(data), 200
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 404
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception as error:
+            return exception_response(error, operation="consultar historial de beca")
 
 
     # =========================
@@ -53,10 +50,8 @@ class BecaController:
 
             return jsonify(nueva_beca), 201
 
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception as error:
+            return exception_response(error, operation="crear beca")
 
 
     # =========================
@@ -72,10 +67,8 @@ class BecaController:
 
             return jsonify(beca_actualizada), 200
 
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 404
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception as error:
+            return exception_response(error, operation="actualizar beca")
 
 
     # =========================
@@ -89,10 +82,8 @@ class BecaController:
             result = BecaService.delete(beca_id, user_id)
             return jsonify(result), 200
 
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 404
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception as error:
+            return exception_response(error, operation="eliminar beca")
 
 
     # =========================
@@ -108,10 +99,8 @@ class BecaController:
 
             return jsonify(result), 200
 
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception as error:
+            return exception_response(error, operation="vincular becario")
 
 
     # =========================
@@ -130,10 +119,8 @@ class BecaController:
 
             return jsonify(result), 200
 
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 404
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception as error:
+            return exception_response(error, operation="desvincular becario")
 
 
     # =========================
@@ -145,10 +132,8 @@ class BecaController:
             data = BecaService.get_becarios_de_beca(beca_id)
             return jsonify(data), 200
 
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 404
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception as error:
+            return exception_response(error, operation="listar becarios de beca")
 
 
     # =========================
@@ -163,10 +148,8 @@ class BecaController:
 
             return jsonify(data), 200
 
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception as error:
+            return exception_response(error, operation="listar becas activas")
 
 
     # =========================
@@ -181,7 +164,5 @@ class BecaController:
 
             return jsonify(data), 200
 
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception as error:
+            return exception_response(error, operation="consultar dashboard de becas")

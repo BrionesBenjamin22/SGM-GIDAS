@@ -1,3 +1,4 @@
+import builtins
 from datetime import datetime, date
 
 from modules.recursos.models.equipamiento import Equipamiento, EquipamientoMemoriaVersion
@@ -5,6 +6,7 @@ from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
+from modules.shared.exceptions import NotFoundError, ValidationError as ValueError
 
 
 class EquipamientoService:
@@ -34,7 +36,7 @@ class EquipamientoService:
     def _validar_monto(monto):
         try:
             monto = float(monto)
-        except (TypeError, ValueError):
+        except (TypeError, builtins.ValueError):
             raise ValueError("El monto debe ser numerico.")
 
         if monto <= 0:
@@ -46,7 +48,7 @@ class EquipamientoService:
     def _validar_fecha(fecha_str: str):
         try:
             fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
-        except (TypeError, ValueError):
+        except (TypeError, builtins.ValueError):
             raise ValueError("Formato de fecha invalido. Usar YYYY-MM-DD.")
 
         if fecha > date.today():
@@ -69,7 +71,7 @@ class EquipamientoService:
             EquipamientoService._validar_id(equipamiento_id, "equipamiento_id")
         )
         if not equipamiento or equipamiento.deleted_at is not None:
-            raise Exception("Equipamiento no encontrado")
+            raise NotFoundError("Equipamiento no encontrado")
         return equipamiento
 
     # ==========================================
@@ -103,7 +105,7 @@ class EquipamientoService:
             EquipamientoService._validar_id(equipamiento_id, "equipamiento_id")
         )
         if not equipamiento:
-            raise Exception("Equipamiento no encontrado")
+            raise NotFoundError("Equipamiento no encontrado")
         return equipamiento.serialize()
 
     @staticmethod
@@ -113,7 +115,7 @@ class EquipamientoService:
             EquipamientoService._validar_id(equipamiento_id, "equipamiento_id")
         )
         if not equipamiento:
-            raise Exception("Equipamiento no encontrado")
+            raise NotFoundError("Equipamiento no encontrado")
         return AuditoriaService.obtener_historial_entidad(
             entidad="equipamiento_grupo",
             registro_id=equipamiento.id
