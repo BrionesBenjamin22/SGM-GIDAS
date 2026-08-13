@@ -148,6 +148,37 @@ class ProduccionDomainErrorsTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json()["error"]["code"], "VALIDATION_ERROR")
 
+    def test_rol_actividad_expone_conflicto_tipificado(self):
+        with self._auth(), patch(
+            "modules.produccion.controllers.rol_actividad_controller."
+            "RolActividadService.delete",
+            side_effect=ConflictError("El rol tiene actividades asociadas"),
+        ):
+            response = self.client.delete(
+                "/api/v1/produccion/rol-actividad/1",
+                headers=self._headers(),
+            )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.get_json()["error"]["code"], "CONFLICT")
+
+    def test_tipo_reunion_oculta_error_inesperado(self):
+        marker = "sqlalchemy password=secreto"
+        with self._auth("LECTURA"), patch(
+            "modules.produccion.controllers.tipo_reunion_controller."
+            "TipoReunionService.get_all",
+            side_effect=RuntimeError(marker),
+        ):
+            response = self.client.get(
+                "/api/v1/produccion/tipos-reunion-cientifica/",
+                headers=self._headers(),
+            )
+
+        body = response.get_json()
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
+        self.assertNotIn(marker, str(body))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,90 +1,44 @@
-from flask import jsonify, request, g
+from flask import g, jsonify, request
+
 from modules.produccion.models.trabajo_reunion import TipoReunion
+from modules.produccion.services.tipo_reunion_service import TipoReunionService
+from modules.shared.controllers.responses import exception_response
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
-from extension import db
 
 
 class TipoReunionController:
 
     @staticmethod
     def get_all():
-        activos = request.args.get("activos", "true")
-        query = TipoReunion.query
-        if activos == "true":
-            query = query.filter(TipoReunion.deleted_at.is_(None))
-        elif activos == "false":
-            query = query.filter(TipoReunion.deleted_at.isnot(None))
-        tipos = query.order_by(TipoReunion.nombre.asc()).all()
-        return jsonify([t.serialize() for t in tipos]), 200
+        try:
+            return jsonify(TipoReunionService.get_all(request.args.get("activos", "true"))), 200
+        except Exception as error:
+            return exception_response(error, operation="listar tipos de reunion")
 
     @staticmethod
     def get_historial(tipo_id):
         try:
-            return jsonify(
-                CatalogoAuditoriaService.historial_por_modelo(TipoReunion, tipo_id)
-            ), 200
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 404
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            return jsonify(CatalogoAuditoriaService.historial_por_modelo(TipoReunion, tipo_id)), 200
+        except Exception as error:
+            return exception_response(error, operation="consultar historial de tipo de reunion")
 
     @staticmethod
     def create():
-        data = request.get_json()
         try:
-            tipo = TipoReunion(nombre=data["nombre"])
-            CatalogoAuditoriaService.marcar_creacion(
-                tipo,
-                getattr(g, "current_user_id", None)
-            )
-            db.session.add(tipo)
-            db.session.commit()
-            return jsonify(tipo.serialize()), 201
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({"error": str(e)}), 400
+            return jsonify(TipoReunionService.create(request.get_json(), getattr(g, "current_user_id", None))), 201
+        except Exception as error:
+            return exception_response(error, operation="crear tipo de reunion")
 
     @staticmethod
     def update(tipo_id):
-        data = request.get_json()
         try:
-            tipo = TipoReunion.query.get(tipo_id)
-            if not tipo:
-                return jsonify({"error": "Tipo de reunión no encontrado"}), 404
-            if tipo.deleted_at is not None:
-                return jsonify({
-                    "error": "No se puede editar un tipo de reunion inactivo"
-                }), 400
-
-            nombre = data.get("nombre", tipo.nombre)
-            cambios = CatalogoAuditoriaService.construir_cambios(
-                tipo,
-                {"nombre": nombre}
-            )
-            tipo.nombre = nombre
-            CatalogoAuditoriaService.marcar_actualizacion(
-                tipo,
-                cambios,
-                getattr(g, "current_user_id", None)
-            )
-            db.session.commit()
-            return jsonify(tipo.serialize()), 200
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({"error": str(e)}), 400
+            return jsonify(TipoReunionService.update(tipo_id, request.get_json(), getattr(g, "current_user_id", None))), 200
+        except Exception as error:
+            return exception_response(error, operation="actualizar tipo de reunion")
 
     @staticmethod
     def delete(tipo_id):
         try:
-            tipo = TipoReunion.query.get(tipo_id)
-            if not tipo:
-                return jsonify({"error": "Tipo de reunión no encontrado"}), 404
-            CatalogoAuditoriaService.marcar_baja(
-                tipo,
-                getattr(g, "current_user_id", None)
-            )
-            db.session.commit()
-            return jsonify({"message": "Eliminado correctamente"}), 200
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({"error": str(e)}), 400
+            return jsonify(TipoReunionService.delete(tipo_id, getattr(g, "current_user_id", None))), 200
+        except Exception as error:
+            return exception_response(error, operation="eliminar tipo de reunion")
