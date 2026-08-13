@@ -271,6 +271,68 @@ class ProduccionDomainErrorsTestCase(unittest.TestCase):
         self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
         self.assertNotIn(marker, str(body))
 
+    def test_trabajo_reunion_expone_not_found_tipificado(self):
+        with self._auth("LECTURA"), patch(
+            "modules.produccion.controllers.trabajo_reunion_controller."
+            "TrabajoReunionCientificaService.get_by_id",
+            side_effect=NotFoundError("Trabajo en reunion no encontrado"),
+        ):
+            response = self.client.get(
+                "/api/v1/produccion/trabajos-reunion-cientifica/1",
+                headers=self._headers(),
+            )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.get_json()["error"]["code"], "NOT_FOUND")
+
+    def test_trabajo_reunion_oculta_error_inesperado(self):
+        marker = "conexion interna password=secreto"
+        with self._auth("LECTURA"), patch(
+            "modules.produccion.controllers.trabajo_reunion_controller."
+            "TrabajoReunionCientificaService.get_all",
+            side_effect=RuntimeError(marker),
+        ):
+            response = self.client.get(
+                "/api/v1/produccion/trabajos-reunion-cientifica",
+                headers=self._headers(),
+            )
+
+        body = response.get_json()
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
+        self.assertNotIn(marker, str(body))
+
+    def test_trabajo_revista_expone_conflicto_tipificado(self):
+        with self._auth(), patch(
+            "modules.produccion.controllers.trabajo_revista_controller."
+            "TrabajosRevistasReferatoService.restore",
+            side_effect=ConflictError("El trabajo ya se encuentra activo"),
+        ):
+            response = self.client.put(
+                "/api/v1/produccion/trabajos-revistas/1/restore",
+                headers=self._headers(),
+            )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.get_json()["error"]["code"], "CONFLICT")
+
+    def test_trabajo_revista_oculta_error_inesperado(self):
+        marker = "sql interna token=secreto"
+        with self._auth("LECTURA"), patch(
+            "modules.produccion.controllers.trabajo_revista_controller."
+            "TrabajosRevistasReferatoService.get_all",
+            side_effect=RuntimeError(marker),
+        ):
+            response = self.client.get(
+                "/api/v1/produccion/trabajos-revistas/",
+                headers=self._headers(),
+            )
+
+        body = response.get_json()
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
+        self.assertNotIn(marker, str(body))
+
 
 if __name__ == "__main__":
     unittest.main()
