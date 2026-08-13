@@ -1,5 +1,7 @@
 from datetime import date, datetime
 
+from modules.shared.exceptions import ValidationError
+
 
 def validar_fecha_alta_grupo(
     valor,
@@ -9,7 +11,7 @@ def validar_fecha_alta_grupo(
     if valor in (None, ""):
         if permitir_none:
             return None
-        raise ValueError(
+        raise ValidationError(
             f"El campo '{campo}' es obligatorio y debe tener formato YYYY-MM-DD"
         )
 
@@ -22,7 +24,7 @@ def validar_fecha_alta_grupo(
         except ValueError:
             pass
 
-    raise ValueError(
+    raise ValidationError(
         f"El campo '{campo}' es obligatorio y debe tener formato YYYY-MM-DD"
     )
 

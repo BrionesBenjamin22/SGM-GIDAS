@@ -299,6 +299,14 @@ Variables obligatorias en produccion:
 Las claves SECRET_KEY, JWT_SECRET y REFRESH_SECRET deben tener al menos 32 caracteres y no pueden usar placeholders. La aplicacion falla al iniciar si detecta una configuracion insegura para produccion, CORS con comodin o ausencia de DATABASE_URL.
 
 Controles de seguridad de API:
+
+- las reglas funcionales nuevas usan excepciones tipadas de dominio
+  (`ValidationError`, `NotFoundError`, `ConflictError`, `ForbiddenError`). Solo
+  sus mensajes se exponen al cliente; las excepciones inesperadas responden
+  `INTERNAL_ERROR` con `request_id` y se registran únicamente por tipo.
+- el modulo de memorias aplica este contrato a consultas, snapshots,
+  transiciones, versionado y exportaciones, preservando estados 400, 404, 409 y
+  500 según la naturaleza del error.
 - CORS restringido por FRONTEND_URLS en produccion.
 - rate limit global y limites especificos para autenticacion.
 - almacenamiento de rate limit en Redis interno para evitar contadores aislados por worker.

@@ -2,11 +2,7 @@ from flask import jsonify, request, g, send_file
 
 from modules.memorias.services.memoria_service import MemoriaService
 from modules.memorias.services.exportacion_service_impl import ExportService
-from modules.shared.controllers.responses import error_response
-from modules.shared.services.logging_config import get_logger
-
-
-logger = get_logger(__name__)
+from modules.shared.controllers.responses import exception_response
 
 
 class MemoriaController:
@@ -16,8 +12,8 @@ class MemoriaController:
         try:
             activos = request.args.get("activos", "true")
             return jsonify(MemoriaService.get_all(activos)), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="listar memorias")
 
     @staticmethod
     def get_by_id(memoria_id):
@@ -25,8 +21,8 @@ class MemoriaController:
             return jsonify(
                 MemoriaService.get_by_id(memoria_id)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar memoria")
 
     @staticmethod
     def get_investigadores_snapshot(memoria_id, memoria_version_id):
@@ -37,8 +33,8 @@ class MemoriaController:
                     memoria_version_id
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar snapshot de memoria")
 
     @staticmethod
     def get_becarios_snapshot(memoria_id, memoria_version_id):
@@ -49,8 +45,8 @@ class MemoriaController:
                     memoria_version_id
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar snapshot de memoria")
 
     @staticmethod
     def get_personal_snapshot(memoria_id, memoria_version_id):
@@ -61,8 +57,8 @@ class MemoriaController:
                     memoria_version_id
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar snapshot de memoria")
 
     @staticmethod
     def get_proyectos_snapshot(memoria_id, memoria_version_id):
@@ -73,8 +69,8 @@ class MemoriaController:
                     memoria_version_id
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar snapshot de memoria")
 
     @staticmethod
     def get_actividades_docencia_snapshot(memoria_id, memoria_version_id):
@@ -85,8 +81,8 @@ class MemoriaController:
                     memoria_version_id
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar snapshot de memoria")
 
     @staticmethod
     def get_participaciones_relevantes_snapshot(memoria_id, memoria_version_id):
@@ -97,8 +93,8 @@ class MemoriaController:
                     memoria_version_id
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar snapshot de memoria")
 
     @staticmethod
     def get_documentacion_snapshot(memoria_id, memoria_version_id):
@@ -109,8 +105,8 @@ class MemoriaController:
                     memoria_version_id
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar snapshot de memoria")
 
     @staticmethod
     def get_equipamiento_snapshot(memoria_id, memoria_version_id):
@@ -121,8 +117,8 @@ class MemoriaController:
                     memoria_version_id
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar snapshot de memoria")
 
     @staticmethod
     def get_erogaciones_snapshot(memoria_id, memoria_version_id):
@@ -133,8 +129,8 @@ class MemoriaController:
                     memoria_version_id
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar snapshot de memoria")
 
     @staticmethod
     def get_transferencias_snapshot(memoria_id, memoria_version_id):
@@ -145,8 +141,8 @@ class MemoriaController:
                     memoria_version_id
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar snapshot de memoria")
 
     @staticmethod
     def get_trabajos_reunion_snapshot(memoria_id, memoria_version_id):
@@ -157,8 +153,8 @@ class MemoriaController:
                     memoria_version_id
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar snapshot de memoria")
 
     @staticmethod
     def get_trabajos_revista_snapshot(memoria_id, memoria_version_id):
@@ -169,8 +165,8 @@ class MemoriaController:
                     memoria_version_id
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar snapshot de memoria")
 
     @staticmethod
     def get_distinciones_snapshot(memoria_id, memoria_version_id):
@@ -181,8 +177,8 @@ class MemoriaController:
                     memoria_version_id
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar snapshot de memoria")
 
     @staticmethod
     def get_registros_propiedad_snapshot(memoria_id, memoria_version_id):
@@ -193,8 +189,8 @@ class MemoriaController:
                     memoria_version_id
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar snapshot de memoria")
 
     @staticmethod
     def get_articulos_divulgacion_snapshot(memoria_id, memoria_version_id):
@@ -205,8 +201,8 @@ class MemoriaController:
                     memoria_version_id
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar snapshot de memoria")
 
     @staticmethod
     def get_visitas_snapshot(memoria_id, memoria_version_id):
@@ -217,8 +213,8 @@ class MemoriaController:
                     memoria_version_id
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar snapshot de memoria")
 
     @staticmethod
     def exportar_excel(memoria_id, memoria_version_id):
@@ -246,12 +242,8 @@ class MemoriaController:
                 download_name=f"memoria_{anio}_v{numero_version}.xlsx",
                 mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-        except ValueError:
-            logger.exception("Error de validacion al exportar memoria")
-            return error_response("VALIDATION_ERROR", status_code=400)
-        except Exception:
-            logger.exception("Error interno al exportar memoria")
-            return error_response("INTERNAL_ERROR", status_code=500)
+        except Exception as error:
+            return exception_response(error, operation="exportar memoria")
 
     @staticmethod
     def create():
@@ -262,8 +254,8 @@ class MemoriaController:
             return jsonify(
                 MemoriaService.create(data, user_id)
             ), 201
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="crear memoria")
 
     @staticmethod
     def update(memoria_id):
@@ -273,8 +265,8 @@ class MemoriaController:
             return jsonify(
                 MemoriaService.update(memoria_id, data)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="actualizar memoria")
 
     @staticmethod
     def delete(memoria_id):
@@ -284,8 +276,8 @@ class MemoriaController:
             return jsonify(
                 MemoriaService.delete(memoria_id, user_id)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="eliminar memoria")
 
     @staticmethod
     def change_status(memoria_id):
@@ -296,8 +288,8 @@ class MemoriaController:
             return jsonify(
                 MemoriaService.change_status(memoria_id, data, user_id)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="cambiar estado de memoria")
 
     @staticmethod
     def reopen(memoria_id):
@@ -308,5 +300,5 @@ class MemoriaController:
             return jsonify(
                 MemoriaService.reopen(memoria_id, user_id, data)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="reabrir memoria")

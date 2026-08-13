@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch
 
 from app import create_app
+from modules.shared.exceptions import ValidationError
 
 
 class MemoriaRoutesTestCase(unittest.TestCase):
@@ -43,7 +44,7 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             return_value={"sub": "2", "rol": "GESTOR"}
         ), patch(
             "modules.memorias.controllers.memoria_controller.ExportService.generar_excel_memoria",
-            side_effect=ValueError("detalle interno sensible")
+            side_effect=RuntimeError("postgresql://usuario:secreto@db/interna")
         ):
             response = self.client.get(
                 "/api/v1/memorias/1/versiones/2/exportar-excel",
@@ -51,10 +52,48 @@ class MemoriaRoutesTestCase(unittest.TestCase):
             )
 
         body = response.get_json()
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(body["error"]["code"], "VALIDATION_ERROR")
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
         self.assertNotIn("traceback", body)
         self.assertNotIn("detalle interno sensible", body["error"]["message"])
+
+    def test_create_expone_validacion_tipificada(self):
+        with patch(
+            "modules.shared.services.middleware.AuthService.verify_token",
+            return_value={"sub": "3", "rol": "ADMIN"}
+        ), patch(
+            "modules.memorias.controllers.memoria_controller.MemoriaService.create",
+            side_effect=ValidationError("El periodo es obligatorio")
+        ):
+            response = self.client.post(
+                "/api/v1/memorias",
+                json={},
+                headers=self._headers(),
+            )
+
+        body = response.get_json()
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(body["error"]["code"], "VALIDATION_ERROR")
+        self.assertEqual(body["error"]["message"], "El periodo es obligatorio")
+
+    def test_get_by_id_oculta_error_inesperado(self):
+        marker = "postgresql://usuario:secreto@db/interna"
+        with patch(
+            "modules.shared.services.middleware.AuthService.verify_token",
+            return_value={"sub": "4", "rol": "LECTURA"}
+        ), patch(
+            "modules.memorias.controllers.memoria_controller.MemoriaService.get_by_id",
+            side_effect=RuntimeError(marker)
+        ):
+            response = self.client.get(
+                "/api/v1/memorias/1",
+                headers=self._headers(),
+            )
+
+        body = response.get_json()
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
+        self.assertNotIn(marker, str(body))
 
     def test_get_snapshot_investigadores_con_rol_lectura_devuelve_200(self):
         with patch(

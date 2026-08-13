@@ -2,6 +2,7 @@ from datetime import datetime
 
 from extension import db
 from modules.memorias.models.memorias import Memoria, MemoriaVersion, EstadoMemoria
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 from modules.personal.services.investigador_service import (
     obtener_snapshots_investigadores_por_memoria_version,
     snapshot_investigadores_para_memoria_version,
@@ -65,18 +66,18 @@ class MemoriaService:
     @staticmethod
     def _validar_payload(data: dict):
         if not isinstance(data, dict) or not data:
-            raise ValueError("Los datos no pueden estar vacios")
+            raise ValidationError("Los datos no pueden estar vacios")
 
     @staticmethod
     def _validar_id(valor, campo: str):
         if not isinstance(valor, int) or valor <= 0:
-            raise ValueError(f"El campo '{campo}' debe ser un entero positivo")
+            raise ValidationError(f"El campo '{campo}' debe ser un entero positivo")
         return valor
 
     @staticmethod
     def _validar_texto(valor: str, campo: str):
         if not isinstance(valor, str) or not valor.strip():
-            raise ValueError(f"El campo '{campo}' es obligatorio")
+            raise ValidationError(f"El campo '{campo}' es obligatorio")
         return valor.strip()
 
     @staticmethod
@@ -86,7 +87,7 @@ class MemoriaService:
         try:
             return datetime.strptime(valor, "%Y-%m-%d").date()
         except ValueError:
-            raise ValueError(
+            raise ValidationError(
                 f"El campo '{campo}' debe tener formato YYYY-MM-DD"
             )
 
@@ -100,12 +101,12 @@ class MemoriaService:
         )
 
         if fecha_inicio > fecha_fin:
-            raise ValueError(
+            raise ValidationError(
                 "La fecha de inicio del periodo no puede ser mayor a la fecha de fin"
             )
 
         if fecha_inicio.year != fecha_fin.year:
-            raise ValueError(
+            raise ValidationError(
                 "La memoria debe corresponder a un unico anio calendario"
             )
 
@@ -121,7 +122,7 @@ class MemoriaService:
         memorias = query.all()
         for memoria in memorias:
             if memoria.periodo_fin and memoria.periodo_fin.year == periodo_fin.year:
-                raise ValueError(
+                raise ConflictError(
                     f"Ya existe una memoria registrada para el anio {periodo_fin.year}"
                 )
 
@@ -140,7 +141,7 @@ class MemoriaService:
                 and version_actual.deleted_at is None
                 and version_actual.estado != EstadoMemoria.CERRADA
             ):
-                raise ValueError(
+                raise ConflictError(
                     "Solo puede existir una memoria activa a la vez"
                 )
 
@@ -171,7 +172,7 @@ class MemoriaService:
             except ValueError:
                 pass
 
-        raise ValueError(
+        raise ValidationError(
             "La fecha_apertura debe tener formato YYYY-MM-DD o YYYY-MM-DD HH:MM:SS"
         )
 
@@ -202,7 +203,7 @@ class MemoriaService:
             except ValueError:
                 pass
 
-        raise ValueError(
+        raise ValidationError(
             f"El campo '{campo}' debe tener formato YYYY-MM-DD o YYYY-MM-DD HH:MM:SS"
         )
 
@@ -217,7 +218,7 @@ class MemoriaService:
                 if estado_enum.value == valor:
                     return estado_enum
 
-        raise ValueError(
+        raise ValidationError(
             "El estado debe ser 'abierta', 'en revision' o 'cerrada'"
         )
 
@@ -228,13 +229,13 @@ class MemoriaService:
             MemoriaService._validar_id(memoria_id, "memoria_id")
         )
         if not memoria or memoria.deleted_at is not None:
-            raise Exception("Memoria no encontrada")
+            raise NotFoundError("Memoria no encontrada")
         return memoria
 
     @staticmethod
     def _get_version_actual_or_404(memoria: Memoria):
         if not memoria.version_actual or memoria.version_actual.deleted_at is not None:
-            raise ValueError("La memoria no tiene una version actual valida")
+            raise NotFoundError("La memoria no tiene una version actual valida")
         return memoria.version_actual
 
     @staticmethod
@@ -244,7 +245,7 @@ class MemoriaService:
             MemoriaService._validar_id(memoria_version_id, "memoria_version_id")
         )
         if not version or version.deleted_at is not None:
-            raise ValueError("La version de memoria no existe")
+            raise NotFoundError("La version de memoria no existe")
         return version
 
     @staticmethod
@@ -262,10 +263,10 @@ class MemoriaService:
         }
 
         if nuevo_estado == estado_actual:
-            raise ValueError("La memoria ya se encuentra en ese estado")
+            raise ConflictError("La memoria ya se encuentra en ese estado")
 
         if nuevo_estado not in transiciones_validas[estado_actual]:
-            raise ValueError(
+            raise ConflictError(
                 f"No se puede cambiar el estado de '{estado_actual.value}' a '{nuevo_estado.value}'"
             )
 
@@ -361,7 +362,7 @@ class MemoriaService:
             MemoriaService._validar_id(memoria_id, "memoria_id")
         )
         if not memoria:
-            raise Exception("Memoria no encontrada")
+            raise NotFoundError("Memoria no encontrada")
         data = MemoriaService._serializar_memoria(memoria)
         data["versiones"] = [
             version.serialize()
@@ -376,7 +377,7 @@ class MemoriaService:
         version = MemoriaService._get_version_or_404(memoria_version_id)
 
         if version.memoria_id != memoria.id:
-            raise ValueError("La version no pertenece a la memoria indicada")
+            raise NotFoundError("La version no pertenece a la memoria indicada")
 
         return obtener_snapshots_investigadores_por_memoria_version(version.id)
 
@@ -386,7 +387,7 @@ class MemoriaService:
         version = MemoriaService._get_version_or_404(memoria_version_id)
 
         if version.memoria_id != memoria.id:
-            raise ValueError("La version no pertenece a la memoria indicada")
+            raise NotFoundError("La version no pertenece a la memoria indicada")
 
         return obtener_snapshots_becarios_por_memoria_version(version.id)
 
@@ -396,7 +397,7 @@ class MemoriaService:
         version = MemoriaService._get_version_or_404(memoria_version_id)
 
         if version.memoria_id != memoria.id:
-            raise ValueError("La version no pertenece a la memoria indicada")
+            raise NotFoundError("La version no pertenece a la memoria indicada")
 
         return obtener_snapshots_personal_por_memoria_version(version.id)
 
@@ -406,7 +407,7 @@ class MemoriaService:
         version = MemoriaService._get_version_or_404(memoria_version_id)
 
         if version.memoria_id != memoria.id:
-            raise ValueError("La version no pertenece a la memoria indicada")
+            raise NotFoundError("La version no pertenece a la memoria indicada")
 
         return ProyectoInvestigacionService.obtener_snapshots_por_memoria_version(
             version.id
@@ -418,7 +419,7 @@ class MemoriaService:
         version = MemoriaService._get_version_or_404(memoria_version_id)
 
         if version.memoria_id != memoria.id:
-            raise ValueError("La version no pertenece a la memoria indicada")
+            raise NotFoundError("La version no pertenece a la memoria indicada")
 
         return ActividadDocenciaService.obtener_snapshots_por_memoria_version(
             version.id
@@ -430,7 +431,7 @@ class MemoriaService:
         version = MemoriaService._get_version_or_404(memoria_version_id)
 
         if version.memoria_id != memoria.id:
-            raise ValueError("La version no pertenece a la memoria indicada")
+            raise NotFoundError("La version no pertenece a la memoria indicada")
 
         return ParticipacionRelevanteService.obtener_snapshots_por_memoria_version(
             version.id
@@ -442,7 +443,7 @@ class MemoriaService:
         version = MemoriaService._get_version_or_404(memoria_version_id)
 
         if version.memoria_id != memoria.id:
-            raise ValueError("La version no pertenece a la memoria indicada")
+            raise NotFoundError("La version no pertenece a la memoria indicada")
 
         return DocumentacionBibliograficaService.obtener_snapshots_por_memoria_version(
             version.id
@@ -454,7 +455,7 @@ class MemoriaService:
         version = MemoriaService._get_version_or_404(memoria_version_id)
 
         if version.memoria_id != memoria.id:
-            raise ValueError("La version no pertenece a la memoria indicada")
+            raise NotFoundError("La version no pertenece a la memoria indicada")
 
         return EquipamientoService.obtener_snapshots_por_memoria_version(
             version.id
@@ -466,7 +467,7 @@ class MemoriaService:
         version = MemoriaService._get_version_or_404(memoria_version_id)
 
         if version.memoria_id != memoria.id:
-            raise ValueError("La version no pertenece a la memoria indicada")
+            raise NotFoundError("La version no pertenece a la memoria indicada")
 
         return ErogacionService.obtener_snapshots_por_memoria_version(version.id)
 
@@ -476,7 +477,7 @@ class MemoriaService:
         version = MemoriaService._get_version_or_404(memoria_version_id)
 
         if version.memoria_id != memoria.id:
-            raise ValueError("La version no pertenece a la memoria indicada")
+            raise NotFoundError("La version no pertenece a la memoria indicada")
 
         return TransferenciaSocioProductivaService.obtener_snapshots_por_memoria_version(
             version.id
@@ -488,7 +489,7 @@ class MemoriaService:
         version = MemoriaService._get_version_or_404(memoria_version_id)
 
         if version.memoria_id != memoria.id:
-            raise ValueError("La version no pertenece a la memoria indicada")
+            raise NotFoundError("La version no pertenece a la memoria indicada")
 
         return TrabajoReunionCientificaService.obtener_snapshots_por_memoria_version(
             version.id
@@ -500,7 +501,7 @@ class MemoriaService:
         version = MemoriaService._get_version_or_404(memoria_version_id)
 
         if version.memoria_id != memoria.id:
-            raise ValueError("La version no pertenece a la memoria indicada")
+            raise NotFoundError("La version no pertenece a la memoria indicada")
 
         return TrabajosRevistasReferatoService.obtener_snapshots_por_memoria_version(
             version.id
@@ -512,7 +513,7 @@ class MemoriaService:
         version = MemoriaService._get_version_or_404(memoria_version_id)
 
         if version.memoria_id != memoria.id:
-            raise ValueError("La version no pertenece a la memoria indicada")
+            raise NotFoundError("La version no pertenece a la memoria indicada")
 
         return DistincionRecibidaService.obtener_snapshots_por_memoria_version(
             version.id
@@ -524,7 +525,7 @@ class MemoriaService:
         version = MemoriaService._get_version_or_404(memoria_version_id)
 
         if version.memoria_id != memoria.id:
-            raise ValueError("La version no pertenece a la memoria indicada")
+            raise NotFoundError("La version no pertenece a la memoria indicada")
 
         return RegistrosPropiedadService.obtener_snapshots_por_memoria_version(
             version.id
@@ -536,7 +537,7 @@ class MemoriaService:
         version = MemoriaService._get_version_or_404(memoria_version_id)
 
         if version.memoria_id != memoria.id:
-            raise ValueError("La version no pertenece a la memoria indicada")
+            raise NotFoundError("La version no pertenece a la memoria indicada")
 
         return ArticuloDivulgacionService.obtener_snapshots_por_memoria_version(
             version.id
@@ -548,7 +549,7 @@ class MemoriaService:
         version = MemoriaService._get_version_or_404(memoria_version_id)
 
         if version.memoria_id != memoria.id:
-            raise ValueError("La version no pertenece a la memoria indicada")
+            raise NotFoundError("La version no pertenece a la memoria indicada")
 
         return obtener_snapshots_visitas_por_memoria_version(version.id)
 
@@ -602,7 +603,7 @@ class MemoriaService:
         # La memoria raiz representa la identidad del expediente/versionado.
         # Una vez creada no se modifica; cualquier evolucion se resuelve en la
         # capa de versionado y transicion de estados.
-        raise ValueError("La memoria no puede modificarse una vez creada")
+        raise ConflictError("La memoria no puede modificarse una vez creada")
 
     # ==========================================
     # SOFT DELETE
@@ -741,7 +742,7 @@ class MemoriaService:
         data = data or {}
 
         if version_actual.estado != EstadoMemoria.CERRADA:
-            raise ValueError(
+            raise ConflictError(
                 "Solo se puede crear una nueva version a partir de una memoria cerrada"
             )
 
