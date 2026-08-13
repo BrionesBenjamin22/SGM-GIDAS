@@ -2,6 +2,7 @@ from flask import jsonify, request, g
 from modules.produccion.services.actividad_docencia_service import (
     ActividadDocenciaService
 )
+from modules.shared.controllers.responses import exception_response
 
 
 class ActividadDocenciaController:
@@ -19,8 +20,8 @@ class ActividadDocenciaController:
                 ActividadDocenciaService.get_all(filtros)
             ), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="listar actividades de docencia")
 
     @staticmethod
     def get_by_id(actividad_id):
@@ -29,8 +30,8 @@ class ActividadDocenciaController:
                 ActividadDocenciaService.get_by_id(actividad_id)
             ), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar actividad de docencia")
 
     @staticmethod
     def get_historial(actividad_id):
@@ -39,8 +40,8 @@ class ActividadDocenciaController:
                 ActividadDocenciaService.get_historial(actividad_id)
             ), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar historial de actividad docente")
 
     @staticmethod
     def create():
@@ -54,8 +55,8 @@ class ActividadDocenciaController:
                 )
             ), 201
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="crear actividad de docencia")
 
     @staticmethod
     def update(actividad_id):
@@ -70,8 +71,8 @@ class ActividadDocenciaController:
                 )
             ), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="actualizar actividad de docencia")
 
     @staticmethod
     def delete(actividad_id):
@@ -83,5 +84,5 @@ class ActividadDocenciaController:
                 )
             ), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="eliminar actividad de docencia")

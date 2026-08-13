@@ -225,6 +225,52 @@ class ProduccionDomainErrorsTestCase(unittest.TestCase):
         self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
         self.assertNotIn(marker, str(body))
 
+    def test_actividad_docencia_expone_not_found_tipificado(self):
+        with self._auth("LECTURA"), patch(
+            "modules.produccion.controllers.actividad_docencia_controller."
+            "ActividadDocenciaService.get_by_id",
+            side_effect=NotFoundError("Actividad de docencia no encontrada"),
+        ):
+            response = self.client.get(
+                "/api/v1/produccion/actividades-docencia/1",
+                headers=self._headers(),
+            )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.get_json()["error"]["code"], "NOT_FOUND")
+
+    def test_actividad_docencia_expone_conflicto_tipificado(self):
+        with self._auth(), patch(
+            "modules.produccion.controllers.actividad_docencia_controller."
+            "ActividadDocenciaService.update",
+            side_effect=ConflictError("No se puede cambiar el investigador"),
+        ):
+            response = self.client.put(
+                "/api/v1/produccion/actividades-docencia/1",
+                json={"investigador_id": 2},
+                headers=self._headers(),
+            )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.get_json()["error"]["code"], "CONFLICT")
+
+    def test_actividad_docencia_oculta_error_inesperado(self):
+        marker = "postgresql password=secreto"
+        with self._auth("LECTURA"), patch(
+            "modules.produccion.controllers.actividad_docencia_controller."
+            "ActividadDocenciaService.get_all",
+            side_effect=RuntimeError(marker),
+        ):
+            response = self.client.get(
+                "/api/v1/produccion/actividades-docencia",
+                headers=self._headers(),
+            )
+
+        body = response.get_json()
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
+        self.assertNotIn(marker, str(body))
+
 
 if __name__ == "__main__":
     unittest.main()
