@@ -307,6 +307,9 @@ Controles de seguridad de API:
 - el modulo de memorias aplica este contrato a consultas, snapshots,
   transiciones, versionado y exportaciones, preservando estados 400, 404, 409 y
   500 según la naturaleza del error.
+- produccion migra por subdominios. Autores y documentacion bibliografica ya
+  diferencian validaciones, inexistencias, conflictos relacionales y fallas
+  internas sin exponer excepciones de persistencia.
 - CORS restringido por FRONTEND_URLS en produccion.
 - rate limit global y limites especificos para autenticacion.
 - almacenamiento de rate limit en Redis interno para evitar contadores aislados por worker.

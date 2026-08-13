@@ -10,6 +10,7 @@ from modules.produccion.models.documentacion_autores import (
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 
 
 class DocumentacionBibliograficaService:
@@ -22,13 +23,13 @@ class DocumentacionBibliograficaService:
     def _get_activo_or_404(doc_id: int):
         doc = db.session.get(DocumentacionBibliografica, doc_id)
         if not doc or doc.deleted_at is not None:
-            raise Exception("Documentacion bibliografica no encontrada")
+            raise NotFoundError("Documentacion bibliografica no encontrada")
         return doc
 
     @staticmethod
     def _normalizar_texto(valor: str, campo: str):
         if not isinstance(valor, str) or not valor.strip():
-            raise Exception(f"{campo} es obligatorio")
+            raise ValidationError(f"{campo} es obligatorio")
 
         return " ".join(valor.strip().split()).lower()
 
@@ -37,7 +38,7 @@ class DocumentacionBibliograficaService:
         try:
             return datetime.strptime(valor, "%Y-%m-%d").date()
         except (TypeError, ValueError):
-            raise Exception(
+            raise ValidationError(
                 f"El campo '{campo}' es obligatorio y debe tener formato YYYY-MM-DD"
             )
 
@@ -82,14 +83,14 @@ class DocumentacionBibliograficaService:
     def get_by_id(doc_id: int):
         doc = db.session.get(DocumentacionBibliografica, doc_id)
         if not doc:
-            raise Exception("Documentacion bibliografica no encontrada")
+            raise NotFoundError("Documentacion bibliografica no encontrada")
         return doc.serialize()
 
     @staticmethod
     def get_historial(doc_id: int):
         doc = db.session.get(DocumentacionBibliografica, doc_id)
         if not doc:
-            raise Exception("Documentacion bibliografica no encontrada")
+            raise NotFoundError("Documentacion bibliografica no encontrada")
         return AuditoriaService.obtener_historial_entidad(
             entidad="documentacion_bibliografica",
             registro_id=doc.id
@@ -102,12 +103,12 @@ class DocumentacionBibliograficaService:
     def create(data: dict, user_id: int):
         grupo = db.session.get(GrupoInvestigacionUtn, data["grupo_id"])
         if not grupo or grupo.deleted_at is not None:
-            raise Exception("Grupo no encontrado")
+            raise NotFoundError("Grupo no encontrado")
         if not data.get("titulo") or not data.get("editorial"):
-            raise Exception("Titulo y editorial son obligatorios")
+            raise ValidationError("Titulo y editorial son obligatorios")
 
         if not isinstance(data.get("anio"), int):
-            raise Exception("El anio debe ser numerico")
+            raise ValidationError("El anio debe ser numerico")
 
         doc = DocumentacionBibliografica(
             titulo=DocumentacionBibliograficaService._normalizar_texto(
@@ -209,10 +210,10 @@ class DocumentacionBibliograficaService:
 
         autor = db.session.get(Autor, autor_id)
         if not autor or getattr(autor, "deleted_at", None) is not None:
-            raise ValueError("Autor no encontrado")
+            raise NotFoundError("Autor no encontrado")
 
         if autor in doc.autores:
-            raise ValueError("El autor ya esta asociado")
+            raise ConflictError("El autor ya esta asociado")
 
         doc.autores.append(autor)
         db.session.commit()
@@ -225,10 +226,10 @@ class DocumentacionBibliograficaService:
 
         autor = db.session.get(Autor, autor_id)
         if not autor:
-            raise Exception("Autor no encontrado")
+            raise NotFoundError("Autor no encontrado")
 
         if autor not in doc.autores:
-            raise Exception("La relacion no existe")
+            raise NotFoundError("La relacion no existe")
 
         doc.autores.remove(autor)
         db.session.commit()
