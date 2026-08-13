@@ -106,11 +106,26 @@ Controles aplicados en produccion:
 - TypeScript se declara explicitamente para que el typecheck sea reproducible.
 - las dependencias deben mantenerse con `npm audit` sin vulnerabilidades conocidas.
 
-Los tokens se almacenan actualmente en `localStorage` por compatibilidad con el
-contrato vigente. Esto exige mantener el frontend libre de inyecciones de
-scripts. La migracion recomendada es conservar el refresh token exclusivamente
-en una cookie `HttpOnly`, `Secure` y `SameSite`, coordinando backend y frontend;
-no debe implementarse solo de un lado.
+La sesion no persiste tokens ni datos del usuario en `localStorage` o
+`sessionStorage`. El access token se mantiene solo en memoria y el refresh token
+permanece en la cookie `gidas_refresh`, que debe ser `HttpOnly`, `Secure` y
+`SameSite` en produccion. Todas las solicitudes usan credenciales same-origin.
+
+Al iniciar la SPA se llama a `POST /api/v1/auth/refresh`; una respuesta valida
+restaura el access token y el usuario antes de renderizar rutas protegidas. Las
+respuestas 401 comparten una unica renovacion concurrente y cada solicitud se
+reintenta como maximo una vez. El logout llama primero al servidor y siempre
+limpia el estado en memoria; las otras pestanas reciben solo el evento `logout`
+mediante `BroadcastChannel`, nunca credenciales.
+
+Cada login y logout avanza una generacion de sesion para que una renovacion que
+ya estaba en vuelo no pueda restaurar un token invalidado. Las pestanas
+serializan sus renovaciones y el logout mediante el mismo Web Lock cuando el
+navegador lo soporta. La limpieza local y el evento de logout son inmediatos,
+pero la expiracion de la cookie espera cualquier rotacion ya iniciada, evitando
+que una respuesta de refresh posterior vuelva a establecerla.
+En navegadores sin Web Locks, el backend debe conservar su proteccion frente a
+renovaciones concurrentes y responder de forma segura a carreras de rotacion.
 
 Para desarrollo con Docker usar el compose de desarrollo desde la raiz del proyecto:
 
@@ -130,11 +145,9 @@ El flujo publico y autenticado se organiza asi:
 - `/registro`: configuracion del administrador inicial, disponible solo si no existen usuarios.
 - `/inicio`: home operativo protegido.
 
-Al abrir una ruta protegida, el sistema muestra primero el login. Una
-sesion almacenada se valida contra `GET /api/v1/auth/perfil` antes de permitir
-el renderizado del layout y sus vistas. Si la validacion falla, la sesion local
-se elimina y el usuario permanece en el login. El backend tambien rechaza en
-esa validacion cuentas inactivas o eliminadas.
+Al abrir una ruta protegida, el sistema mantiene el estado de carga mientras
+intenta renovar la sesion mediante la cookie HttpOnly. Si la renovacion falla,
+el usuario permanece en el login y no se renderiza contenido protegido.
 
 La landing reutiliza el componente `Footer` existente sin modificarlo. Landing
 y login consultan el estado de configuracion inicial; el enlace de registro no

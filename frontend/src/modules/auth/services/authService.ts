@@ -1,4 +1,11 @@
-import { HttpError, http } from "@/lib/http";
+import {
+  HttpError,
+  clearAccessToken,
+  http,
+  refreshSession,
+  setAccessToken,
+  withAuthCookieLock,
+} from "@/lib/http";
 
 export type Rol = "ADMIN" | "GESTOR" | "LECTURA";
 
@@ -14,16 +21,16 @@ export type User = {
 export type AuthResponse = {
   user: User;
   token: string;
-  refresh_token?: string;
 };
 
 type BackendLoginResponse = {
   access_token: string;
-  refresh_token: string;
-  user: User;
+  user?: User;
+  usuario?: User;
 };
 
-const AUTH_KEY = "gidas_auth_current_session";
+const AUTH_CHANNEL = "gidas_auth_events";
+const LEGACY_AUTH_KEY = "gidas_auth_current_session";
 const LOGIN_ERROR_MESSAGE =
   "Lo sentimos, no pudimos iniciar sesión. Verifique su usuario y contraseña e intente nuevamente.";
 const CONNECTION_ERROR_MESSAGE =
@@ -55,39 +62,13 @@ function getBackendErrorMessage(error: HttpError): string | null {
   return null;
 }
 
-function storeAuth(auth: AuthResponse) {
-  localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
-}
-
-export function getStoredAuth(): AuthResponse | null {
-  const raw = localStorage.getItem(AUTH_KEY);
-  if (!raw) return null;
-
-  try {
-    return JSON.parse(raw) as AuthResponse;
-  } catch {
-    localStorage.removeItem(AUTH_KEY);
-    return null;
-  }
-}
-
 export async function restoreSession(): Promise<AuthResponse | null> {
-  const stored = getStoredAuth();
-  if (!stored?.token) return null;
+  removeLegacyAuthStorage();
+  const response = await refreshSession<User>();
+  const user = response?.user ?? response?.usuario;
+  if (!response?.access_token || !user) return null;
 
-  try {
-    const user = await http<User>("/auth/perfil", { method: "GET" });
-    const refreshed = getStoredAuth();
-    const auth = {
-      ...(refreshed ?? stored),
-      user,
-    };
-
-    return auth;
-  } catch {
-    localStorage.removeItem(AUTH_KEY);
-    return null;
-  }
+  return { user, token: response.access_token };
 }
 
 export async function login(
@@ -103,7 +84,7 @@ export async function login(
         nombre_usuario: usuario,
         password,
       }),
-    });
+    }, true);
   } catch (error) {
     if (error instanceof HttpError && error.status === 401) {
       throw new Error(LOGIN_ERROR_MESSAGE);
@@ -113,12 +94,16 @@ export async function login(
   }
 
   const auth: AuthResponse = {
-    user: responseBack.user,
+    user: responseBack.user ?? responseBack.usuario!,
     token: responseBack.access_token,
-    refresh_token: responseBack.refresh_token,
   };
 
-  storeAuth(auth);
+  if (!auth.user || !auth.token) {
+    clearAccessToken();
+    throw new Error(CONNECTION_ERROR_MESSAGE);
+  }
+
+  setAccessToken(auth.token);
   return auth;
 }
 
@@ -181,15 +166,45 @@ export async function cambiarPassword({
   }
 }
 
-export function logout() {
-  const stored = getStoredAuth();
-  if (stored?.refresh_token) {
-    void http("/auth/logout", {
-      method: "POST",
-      body: JSON.stringify({ refresh_token: stored.refresh_token }),
-    }).catch(() => undefined);
-  }
+export async function logout(): Promise<void> {
+  clearAccessToken();
+  publishAuthEvent("logout");
 
-  localStorage.removeItem(AUTH_KEY);
-  window.location.href = "/";
+  try {
+    await withAuthCookieLock(() =>
+      http(
+        "/auth/logout",
+        {
+          method: "POST",
+        },
+        true
+      )
+    );
+  } catch {
+    // La limpieza local debe completarse aunque la sesion ya haya expirado.
+  }
+}
+
+export function subscribeToAuthEvents(onLogout: () => void): () => void {
+  if (!("BroadcastChannel" in window)) return () => undefined;
+
+  const channel = new BroadcastChannel(AUTH_CHANNEL);
+  channel.addEventListener("message", (event: MessageEvent<unknown>) => {
+    if (event.data === "logout") onLogout();
+  });
+
+  return () => channel.close();
+}
+
+function publishAuthEvent(event: "logout") {
+  if (!("BroadcastChannel" in window)) return;
+
+  const channel = new BroadcastChannel(AUTH_CHANNEL);
+  channel.postMessage(event);
+  channel.close();
+}
+
+function removeLegacyAuthStorage() {
+  localStorage.removeItem(LEGACY_AUTH_KEY);
+  sessionStorage.removeItem(LEGACY_AUTH_KEY);
 }

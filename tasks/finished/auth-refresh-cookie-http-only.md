@@ -1,19 +1,18 @@
 ---
 id: auth-refresh-cookie-http-only
 title: Migrar sesion a refresh cookie HttpOnly y access token en memoria
-status: pendient
+status: finished
 area: frontend-backend
 module: auth
 priority: critica
 risk_level: alto
 execution_order: 1
 created_at: 2026-08-12
-updated_at: 2026-08-12
+updated_at: 2026-08-13
 source: security-audit
 commit_sugerido: "fix(auth): proteger renovacion de sesion con cookie http only"
 owner: coordinator-agent
-blocked_by:
-  - definir y aprobar el contrato HTTP de cookies, CSRF y expiracion
+blocked_by: []
 related_files:
   - backend/config.py
   - backend/modules/auth/controllers/auth_controller.py
@@ -185,3 +184,44 @@ fix(auth-frontend): mantener tokens fuera del almacenamiento web
 test(auth): validar cookies rotacion csrf y concurrencia
 docs(auth): documentar contrato seguro de sesiones
 ```
+
+# Cierre
+
+Fecha: 2026-08-13
+
+Implementado:
+
+- refresh token en cookie `gidas_refresh` HttpOnly, SameSite=Lax y Path restringido
+- atributo Secure obligatorio en produccion
+- access token y usuario de sesion solo en memoria del frontend
+- login, registro y refresh sin refresh token en JSON
+- restauracion de sesion por refresh, rotacion y logout idempotente
+- validacion estricta de Origin/Referer en refresh y logout
+- coordinacion de refresh/logout concurrentes mediante single-flight, generacion de sesion y Web Locks
+- rate limit dedicado de gateway para logout
+
+Validaciones:
+
+- backend focalizado: 13 pruebas correctas
+- backend completo: 214 pruebas correctas
+- frontend typecheck y build correctos
+- Nginx produccion y desarrollo: sintaxis correcta
+- `git diff --check`: correcto
+
+Archivos principales modificados:
+
+- `backend/config.py`
+- `backend/modules/auth/controllers/auth_controller.py`
+- `backend/modules/auth/services/auth_service.py`
+- `backend/tests/test_auth_cookie_contract.py`
+- `backend/tests/test_auth_refresh_tokens.py`
+- `frontend/src/lib/http.ts`
+- `frontend/src/modules/auth/services/authService.ts`
+- `frontend/src/context/AuthContext.tsx`
+- `nginx/default.conf`
+- `nginx/default.dev.conf`
+
+Riesgo residual:
+
+- navegadores sin Web Locks dependen de la tolerancia del backend a renovaciones concurrentes
+- la validacion manual completa en navegador sobre HTTPS queda ligada a la tarea `infra-https-lan-nginx`

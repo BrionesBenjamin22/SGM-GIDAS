@@ -19,7 +19,9 @@ class AuthService:
 
     @staticmethod
     def _refresh_token_expires_at() -> datetime.datetime:
-        return datetime.datetime.utcnow() + datetime.timedelta(days=7)
+        return datetime.datetime.utcnow() + datetime.timedelta(
+            minutes=Config.REFRESH_TOKEN_EXPIRATION_MINUTES
+        )
 
     @staticmethod
     def _hash_refresh_token(token: str) -> str:
@@ -325,6 +327,13 @@ class AuthService:
             return {
                 "access_token": access_token,
                 "refresh_token": new_refresh_token,
+                "user": {
+                    "id": user.id,
+                    "nombre_usuario": user.nombre_usuario,
+                    "mail": user.mail,
+                    "rol": user.rol.nombre,
+                    "primer_login": user.primer_login,
+                },
             }
 
         except jwt.ExpiredSignatureError:

@@ -71,6 +71,13 @@ class AuthRefreshTokenTestCase(unittest.TestCase):
 
             self.assertIn("access_token", rotated)
             self.assertIn("refresh_token", rotated)
+            self.assertEqual(rotated["user"], {
+                "id": self.user_id,
+                "nombre_usuario": "usuario.refresh",
+                "mail": "refresh@example.com",
+                "rol": "GESTOR",
+                "primer_login": False,
+            })
             self.assertNotEqual(tokens["refresh_token"], rotated["refresh_token"])
 
             sessions = RefreshTokenSession.query.order_by(RefreshTokenSession.id).all()
@@ -81,6 +88,9 @@ class AuthRefreshTokenTestCase(unittest.TestCase):
 
             with self.assertRaisesRegex(Exception, "revocado"):
                 AuthService.refresh_tokens(tokens["refresh_token"])
+
+            db.session.refresh(sessions[1])
+            self.assertIsNone(sessions[1].revoked_at)
 
     def test_refresh_rechaza_usuario_inactivo(self):
         with self.app.app_context():

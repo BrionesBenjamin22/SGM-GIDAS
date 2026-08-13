@@ -1,6 +1,5 @@
 const RAW_BASE =
   import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL ?? "";
-const AUTH_KEY = "gidas_auth_current_session";
 
 const LEGACY_PATH_PREFIXES: Array<[string, string]> = [
   ["/actividades-docencia", "/produccion/actividades-docencia"],
@@ -70,40 +69,21 @@ function normalizeApiPath(path: string) {
 
 const BASE = normalizeBase(RAW_BASE);
 
-function getLocalAuth() {
-  const raw = localStorage.getItem(AUTH_KEY);
-  if (!raw) return null;
+let accessToken: string | null = null;
+let sessionGeneration = 0;
 
-  try {
-    return JSON.parse(raw);
-  } catch {
-    localStorage.removeItem(AUTH_KEY);
-    return null;
-  }
+export function setAccessToken(token: string | null) {
+  sessionGeneration += 1;
+  accessToken = token;
 }
 
-function updateStoredToken(newAccessToken: string, newRefreshToken?: string) {
-  const raw = localStorage.getItem(AUTH_KEY);
-  if (!raw) return;
-
-  let auth: Record<string, unknown>;
-  try {
-    auth = JSON.parse(raw) as Record<string, unknown>;
-  } catch {
-    localStorage.removeItem(AUTH_KEY);
-    return;
-  }
-
-  auth.token = newAccessToken;
-  if (newRefreshToken) {
-    auth.refresh_token = newRefreshToken;
-  }
-  localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+export function getAccessToken() {
+  return accessToken;
 }
 
-export function logout() {
-  localStorage.removeItem(AUTH_KEY);
-  window.location.href = "/login";
+export function clearAccessToken() {
+  sessionGeneration += 1;
+  accessToken = null;
 }
 
 export class HttpError extends Error {
@@ -117,51 +97,84 @@ export class HttpError extends Error {
   }
 }
 
-let refreshPromise: Promise<string | null> | null = null;
+export type RefreshSessionResponse<TUser = unknown> = {
+  access_token: string;
+  user?: TUser;
+  usuario?: TUser;
+};
 
-async function tryRefreshToken(): Promise<string | null> {
-  if (refreshPromise) return refreshPromise;
+let refreshPromise: Promise<RefreshSessionResponse | null> | null = null;
 
-  refreshPromise = (async () => {
-    const auth = getLocalAuth();
-    if (!auth?.refresh_token) return null;
+export async function withAuthCookieLock<T>(
+  operation: () => Promise<T>
+): Promise<T> {
+  if ("locks" in navigator) {
+    return navigator.locks.request("gidas-auth-refresh", operation);
+  }
+
+  return operation();
+}
+
+export async function refreshSession<TUser = unknown>(): Promise<
+  RefreshSessionResponse<TUser> | null
+> {
+  if (refreshPromise) {
+    return refreshPromise as Promise<RefreshSessionResponse<TUser> | null>;
+  }
+
+  const generationAtStart = sessionGeneration;
+  const performRefresh = async (): Promise<RefreshSessionResponse<TUser> | null> => {
+    if (generationAtStart !== sessionGeneration) return null;
 
     try {
       const res = await fetch(`${BASE}/auth/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh_token: auth.refresh_token }),
+        credentials: "same-origin",
       });
 
-      if (!res.ok) return null;
+      if (generationAtStart !== sessionGeneration) return null;
 
-      const data = await res.json();
-      if (data.access_token) {
-        updateStoredToken(data.access_token, data.refresh_token);
-        return data.access_token as string;
+      if (!res.ok) {
+        accessToken = null;
+        return null;
       }
 
+      const data = (await res.json()) as RefreshSessionResponse<TUser>;
+      if (generationAtStart !== sessionGeneration) return null;
+
+      if (typeof data.access_token === "string" && data.access_token) {
+        accessToken = data.access_token;
+        return data;
+      }
+
+      accessToken = null;
       return null;
     } catch {
+      if (generationAtStart === sessionGeneration) accessToken = null;
       return null;
+    }
+  };
+
+  refreshPromise = (async () => {
+    try {
+      return await withAuthCookieLock(performRefresh);
     } finally {
       refreshPromise = null;
     }
   })();
 
-  return refreshPromise;
+  return refreshPromise as Promise<RefreshSessionResponse<TUser> | null>;
 }
 
 function buildHeaders(init?: RequestInit) {
-  const auth = getLocalAuth();
-
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...((init?.headers as Record<string, string>) || {}),
   };
 
-  if (auth?.token) {
-    headers["Authorization"] = `Bearer ${auth.token}`;
+  if (accessToken) {
+    headers["Authorization"] = `Bearer ${accessToken}`;
   }
 
   return headers;
@@ -194,20 +207,19 @@ export async function http<T>(
   const res = await fetch(url, {
     ...init,
     headers,
+    credentials: init.credentials ?? "same-origin",
   });
 
   if (res.status === 204) return undefined as T;
   if (res.status === 404) return null as T;
 
   if (res.status === 401 && !_isRetry) {
-    const newToken = await tryRefreshToken();
-    if (newToken) {
+    const refreshed = await refreshSession();
+    if (refreshed?.access_token) {
       return http<T>(path, init, true);
     }
 
-    if (!window.location.pathname.includes("/login")) {
-      logout();
-    }
+    window.dispatchEvent(new Event("gidas:session-expired"));
   }
 
   let data: unknown;
@@ -247,17 +259,16 @@ export async function httpDownload(
   const res = await fetch(url, {
     ...init,
     headers,
+    credentials: init.credentials ?? "same-origin",
   });
 
   if (res.status === 401 && !_isRetry) {
-    const newToken = await tryRefreshToken();
-    if (newToken) {
+    const refreshed = await refreshSession();
+    if (refreshed?.access_token) {
       return httpDownload(path, init, true);
     }
 
-    if (!window.location.pathname.includes("/login")) {
-      logout();
-    }
+    window.dispatchEvent(new Event("gidas:session-expired"));
   }
 
   if (!res.ok) {

@@ -304,6 +304,15 @@ Controles de seguridad de API:
 - almacenamiento de rate limit en Redis interno para evitar contadores aislados por worker.
 - headers defensivos: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy y HSTS cuando DEBUG esta desactivado.
 - cookies de sesion con HttpOnly, SameSite y Secure en produccion.
+- el refresh token se entrega exclusivamente en la cookie `gidas_refresh`, con
+  `HttpOnly`, `SameSite=Lax`, `Path=/api/v1/auth` y `Secure` en produccion.
+- login, registro inicial y refresh devuelven el access token y el usuario seguro,
+  pero nunca incluyen el refresh token en JSON. Las respuestas usan
+  `Cache-Control: no-store`.
+- refresh y logout solo leen la cookie y validan `Origin` o, si esa cabecera no fue
+  enviada, `Referer`, contra `FRONTEND_URLS` antes de rotar o revocar sesiones.
+- logout es idempotente y, en solicitudes de origen confiable, siempre expira la
+  cookie incluso si falta o es invalida. Un origen hostil se rechaza sin modificarla.
 - ejecucion en contenedor no root, filesystem read-only desde Compose y capacidades Linux reducidas.
 - autenticacion no refleja excepciones internas, detalles de persistencia ni la
   existencia de usuarios, correos o tokens en sus respuestas de error.
