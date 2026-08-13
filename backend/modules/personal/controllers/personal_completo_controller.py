@@ -4,6 +4,8 @@ from modules.personal.services.personal_completo_service import (
     obtener_personal_por_tipo
 )
 from modules.shared.services.logging_config import get_logger
+from modules.shared.controllers.responses import exception_response
+from modules.shared.exceptions import NotFoundError
 
 
 logger = get_logger(__name__)
@@ -18,9 +20,8 @@ class PersonalCompletoController:
             tipo = request.args.get("tipo")
             data = listar_personal_completo(activos, tipo)
             return jsonify(data), 200
-        except Exception as e:
-            logger.exception("Error al listar personal completo")
-            raise
+        except Exception as error:
+            return exception_response(error, operation="listar personal completo")
 
     @staticmethod
     def obtener_por_id(rol, id):
@@ -28,8 +29,8 @@ class PersonalCompletoController:
             data = obtener_personal_por_tipo(rol, id)
 
             if not data:
-                return jsonify({"error": "No encontrado"}), 404
+                raise NotFoundError("Personal no encontrado")
 
             return jsonify(data), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="consultar personal completo")

@@ -3,6 +3,11 @@ from datetime import date
 from sqlalchemy.exc import IntegrityError
 
 from extension import db
+from modules.shared.exceptions import (
+    ConflictError,
+    NotFoundError,
+    ValidationError as ValueError,
+)
 from modules.personal.models.personal import Investigador, TipoDedicacion, InvestigadorHorasHistorial, InvestigadorMemoriaVersion
 from modules.catalogos.models.categoria_utn import CategoriaUtn
 from modules.grupo.models.programa_incentivos import ProgramaIncentivos
@@ -97,7 +102,7 @@ def _obtener_investigador_activo(id: int):
     ).first()
 
     if not investigador:
-        raise ValueError("Investigador no encontrado.")
+        raise NotFoundError("Investigador no encontrado.")
 
     return investigador
 
@@ -188,7 +193,7 @@ def crear_investigador(data, user_id):
         return investigador
     except IntegrityError:
         db.session.rollback()
-        raise ValueError("Error de integridad al crear el investigador.")
+        raise ConflictError("Error de integridad al crear el investigador.")
 
 
 # =====================================================
@@ -360,7 +365,7 @@ def restaurar_investigador(id):
     ).first()
 
     if not investigador:
-        raise ValueError("No existe investigador eliminado para restaurar.")
+        raise NotFoundError("No existe investigador eliminado para restaurar.")
 
     investigador.restore()
     investigador.activo = True
@@ -404,7 +409,7 @@ def obtener_investigador_por_id(id):
     investigador = Investigador.query.get(id)
 
     if not investigador:
-        raise ValueError("Investigador no encontrado.")
+        raise NotFoundError("Investigador no encontrado.")
 
     return investigador
 

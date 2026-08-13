@@ -1,6 +1,11 @@
 from datetime import date
 
 from extension import db
+from modules.shared.exceptions import (
+    ConflictError,
+    NotFoundError,
+    ValidationError as ValueError,
+)
 from modules.personal.models.personal import (
     Personal,
     Becario,
@@ -241,10 +246,10 @@ def actualizar_personal(id, data, rol, user_id: int):
     cambios = {}
 
     if not entidad:
-        raise ValueError("Registro no encontrado.")
+        raise NotFoundError("Registro no encontrado.")
 
     if entidad.deleted_at is not None:
-        raise ValueError("No se puede modificar un registro eliminado.")
+        raise ConflictError("No se puede modificar un registro eliminado.")
 
     if "nombre_apellido" in data:
         nuevo_valor = _validar_nombre(data["nombre_apellido"])
@@ -426,10 +431,10 @@ def eliminar_personal_por_rol(id, rol, user_id):
     entidad, _, _ = _resolver_entidad_por_rol(id, rol)
 
     if not entidad:
-        raise ValueError("Registro no encontrado.")
+        raise NotFoundError("Registro no encontrado.")
 
     if entidad.deleted_at is not None:
-        raise ValueError("El registro ya se encuentra eliminado.")
+        raise ConflictError("El registro ya se encuentra eliminado.")
 
     historial_activo = _obtener_historial_activo_unico(entidad)
 
@@ -459,7 +464,7 @@ def restaurar_personal(id, rol):
     entidad, _, _ = _resolver_entidad_por_rol(id, rol)
 
     if not entidad:
-        raise ValueError("Personal no encontrado.")
+        raise NotFoundError("Personal no encontrado.")
 
     entidad.restore()
 
@@ -502,7 +507,7 @@ def obtener_personal_por_id(id):
     personal = Personal.query.get(id)
 
     if not personal:
-        raise ValueError("Personal no encontrado.")
+        raise NotFoundError("Personal no encontrado.")
 
     return personal
 
@@ -511,7 +516,7 @@ def obtener_historial_personal_por_rol(id, rol):
     entidad, _, _ = _resolver_entidad_por_rol(id, rol)
 
     if not entidad:
-        raise ValueError("Registro no encontrado.")
+        raise NotFoundError("Registro no encontrado.")
 
     return AuditoriaService.obtener_historial_entidad(
         entidad=rol,

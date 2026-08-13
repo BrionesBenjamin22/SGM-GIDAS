@@ -76,6 +76,60 @@ class PersonalDomainErrorsTestCase(unittest.TestCase):
         self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
         self.assertNotIn(marker, str(body))
 
+    def test_investigador_expone_not_found_tipificado(self):
+        with self._auth("LECTURA"), patch(
+            "modules.personal.controllers.investigador_controller."
+            "obtener_investigador_por_id",
+            side_effect=NotFoundError("Investigador no encontrado"),
+        ):
+            response = self.client.get(
+                "/api/v1/personal/investigadores/1", headers=self._headers()
+            )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.get_json()["error"]["code"], "NOT_FOUND")
+
+    def test_becario_expone_conflicto_tipificado(self):
+        with self._auth(), patch(
+            "modules.personal.controllers.becario_controller.eliminar_becario",
+            side_effect=ConflictError("El becario ya esta eliminado"),
+        ):
+            response = self.client.delete(
+                "/api/v1/personal/becarios/1", headers=self._headers()
+            )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.get_json()["error"]["code"], "CONFLICT")
+
+    def test_personal_oculta_error_inesperado(self):
+        marker = "documento=12345678 password=secreto"
+        with self._auth("LECTURA"), patch(
+            "modules.personal.controllers.personal_controller.listar_personal",
+            side_effect=RuntimeError(marker),
+        ):
+            response = self.client.get("/api/v1/personal", headers=self._headers())
+
+        body = response.get_json()
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
+        self.assertNotIn(marker, str(body))
+
+    def test_personal_completo_oculta_error_inesperado(self):
+        marker = "correo=privado@example.com"
+        with self._auth("LECTURA"), patch(
+            "modules.personal.controllers.personal_completo_controller."
+            "listar_personal_completo",
+            side_effect=RuntimeError(marker),
+        ):
+            response = self.client.get(
+                "/api/v1/personal/all", headers=self._headers()
+            )
+
+        body = response.get_json()
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
+        self.assertNotIn(marker, str(body))
+
 
 if __name__ == "__main__":
     unittest.main()

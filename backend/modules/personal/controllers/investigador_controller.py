@@ -8,6 +8,7 @@ from modules.personal.services.investigador_service import (
     obtener_investigador_por_id,
     obtener_historial_investigador
 )
+from modules.shared.controllers.responses import exception_response
 
 
 class InvestigadorController:
@@ -29,14 +30,8 @@ class InvestigadorController:
 
             return jsonify(investigador.serialize()), 201
 
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-
-        except Exception as e:
-            return jsonify({
-                "error": "Error interno del servidor",
-                "detail": str(e)
-            }), 500
+        except Exception as error:
+            return exception_response(error, operation="crear investigador")
 
 
     # =====================================================
@@ -50,11 +45,8 @@ class InvestigadorController:
 
             return jsonify([i.serialize() for i in investigadores]), 200
 
-        except Exception as e:
-            return jsonify({
-                "error": "Error interno del servidor",
-                "detail": str(e)
-            }), 500
+        except Exception as error:
+            return exception_response(error, operation="listar investigadores")
 
 
     # =====================================================
@@ -67,14 +59,8 @@ class InvestigadorController:
 
             return jsonify(investigador.serialize()), 200
 
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 404
-
-        except Exception as e:
-            return jsonify({
-                "error": "Error interno del servidor",
-                "detail": str(e)
-            }), 500
+        except Exception as error:
+            return exception_response(error, operation="consultar investigador")
 
     @staticmethod
     def obtener_historial(req: Request, id: int) -> Response:
@@ -82,14 +68,8 @@ class InvestigadorController:
             historial = obtener_historial_investigador(id)
             return jsonify(historial), 200
 
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 404
-
-        except Exception as e:
-            return jsonify({
-                "error": "Error interno del servidor",
-                "detail": str(e)
-            }), 500
+        except Exception as error:
+            return exception_response(error, operation="consultar historial de investigador")
 
 
     # =====================================================
@@ -109,14 +89,8 @@ class InvestigadorController:
 
             return jsonify(investigador.serialize()), 200
 
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-
-        except Exception as e:
-            return jsonify({
-                "error": "Error interno del servidor",
-                "detail": str(e)
-            }), 500
+        except Exception as error:
+            return exception_response(error, operation="actualizar investigador")
 
 
     # =====================================================
@@ -134,14 +108,8 @@ class InvestigadorController:
 
             return jsonify(result), 200
 
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 404
-
-        except Exception as e:
-            return jsonify({
-                "error": "Error interno del servidor",
-                "detail": str(e)
-            }), 500
+        except Exception as error:
+            return exception_response(error, operation="eliminar investigador")
 
 
     # =====================================================
@@ -154,11 +122,5 @@ class InvestigadorController:
 
             return jsonify(investigador.serialize()), 200
 
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-
-        except Exception as e:
-            return jsonify({
-                "error": "Error interno del servidor",
-                "detail": str(e)
-            }), 500
+        except Exception as error:
+            return exception_response(error, operation="restaurar investigador")
