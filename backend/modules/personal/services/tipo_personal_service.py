@@ -1,22 +1,23 @@
 from extension import db
 from modules.personal.models.tipo_personal import TipoPersonal
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 
 
 def crear_tipo_personal(data, user_id=None):
     if not data:
-        raise ValueError("Los datos no pueden estar vacíos.")
+        raise ValidationError("Los datos no pueden estar vacíos.")
 
     nombre = data.get('nombre')
     if not nombre or not isinstance(nombre, str):
-        raise ValueError("El nombre debe ser un texto no vacío.")
+        raise ValidationError("El nombre debe ser un texto no vacío.")
 
     nombre = nombre.strip()
     if not nombre:
-        raise ValueError("El nombre no puede estar vacío.")
+        raise ValidationError("El nombre no puede estar vacío.")
 
     if TipoPersonal.query.filter_by(nombre=nombre).first():
-        raise ValueError("Ya existe un tipo de personal con ese nombre.")
+        raise ConflictError("Ya existe un tipo de personal con ese nombre.")
 
     nuevo_tipo = TipoPersonal(nombre=nombre)
     CatalogoAuditoriaService.marcar_creacion(nuevo_tipo, user_id)
@@ -33,18 +34,18 @@ def crear_tipo_personal(data, user_id=None):
 def actualizar_tipo_personal(id, data, user_id=None):
     tipo_personal = TipoPersonal.query.get(id)
     if not tipo_personal:
-        raise ValueError("Tipo de personal no encontrado.")
+        raise NotFoundError("Tipo de personal no encontrado.")
 
     nombre = data.get('nombre')
     if not nombre or not isinstance(nombre, str):
-        raise ValueError("El nombre debe ser un texto no vacío.")
+        raise ValidationError("El nombre debe ser un texto no vacío.")
 
     nombre = nombre.strip()
     if not nombre:
-        raise ValueError("El nombre no puede estar vacío.")
+        raise ValidationError("El nombre no puede estar vacío.")
 
     if tipo_personal.deleted_at is not None:
-        raise ValueError("No se puede editar un tipo de personal inactivo.")
+        raise ConflictError("No se puede editar un tipo de personal inactivo.")
 
     duplicado = TipoPersonal.query.filter(
         TipoPersonal.nombre == nombre,
@@ -52,7 +53,7 @@ def actualizar_tipo_personal(id, data, user_id=None):
     ).first()
 
     if duplicado:
-        raise ValueError("Ya existe un tipo de personal con ese nombre.")
+        raise ConflictError("Ya existe un tipo de personal con ese nombre.")
 
     cambios = CatalogoAuditoriaService.construir_cambios(
         tipo_personal,
@@ -72,10 +73,10 @@ def actualizar_tipo_personal(id, data, user_id=None):
 def eliminar_tipo_personal(id, user_id=None):
     tipo_personal = TipoPersonal.query.get(id)
     if not tipo_personal:
-        raise ValueError("Tipo de personal no encontrado.")
+        raise NotFoundError("Tipo de personal no encontrado.")
 
     if tipo_personal.personal.count() > 0:
-        raise ValueError(
+        raise ConflictError(
             "No se puede eliminar el tipo de personal porque está asociado a personal."
         )
 
@@ -101,5 +102,5 @@ def listar_tipos(activos="true"):
 def obtener_tipo_por_id(id):
     tipo = TipoPersonal.query.get(id)
     if not tipo:
-        raise ValueError("No se encontró un tipo con ese id")
+        raise NotFoundError("No se encontró un tipo con ese id")
     return tipo
