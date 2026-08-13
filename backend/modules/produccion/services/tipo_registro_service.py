@@ -2,6 +2,7 @@ from sqlalchemy import func
 from modules.produccion.models.registro_patente import TipoRegistroPropiedad
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from extension import db
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 
 
 class TipoRegistroPropiedadService:
@@ -9,11 +10,11 @@ class TipoRegistroPropiedadService:
     @staticmethod
     def _validar_nombre(nombre, tipo_id=None):
         if not isinstance(nombre, str):
-            raise Exception("El nombre es obligatorio")
+            raise ValidationError("El nombre es obligatorio")
 
         nombre = " ".join(nombre.strip().split())
         if not nombre:
-            raise Exception("El nombre es obligatorio")
+            raise ValidationError("El nombre es obligatorio")
 
         query = TipoRegistroPropiedad.query.filter(
             func.lower(TipoRegistroPropiedad.nombre) == nombre.lower()
@@ -22,7 +23,7 @@ class TipoRegistroPropiedadService:
             query = query.filter(TipoRegistroPropiedad.id != tipo_id)
 
         if query.first():
-            raise Exception("Ya existe un tipo de registro con ese nombre")
+            raise ConflictError("Ya existe un tipo de registro con ese nombre")
 
         return nombre
 
@@ -44,13 +45,13 @@ class TipoRegistroPropiedadService:
     def get_by_id(tipo_id: int):
         tipo = db.session.get(TipoRegistroPropiedad, tipo_id)
         if not tipo:
-            raise Exception("Tipo de registro no encontrado")
+            raise NotFoundError("Tipo de registro no encontrado")
         return tipo.serialize()
 
     @staticmethod
     def create(data: dict, user_id=None):
         if not data:
-            raise Exception("Los datos no pueden estar vacios")
+            raise ValidationError("Los datos no pueden estar vacios")
 
         nuevo = TipoRegistroPropiedad(
             nombre=TipoRegistroPropiedadService._validar_nombre(
@@ -65,14 +66,14 @@ class TipoRegistroPropiedadService:
     @staticmethod
     def update(tipo_id: int, data: dict, user_id=None):
         if not data:
-            raise Exception("Los datos no pueden estar vacios")
+            raise ValidationError("Los datos no pueden estar vacios")
 
         tipo = db.session.get(TipoRegistroPropiedad, tipo_id)
         if not tipo:
-            raise Exception("Tipo de registro no encontrado")
+            raise NotFoundError("Tipo de registro no encontrado")
 
         if tipo.deleted_at is not None:
-            raise Exception("No se puede editar un tipo de registro inactivo")
+            raise ConflictError("No se puede editar un tipo de registro inactivo")
 
         if "nombre" in data:
             nombre = TipoRegistroPropiedadService._validar_nombre(
@@ -93,10 +94,10 @@ class TipoRegistroPropiedadService:
     def delete(tipo_id: int, user_id=None):
         tipo = db.session.get(TipoRegistroPropiedad, tipo_id)
         if not tipo:
-            raise Exception("Tipo de registro no encontrado")
+            raise NotFoundError("Tipo de registro no encontrado")
 
         if tipo.registros_propiedad:
-            raise Exception(
+            raise ConflictError(
                 "No se puede eliminar el tipo de registro porque tiene registros asociados"
             )
 
