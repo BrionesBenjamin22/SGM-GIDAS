@@ -10,6 +10,7 @@ from modules.proyectos.models.proyecto_investigacion import ProyectoInvestigacio
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 
 
 class DistincionRecibidaService:
@@ -17,18 +18,18 @@ class DistincionRecibidaService:
     @staticmethod
     def _validar_payload(data: dict):
         if not isinstance(data, dict) or not data:
-            raise ValueError("Los datos no pueden estar vacios")
+            raise ValidationError("Los datos no pueden estar vacios")
 
     @staticmethod
     def _validar_id(valor, campo: str):
         if not isinstance(valor, int) or valor <= 0:
-            raise ValueError(f"El campo '{campo}' debe ser un entero positivo")
+            raise ValidationError(f"El campo '{campo}' debe ser un entero positivo")
         return valor
 
     @staticmethod
     def _validar_texto(valor: str, campo: str):
         if not isinstance(valor, str) or not valor.strip():
-            raise ValueError(f"El campo '{campo}' es obligatorio")
+            raise ValidationError(f"El campo '{campo}' es obligatorio")
         return " ".join(valor.strip().split())
 
     @staticmethod
@@ -55,7 +56,7 @@ class DistincionRecibidaService:
         try:
             valor = int(valor)
         except (TypeError, ValueError):
-            raise ValueError(f"El campo '{campo}' debe ser un entero positivo")
+            raise ValidationError(f"El campo '{campo}' debe ser un entero positivo")
 
         return DistincionRecibidaService._validar_id(valor, campo)
 
@@ -64,12 +65,12 @@ class DistincionRecibidaService:
         try:
             fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
         except (TypeError, ValueError):
-            raise ValueError(
+            raise ValidationError(
                 "La fecha es obligatoria y debe tener formato YYYY-MM-DD"
             )
 
         if fecha > date.today():
-            raise ValueError("La fecha no puede ser futura")
+            raise ValidationError("La fecha no puede ser futura")
 
         return fecha
 
@@ -80,7 +81,7 @@ class DistincionRecibidaService:
         )
         proyecto = db.session.get(ProyectoInvestigacion, proyecto_id)
         if not proyecto or proyecto.deleted_at is not None:
-            raise ValueError("Proyecto de investigacion invalido")
+            raise ValidationError("Proyecto de investigacion invalido")
         return proyecto.id
 
     @staticmethod
@@ -90,14 +91,14 @@ class DistincionRecibidaService:
             DistincionRecibidaService._validar_id(distincion_id, "distincion_id")
         )
         if not distincion:
-            raise ValueError("Distincion no encontrada")
+            raise NotFoundError("Distincion no encontrada")
         return distincion
 
     @staticmethod
     def _get_activa_or_404(distincion_id: int):
         distincion = DistincionRecibidaService._get_or_404(distincion_id)
         if distincion.deleted_at is not None:
-            raise ValueError("Distincion no encontrada")
+            raise NotFoundError("Distincion no encontrada")
         return distincion
 
     @staticmethod
@@ -118,7 +119,7 @@ class DistincionRecibidaService:
             query = query.filter(DistincionRecibida.id != distincion_id)
 
         if query.first():
-            raise ValueError(
+            raise ConflictError(
                 "Ya existe una distincion identica para ese proyecto en esa fecha"
             )
 

@@ -179,6 +179,52 @@ class ProduccionDomainErrorsTestCase(unittest.TestCase):
         self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
         self.assertNotIn(marker, str(body))
 
+    def test_articulo_expone_not_found_tipificado(self):
+        with self._auth("LECTURA"), patch(
+            "modules.produccion.controllers.articulo_divulgacion_controller."
+            "ArticuloDivulgacionService.get_by_id",
+            side_effect=NotFoundError("Articulo no encontrado"),
+        ):
+            response = self.client.get(
+                "/api/v1/produccion/articulos-divulgacion/1",
+                headers=self._headers(),
+            )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.get_json()["error"]["code"], "NOT_FOUND")
+
+    def test_distincion_expone_conflicto_tipificado(self):
+        with self._auth(), patch(
+            "modules.produccion.controllers.distincion_controller."
+            "DistincionRecibidaService.create",
+            side_effect=ConflictError("Ya existe una distincion identica"),
+        ):
+            response = self.client.post(
+                "/api/v1/produccion/distinciones/",
+                json={"nombre": "Premio"},
+                headers=self._headers(),
+            )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.get_json()["error"]["code"], "CONFLICT")
+
+    def test_registro_propiedad_oculta_error_inesperado(self):
+        marker = "driver interno password=secreto"
+        with self._auth("LECTURA"), patch(
+            "modules.produccion.controllers.registro_propiedad_controller."
+            "RegistrosPropiedadService.get_all",
+            side_effect=RuntimeError(marker),
+        ):
+            response = self.client.get(
+                "/api/v1/produccion/registros-propiedad/",
+                headers=self._headers(),
+            )
+
+        body = response.get_json()
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
+        self.assertNotIn(marker, str(body))
+
 
 if __name__ == "__main__":
     unittest.main()

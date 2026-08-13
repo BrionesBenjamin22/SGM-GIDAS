@@ -1,5 +1,6 @@
 from flask import g, jsonify, request
 from modules.produccion.services.articulo_divulgacion_service import ArticuloDivulgacionService
+from modules.shared.controllers.responses import exception_response
 
 
 class ArticuloDivulgacionController:
@@ -13,11 +14,8 @@ class ArticuloDivulgacionController:
             articulo = ArticuloDivulgacionService.create(data, user_id)
             return jsonify(articulo), 201
 
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception as error:
+            return exception_response(error, operation="crear articulo de divulgacion")
 
     @staticmethod
     def listar():
@@ -31,11 +29,8 @@ class ArticuloDivulgacionController:
             articulos = ArticuloDivulgacionService.get_all(filters)
             return jsonify(articulos), 200
 
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="listar articulos de divulgacion")
 
     @staticmethod
     def obtener_por_id(articulo_id: int):
@@ -43,11 +38,8 @@ class ArticuloDivulgacionController:
             articulo = ArticuloDivulgacionService.get_by_id(articulo_id)
             return jsonify(articulo), 200
 
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 404
-
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception as error:
+            return exception_response(error, operation="consultar articulo de divulgacion")
 
     @staticmethod
     def obtener_historial(articulo_id: int):
@@ -55,11 +47,8 @@ class ArticuloDivulgacionController:
             historial = ArticuloDivulgacionService.get_historial(articulo_id)
             return jsonify(historial), 200
 
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 404
-
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception as error:
+            return exception_response(error, operation="consultar historial de articulo")
 
     @staticmethod
     def actualizar(articulo_id: int):
@@ -72,11 +61,8 @@ class ArticuloDivulgacionController:
             )
             return jsonify(articulo), 200
 
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception as error:
+            return exception_response(error, operation="actualizar articulo de divulgacion")
 
     @staticmethod
     def eliminar(articulo_id: int):
@@ -87,8 +73,5 @@ class ArticuloDivulgacionController:
             )
             return jsonify(result), 200
 
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="eliminar articulo de divulgacion")

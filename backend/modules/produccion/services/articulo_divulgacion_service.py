@@ -1,6 +1,7 @@
 from datetime import datetime, date
 
 from extension import db
+from modules.shared.exceptions import NotFoundError, ValidationError
 from modules.produccion.models.articulo_divulgacion import (
     ArticuloDivulgacion,
     ArticuloDivulgacionMemoriaVersion,
@@ -14,12 +15,12 @@ class ArticuloDivulgacionService:
     @staticmethod
     def _validar_payload(data):
         if not isinstance(data, dict) or not data:
-            raise ValueError("Los datos enviados son invalidos")
+            raise ValidationError("Los datos enviados son invalidos")
 
     @staticmethod
     def _validar_user_id(user_id):
         if not isinstance(user_id, int) or user_id <= 0:
-            raise ValueError("El user_id es invalido")
+            raise ValidationError("El user_id es invalido")
         return user_id
 
     @staticmethod
@@ -31,23 +32,23 @@ class ArticuloDivulgacionService:
     @staticmethod
     def _validar_texto(valor, campo, min_len=3, max_len=500):
         if valor is None:
-            raise ValueError(f"El campo '{campo}' es obligatorio")
+            raise ValidationError(f"El campo '{campo}' es obligatorio")
 
         if not isinstance(valor, str):
-            raise ValueError(f"El campo '{campo}' debe ser texto")
+            raise ValidationError(f"El campo '{campo}' debe ser texto")
 
         valor = valor.strip()
 
         if not valor:
-            raise ValueError(f"El campo '{campo}' no puede estar vacio")
+            raise ValidationError(f"El campo '{campo}' no puede estar vacio")
 
         if len(valor) < min_len:
-            raise ValueError(
+            raise ValidationError(
                 f"El campo '{campo}' debe tener al menos {min_len} caracteres"
             )
 
         if len(valor) > max_len:
-            raise ValueError(
+            raise ValidationError(
                 f"El campo '{campo}' no puede superar los {max_len} caracteres"
             )
 
@@ -56,16 +57,16 @@ class ArticuloDivulgacionService:
     @staticmethod
     def _validar_fecha(fecha_publicacion):
         if fecha_publicacion > date.today():
-            raise ValueError("La fecha de publicacion no puede ser futura")
+            raise ValidationError("La fecha de publicacion no puede ser futura")
 
     @staticmethod
     def _validar_grupo(grupo_utn_id):
         if not isinstance(grupo_utn_id, int) or grupo_utn_id <= 0:
-            raise ValueError("Grupo UTN invalido")
+            raise ValidationError("Grupo UTN invalido")
 
         grupo = db.session.get(GrupoInvestigacionUtn, grupo_utn_id)
         if not grupo or grupo.deleted_at is not None:
-            raise ValueError("Grupo UTN invalido")
+            raise ValidationError("Grupo UTN invalido")
 
         return grupo_utn_id
 
@@ -77,7 +78,7 @@ class ArticuloDivulgacionService:
         ).first()
 
         if not articulo:
-            raise ValueError("Articulo de divulgacion no encontrado")
+            raise NotFoundError("Articulo de divulgacion no encontrado")
 
         return articulo
 
@@ -112,7 +113,7 @@ class ArticuloDivulgacionService:
     def get_by_id(articulo_id: int):
         articulo = db.session.get(ArticuloDivulgacion, articulo_id)
         if not articulo:
-            raise ValueError("Articulo de divulgacion no encontrado")
+            raise NotFoundError("Articulo de divulgacion no encontrado")
 
         return articulo.serialize()
 
@@ -120,7 +121,7 @@ class ArticuloDivulgacionService:
     def get_historial(articulo_id: int):
         articulo = db.session.get(ArticuloDivulgacion, articulo_id)
         if not articulo:
-            raise ValueError("Articulo de divulgacion no encontrado")
+            raise NotFoundError("Articulo de divulgacion no encontrado")
 
         return AuditoriaService.obtener_historial_entidad(
             entidad="articulo_divulgacion",
@@ -137,7 +138,7 @@ class ArticuloDivulgacionService:
                 data["fecha_publicacion"], "%Y-%m-%d"
             ).date()
         except (KeyError, ValueError):
-            raise ValueError(
+            raise ValidationError(
                 "La fecha de publicacion es obligatoria y debe tener formato YYYY-MM-DD"
             )
 
@@ -189,7 +190,7 @@ class ArticuloDivulgacionService:
                     data["fecha_publicacion"], "%Y-%m-%d"
                 ).date()
             except ValueError:
-                raise ValueError("La fecha debe tener formato YYYY-MM-DD")
+                raise ValidationError("La fecha debe tener formato YYYY-MM-DD")
 
             ArticuloDivulgacionService._validar_fecha(nuevo_valor)
             cambio = AuditoriaService.construir_cambio(
