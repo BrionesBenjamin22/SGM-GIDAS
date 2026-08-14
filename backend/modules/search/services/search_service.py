@@ -19,6 +19,7 @@ from modules.produccion.models.trabajo_revista import TrabajosRevistasReferato
 from modules.grupo.models.directivos import Directivo, DirectivoGrupo, Cargo
 from modules.recursos.models.becas import Beca, Beca_Becario
 from modules.grupo.models.visita_grupo import VisitaAcademica
+from modules.shared.exceptions import ValidationError
 import unicodedata
 
 
@@ -89,7 +90,7 @@ class SearchService:
     ):
 
         if not query_text or len(query_text.strip()) < 2:
-            raise ValueError("El texto debe tener al menos 2 caracteres")
+            raise ValidationError("El texto debe tener al menos 2 caracteres")
 
         query_normalized = SearchService.normalize_text(query_text.strip())
         resultados = []

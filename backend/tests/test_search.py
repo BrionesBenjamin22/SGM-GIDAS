@@ -162,14 +162,28 @@ class SearchControllerTestCase(unittest.TestCase):
             response, status_code = SearchController.buscar()
 
         self.assertEqual(status_code, 400)
-        self.assertIn("demasiado largo", response.get_json()["error"])
+        self.assertIn("demasiado largo", response.get_json()["error"]["message"])
 
     def test_buscar_rechaza_page_no_numerica(self):
         with self.app.test_request_context("/search/?q=al&page=abc"):
             response, status_code = SearchController.buscar()
 
         self.assertEqual(status_code, 400)
-        self.assertEqual(response.get_json()["error"], 'El parametro "page" debe ser numerico')
+        self.assertEqual(response.get_json()["error"]["message"], 'El parametro "page" debe ser numerico')
+
+    def test_buscar_oculta_error_inesperado(self):
+        marker = "ruta interna password=secreto"
+        with self.app.test_request_context("/search/?q=al"):
+            with patch(
+                "modules.search.controllers.search_controller.SearchService.search",
+                side_effect=RuntimeError(marker),
+            ):
+                response, status_code = SearchController.buscar()
+
+        body = response.get_json()
+        self.assertEqual(status_code, 500)
+        self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
+        self.assertNotIn(marker, str(body))
 
 
 if __name__ == "__main__":
