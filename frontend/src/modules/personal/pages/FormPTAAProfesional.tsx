@@ -9,10 +9,11 @@ import {
   actualizarPersonal,
 } from "@/modules/personal/services/personalServices";
 import { useQueryClient } from "@tanstack/react-query";
+import type { PersonalCompleto } from "@/modules/personal/services/personalCompletoServices";
 
 interface Props {
   tipo: "PTAA" | "PROFESIONAL";
-  initialData?: any;
+  initialData?: PersonalCompleto;
   onCancel: () => void;
 }
 

@@ -11,9 +11,10 @@ import {
   crearInvestigador,
   actualizarInvestigador,
 } from "@/modules/personal/services/investigadorServices";
+import type { PersonalCompleto } from "@/modules/personal/services/personalCompletoServices";
 
 interface Props {
-  initialData?: any;
+  initialData?: PersonalCompleto;
   onCancel: () => void;
 }
 

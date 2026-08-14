@@ -4,13 +4,17 @@ import Button from "@/components/Button";
 import Field from "@/components/Field";
 import { useUct } from "@/modules/grupo/hooks/useUct";
 import { useTiposFormacion } from "@/modules/personal/hooks/useTiposFormacion";
-import { crearBecario, actualizarBecario } from "@/modules/personal/services/becarioServices";
+import {
+  crearBecario,
+  actualizarBecario,
+} from "@/modules/personal/services/becarioServices";
+import type { PersonalCompleto } from "@/modules/personal/services/personalCompletoServices";
 import { useQueryClient } from "@tanstack/react-query";
 import { useBecas } from "@/modules/recursos/hooks/useBecas";
 import Calendar from "@/components/Calendar";
 
 interface Props {
-  initialData?: any;
+  initialData?: PersonalCompleto;
   onCancel: () => void;
 }
 
@@ -87,7 +91,7 @@ export default function FormBecario({ initialData, onCancel }: Props) {
     if (initialData.becas && initialData.becas.length > 0) {
       setAgregarBeca(true);
       setBecasVinculadas(
-        initialData.becas.map((b: any) => ({
+        initialData.becas.map((b) => ({
           idLocal: Math.random().toString(36).slice(2, 11),
           becaId: b.id ?? "",
           fechaInicio: b.fecha_inicio
@@ -196,7 +200,7 @@ export default function FormBecario({ initialData, onCancel }: Props) {
         fecha_alta_grupo: initialData.fecha_alta_grupo,
         grupo_utn_id: Number(initialData.grupo_utn_id ?? uct.id),
         activo: initialData.activo ?? true,
-        becas: (initialData.becas || []).map((beca: any) => ({
+        becas: (initialData.becas || []).map((beca) => ({
           beca_id: Number(beca.id),
           fecha_inicio: beca.fecha_inicio,
           fecha_fin: beca.fecha_fin || undefined,
@@ -420,7 +424,7 @@ export default function FormBecario({ initialData, onCancel }: Props) {
                         <option value="" disabled>
                           Seleccionar tipo de beca
                         </option>
-                        {becasLista.map((b: any) => (
+                        {becasLista.map((b) => (
                           <option key={b.id} value={b.id}>
                             {b.nombre_beca}
                           </option>
