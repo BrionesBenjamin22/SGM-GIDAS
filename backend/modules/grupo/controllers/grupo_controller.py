@@ -7,7 +7,7 @@ from modules.grupo.services.grupo_service import (
     restaurar_grupo_utn
 )
 from modules.memorias.services.exportacion_service_impl import ExportService
-from modules.shared.controllers.responses import error_response
+from modules.shared.controllers.responses import error_response, exception_response
 from modules.shared.services.logging_config import get_logger
 
 
@@ -25,10 +25,8 @@ class GrupoUtnController:
 
             return jsonify(grupo.serialize()), 201
 
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="crear grupo UTN")
 
 
     @staticmethod
@@ -41,8 +39,8 @@ class GrupoUtnController:
 
             return jsonify(grupo.serialize()), 200
 
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="consultar grupo UTN")
 
 
     @staticmethod
@@ -53,10 +51,8 @@ class GrupoUtnController:
 
             return jsonify(grupo.serialize()), 200
 
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="actualizar grupo UTN")
 
 
     @staticmethod
@@ -68,20 +64,16 @@ class GrupoUtnController:
 
             return jsonify(result), 200
 
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 404
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="eliminar grupo UTN")
         
     @staticmethod
     def restaurar():
         try:
             grupo = restaurar_grupo_utn()
             return jsonify(grupo.serialize()), 200
-        except ValueError as ve:
-                return jsonify({"error": str(ve)}), 400
-        except Exception:
-                return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="restaurar grupo UTN")
             
             
     @staticmethod
