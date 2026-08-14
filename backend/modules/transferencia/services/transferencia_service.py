@@ -1,3 +1,4 @@
+import builtins
 from datetime import datetime
 from extension import db
 
@@ -12,6 +13,7 @@ from modules.transferencia.models.transferencia_socio import (
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
 
 
 class TransferenciaSocioProductivaService:
@@ -45,7 +47,7 @@ class TransferenciaSocioProductivaService:
     def _validar_monto(monto):
         try:
             monto = float(monto)
-        except (TypeError, ValueError):
+        except (TypeError, builtins.ValueError):
             raise ValueError("El monto debe ser numérico")
 
         if monto <= 0:
@@ -102,7 +104,7 @@ class TransferenciaSocioProductivaService:
         )
 
         if not transferencia:
-            raise ValueError("Transferencia socio-productiva no encontrada")
+            raise NotFoundError("Transferencia socio-productiva no encontrada")
 
         return transferencia.serialize()
 
@@ -114,7 +116,7 @@ class TransferenciaSocioProductivaService:
         )
 
         if not transferencia:
-            raise ValueError("Transferencia socio-productiva no encontrada")
+            raise NotFoundError("Transferencia socio-productiva no encontrada")
 
         return AuditoriaService.obtener_historial_entidad(
             entidad="transferencia_socio_productiva",
@@ -207,10 +209,10 @@ class TransferenciaSocioProductivaService:
         )
 
         if not transferencia:
-            raise ValueError("Transferencia socio-productiva no encontrada")
+            raise NotFoundError("Transferencia socio-productiva no encontrada")
 
         if transferencia.deleted_at is not None:
-            raise ValueError("No se puede modificar una transferencia eliminada")
+            raise ConflictError("No se puede modificar una transferencia eliminada")
 
         cambios = {}
 
@@ -316,10 +318,10 @@ class TransferenciaSocioProductivaService:
         )
 
         if not transferencia:
-            raise ValueError("Transferencia socio-productiva no encontrada")
+            raise NotFoundError("Transferencia socio-productiva no encontrada")
 
         if transferencia.deleted_at is not None:
-            raise ValueError("La transferencia ya está eliminada")
+            raise ConflictError("La transferencia ya está eliminada")
 
         transferencia.soft_delete(user_id)
 
@@ -341,7 +343,7 @@ class TransferenciaSocioProductivaService:
         )
 
         if not transferencia:
-            raise ValueError("Transferencia no encontrada")
+            raise NotFoundError("Transferencia no encontrada")
 
         transferencia.restore()
         transferencia.activo = True
@@ -367,7 +369,7 @@ class TransferenciaSocioProductivaService:
         )
 
         if not transferencia:
-            raise ValueError("Transferencia no encontrada")
+            raise NotFoundError("Transferencia no encontrada")
 
         adoptantes = (
             db.session.query(Adoptante)
@@ -379,7 +381,7 @@ class TransferenciaSocioProductivaService:
         )
 
         if len(adoptantes) != len(adoptantes_ids):
-            raise ValueError("Uno o más adoptantes no existen o están eliminados")
+            raise NotFoundError("Uno o más adoptantes no existen o están eliminados")
 
         hubo_cambios = False
         for adoptante in adoptantes:
