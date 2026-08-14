@@ -5,7 +5,7 @@ import Button from "@/components/Button";
 import Field from "@/components/Field";
 import DatePicker from "@/components/Calendar";
 import SuccessToast from "@/components/SuccessToast";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import { createMemoria } from "@/modules/memorias/services/memoriasService";
 
 export default function MemoriaForm() {
@@ -50,25 +50,18 @@ export default function MemoriaForm() {
       await queryClient.invalidateQueries({ queryKey: ["memorias"] });
       await queryClient.invalidateQueries({ queryKey: ["memoria", memoria.id] });
 
-      navigate(`/memorias/${memoria.id}`, {
+      navigate("/memorias", {
         replace: true,
         state: { successMessage: "Memoria creada con exito." },
       });
     },
     onError: (error) => {
-      const fallback = "No se pudo crear la memoria.";
-
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | { error?: string; message?: string; detalle?: string }
-          | undefined;
-
-        setErrorMessage(body?.error || body?.message || body?.detalle || fallback);
-      } else if (error instanceof Error) {
-        setErrorMessage(error.message || fallback);
-      } else {
-        setErrorMessage(fallback);
-      }
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+        )
+      );
 
       setShowError(true);
     },
