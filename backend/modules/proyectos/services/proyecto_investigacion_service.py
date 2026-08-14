@@ -1,6 +1,9 @@
 ﻿from datetime import datetime, date
+import builtins
+
 from extension import db
 from sqlalchemy import func, or_
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
 
 from modules.produccion.models.distinciones import DistincionRecibida
 from modules.proyectos.models.proyecto_investigacion import (
@@ -46,7 +49,7 @@ class ProyectoInvestigacionService:
 
         try:
             return datetime.strptime(fecha_str, "%Y-%m-%d").date()
-        except (TypeError, ValueError):
+        except (TypeError, builtins.ValueError):
             raise ValueError(
                 f"El campo '{campo}' debe tener formato YYYY-MM-DD"
             )
@@ -69,7 +72,7 @@ class ProyectoInvestigacionService:
         ).first()
 
         if not proyecto:
-            raise ValueError("Proyecto no encontrado.")
+            raise NotFoundError("Proyecto no encontrado.")
 
         return proyecto
 
@@ -81,7 +84,7 @@ class ProyectoInvestigacionService:
         )
 
         if not proyecto:
-            raise ValueError("Proyecto no encontrado.")
+            raise NotFoundError("Proyecto no encontrado.")
 
         return proyecto
 
@@ -92,7 +95,7 @@ class ProyectoInvestigacionService:
     @staticmethod
     def _validar_proyecto_abierto(proyecto: ProyectoInvestigacion):
         if ProyectoInvestigacionService._proyecto_esta_cerrado(proyecto):
-            raise ValueError("El proyecto se encuentra cerrado.")
+            raise ConflictError("El proyecto se encuentra cerrado.")
 
     @staticmethod
     def _validar_unico_coordinador_activo(
@@ -208,7 +211,7 @@ class ProyectoInvestigacionService:
         proyecto = ProyectoInvestigacion.query.get(proyecto_id)
 
         if not proyecto:
-            raise Exception("Proyecto de investigacion no encontrado")
+            raise NotFoundError("Proyecto de investigacion no encontrado")
 
         return proyecto.serialize()
 
@@ -231,10 +234,10 @@ class ProyectoInvestigacionService:
                 data["fecha_fin"], "%Y-%m-%d"
             ).date()
             if fecha_fin < fecha_inicio:
-                raise Exception("La fecha fin no puede ser anterior a la fecha inicio")
+                raise ValueError("La fecha fin no puede ser anterior a la fecha inicio")
 
         if not TipoProyecto.query.get(data.get("tipo_proyecto_id")):
-            raise Exception("Tipo de proyecto inválido")
+            raise NotFoundError("Tipo de proyecto inválido")
         
         if data.get("fuente_financiamiento_id"):
             fuente = FuenteFinanciamiento.query.get(data["fuente_financiamiento_id"])
@@ -282,7 +285,7 @@ class ProyectoInvestigacionService:
         ).first()
 
         if not proyecto:
-            raise Exception("Proyecto no encontrado")
+            raise NotFoundError("Proyecto no encontrado")
 
         if user_id is not None:
             ProyectoInvestigacionService._validar_id(user_id, "user_id")
@@ -406,7 +409,7 @@ class ProyectoInvestigacionService:
                 proyecto.fecha_fin = nueva_fecha_fin
 
         if proyecto.fecha_fin and proyecto.fecha_fin < proyecto.fecha_inicio:
-            raise Exception("La fecha fin no puede ser anterior a la fecha inicio")
+            raise ValueError("La fecha fin no puede ser anterior a la fecha inicio")
 
         if es_cierre_por_update:
             if proyecto.fecha_fin > date.today():
@@ -438,7 +441,7 @@ class ProyectoInvestigacionService:
         ProyectoInvestigacionService._validar_id(user_id, "user_id")
 
         if ProyectoInvestigacionService._proyecto_esta_cerrado(proyecto):
-            raise ValueError("El proyecto ya se encuentra cerrado")
+            raise ConflictError("El proyecto ya se encuentra cerrado")
 
         proyecto.fecha_fin = func.current_date()
         proyecto.soft_delete(user_id)
@@ -455,7 +458,7 @@ class ProyectoInvestigacionService:
             proyecto_id
         )
         if proyecto.deleted_at is None and not ProyectoInvestigacionService._proyecto_esta_cerrado(proyecto):
-            raise ValueError("El proyecto no se encuentra cerrado")
+            raise ConflictError("El proyecto no se encuentra cerrado")
 
         proyecto.restore()
         proyecto.fecha_fin = None
@@ -517,7 +520,7 @@ class ProyectoInvestigacionService:
                 ):
                     continue
 
-                raise ValueError("Ya existe una participación activa.")
+                raise ConflictError("Ya existe una participación activa.")
 
             nueva = InvestigadorProyecto(
                 id_investigador=investigador_id,
@@ -556,7 +559,7 @@ class ProyectoInvestigacionService:
             ).first()
 
             if not participacion:
-                raise ValueError("Participación activa no encontrada.")
+                raise NotFoundError("Participación activa no encontrada.")
 
             # Lógica de negocio
             participacion.fecha_fin = date.today()
@@ -589,7 +592,7 @@ class ProyectoInvestigacionService:
             ).first()
 
             if existente:
-                raise ValueError("Ya existe participación activa.")
+                raise ConflictError("Ya existe participación activa.")
 
             nueva = BecarioProyecto(
                 id_becario=becario_id,
@@ -623,7 +626,7 @@ class ProyectoInvestigacionService:
             ).first()
 
             if not participacion:
-                raise ValueError("Participación activa no encontrada.")
+                raise NotFoundError("Participación activa no encontrada.")
 
             participacion.fecha_fin = date.today()
             participacion.soft_delete(user_id=user_id)
