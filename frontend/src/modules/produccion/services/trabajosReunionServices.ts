@@ -55,7 +55,10 @@ type GetTrabajosReunionOptions = {
   orden?: "asc" | "desc";
 };
 
-const normalizeTrabajoReunion = (item: any): TrabajoReunion => ({
+type TrabajoReunionBackend = Partial<TrabajoReunion> & { id: number };
+type ApiListResponse<T> = T[] | { data?: T[] };
+
+const normalizeTrabajoReunion = (item: TrabajoReunionBackend): TrabajoReunion => ({
   id: item.id,
   created_by: item.created_by ?? null,
   created_by_nombre: item.created_by_nombre ?? null,
@@ -96,7 +99,7 @@ export const getTrabajosReunion = async (
     ? `/trabajos-reunion-cientifica?${query}`
     : "/trabajos-reunion-cientifica";
 
-  const response = await http<any>(endpoint, {
+  const response = await http<ApiListResponse<TrabajoReunionBackend>>(endpoint, {
     method: "GET",
   });
 
@@ -112,7 +115,7 @@ export const getTrabajosReunion = async (
 export const getTrabajoReunionById = async (
   id: number
 ): Promise<TrabajoReunion> => {
-  const response = await http<any>(`/trabajos-reunion-cientifica/${id}`, {
+  const response = await http<TrabajoReunionBackend>(`/trabajos-reunion-cientifica/${id}`, {
     method: "GET",
   });
 
@@ -122,7 +125,7 @@ export const getTrabajoReunionById = async (
 export const getHistorialTrabajoReunionById = async (
   id: number
 ): Promise<HistorialTrabajoReunionItem[]> => {
-  const response = await http<any>(`/trabajos-reunion-cientifica/${id}/historial`, {
+  const response = await http<ApiListResponse<HistorialTrabajoReunionItem>>(`/trabajos-reunion-cientifica/${id}/historial`, {
     method: "GET",
   });
 
@@ -137,8 +140,8 @@ export const getHistorialTrabajoReunionById = async (
   return [];
 };
 
-export const createTrabajoReunion = async (data: TrabajoReunionPayload) => {
-  const response = await http<any>("/trabajos-reunion-cientifica/", {
+export const createTrabajoReunion = async (data: TrabajoReunionPayload): Promise<TrabajoReunion> => {
+  const response = await http<TrabajoReunionBackend>("/trabajos-reunion-cientifica/", {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -149,7 +152,7 @@ export const createTrabajoReunion = async (data: TrabajoReunionPayload) => {
 export const updateTrabajoReunion = async (
   id: number,
   data: Partial<TrabajoReunionPayload>
-) => {
+): Promise<TrabajoReunion> => {
   const body: Record<string, unknown> = {};
 
   if ("titulo_trabajo" in data) body.titulo_trabajo = data.titulo_trabajo;
@@ -159,7 +162,7 @@ export const updateTrabajoReunion = async (
   if ("tipo_reunion_id" in data) body.tipo_reunion_id = data.tipo_reunion_id;
   if ("grupo_utn_id" in data) body.grupo_utn_id = data.grupo_utn_id;
 
-  const response = await http<any>(`/trabajos-reunion-cientifica/${id}`, {
+  const response = await http<TrabajoReunionBackend>(`/trabajos-reunion-cientifica/${id}`, {
     method: "PUT",
     body: JSON.stringify(body),
   });
