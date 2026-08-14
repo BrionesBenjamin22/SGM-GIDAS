@@ -10,6 +10,7 @@
     "build:testing": "vite build --mode testing",
     "build:production": "vite build --mode production",
     "preview": "vite preview",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
