@@ -42,12 +42,19 @@ export interface DocumentacionPayload {
   grupo_id: number;
 }
 
-const normalizeAutor = (autor: any): Autor => ({
+type AutorBackend = Partial<Autor> & { id: number };
+type DocumentacionBackend = Partial<Omit<Documentacion, "autores">> & {
+  id: number;
+  autores?: AutorBackend[];
+};
+type ApiListResponse<T> = T[] | { data?: T[] };
+
+const normalizeAutor = (autor: AutorBackend): Autor => ({
   id: autor.id,
   nombre_apellido: autor.nombre_apellido ?? "",
 });
 
-const normalizeDocumentacion = (item: any): Documentacion => ({
+const normalizeDocumentacion = (item: DocumentacionBackend): Documentacion => ({
   id: item.id,
   created_by: item.created_by ?? null,
   created_by_nombre: item.created_by_nombre ?? null,
@@ -69,7 +76,7 @@ const normalizeDocumentacion = (item: any): Documentacion => ({
 export async function getDocumentacion(
   activos: "true" | "false" | "all" = "true"
 ): Promise<Documentacion[]> {
-  const response = await http<any>(
+  const response = await http<ApiListResponse<DocumentacionBackend>>(
     `/documentacion-bibliografica?activos=${activos}`
   );
 
@@ -83,14 +90,14 @@ export async function getDocumentacion(
 }
 
 export async function getDocumentacionById(id: number): Promise<Documentacion> {
-  const response = await http<any>(`/documentacion-bibliografica/${id}`);
+  const response = await http<DocumentacionBackend>(`/documentacion-bibliografica/${id}`);
   return normalizeDocumentacion(response);
 }
 
 export async function getHistorialDocumentacionById(
   id: number
 ): Promise<HistorialDocumentacionItem[]> {
-  const response = await http<any>(`/documentacion-bibliografica/${id}/historial`, {
+  const response = await http<ApiListResponse<HistorialDocumentacionItem>>(`/documentacion-bibliografica/${id}/historial`, {
     method: "GET",
   });
 
@@ -102,7 +109,7 @@ export async function getHistorialDocumentacionById(
 export async function createDocumentacion(
   payload: DocumentacionPayload
 ): Promise<Documentacion> {
-  const response = await http<any>("/documentacion-bibliografica", {
+  const response = await http<DocumentacionBackend>("/documentacion-bibliografica", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -122,7 +129,7 @@ export async function updateDocumentacion(
   if ("fecha" in payload) body.fecha = payload.fecha;
   if ("grupo_id" in payload) body.grupo_id = payload.grupo_id;
 
-  const response = await http<any>(`/documentacion-bibliografica/${id}`, {
+  const response = await http<DocumentacionBackend>(`/documentacion-bibliografica/${id}`, {
     method: "PUT",
     body: JSON.stringify(body),
   });

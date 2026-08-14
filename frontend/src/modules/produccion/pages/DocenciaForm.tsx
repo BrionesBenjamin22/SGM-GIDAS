@@ -5,7 +5,7 @@ import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
 import { useGradosAcademicos } from "@/modules/produccion/hooks/useGradoAcademico";
 import { useRolesActividadDocencia } from "@/modules/produccion/hooks/useActividadDocenciaRol";
@@ -13,6 +13,7 @@ import {
   crearActividadDocencia,
   getActividadDocenciaById,
   actualizarActividadDocencia,
+  type ActividadDocenciaPayload,
 } from "@/modules/produccion/services/actividadDocenciaServices";
 
 export default function FormDocenciaInvestigador() {
@@ -100,10 +101,10 @@ export default function FormDocenciaInvestigador() {
     null;
 
   const mutation = useMutation({
-    mutationFn: (payload: any) =>
+    mutationFn: (payload: Partial<ActividadDocenciaPayload>) =>
       isEdit
         ? actualizarActividadDocencia(Number(id), payload)
-        : crearActividadDocencia(payload),
+        : crearActividadDocencia(payload as ActividadDocenciaPayload),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["docencia"] });
       await qc.invalidateQueries({ queryKey: ["actividad-docencia", id] });
@@ -125,24 +126,12 @@ export default function FormDocenciaInvestigador() {
       });
     },
     onError: (error) => {
-      const defaultMessage =
-        isEdit
-          ? "No se pudo actualizar la actividad en docencia."
-          : "No se pudo crear la actividad en docencia.";
-
-      if (error instanceof HttpError && error.body && typeof error.body === "object") {
-        const body = error.body as Record<string, unknown>;
-        const backendMessage =
-          typeof body.error === "string"
-            ? body.error
-            : typeof body.message === "string"
-              ? body.message
-              : null;
-
-        setErrorMessage(backendMessage ?? defaultMessage);
-      } else {
-        setErrorMessage(defaultMessage);
-      }
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+        )
+      );
 
       setShowError(true);
     },
@@ -196,8 +185,8 @@ export default function FormDocenciaInvestigador() {
       institucion,
       fecha_inicio: formatDateStr(fechaInicio)!,
       fecha_fin: formatDateStr(fechaFin)!,
-      grado_academico_id: gradoAcademicoId,
-      rol_actividad_id: rolActividadId,
+      grado_academico_id: gradoAcademicoId!,
+      rol_actividad_id: rolActividadId!,
     };
 
     if (!isEdit) {
