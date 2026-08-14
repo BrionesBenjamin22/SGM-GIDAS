@@ -5,11 +5,12 @@ import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import {
   crearDistincion,
   getDistincionById,
   actualizarDistincion,
+  type DistincionPayload,
 } from "@/modules/produccion/services/distincionesServices";
 import {
   getProyectos,
@@ -89,10 +90,10 @@ export default function DistincionesForm() {
   };
 
   const mutation = useMutation({
-    mutationFn: (payload: any) =>
+    mutationFn: (payload: Partial<DistincionPayload>) =>
       isEdit
         ? actualizarDistincion(Number(id), payload)
-        : crearDistincion(payload),
+        : crearDistincion(payload as DistincionPayload),
     onSuccess: async (saved) => {
       const distincionId = isEdit ? Number(id) : saved.id;
 
@@ -100,7 +101,7 @@ export default function DistincionesForm() {
       await qc.invalidateQueries({ queryKey: ["distincion", distincionId] });
       await qc.invalidateQueries({ queryKey: ["distincion-historial", distincionId] });
 
-      navigate(`/distinciones/${distincionId}`, {
+      navigate(isEdit ? `/distinciones/${distincionId}` : "/distinciones", {
         replace: true,
         state: {
           successMessage: isEdit
@@ -110,32 +111,18 @@ export default function DistincionesForm() {
       });
     },
     onError: (error) => {
-      const defaultMessage = isEdit
-        ? "No se pudo actualizar la distincion."
-        : "No se pudo crear la distincion.";
+      const backendMessage = getErrorMessage(
+        error,
+        "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+      );
+      const lowerMessage = backendMessage.toLowerCase();
 
-      let backendMessage = defaultMessage;
-
-      if (error instanceof HttpError && error.body && typeof error.body === "object") {
-        const body = error.body as Record<string, unknown>;
-        backendMessage =
-          typeof body.error === "string"
-            ? body.error
-            : typeof body.message === "string"
-              ? body.message
-              : typeof body.detalle === "string"
-                ? body.detalle
-                : defaultMessage;
-
-        const lowerMessage = backendMessage.toLowerCase();
-
-        if (lowerMessage.includes("fecha")) {
-          setErrors((prev) => ({ ...prev, fecha: backendMessage }));
-        } else if (lowerMessage.includes("descripcion")) {
-          setErrors((prev) => ({ ...prev, descripcion: backendMessage }));
-        } else if (lowerMessage.includes("proyecto")) {
-          setErrors((prev) => ({ ...prev, proyecto: backendMessage }));
-        }
+      if (lowerMessage.includes("fecha")) {
+        setErrors((prev) => ({ ...prev, fecha: backendMessage }));
+      } else if (lowerMessage.includes("descripcion")) {
+        setErrors((prev) => ({ ...prev, descripcion: backendMessage }));
+      } else if (lowerMessage.includes("proyecto")) {
+        setErrors((prev) => ({ ...prev, proyecto: backendMessage }));
       }
 
       setErrorMessage(backendMessage);

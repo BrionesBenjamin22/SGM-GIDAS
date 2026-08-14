@@ -43,7 +43,15 @@ type GetArticulosParams = {
   activos?: "true" | "false" | "all";
 };
 
-const normalizeArticulo = (item: any): ArticuloDivulgacion => ({
+type ArticuloBackend = Partial<ArticuloDivulgacion> & {
+  id: number;
+  grupo_utn_id?: number;
+  grupo_utn?: { id: number; nombre: string };
+};
+
+type ApiListResponse<T> = T[] | { data?: T[] };
+
+const normalizeArticulo = (item: ArticuloBackend): ArticuloDivulgacion => ({
   id: item.id,
   created_by: item.created_by ?? null,
   created_by_nombre: item.created_by_nombre ?? null,
@@ -57,7 +65,7 @@ const normalizeArticulo = (item: any): ArticuloDivulgacion => ({
   titulo: item.titulo ?? "",
   descripcion: item.descripcion ?? "",
   fecha_publicacion: item.fecha_publicacion ?? "",
-  grupo_utn_id: item.grupo_utn_id ?? item.grupo_utn?.id,
+  grupo_utn_id: item.grupo_utn_id ?? item.grupo_utn?.id ?? 0,
   grupo_utn: item.grupo_utn ?? undefined,
 });
 
@@ -79,7 +87,7 @@ export const getArticulosDivulgacion = async (
     ? `/articulos-divulgacion/?${query}`
     : "/articulos-divulgacion/";
 
-  const response = await http<any>(url, {
+  const response = await http<ApiListResponse<ArticuloBackend>>(url, {
     method: "GET",
   });
 
@@ -95,7 +103,7 @@ export const getArticulosDivulgacion = async (
 export const getArticuloById = async (
   id: number
 ): Promise<ArticuloDivulgacion> => {
-  const response = await http<any>(`/articulos-divulgacion/${id}`, {
+  const response = await http<ArticuloBackend>(`/articulos-divulgacion/${id}`, {
     method: "GET",
   });
 
@@ -105,7 +113,7 @@ export const getArticuloById = async (
 export const getHistorialArticuloById = async (
   id: number
 ): Promise<HistorialArticuloDivulgacionItem[]> => {
-  const response = await http<any>(`/articulos-divulgacion/${id}/historial`, {
+  const response = await http<ApiListResponse<HistorialArticuloDivulgacionItem>>(`/articulos-divulgacion/${id}/historial`, {
     method: "GET",
   });
 
@@ -123,7 +131,7 @@ export const getHistorialArticuloById = async (
 export const createArticulo = async (
   payload: ArticuloPayload
 ): Promise<ArticuloDivulgacion> => {
-  const response = await http<any>("/articulos-divulgacion/", {
+  const response = await http<ArticuloBackend>("/articulos-divulgacion/", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -142,7 +150,7 @@ export const updateArticulo = async (
   if ("fecha_publicacion" in payload) body.fecha_publicacion = payload.fecha_publicacion;
   if ("grupo_utn_id" in payload) body.grupo_utn_id = payload.grupo_utn_id;
 
-  const response = await http<any>(`/articulos-divulgacion/${id}`, {
+  const response = await http<ArticuloBackend>(`/articulos-divulgacion/${id}`, {
     method: "PUT",
     body: JSON.stringify(body),
   });
