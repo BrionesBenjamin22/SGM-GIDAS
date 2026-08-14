@@ -1,19 +1,19 @@
 ---
 id: backend-excepciones-dominio-tipadas
 title: Tipar excepciones de dominio y eliminar reflexion generica
-status: pendient
+status: finished
 area: backend
 module: api-security
 priority: alta
 risk_level: medio-alto
 execution_order: 2
 created_at: 2026-08-12
-updated_at: 2026-08-12
+updated_at: 2026-08-14
+finished_at: 2026-08-14
 source: security-audit
 commit_sugerido: "refactor(api): tipar errores de dominio y ocultar fallas internas"
-owner: unassigned
-blocked_by:
-  - completar o congelar el contrato de sesion auth para evitar conflictos transversales
+owner: codex
+blocked_by: []
 related_files:
   - backend/modules/shared/controllers/responses.py
   - backend/modules/*/services/
@@ -62,6 +62,32 @@ Cada modulo debe ser una subtarea y un commit independiente.
 5. Ejecutar tests del modulo y suite completa.
 6. Actualizar README backend del modulo.
 7. Commit y continuar al siguiente modulo.
+
+# Estado de ejecucion
+
+Completados y validados:
+
+- Infraestructura compartida: `3c13d3d`.
+- `memorias`: `04c0cb7`.
+- `produccion`: migracion completa en seis commits, ultimo `d51a823`.
+- `personal`: `72aa0cf` y `98a4ca4`.
+- `recursos`: `996c29c`, suite completa de 252 pruebas correcta.
+- `grupo`: `48cf8c6`, controladores migrados al serializador seguro; pruebas
+  `tests.test_grupo_domain_errors` correctas (2 pruebas).
+- `proyectos`: `3bf72c7`, services y controllers migrados; pruebas de dominio e
+  historial correctas (7 pruebas).
+- `transferencia`: `6f672dc`, migracion completa; 7 pruebas focalizadas.
+- `catalogos`: `290f9c2`, migracion completa; 6 pruebas focalizadas.
+- `dashboard`: `e526c80`, migracion completa; 2 pruebas focalizadas.
+- `search`: `f645a4f`, migracion completa; 9 pruebas focalizadas.
+- Suite backend final: 266 pruebas correctas.
+
+Pendientes: ninguno.
+
+El movimiento original de `tasks/pendient/` a `tasks/in-progress/` permanece
+sin commitear porque `tasks/in-progress/` esta ignorado. Al cerrar, agregar el
+archivo final con `git add -f` en `tasks/finished/` junto con la metadata de
+cierre.
 
 # Criterios de aceptacion
 
