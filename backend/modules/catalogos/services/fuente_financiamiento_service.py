@@ -1,4 +1,5 @@
 from extension import db
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
 from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
@@ -23,7 +24,7 @@ def crear_fuente_financiamiento(data, user_id=None):
     ).first()
 
     if existe:
-        raise ValueError("Ya existe una fuente de financiamiento con ese nombre.")
+        raise ConflictError("Ya existe una fuente de financiamiento con ese nombre.")
 
     # Se guarda el nombre tal como lo escribió el usuario
     nueva = FuenteFinanciamiento(nombre=nombre_original)
@@ -41,10 +42,10 @@ def crear_fuente_financiamiento(data, user_id=None):
 def actualizar_fuente_financiamiento(id, data, user_id=None):
     fuente = FuenteFinanciamiento.query.get(id)
     if not fuente:
-        raise ValueError("Fuente de financiamiento no encontrada.")
+        raise NotFoundError("Fuente de financiamiento no encontrada.")
 
     if fuente.deleted_at is not None:
-        raise ValueError("No se puede editar una fuente de financiamiento inactiva.")
+        raise ConflictError("No se puede editar una fuente de financiamiento inactiva.")
 
     nombre = data.get("nombre")
     if not nombre or not isinstance(nombre, str):
@@ -60,7 +61,7 @@ def actualizar_fuente_financiamiento(id, data, user_id=None):
     ).first()
 
     if duplicado:
-        raise ValueError("Ya existe una fuente de financiamiento con ese nombre.")
+        raise ConflictError("Ya existe una fuente de financiamiento con ese nombre.")
 
     cambios = CatalogoAuditoriaService.construir_cambios(
         fuente,
@@ -80,15 +81,15 @@ def actualizar_fuente_financiamiento(id, data, user_id=None):
 def eliminar_fuente_financiamiento(id, user_id=None):
     fuente = FuenteFinanciamiento.query.get(id)
     if not fuente:
-        raise ValueError("Fuente de financiamiento no encontrada.")
+        raise NotFoundError("Fuente de financiamiento no encontrada.")
 
     if fuente.becas.count() > 0:
-        raise ValueError(
+        raise ConflictError(
             "No se puede eliminar la fuente de financiamiento porque está asociada a becarios."
         )
 
     if fuente.proyectos_investigacion.count() > 0:
-        raise ValueError(
+        raise ConflictError(
             "No se puede eliminar la fuente de financiamiento porque está asociada a proyectos."
         )
 
@@ -113,5 +114,5 @@ def listar_fuentes_financiamiento(activos="true"):
 def obtener_fuente_financiamiento_por_id(id):
     fuente = FuenteFinanciamiento.query.get(id)
     if not fuente:
-        raise ValueError("No se encontró una fuente de financiamiento con ese id.")
+        raise NotFoundError("No se encontró una fuente de financiamiento con ese id.")
     return fuente
