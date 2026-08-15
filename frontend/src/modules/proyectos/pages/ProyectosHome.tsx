@@ -19,6 +19,7 @@ import {
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
+import { getErrorMessage } from "@/lib/httpError";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -33,6 +34,7 @@ export default function ProyectosLanding() {
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showCerrarDialog, setShowCerrarDialog] = useState(false);
@@ -60,7 +62,7 @@ export default function ProyectosLanding() {
     return "true";
   }, [filters.estado, memoriaFilter]);
 
-  const { data: list = [], isLoading } = useProyectos(activosFilter);
+  const { data: list = [], isLoading, isError } = useProyectos(activosFilter);
   const scopedList = useMemo(
     () => applyMemoriaSectionFilter(list, memoriaFilter),
     [list, memoriaFilter]
@@ -181,25 +183,44 @@ export default function ProyectosLanding() {
   const confirmCerrar = async (fecha: Date) => {
     const fechaFormateada = fecha.toISOString().split("T")[0];
 
-    for (const id of selectedIds) {
-      await cerrarProyecto(id, fechaFormateada);
-    }
+    try {
+      for (const id of selectedIds) {
+        await cerrarProyecto(id, fechaFormateada);
+      }
 
-    await qc.invalidateQueries({ queryKey: ["proyectos"] });
-    cancelSelection();
-    setSuccessMessage("Proyectos cerrados con exito");
-    setShowSuccess(true);
+      await qc.invalidateQueries({ queryKey: ["proyectos"] });
+      cancelSelection();
+      setSuccessMessage("Proyectos cerrados con exito");
+      setShowSuccess(true);
+    } catch (error: unknown) {
+      setShowCerrarDialog(false);
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+        )
+      );
+    }
   };
 
   const handleReabrirSeleccion = async () => {
-    for (const id of selectedIds) {
-      await reabrirProyecto(id);
-    }
+    try {
+      for (const id of selectedIds) {
+        await reabrirProyecto(id);
+      }
 
-    await qc.invalidateQueries({ queryKey: ["proyectos"] });
-    cancelSelection();
-    setSuccessMessage("Proyectos reabiertos con exito");
-    setShowSuccess(true);
+      await qc.invalidateQueries({ queryKey: ["proyectos"] });
+      cancelSelection();
+      setSuccessMessage("Proyectos reabiertos con exito");
+      setShowSuccess(true);
+    } catch (error: unknown) {
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+        )
+      );
+    }
   };
 
   const setQuickEstado = (estado: "" | "todos" | "inactivos") => {
@@ -366,6 +387,10 @@ export default function ProyectosLanding() {
       <div className="flex-1">
         {isLoading ? (
           <p className="py-10 text-center text-slate-500">Cargando...</p>
+        ) : isError ? (
+          <p className="py-10 text-center text-red-600">
+            Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente.
+          </p>
         ) : proyectosFiltrados.length === 0 ? (
           <p className="py-10 text-center text-slate-500">
             No hay proyectos para mostrar.
@@ -605,6 +630,13 @@ export default function ProyectosLanding() {
         open={showSuccess}
         message={successMessage || "Cambios aplicados con exito"}
         onClose={() => setShowSuccess(false)}
+      />
+
+      <SuccessToast
+        open={Boolean(errorMessage)}
+        message={errorMessage}
+        onClose={() => setErrorMessage("")}
+        variant="error"
       />
     </section>
   );
