@@ -5,12 +5,13 @@ import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
 import {
   actualizarParticipacion,
   crearParticipacion,
   getParticipacionById,
+  type ParticipacionPayload,
 } from "@/modules/proyectos/services/participacionesServices";
 
 const FORMAS_PARTICIPACION = [
@@ -92,10 +93,14 @@ export default function ParticipacionesForm() {
   };
 
   const mutation = useMutation({
-    mutationFn: (payload: any) =>
-      isEdit
-        ? actualizarParticipacion(Number(id), payload)
-        : crearParticipacion(payload),
+    mutationFn: (
+      input:
+        | { mode: "create"; payload: ParticipacionPayload }
+        | { mode: "edit"; payload: Partial<ParticipacionPayload> }
+    ) =>
+      input.mode === "edit"
+        ? actualizarParticipacion(Number(id), input.payload)
+        : crearParticipacion(input.payload),
     onSuccess: async (saved) => {
       const participacionId = isEdit ? Number(id) : saved.id;
 
@@ -105,7 +110,7 @@ export default function ParticipacionesForm() {
         queryKey: ["participacion-historial", participacionId],
       });
 
-      navigate(`/participaciones/${participacionId}`, {
+      navigate(isEdit ? `/participaciones/${participacionId}` : "/participaciones", {
         replace: true,
         state: {
           successMessage: isEdit
@@ -119,29 +124,20 @@ export default function ParticipacionesForm() {
         ? "No se pudo actualizar la participacion."
         : "No se pudo crear la participacion.";
 
-      let backendMessage = defaultMessage;
+      const backendMessage = getErrorMessage(error, defaultMessage);
+      const lowerMessage = backendMessage.toLowerCase();
 
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | { message?: string; error?: string; detalle?: string }
-          | undefined;
-
-        backendMessage =
-          body?.error || body?.message || body?.detalle || defaultMessage;
-
-        const lowerMessage = backendMessage.toLowerCase();
-
-        if (lowerMessage.includes("investigador")) {
+      if (lowerMessage.includes("investigador")) {
           setErrors((prev) => ({
             ...prev,
             investigador: backendMessage,
           }));
-        } else if (lowerMessage.includes("nombre") || lowerMessage.includes("evento")) {
+      } else if (lowerMessage.includes("nombre") || lowerMessage.includes("evento")) {
           setErrors((prev) => ({
             ...prev,
             nombreEvento: backendMessage,
           }));
-        } else if (
+      } else if (
           lowerMessage.includes("forma") ||
           lowerMessage.includes("participacion")
         ) {
@@ -149,12 +145,11 @@ export default function ParticipacionesForm() {
             ...prev,
             formaParticipacion: backendMessage,
           }));
-        } else if (lowerMessage.includes("fecha")) {
+      } else if (lowerMessage.includes("fecha")) {
           setErrors((prev) => ({
             ...prev,
             fecha: backendMessage,
           }));
-        }
       }
 
       setErrorMessage(backendMessage);
@@ -174,7 +169,7 @@ export default function ParticipacionesForm() {
     };
 
     if (!isEdit) {
-      await mutation.mutateAsync(payload);
+      await mutation.mutateAsync({ mode: "create", payload });
       return;
     }
 
@@ -201,7 +196,7 @@ export default function ParticipacionesForm() {
       return;
     }
 
-    await mutation.mutateAsync(changedPayload);
+    await mutation.mutateAsync({ mode: "edit", payload: changedPayload });
   };
 
   if (isEdit && isLoading) {

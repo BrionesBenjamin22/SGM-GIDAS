@@ -7,7 +7,7 @@ import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import { useAuth } from "@/context/AuthContext";
 import {
   applyMemoriaSectionFilter,
@@ -235,25 +235,15 @@ export default function ParticipacionesHome() {
           : "Participaciones eliminadas con exito."
       );
       setShowSuccess(true);
-    } catch (error) {
+    } catch (error: unknown) {
       setShowConfirm(false);
 
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | { message?: string; error?: string; detalle?: string }
-          | undefined;
-
-        setErrorMessage(
-          body?.message ||
-            body?.error ||
-            body?.detalle ||
-            "No se pudo eliminar la participacion."
-        );
-      } else {
-        setErrorMessage(
-          "Ocurrio un error inesperado al eliminar la participacion."
-        );
-      }
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+        )
+      );
 
       setShowError(true);
     }

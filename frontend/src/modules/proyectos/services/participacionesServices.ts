@@ -41,7 +41,13 @@ type GetParticipacionesOptions = {
   activos?: "true" | "false" | "all";
 };
 
-const normalizeParticipacion = (item: any): Participacion => ({
+type ParticipacionApiResponse = Omit<Participacion, "investigador"> & {
+  investigador?: string | { nombre_apellido?: string | null } | null;
+};
+
+type ApiListResponse<T> = T[] | { data?: T[] };
+
+const normalizeParticipacion = (item: ParticipacionApiResponse): Participacion => ({
   id: item.id,
   nombre_evento: item.nombre_evento ?? "",
   forma_participacion: item.forma_participacion ?? "",
@@ -85,7 +91,7 @@ export const getParticipaciones = async (
     ? `/participaciones-relevantes?${query}`
     : "/participaciones-relevantes";
 
-  const response = await http<any>(endpoint, {
+  const response = await http<ApiListResponse<ParticipacionApiResponse>>(endpoint, {
     method: "GET",
   });
 
@@ -101,7 +107,7 @@ export const getParticipaciones = async (
 export const getParticipacionById = async (
   id: number
 ): Promise<Participacion> => {
-  const response = await http<any>(`/participaciones-relevantes/${id}`, {
+  const response = await http<ParticipacionApiResponse>(`/participaciones-relevantes/${id}`, {
     method: "GET",
   });
 
@@ -111,7 +117,7 @@ export const getParticipacionById = async (
 export const getHistorialParticipacionById = async (
   id: number
 ): Promise<HistorialParticipacionItem[]> => {
-  const response = await http<any>(`/participaciones-relevantes/${id}/historial`, {
+  const response = await http<ApiListResponse<HistorialParticipacionItem>>(`/participaciones-relevantes/${id}/historial`, {
     method: "GET",
   });
 
@@ -129,7 +135,7 @@ export const getHistorialParticipacionById = async (
 export const crearParticipacion = async (
   payload: ParticipacionPayload
 ): Promise<Participacion> => {
-  const response = await http<any>("/participaciones-relevantes/", {
+  const response = await http<ParticipacionApiResponse>("/participaciones-relevantes/", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -150,7 +156,7 @@ export const actualizarParticipacion = async (
   if ("fecha" in payload) body.fecha = payload.fecha;
   if ("investigador_id" in payload) body.investigador_id = payload.investigador_id;
 
-  const response = await http<any>(`/participaciones-relevantes/${id}`, {
+  const response = await http<ParticipacionApiResponse>(`/participaciones-relevantes/${id}`, {
     method: "PUT",
     body: JSON.stringify(body),
   });
