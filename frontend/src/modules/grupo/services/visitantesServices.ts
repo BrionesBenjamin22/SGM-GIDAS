@@ -51,7 +51,19 @@ export type TipoVisitaOption = {
   nombre: string;
 };
 
-const normalizeVisitante = (item: any): Visitante => ({
+type VisitanteApiResponse = Omit<Visitante, "tipo_visita"> & {
+  tipo_visita?: Visitante["tipo_visita"];
+};
+
+type ApiListResponse<T> = T[] | { data?: T[] };
+
+type GrupoUtnApiResponse = {
+  id: number;
+  nombre_sigla_grupo?: string;
+  nombre?: string;
+};
+
+const normalizeVisitante = (item: VisitanteApiResponse): Visitante => ({
   id: item.id,
   created_by: item.created_by ?? null,
   created_by_nombre: item.created_by_nombre ?? null,
@@ -74,7 +86,9 @@ const normalizeVisitante = (item: any): Visitante => ({
 export async function getVisitantes(
   activos: "true" | "false" | "all" = "true"
 ): Promise<Visitante[]> {
-  const response = await http<any>(`/visitas-academicas/?activos=${activos}`);
+  const response = await http<ApiListResponse<VisitanteApiResponse>>(
+    `/visitas-academicas/?activos=${activos}`
+  );
   const items = Array.isArray(response)
     ? response
     : Array.isArray(response?.data)
@@ -85,16 +99,18 @@ export async function getVisitantes(
 }
 
 export async function getVisitanteById(id: number): Promise<Visitante> {
-  const response = await http<any>(`/visitas-academicas/${id}`);
+  const response = await http<VisitanteApiResponse>(`/visitas-academicas/${id}`);
   return normalizeVisitante(response);
 }
 
 export async function getHistorialVisitanteById(
   id: number
 ): Promise<HistorialVisitanteItem[]> {
-  const response = await http<any>(`/visitas-academicas/${id}/historial`, {
+  const response = await http<ApiListResponse<HistorialVisitanteItem>>(
+    `/visitas-academicas/${id}/historial`, {
     method: "GET",
-  });
+    }
+  );
 
   if (Array.isArray(response)) {
     return response;
@@ -110,7 +126,7 @@ export async function getHistorialVisitanteById(
 export async function crearVisitante(
   payload: VisitantePayload
 ): Promise<Visitante> {
-  const response = await http<any>("/visitas-academicas/", {
+  const response = await http<VisitanteApiResponse>("/visitas-academicas/", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -130,7 +146,7 @@ export async function actualizarVisitante(
   if ("tipo_visita_id" in payload) body.tipo_visita_id = payload.tipo_visita_id;
   if ("grupo_utn_id" in payload) body.grupo_utn_id = payload.grupo_utn_id;
 
-  const response = await http<any>(`/visitas-academicas/${id}`, {
+  const response = await http<VisitanteApiResponse>(`/visitas-academicas/${id}`, {
     method: "PUT",
     body: JSON.stringify(body),
   });
@@ -145,19 +161,20 @@ export async function eliminarVisitante(id: number): Promise<{ message: string }
 }
 
 export async function getGruposUtn() {
-  const data = await http<any[]>("/grupo-utn/");
+  const data = await http<GrupoUtnApiResponse[] | GrupoUtnApiResponse>("/grupo-utn/");
 
-  return (data ?? []).map((g) => ({
+  const grupos = Array.isArray(data) ? data : data ? [data] : [];
+  return grupos.map((g) => ({
     id: g.id,
-    nombre: g.nombre_sigla_grupo || g.nombre,
-  })) as GrupoUtnOption[];
+    nombre: g.nombre_sigla_grupo || g.nombre || "Grupo sin nombre",
+  }));
 }
 
 export async function getTiposVisita() {
-  const data = await http<any[]>("/tipos-reunion-cientifica/");
+  const data = await http<TipoVisitaOption[]>("/tipos-reunion-cientifica/");
 
   return (data ?? []).map((t) => ({
     id: t.id,
     nombre: t.nombre,
-  })) as TipoVisitaOption[];
+  }));
 }

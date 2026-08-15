@@ -5,13 +5,14 @@ import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import {
   actualizarVisitante,
   crearVisitante,
   getTiposVisita,
   getVisitanteById,
   type TipoVisitaOption,
+  type VisitantePayload,
 } from "@/modules/grupo/services/visitantesServices";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 
@@ -95,10 +96,14 @@ export default function VisitantesForm() {
   };
 
   const mutation = useMutation({
-    mutationFn: (payload: any) =>
-      isEdit
-        ? actualizarVisitante(Number(id), payload)
-        : crearVisitante(payload),
+    mutationFn: (
+      input:
+        | { mode: "create"; payload: VisitantePayload }
+        | { mode: "edit"; payload: Partial<VisitantePayload> }
+    ) =>
+      input.mode === "edit"
+        ? actualizarVisitante(Number(id), input.payload)
+        : crearVisitante(input.payload),
     onSuccess: async (saved) => {
       const visitanteId = isEdit ? Number(id) : saved.id;
 
@@ -108,7 +113,7 @@ export default function VisitantesForm() {
         queryKey: ["visitante-historial", visitanteId],
       });
 
-      navigate(`/visitantes/${visitanteId}`, {
+      navigate(isEdit ? `/visitantes/${visitanteId}` : "/visitantes", {
         replace: true,
         state: {
           successMessage: isEdit
@@ -122,39 +127,29 @@ export default function VisitantesForm() {
         ? "No se pudo actualizar la visita."
         : "No se pudo crear la visita.";
 
-      let backendMessage = defaultMessage;
+      const backendMessage = getErrorMessage(error, defaultMessage);
+      const lowerMessage = backendMessage.toLowerCase();
 
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | { message?: string; error?: string; detalle?: string }
-          | undefined;
-
-        backendMessage =
-          body?.error || body?.message || body?.detalle || defaultMessage;
-
-        const lowerMessage = backendMessage.toLowerCase();
-
-        if (lowerMessage.includes("razon")) {
+      if (lowerMessage.includes("razon")) {
           setErrors((prev) => ({
             ...prev,
             razon: backendMessage,
           }));
-        } else if (lowerMessage.includes("procedencia")) {
+      } else if (lowerMessage.includes("procedencia")) {
           setErrors((prev) => ({
             ...prev,
             procedencia: backendMessage,
           }));
-        } else if (lowerMessage.includes("fecha")) {
+      } else if (lowerMessage.includes("fecha")) {
           setErrors((prev) => ({
             ...prev,
             fecha: backendMessage,
           }));
-        } else if (lowerMessage.includes("tipo")) {
+      } else if (lowerMessage.includes("tipo")) {
           setErrors((prev) => ({
             ...prev,
             tipoVisita: backendMessage,
           }));
-        }
       }
 
       setErrorMessage(backendMessage);
@@ -176,7 +171,7 @@ export default function VisitantesForm() {
     };
 
     if (!isEdit) {
-      await mutation.mutateAsync(payload);
+      await mutation.mutateAsync({ mode: "create", payload });
       return;
     }
 
@@ -204,7 +199,7 @@ export default function VisitantesForm() {
       return;
     }
 
-    await mutation.mutateAsync(changedPayload);
+    await mutation.mutateAsync({ mode: "edit", payload: changedPayload });
   };
 
   if (isEdit && isLoading) {
