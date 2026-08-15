@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import Button from "@/components/Button";
 import SuccessToast from "@/components/SuccessToast";
+import { getErrorMessage } from "@/lib/httpError";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 
 import FormPTAAProfesional from "./FormPTAAProfesional";
@@ -32,7 +33,7 @@ export default function PersonalForm() {
 
   const isEdit = Boolean(id && inferredRol);
 
-  const { data: initialData, isLoading } = useQuery({
+  const { data: initialData, isLoading, isError } = useQuery({
     queryKey: ["personal-edit", inferredRol, id],
     queryFn: () => getPersonalCompletoByRolAndId(inferredRol!, Number(id)),
     enabled: Boolean(inferredRol && id),
@@ -44,6 +45,18 @@ export default function PersonalForm() {
   // 🔥 TOAST STATE
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const handleFormError = (error: unknown) => {
+    setErrorMessage(
+      getErrorMessage(
+        error,
+        "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+      )
+    );
+    setShowError(true);
+  };
 
   // 🔥 Escuchar mensaje desde navigate(state)
   useEffect(() => {
@@ -72,6 +85,13 @@ export default function PersonalForm() {
   }, [inferredRol]);
 
   if (isLoading) return <p>Cargando…</p>;
+  if (isEdit && isError) {
+    return (
+      <p className="text-slate-500">
+        Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente.
+      </p>
+    );
+  }
 
   const handleTipoChange = (value: Tipo) => {
     setTipo(value);
@@ -138,6 +158,7 @@ export default function PersonalForm() {
             tipo={tipo}
             initialData={initialData}
             onCancel={() => navigate(-1)}
+            onError={handleFormError}
           />
         )}
 
@@ -146,6 +167,7 @@ export default function PersonalForm() {
             key={`${tipo}-${id ?? "new"}`}
             initialData={initialData}
             onCancel={() => navigate(-1)}
+            onError={handleFormError}
           />
         )}
 
@@ -154,6 +176,7 @@ export default function PersonalForm() {
             key={`${tipo}-${id ?? "new"}`}
             initialData={initialData}
             onCancel={() => navigate(-1)}
+            onError={handleFormError}
           />
         )}
       </div>
@@ -166,6 +189,12 @@ export default function PersonalForm() {
         open={showSuccess}
         message={successMessage}
         onClose={() => setShowSuccess(false)}
+      />
+      <SuccessToast
+        open={showError}
+        message={errorMessage}
+        variant="error"
+        onClose={() => setShowError(false)}
       />
     </section>
   );

@@ -10,6 +10,7 @@ import { usePersonal } from "@/modules/personal/hooks/usePersonal";
 import { eliminarPersonal } from "@/modules/personal/services/personalServices";
 import type { PersonalType } from "@/modules/personal/services/personalServices";
 import { useAuth } from "@/context/AuthContext";
+import { getErrorMessage } from "@/lib/httpError";
 import {
   applyMemoriaSectionFilter,
   getMemoriaSectionFilter,
@@ -193,10 +194,13 @@ export default function PersonalLanding() {
       setShowSuccess(true);
 
       cancelSelection();
-    } catch {
+    } catch (error) {
       setShowConfirm(false);
       setErrorMessage(
-        "Ocurrió un error inesperado al dar de baja el personal."
+        getErrorMessage(
+          error,
+          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+        )
       );
       setShowError(true);
     }
@@ -307,7 +311,11 @@ export default function PersonalLanding() {
 
       <div className="flex-1 flex flex-col">
         {isLoading && <p className="text-slate-500">Cargando…</p>}
-        {isError && <p className="text-slate-500">Error al cargar.</p>}
+        {isError && (
+          <p className="text-slate-500">
+            Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente.
+          </p>
+        )}
 
         <div className="flex-1">
           {!isLoading && !isError && personalFiltrado.length === 0 ? (

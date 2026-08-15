@@ -16,11 +16,13 @@ import type { PersonalCompleto } from "@/modules/personal/services/personalCompl
 interface Props {
   initialData?: PersonalCompleto;
   onCancel: () => void;
+  onError: (error: unknown) => void;
 }
 
 export default function FormInvestigador({
   initialData,
   onCancel,
+  onError,
 }: Props) {
   const navigate = useNavigate();
   const { uct } = useUct();
@@ -123,6 +125,16 @@ export default function FormInvestigador({
     return Object.keys(newErrors).length === 0;
   };
 
+  const executeSafely = async (operation: () => Promise<unknown>) => {
+    try {
+      await operation();
+      return true;
+    } catch (error) {
+      onError(error);
+      return false;
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
@@ -155,7 +167,10 @@ export default function FormInvestigador({
         )
       );
       if (Object.keys(changedPayload).length > 0) {
-        await actualizarInvestigador(initialData.id, changedPayload, "investigador");
+        const updated = await executeSafely(() =>
+          actualizarInvestigador(initialData.id, changedPayload, "investigador")
+        );
+        if (!updated) return;
       }
 
       navigate(`/personal/investigador/${initialData.id}`, {
@@ -166,7 +181,8 @@ export default function FormInvestigador({
       return;
     }
 
-    await crearInvestigador(payload);
+    const created = await executeSafely(() => crearInvestigador(payload));
+    if (!created) return;
 
     navigate("/personal", {
       state: { successMessage: "Creado con exito!" },

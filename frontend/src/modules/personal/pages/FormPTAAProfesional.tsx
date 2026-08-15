@@ -15,12 +15,14 @@ interface Props {
   tipo: "PTAA" | "PROFESIONAL";
   initialData?: PersonalCompleto;
   onCancel: () => void;
+  onError: (error: unknown) => void;
 }
 
 export default function FormPTAAProfesional({
   tipo,
   initialData,
   onCancel,
+  onError,
 }: Props) {
   const navigate = useNavigate();
   const { uct } = useUct();
@@ -111,6 +113,16 @@ export default function FormPTAAProfesional({
     return `${y}-${m}-${dd}`;
   };
 
+  const executeSafely = async (operation: () => Promise<unknown>) => {
+    try {
+      await operation();
+      return true;
+    } catch (error) {
+      onError(error);
+      return false;
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
@@ -141,11 +153,14 @@ export default function FormPTAAProfesional({
         )
       );
       if (Object.keys(changedPayload).length > 0) {
-        await actualizarPersonal(
-          initialData.id,
-          changedPayload,
-          tipo === "PROFESIONAL" ? "profesional" : "personal"
+        const updated = await executeSafely(() =>
+          actualizarPersonal(
+            initialData.id,
+            changedPayload,
+            tipo === "PROFESIONAL" ? "profesional" : "personal"
+          )
         );
+        if (!updated) return;
       }
 
       await qc.invalidateQueries({
@@ -163,7 +178,8 @@ export default function FormPTAAProfesional({
       return;
     }
 
-    await upsertPersonal(payload);
+    const created = await executeSafely(() => upsertPersonal(payload));
+    if (!created) return;
 
     await qc.invalidateQueries({
       queryKey: ["personal"],

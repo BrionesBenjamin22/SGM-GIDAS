@@ -16,6 +16,7 @@ import Calendar from "@/components/Calendar";
 interface Props {
   initialData?: PersonalCompleto;
   onCancel: () => void;
+  onError: (error: unknown) => void;
 }
 
 type BecaVinculada = {
@@ -26,7 +27,7 @@ type BecaVinculada = {
   monto: number | "";
 };
 
-export default function FormBecario({ initialData, onCancel }: Props) {
+export default function FormBecario({ initialData, onCancel, onError }: Props) {
   const navigate = useNavigate();
   const { uct } = useUct();
   const { data: tiposFormacion = [] } = useTiposFormacion();
@@ -170,6 +171,16 @@ export default function FormBecario({ initialData, onCancel }: Props) {
     return Object.keys(newErrors).length === 0;
   };
 
+  const executeSafely = async (operation: () => Promise<unknown>) => {
+    try {
+      await operation();
+      return true;
+    } catch (error) {
+      onError(error);
+      return false;
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
@@ -213,7 +224,10 @@ export default function FormBecario({ initialData, onCancel }: Props) {
         )
       );
       if (Object.keys(changedPayload).length > 0) {
-        await actualizarBecario(initialData.id, changedPayload);
+        const updated = await executeSafely(() =>
+          actualizarBecario(initialData.id, changedPayload)
+        );
+        if (!updated) return;
       }
 
       qc.invalidateQueries({ queryKey: ["personal"] });
@@ -230,7 +244,8 @@ export default function FormBecario({ initialData, onCancel }: Props) {
       return;
     }
 
-    await crearBecario(payload);
+    const created = await executeSafely(() => crearBecario(payload));
+    if (!created) return;
 
     qc.invalidateQueries({ queryKey: ["personal"] });
     qc.invalidateQueries({ queryKey: ["becarios"] });
