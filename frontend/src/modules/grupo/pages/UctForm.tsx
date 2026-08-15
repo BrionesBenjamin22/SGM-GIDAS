@@ -6,6 +6,7 @@ import Field from "@/components/Field";
 import ErrorText from "@/components/ErrorText";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
+import { getErrorMessage } from "@/lib/httpError";
 import { useUct } from "@/modules/grupo/hooks/useUct";
 import { useCargos } from "@/modules/grupo/hooks/useCargos";
 import {
@@ -253,9 +254,12 @@ export default function UctForm() {
           : "UCT creada correctamente."
       );
       setShowSuccess(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setSubmitError(
-        err?.message || "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+        getErrorMessage(
+          err,
+          "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+        )
       );
     }
   };
