@@ -5,11 +5,13 @@ import Button from "@/components/Button";
 import DatePicker from "@/components/Calendar";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import {
   createErogacion,
   getErogacionById,
   updateErogacion,
+  type CreateErogacionPayload,
+  type UpdateErogacionPayload,
 } from "@/modules/recursos/services/erogacionesServices";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 import { useTiposErogacion } from "@/modules/recursos/hooks/useTipoErogacion";
@@ -68,7 +70,11 @@ export default function ErogacionesForm() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!data.numeroErogacion) {
+    const numeroErogacion = Number(data.numeroErogacion);
+    const ingresos = Number(data.ingresos);
+    const egresos = Number(data.egresos);
+
+    if (!Number.isInteger(numeroErogacion) || numeroErogacion <= 0) {
       newErrors.numero = "Debe ingresar numero de erogacion";
     }
 
@@ -84,19 +90,19 @@ export default function ErogacionesForm() {
       newErrors.fecha = "Debe ingresar fecha";
     }
 
-    if (data.ingresos === "" || Number(data.ingresos) < 0) {
+    if (data.ingresos === "" || !Number.isFinite(ingresos) || ingresos < 0) {
       newErrors.ingresos = "Ingresos debe ser 0 o mayor";
     }
 
-    if (data.egresos === "" || Number(data.egresos) < 0) {
+    if (data.egresos === "" || !Number.isFinite(egresos) || egresos < 0) {
       newErrors.egresos = "Egresos debe ser 0 o mayor";
     }
 
     if (
       data.ingresos !== "" &&
       data.egresos !== "" &&
-      Number(data.ingresos) === 0 &&
-      Number(data.egresos) === 0
+      ingresos === 0 &&
+      egresos === 0
     ) {
       newErrors.ingresos = "Ingresos y egresos no pueden ser ambos 0";
       newErrors.egresos = "Ingresos y egresos no pueden ser ambos 0";
@@ -107,8 +113,10 @@ export default function ErogacionesForm() {
   };
 
   const { mutateAsync, isPending } = useMutation({
-    mutationFn: (payload: any) =>
-      isEdit ? updateErogacion(Number(id), payload) : createErogacion(payload),
+    mutationFn: (payload: CreateErogacionPayload | UpdateErogacionPayload) =>
+      isEdit
+        ? updateErogacion(Number(id), payload as UpdateErogacionPayload)
+        : createErogacion(payload as CreateErogacionPayload),
     onSuccess: async (saved) => {
       const erogacionId = isEdit ? Number(id) : saved.id;
 
@@ -118,7 +126,7 @@ export default function ErogacionesForm() {
         queryKey: ["erogacion-historial", erogacionId],
       });
 
-      navigate(`/erogaciones/${erogacionId}`, {
+      navigate(isEdit ? `/erogaciones/${erogacionId}` : "/erogaciones", {
         replace: true,
         state: {
           successMessage: isEdit
@@ -128,35 +136,24 @@ export default function ErogacionesForm() {
       });
     },
     onError: (error) => {
-      const defaultMessage = isEdit
-        ? "No se pudo actualizar la erogacion."
-        : "No se pudo crear la erogacion.";
+      const backendMessage = getErrorMessage(
+        error,
+        "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+      );
+      const lowerMessage = backendMessage.toLowerCase();
 
-      let backendMessage = defaultMessage;
-
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | { message?: string; error?: string; detalle?: string }
-          | undefined;
-
-        backendMessage =
-          body?.error || body?.message || body?.detalle || defaultMessage;
-
-        const lowerMessage = backendMessage.toLowerCase();
-
-        if (lowerMessage.includes("numero")) {
-          setErrors((prev) => ({ ...prev, numero: backendMessage }));
-        } else if (lowerMessage.includes("tipo")) {
-          setErrors((prev) => ({ ...prev, tipo: backendMessage }));
-        } else if (lowerMessage.includes("fuente")) {
-          setErrors((prev) => ({ ...prev, fuente: backendMessage }));
-        } else if (lowerMessage.includes("fecha")) {
-          setErrors((prev) => ({ ...prev, fecha: backendMessage }));
-        } else if (lowerMessage.includes("ingreso")) {
-          setErrors((prev) => ({ ...prev, ingresos: backendMessage }));
-        } else if (lowerMessage.includes("egreso")) {
-          setErrors((prev) => ({ ...prev, egresos: backendMessage }));
-        }
+      if (lowerMessage.includes("numero")) {
+        setErrors((prev) => ({ ...prev, numero: backendMessage }));
+      } else if (lowerMessage.includes("tipo")) {
+        setErrors((prev) => ({ ...prev, tipo: backendMessage }));
+      } else if (lowerMessage.includes("fuente")) {
+        setErrors((prev) => ({ ...prev, fuente: backendMessage }));
+      } else if (lowerMessage.includes("fecha")) {
+        setErrors((prev) => ({ ...prev, fecha: backendMessage }));
+      } else if (lowerMessage.includes("ingreso")) {
+        setErrors((prev) => ({ ...prev, ingresos: backendMessage }));
+      } else if (lowerMessage.includes("egreso")) {
+        setErrors((prev) => ({ ...prev, egresos: backendMessage }));
       }
 
       setErrorMessage(backendMessage);
