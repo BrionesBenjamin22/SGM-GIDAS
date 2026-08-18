@@ -10,7 +10,7 @@ import {
   type UsuarioRol,
 } from "@/modules/auth/services/usuariosService";
 import { useAuth } from "@/context/AuthContext";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import Button from "@/components/Button";
 import type { Rol } from "@/modules/auth/services/authService";
 import {
@@ -26,21 +26,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { useState } from "react";
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof HttpError) {
-    const body = error.body as any;
-    if (body?.error) return body.error;
-    if (body?.message) return body.message;
-    return error.message || "Ocurrió un error inesperado";
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Ocurrió un error inesperado";
-}
 
 function normalizeRolForForm(rol: UsuarioRol): Rol {
   return rol === "LECTOR" ? "LECTURA" : rol;
@@ -131,7 +116,7 @@ export default function UsuariosHome() {
       setDeleteError(null);
     },
     onError: (error) => {
-      setDeleteError(getErrorMessage(error));
+      setDeleteError(getErrorMessage(error, "Lo sentimos, no pudimos completar la operación. Intente nuevamente."));
     },
   });
 
@@ -148,7 +133,7 @@ export default function UsuariosHome() {
     onError: (error) => {
       setEditErrors((prev) => ({
         ...prev,
-        general: getErrorMessage(error),
+        general: getErrorMessage(error, "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."),
       }));
     },
   });
@@ -341,7 +326,7 @@ export default function UsuariosHome() {
           </div>
         ) : error ? (
           <div className="p-8 text-center text-rose-600">
-            {getErrorMessage(error)}
+            {getErrorMessage(error, "Lo sentimos, no pudimos recuperar la información. Intente nuevamente.")}
           </div>
         ) : !usuarios || usuarios.length === 0 ? (
           <div className="p-12 text-center">
