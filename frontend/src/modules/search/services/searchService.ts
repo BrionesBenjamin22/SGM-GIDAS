@@ -7,6 +7,7 @@ import { http } from "@/lib/http";
 
 export type Orden = "alf_asc" | "alf_desc" | "fecha_asc" | "fecha_desc";
 export type EstadoBusqueda = "activos" | "eliminados" | "all";
+export const SEARCH_MAX_QUERY_LENGTH = 80;
 
 /** Cada resultado que devuelve la API */
 export type BackendResult = {
@@ -89,12 +90,44 @@ const URL_MAP: [RegExp, string][] = [
 ];
 
 export function resolveFrontendUrl(backendUrl: string): string {
+  if (!backendUrl.startsWith("/") || backendUrl.startsWith("//")) {
+    return "/search";
+  }
+
   for (const [re, replacement] of URL_MAP) {
     if (re.test(backendUrl)) {
       return backendUrl.replace(re, replacement);
     }
   }
   return backendUrl;
+}
+
+function isBackendResult(value: unknown): value is BackendResult {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Partial<BackendResult>;
+  return (
+    typeof item.id === "number" &&
+    Number.isFinite(item.id) &&
+    typeof item.tipo === "string" &&
+    typeof item.titulo === "string" &&
+    typeof item.url === "string" &&
+    (item.extra === undefined ||
+      (item.extra !== null && typeof item.extra === "object" && !Array.isArray(item.extra)))
+  );
+}
+
+function normalizeMeta(meta: SearchMeta | undefined, requestedPage: number): SearchMeta {
+  const page = Number.isInteger(meta?.page) && (meta?.page ?? 0) > 0
+    ? meta!.page
+    : requestedPage;
+  const total = Number.isInteger(meta?.total) && (meta?.total ?? -1) >= 0
+    ? meta!.total
+    : 0;
+  const totalPages = Number.isInteger(meta?.total_pages) && (meta?.total_pages ?? 0) > 0
+    ? meta!.total_pages
+    : 1;
+
+  return { page, per_page: 9, total, total_pages: totalPages };
 }
 
 function mapEstadoToQueryValue(estado: EstadoBusqueda): string | null {
@@ -113,12 +146,21 @@ export async function searchAll(
   page = 1,
   signal?: AbortSignal,
 ): Promise<SearchPageResult> {
-  if (q.trim().length < 2) {
+  const query = q.trim();
+  if (query.length < 2) {
     return { results: [], meta: { page: 1, per_page: 9, total: 0, total_pages: 1 } };
   }
 
+  if (query.length > SEARCH_MAX_QUERY_LENGTH) {
+    throw new Error("El texto de busqueda es demasiado largo.");
+  }
+
+  if (!Number.isInteger(page) || page < 1) {
+    throw new Error("La pagina debe ser un entero mayor a cero.");
+  }
+
   const params = new URLSearchParams({
-    q: q.trim(),
+    q: query,
     orden,
     page: String(page),
     per_page: "9",
@@ -131,21 +173,21 @@ export async function searchAll(
 
   const data = await http<SearchResponse>(`/search/?${params.toString()}`, { signal });
 
-  if (!data?.resultados) {
+  if (!Array.isArray(data?.resultados)) {
     return { results: [], meta: { page, per_page: 9, total: 0, total_pages: 1 } };
   }
 
   return {
-    results: data.resultados.map((r) => ({
-    id: r.id,
-    tipo: r.tipo,
-    titulo: r.titulo,
-    subtitulo: r.subtitulo ?? "",
-    fecha: r.fecha ? String(r.fecha) : null,
-    href: resolveFrontendUrl(r.url),
-    extra: r.extra,
-    activo: typeof r.activo === "boolean" ? r.activo : null,
+    results: data.resultados.filter(isBackendResult).map((r) => ({
+      id: r.id,
+      tipo: r.tipo,
+      titulo: r.titulo,
+      subtitulo: r.subtitulo ?? "",
+      fecha: r.fecha ? String(r.fecha) : null,
+      href: resolveFrontendUrl(r.url),
+      extra: r.extra,
+      activo: typeof r.activo === "boolean" ? r.activo : null,
     })),
-    meta: data.meta,
+    meta: normalizeMeta(data.meta, page),
   };
 }

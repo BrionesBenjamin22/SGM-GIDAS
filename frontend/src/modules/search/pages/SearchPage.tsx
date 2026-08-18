@@ -7,7 +7,12 @@ import { useState, useMemo } from "react";
 import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
-import { resolveFrontendUrl, type SearchResult } from "@/modules/search/services/searchService";
+import {
+  resolveFrontendUrl,
+  SEARCH_MAX_QUERY_LENGTH,
+  type Orden,
+  type SearchResult,
+} from "@/modules/search/services/searchService";
 
 // Configuración de colores e iconos por tipo de entidad
 const TYPE_CONFIG: Record<string, { color: string; bgColor: string; icon: React.ElementType }> = {
@@ -39,10 +44,44 @@ const getTypeConfig = (tipo: string) => {
   return TYPE_CONFIG[tipo] || { color: "text-slate-700", bgColor: "bg-slate-100", icon: FileText };
 };
 
-const getExtraArray = (extra: Record<string, unknown>, key: string): any[] => {
-  const value = extra[key];
-  return Array.isArray(value) ? value : [];
+type ExtraItem = {
+  id?: number;
+  url?: string;
+  nombre?: string;
+  titulo?: string;
+  nombre_apellido?: string;
+  articulo?: string;
+  descripcion?: string;
+  evento?: string;
 };
+
+const getExtraArray = (extra: Record<string, unknown>, key: string): ExtraItem[] => {
+  const value = extra[key];
+  return Array.isArray(value)
+    ? value.filter(
+        (item): item is ExtraItem => Boolean(item) && typeof item === "object"
+      )
+    : [];
+};
+
+const getExtraItemName = (item: ExtraItem): string | null => {
+  const value =
+    item.nombre_apellido ??
+    item.nombre ??
+    item.titulo ??
+    item.articulo ??
+    item.descripcion ??
+    item.evento;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+};
+
+const getExtraNames = (extra: Record<string, unknown>, key: string): string[] =>
+  getExtraArray(extra, key)
+    .map(getExtraItemName)
+    .filter((value): value is string => value !== null);
+
+const isOrder = (value: string): value is Orden =>
+  ["alf_asc", "alf_desc", "fecha_asc", "fecha_desc"].includes(value);
 
 const getExtraString = (extra: Record<string, unknown>, key: string): string | null => {
   const value = extra[key];
@@ -98,8 +137,7 @@ export default function SearchPage() {
   };
 
   const handleOrdenChange = (newOrden: string) => {
-    const val = newOrden as any;
-    setOrden(val);
+    if (isOrder(newOrden)) setOrden(newOrden);
   };
 
   // Función para extraer items relacionados con URLs del campo extra
@@ -127,9 +165,9 @@ export default function SearchPage() {
     possibleArrays.forEach(({ key, tipo }) => {
       const arr = extra[key as keyof typeof extra];
       if (Array.isArray(arr)) {
-        arr.forEach((item: any) => {
-          if (item && typeof item === "object" && item.id && item.url) {
-            const nombre = item.nombre || item.titulo || item.nombre_apellido || item.articulo || item.descripcion || item.evento || "Item";
+        getExtraArray(extra, key).forEach((item) => {
+          if (typeof item.id === "number" && typeof item.url === "string") {
+            const nombre = getExtraItemName(item) ?? "Item";
             items.push({
               id: item.id,
               nombre: String(nombre).substring(0, 35),
@@ -159,63 +197,63 @@ export default function SearchPage() {
 
     switch (result.tipo) {
       case "Proyecto de Investigación":
-        const invProy = getExtraArray(extra, "investigadores").map((i: any) => i.nombre_apellido || i.nombre);
-        const becProy = getExtraArray(extra, "becarios").map((b: any) => b.nombre_apellido || b.nombre);
+        const invProy = getExtraNames(extra, "investigadores");
+        const becProy = getExtraNames(extra, "becarios");
         items = [...invProy, ...becProy];
         break;
 
       case "Trabajo en Reunión Científica":
       case "Trabajo en Revista con Referato":
-        items = getExtraArray(extra, "investigadores").map((i: any) => i.nombre_apellido || i.nombre);
+        items = getExtraNames(extra, "investigadores");
         break;
 
       case "Investigador":
-        items = getExtraArray(extra, "proyectos").map((p: any) => p.nombre || p.titulo);
+        items = getExtraNames(extra, "proyectos");
         label = "Proyectos";
         break;
 
       case "Becario":
-        items = getExtraArray(extra, "proyectos").map((p: any) => p.nombre || p.titulo);
+        items = getExtraNames(extra, "proyectos");
         label = "Proyectos";
         break;
 
       case "Autor":
-        items = getExtraArray(extra, "documentos").map((d: any) => d.titulo || d.nombre);
+        items = getExtraNames(extra, "documentos");
         label = "Documentos";
         break;
 
       case "Documentación":
-        items = getExtraArray(extra, "autores").map((a: any) => a.nombre_apellido || a.nombre);
+        items = getExtraNames(extra, "autores");
         label = "Autores";
         break;
 
       case "Tipo de Proyecto":
-        items = getExtraArray(extra, "proyectos").map((p: any) => p.nombre || p.titulo);
+        items = getExtraNames(extra, "proyectos");
         label = "Proyectos";
         break;
 
       case "Fuente de Financiamiento":
-        items = getExtraArray(extra, "proyectos").map((p: any) => p.nombre || p.titulo);
+        items = getExtraNames(extra, "proyectos");
         label = "Proyectos";
         break;
 
       case "Tipo de Erogación":
-        items = getExtraArray(extra, "erogaciones_recientes").map((e: any) => e.descripcion || e.nombre);
+        items = getExtraNames(extra, "erogaciones_recientes");
         label = "Erogaciones";
         break;
 
       case "Tipo de Contrato":
-        items = getExtraArray(extra, "transferencias").map((t: any) => t.descripcion || t.nombre);
+        items = getExtraNames(extra, "transferencias");
         label = "Transferencias";
         break;
 
       case "Tipo Personal":
-        items = getExtraArray(extra, "personal").map((p: any) => p.nombre_apellido || p.nombre);
+        items = getExtraNames(extra, "personal");
         label = "Personal";
         break;
 
       case "Tipo Registro Propiedad":
-        items = getExtraArray(extra, "registros").map((r: any) => r.articulo || r.nombre);
+        items = getExtraNames(extra, "registros");
         label = "Registros";
         break;
 
@@ -344,6 +382,7 @@ export default function SearchPage() {
               className="input !pl-11 pr-10 w-full"
               placeholder="Buscar personas, proyectos, documentos..."
               value={q}
+              maxLength={SEARCH_MAX_QUERY_LENGTH}
               onChange={(e) => setQ(e.target.value)}
               autoFocus
             />
@@ -591,16 +630,26 @@ export default function SearchPage() {
                               {(() => {
                                 // Caso especial: Becario/Investigador con proyectos - mostrar como chips clickeables
                                 if ((item.origin.tipo === "Becario" || item.origin.tipo === "Investigador") && item.origin.extra?.proyectos) {
-                                  const proyectos = item.origin.extra.proyectos;
-                                  if (!Array.isArray(proyectos) || proyectos.length === 0) return null;
+                                  const proyectos = getExtraArray(
+                                    item.origin.extra,
+                                    "proyectos"
+                                  ).filter(
+                                    (proyecto) =>
+                                      typeof proyecto.id === "number" &&
+                                      getExtraItemName(proyecto) !== null
+                                  );
+                                  if (proyectos.length === 0) return null;
 
                                   return (
                                     <div className="mt-2">
                                       <div className="flex items-center gap-1.5 flex-wrap">
                                         <span className="text-xs text-slate-500 font-medium">Proyectos:</span>
-                                        {proyectos.map((proy: any) => {
+                                        {proyectos.map((proy) => {
                                           // Construir URL del proyecto si no viene del backend
-                                          const proyectoUrl = proy.url || `/proyectos/${proy.id}`;
+                                          const proyectoUrl =
+                                            typeof proy.url === "string"
+                                              ? proy.url
+                                              : `/proyectos/${proy.id}`;
                                           return (
                                             <button
                                               key={proy.id}
@@ -610,7 +659,7 @@ export default function SearchPage() {
                                               }}
                                               className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-full hover:bg-green-100 transition-colors"
                                             >
-                                              {proy.nombre || proy.titulo}
+                                              {getExtraItemName(proy)}
                                             </button>
                                           );
                                         })}
