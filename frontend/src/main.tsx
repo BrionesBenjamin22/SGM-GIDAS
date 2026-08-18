@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import { StrictMode, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 
 
@@ -81,6 +81,10 @@ import UsuariosForm from "@/modules/auth/pages/UsuariosForm";
 import CatalogosHome from "@/modules/catalogos/pages/CatalogosHome";
 import MiPerfil from "@/modules/auth/pages/MiPerfil";
 
+function editorOnly(element: ReactElement) {
+  return <ProtectedRoute allowedRoles={["ADMIN", "GESTOR"]}>{element}</ProtectedRoute>;
+}
+
 // Definición de rutas
 const router = createBrowserRouter([
   { path: "/", element: <Landing /> },
@@ -101,15 +105,15 @@ const router = createBrowserRouter([
       { path: "busqueda", element: <SearchPage /> },
 
       // UCT
-      { path: "uct/nueva", element: <UctForm /> },
+      { path: "uct/nueva", element: editorOnly(<UctForm />) },
 
       // Personal
       { path: "personal", element: <PersonalLanding /> },   // landing  
-      { path: "personal/nuevo", element: <PersonalForm /> },    // formulario
+      { path: "personal/nuevo", element: editorOnly(<PersonalForm />) },    // formulario
       { path: "personal/:rol/:id", element: <PersonalDetalle /> }, // detalle de personal
-      { path: "personal/:rol/:id/editar", element: <PersonalForm /> }, // editar personal
-      { path: "becarios/:id/editar", element: <PersonalForm /> }, // editar becario
-      { path: "investigadores/:id/editar", element: <PersonalForm /> }, // editar investigador
+      { path: "personal/:rol/:id/editar", element: editorOnly(<PersonalForm />) }, // editar personal
+      { path: "becarios/:id/editar", element: editorOnly(<PersonalForm />) }, // editar becario
+      { path: "investigadores/:id/editar", element: editorOnly(<PersonalForm />) }, // editar investigador
       { path: "becarios/:id", element: <PersonalDetalle /> }, // detalle de becario
       { path: "investigadores/:id", element: <PersonalDetalle /> }, // detalle de investigador
       { path: "ptaa/:id", element: <PersonalDetalle /> }, // detalle de PTAA
@@ -135,90 +139,90 @@ const router = createBrowserRouter([
 
       // Proyectos
       { path: "proyectos", element: <ProyectosLanding /> },
-      { path: "proyectos/nuevo", element: <ProyectosForm /> },
+      { path: "proyectos/nuevo", element: editorOnly(<ProyectosForm />) },
       { path: "proyectos/:id", element: <ProyectosDetalle /> },
-      { path: "proyectos/editar/:id", element: <ProyectosForm /> },
+      { path: "proyectos/editar/:id", element: editorOnly(<ProyectosForm />) },
       // Docencia
       { path: "docenciaInvestigador", element: <DocenciaLanding /> },
-      { path: "docenciaInvestigador/nuevo", element: <DocenciaForm /> },
+      { path: "docenciaInvestigador/nuevo", element: editorOnly(<DocenciaForm />) },
       { path: "docenciaInvestigador/:id", element: <DocenciaDetalle /> },
-      { path: "docenciaInvestigador/:id/editar", element: <DocenciaForm /> },
+      { path: "docenciaInvestigador/:id/editar", element: editorOnly(<DocenciaForm />) },
 
       // Trabajos en reuniones científicas
       { path: "trabajosCientInv", element: <TrabajosReunionHome /> },
-      { path: "trabajosCientInv/nuevo", element: <TrabajosReunionForm /> },
+      { path: "trabajosCientInv/nuevo", element: editorOnly(<TrabajosReunionForm />) },
 
       //Actividades I+D+I
       //Registros de propiedad  e industrial
       { path: "registros-propiedad", element: <RegistrosPropiedadHome /> },
-      { path: "registros-propiedad/nuevo", element: <RegistrosPropiedadForm /> },
+      { path: "registros-propiedad/nuevo", element: editorOnly(<RegistrosPropiedadForm />) },
       { path: "registros-propiedad/:id", element: <RegistrosPropiedadDetalle /> },
-      { path: "registros-propiedad/:id/editar", element: <RegistrosPropiedadForm /> },
+      { path: "registros-propiedad/:id/editar", element: editorOnly(<RegistrosPropiedadForm />) },
 
 
       //Trabajos en reuniones científicas
       { path: "trabajos-reunion", element: <TrabajosReunionHome /> },
-      { path: "trabajos-reunion/nuevo", element: <TrabajosReunionForm /> },
+      { path: "trabajos-reunion/nuevo", element: editorOnly(<TrabajosReunionForm />) },
       { path: "trabajos-reunion/:id", element: <TrabajosReunionDetalle /> },
-      { path: "trabajos-reunion/:id/editar", element: <TrabajosReunionForm /> },
+      { path: "trabajos-reunion/:id/editar", element: editorOnly(<TrabajosReunionForm />) },
 
       //Trabajos en revistas
       { path: "trabajos-revistas", element: <TrabajosRevistasHome /> },
-      { path: "trabajos-revistas/nuevo", element: <TrabajosRevistasForm /> },
+      { path: "trabajos-revistas/nuevo", element: editorOnly(<TrabajosRevistasForm />) },
       { path: "trabajos-revistas/:id", element: <TrabajosRevistasDetalle /> },
-      { path: "trabajos-revistas/:id/editar", element: <TrabajosRevistasForm /> },
+      { path: "trabajos-revistas/:id/editar", element: editorOnly(<TrabajosRevistasForm />) },
 
       //Artículos de divulgación
       { path: "articulos-divulgacion", element: <ArticulosDivulgacionLanding /> },
-      { path: "articulos-divulgacion/nuevo", element: <ArticulosDivulgacionForm /> },
+      { path: "articulos-divulgacion/nuevo", element: editorOnly(<ArticulosDivulgacionForm />) },
       { path: "articulos-divulgacion/:id", element: <ArticulosDivulgacionDetalle /> },
-      { path: "articulos-divulgacion/:id/editar", element: <ArticulosDivulgacionForm /> },
+      { path: "articulos-divulgacion/:id/editar", element: editorOnly(<ArticulosDivulgacionForm />) },
 
 
 
 
       // Erogaciones / Compras
       { path: "erogaciones", element: <ErogacionesLanding /> },
-      { path: "erogaciones/nuevo", element: <ErogacionesForm /> },
+      { path: "erogaciones/nuevo", element: editorOnly(<ErogacionesForm />) },
       { path: "erogaciones/:id", element: <ErogacionesDetalle /> },
-      { path: "erogaciones/:id/editar", element: <ErogacionesForm /> },
+      { path: "erogaciones/:id/editar", element: editorOnly(<ErogacionesForm />) },
 
       // Equipamiento
       { path: "equipamiento", element: <EquipamientoLanding /> },
-      { path: "equipamiento/nuevo", element: <EquipamientoForm /> },
+      { path: "equipamiento/nuevo", element: editorOnly(<EquipamientoForm />) },
       { path: "equipamiento/:id", element: <EquipamientoDetalle /> },
-      { path: "equipamiento/:id/editar", element: <EquipamientoForm /> },
+      { path: "equipamiento/:id/editar", element: editorOnly(<EquipamientoForm />) },
 
       // Objetos y financiamiento
       { path: "objetosfinanciamiento", element: <ObjetosLanding /> },
 
       // Documentación
       { path: "documentacion", element: <DocumentacionLanding /> },
-      { path: "documentacion/nuevo", element: <DocumentacionForm /> },
+      { path: "documentacion/nuevo", element: editorOnly(<DocumentacionForm />) },
       { path: "documentacion/:id", element: <DocumentacionDetalle /> },
-      { path: "documentacion/:id/editar", element: <DocumentacionForm /> },
+      { path: "documentacion/:id/editar", element: editorOnly(<DocumentacionForm />) },
 
       // Transferencias (Vinculación Socio-Productiva)
       { path: "transferencias", element: <TransferenciasHome /> },
-      { path: "transferencias/nuevo", element: <TransferenciasForm /> },
+      { path: "transferencias/nuevo", element: editorOnly(<TransferenciasForm />) },
       { path: "transferencias/:id", element: <TransferenciasDetalle /> },
-      { path: "transferencias/:id/editar", element: <TransferenciasForm /> },
+      { path: "transferencias/:id/editar", element: editorOnly(<TransferenciasForm />) },
 
       // Actividades I+D+i
       { path: "distinciones", element: <DistincionesHome /> },
-      { path: "distinciones/nuevo", element: <DistincionesForm /> },
+      { path: "distinciones/nuevo", element: editorOnly(<DistincionesForm />) },
       { path: "distinciones/:id", element: <DistincionesDetalle /> },
-      { path: "distinciones/:id/editar", element: <DistincionesForm /> },
+      { path: "distinciones/:id/editar", element: editorOnly(<DistincionesForm />) },
 
       { path: "participaciones", element: <ParticipacionesHome /> },
-      { path: "participaciones/nuevo", element: <ParticipacionesForm /> },
+      { path: "participaciones/nuevo", element: editorOnly(<ParticipacionesForm />) },
       { path: "participaciones/:id", element: <ParticipacionesDetalle /> },
-      { path: "participaciones/:id/editar", element: <ParticipacionesForm /> },
+      { path: "participaciones/:id/editar", element: editorOnly(<ParticipacionesForm />) },
 
       { path: "visitantes", element: <VisitantesHome /> },
-      { path: "visitantes/nuevo", element: <VisitantesForm /> },
+      { path: "visitantes/nuevo", element: editorOnly(<VisitantesForm />) },
       { path: "visitantes/:id", element: <VisitantesDetalle /> },
-      { path: "visitantes/:id/editar", element: <VisitantesForm /> },
+      { path: "visitantes/:id/editar", element: editorOnly(<VisitantesForm />) },
 
       // Memorias
       { path: "memorias", element: <MemoriasHome /> },
