@@ -9,6 +9,7 @@ import SuccessToast from "@/components/SuccessToast";
 import { useAuth } from "@/context/AuthContext";
 import DirectivosHistoryPopover from "@/modules/grupo/components/DirectivosHistoryPopover";
 import { ArrowUp } from "lucide-react";
+import { getErrorMessage } from "@/lib/httpError";
 import {
   ResponsiveContainer,
   BarChart,
@@ -68,6 +69,8 @@ export default function Home() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     if (location.state?.successMessage) {
@@ -88,10 +91,9 @@ export default function Home() {
   if (isError) {
     return (
       <div className="grid place-items-center min-h-[60vh] text-center space-y-4">
-        <p className="text-slate-600">No se pudo contactar al servidor.</p>
-        <Button onClick={() => navigate("/uct/nueva")}>
-          Crear configuración
-        </Button>
+        <p className="text-slate-600">
+          Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente.
+        </p>
       </div>
     );
   }
@@ -237,7 +239,7 @@ export default function Home() {
 
               {dashboardError && (
                 <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-red-700 shadow-sm">
-                  No se pudieron cargar las métricas del dashboard.
+                  Lo sentimos, no pudimos recuperar las metricas. Intente nuevamente.
                 </div>
               )}
 
@@ -514,10 +516,21 @@ export default function Home() {
           items={uct ? [`${uct.nombreSigla} — ${uct.facultadRegional}`] : []}
           onCancel={() => setShowConfirm(false)}
           onConfirm={async () => {
-            await remove();
-            setShowConfirm(false);
-            setSuccessMessage("Eliminado con éxito!");
-            setShowSuccess(true);
+            try {
+              await remove();
+              setShowConfirm(false);
+              setSuccessMessage("Eliminado con éxito!");
+              setShowSuccess(true);
+            } catch (error) {
+              setShowConfirm(false);
+              setErrorMessage(
+                getErrorMessage(
+                  error,
+                  "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+                )
+              );
+              setShowError(true);
+            }
           }}
         />
 
@@ -525,6 +538,12 @@ export default function Home() {
           open={showSuccess}
           message={successMessage}
           onClose={() => setShowSuccess(false)}
+        />
+        <SuccessToast
+          open={showError}
+          message={errorMessage}
+          variant="error"
+          onClose={() => setShowError(false)}
         />
       </section>
 
@@ -613,7 +632,10 @@ function CustomTooltip({
   label,
 }: {
   active?: boolean;
-  payload?: any[];
+  payload?: ReadonlyArray<{
+    value?: string | number;
+    payload?: { label?: string };
+  }>;
   label?: string;
 }) {
   if (!active || !payload || payload.length === 0) return null;
