@@ -190,7 +190,9 @@ export async function exportarExcelMemoria(
   }
 }
 
-async function getSnapshot<T = any>(
+export type MemoriaSnapshotEntry = Record<string, unknown>;
+
+async function getSnapshot<T = MemoriaSnapshotEntry>(
   memoriaId: number,
   versionId: number,
   path: SnapshotPath
