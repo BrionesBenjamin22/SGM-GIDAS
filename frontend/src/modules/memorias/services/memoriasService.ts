@@ -84,7 +84,7 @@ export async function getMemorias(
 }
 
 export async function getMemoriaById(id: number): Promise<Memoria | null> {
-  return http<Memoria | null>(`/memorias/${id}`);
+  return http<Memoria | null>(`/memorias/${id}`, { allowNotFound: true });
 }
 
 export async function createMemoria(payload: MemoriaPayload): Promise<Memoria> {

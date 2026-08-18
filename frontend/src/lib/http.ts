@@ -1,3 +1,5 @@
+import { allowsNotFound, type HttpRequestInit } from "./httpPolicy";
+
 const RAW_BASE =
   import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL ?? "";
 
@@ -197,21 +199,25 @@ async function parseErrorResponse(res: Response): Promise<unknown> {
 
 export async function http<T>(
   path: string,
-  init: RequestInit = {},
+  init: HttpRequestInit = {},
   _isRetry = false
 ): Promise<T> {
   const url = `${BASE}${normalizeApiPath(path)}`;
 
-  const headers = buildHeaders(init);
+  const { allowNotFound, ...requestInit } = init;
+
+  const headers = buildHeaders(requestInit);
 
   const res = await fetch(url, {
-    ...init,
+    ...requestInit,
     headers,
-    credentials: init.credentials ?? "same-origin",
+    credentials: requestInit.credentials ?? "same-origin",
   });
 
   if (res.status === 204) return undefined as T;
-  if (res.status === 404) return null as T;
+  if (res.status === 404 && allowsNotFound({ ...requestInit, allowNotFound })) {
+    return null as T;
+  }
 
   if (res.status === 401 && !_isRetry) {
     const refreshed = await refreshSession();

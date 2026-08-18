@@ -179,7 +179,9 @@ export async function getTransferenciaById(
     return null;
   }
 
-  const raw = await http<TransferenciaBackend | null>(`/transferencias/${id}`);
+  const raw = await http<TransferenciaBackend | null>(`/transferencias/${id}`, {
+    allowNotFound: true,
+  });
   return raw ? fromBackend(raw) : null;
 }
 
