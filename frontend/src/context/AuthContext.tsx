@@ -61,13 +61,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function initializeSession() {
       setLoading(true);
-      const stored = await restoreSession();
-
-      if (!active) return;
-
-      setUser(stored?.user ?? null);
-      setToken(stored?.token ?? null);
-      setLoading(false);
+      try {
+        const stored = await restoreSession();
+        if (!active) return;
+        setUser(stored?.user ?? null);
+        setToken(stored?.token ?? null);
+      } catch {
+        if (!active) return;
+        clearAccessToken();
+        setUser(null);
+        setToken(null);
+      } finally {
+        if (active) setLoading(false);
+      }
     }
 
     void initializeSession();
@@ -165,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function canReadRecords(): boolean {
-    return true;
+    return !!user;
   }
 
   function canEditOwnProfile(): boolean {

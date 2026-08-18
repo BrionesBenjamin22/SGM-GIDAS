@@ -4,20 +4,15 @@ import { User, KeyRound, Pencil, Save, X } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { actualizarUsuario } from "@/modules/auth/services/usuariosService";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import Button from "@/components/Button";
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof HttpError) {
-    const body = error.body as any;
-    if (body?.error) return body.error;
-    if (body?.message) return body.message;
-    return error.message;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Error desconocido";
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isValidUsername(username: string): boolean {
+  return /^[a-zA-Z0-9._-]+$/.test(username);
 }
 
 function getRolLabel(rol?: string) {
@@ -48,10 +43,12 @@ export default function MiPerfil() {
     mutationFn: async () => {
       if (!user) throw new Error("No hay usuario autenticado");
 
-      return actualizarUsuario(user.id, {
-        nombre_usuario: nombreUsuario.trim(),
-        mail: email.trim(),
-      });
+      const changes: { nombre_usuario?: string; mail?: string } = {};
+      const normalizedName = nombreUsuario.trim();
+      const normalizedEmail = email.trim();
+      if (normalizedName !== user.nombre_usuario) changes.nombre_usuario = normalizedName;
+      if (normalizedEmail !== user.mail) changes.mail = normalizedEmail;
+      return actualizarUsuario(user.id, changes);
     },
     onSuccess: (updatedUser) => {
       updateUserInSession({
@@ -66,7 +63,7 @@ export default function MiPerfil() {
       setTimeout(() => setGuardado(false), 2000);
     },
     onError: (err) => {
-      setError(getErrorMessage(err));
+      setError(getErrorMessage(err, "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."));
     },
   });
 
@@ -81,13 +78,38 @@ export default function MiPerfil() {
   function guardarCambios() {
     setError(null);
 
-    if (!nombreUsuario.trim()) {
+    if (!user) {
+      setError("La sesión ya no está disponible. Inicie sesión nuevamente.");
+      return;
+    }
+
+    const normalizedName = nombreUsuario.trim();
+    const normalizedEmail = email.trim();
+
+    if (!normalizedName) {
       setError("El nombre de usuario es obligatorio");
       return;
     }
 
-    if (!email.trim()) {
+    if (normalizedName.length < 3 || !isValidUsername(normalizedName)) {
+      setError("El nombre debe tener al menos 3 caracteres y usar solo letras, números, puntos o guiones.");
+      return;
+    }
+
+    if (!normalizedEmail) {
       setError("El email es obligatorio");
+      return;
+    }
+
+    if (!isValidEmail(normalizedEmail)) {
+      setError("Ingrese un email válido.");
+      return;
+    }
+
+    if (normalizedName === user.nombre_usuario && normalizedEmail === user.mail) {
+      setEditando(false);
+      setGuardado(true);
+      setTimeout(() => setGuardado(false), 2000);
       return;
     }
 

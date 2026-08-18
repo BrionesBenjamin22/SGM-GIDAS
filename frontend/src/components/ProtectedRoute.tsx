@@ -17,7 +17,15 @@ export default function ProtectedRoute({
   const { user, loading, isAdmin, debeCambiarPassword } = useAuth();
   const location = useLocation();
 
-  if (loading || !user) {
+  if (loading) {
+    return (
+      <div className="min-h-screen grid place-items-center" role="status" aria-live="polite">
+        <p className="text-sm text-slate-600">Verificando sesión...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 

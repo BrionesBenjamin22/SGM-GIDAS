@@ -6,6 +6,7 @@ import {
   setAccessToken,
   withAuthCookieLock,
 } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 
 export type Rol = "ADMIN" | "GESTOR" | "LECTURA";
 
@@ -37,30 +38,6 @@ const CONNECTION_ERROR_MESSAGE =
   "Lo sentimos, no pudimos conectar con el servidor. Intente nuevamente en unos minutos.";
 const CHANGE_PASSWORD_ERROR_MESSAGE =
   "Lo sentimos, no pudimos cambiar la contraseña. Verifique los datos e intente nuevamente.";
-
-function getBackendErrorMessage(error: HttpError): string | null {
-  const body = error.body;
-
-  if (typeof body === "string") {
-    return body.trim() || null;
-  }
-
-  if (body && typeof body === "object") {
-    const parsedBody = body as Record<string, unknown>;
-    const errorMessage = parsedBody.error;
-    const message = parsedBody.message;
-
-    if (typeof errorMessage === "string" && errorMessage.trim()) {
-      return errorMessage;
-    }
-
-    if (typeof message === "string" && message.trim()) {
-      return message;
-    }
-  }
-
-  return null;
-}
 
 export async function restoreSession(): Promise<AuthResponse | null> {
   removeLegacyAuthStorage();
@@ -123,14 +100,10 @@ export async function register(
 }
 
 export async function esPrimerUsuario(): Promise<boolean> {
-  try {
-    const response = await http<{ existe: boolean }>("/auth/primer-usuario", {
-      method: "GET",
-    });
-    return !response.existe;
-  } catch {
-    return false;
-  }
+  const response = await http<{ existe: boolean }>("/auth/primer-usuario", {
+    method: "GET",
+  });
+  return !response.existe;
 }
 
 type CambiarPasswordParams = {
@@ -158,8 +131,7 @@ export async function cambiarPassword({
     });
   } catch (error) {
     if (error instanceof HttpError) {
-      const backendMessage = getBackendErrorMessage(error);
-      throw new Error(backendMessage ?? CHANGE_PASSWORD_ERROR_MESSAGE);
+      throw new Error(getErrorMessage(error, CHANGE_PASSWORD_ERROR_MESSAGE));
     }
 
     throw new Error(CONNECTION_ERROR_MESSAGE);
