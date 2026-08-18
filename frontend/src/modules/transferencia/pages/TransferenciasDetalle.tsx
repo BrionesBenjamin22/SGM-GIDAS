@@ -40,7 +40,11 @@ export default function TransferenciasDetalle() {
     refetchOnMount: "always",
   });
 
-  const { data: historialCambios = [], isLoading: isLoadingHistorial } = useQuery({
+  const {
+    data: historialCambios = [],
+    isLoading: isLoadingHistorial,
+    isError: isHistorialError,
+  } = useQuery({
     queryKey: ["transferencia-historial", id],
     queryFn: () => getHistorialTransferenciaById(Number(id)),
     enabled: !!id,
@@ -71,7 +75,15 @@ export default function TransferenciasDetalle() {
     return <p className="text-slate-500">Cargando...</p>;
   }
 
-  if (isError || !data) {
+  if (isError) {
+    return (
+      <p className="text-slate-500">
+        Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente.
+      </p>
+    );
+  }
+
+  if (!data) {
     return <p className="text-slate-500">No se encontro la transferencia.</p>;
   }
 
@@ -267,6 +279,12 @@ export default function TransferenciasDetalle() {
             return String(value);
           }}
         />
+
+        {isHistorialError && (
+          <p className="text-sm text-red-600" role="alert">
+            Lo sentimos, no pudimos recuperar el historial. Intente nuevamente.
+          </p>
+        )}
 
         <div className="flex justify-start pt-4">
           <Button

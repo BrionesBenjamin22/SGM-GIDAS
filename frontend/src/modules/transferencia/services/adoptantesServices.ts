@@ -122,14 +122,12 @@ export async function updateAdoptante(
     });
 }
 
-/** Eliminar un adoptante (solo mock — backend no tiene DELETE). */
+/** Eliminar logicamente un adoptante. */
 export async function deleteAdoptante(id: number): Promise<void> {
     if (useMock()) {
         await delay();
         writeMock(readMock().filter((a) => a.id !== id));
         return;
     }
-    throw new Error(
-        "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
-    );
+    await http(`/adoptantes/${id}`, { method: "DELETE" });
 }

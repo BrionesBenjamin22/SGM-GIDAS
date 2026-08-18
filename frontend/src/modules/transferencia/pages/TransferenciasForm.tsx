@@ -6,7 +6,7 @@ import DatePicker from "@/components/Calendar";
 import Field from "@/components/Field";
 import AdoptanteSelector from "@/components/AdoptanteSelector";
 import SuccessToast from "@/components/SuccessToast";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import {
   createTransferencia,
   getTransferenciaById,
@@ -26,7 +26,7 @@ export default function TransferenciasForm() {
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
 
-  const { tipos } = useTiposContrato();
+  const { tipos, isError: isTiposError } = useTiposContrato();
 
   const [data, setData] = useState({
     numeroTransferencia: "",
@@ -43,7 +43,11 @@ export default function TransferenciasForm() {
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const { data: transferencia, isLoading } = useQuery<Transferencia | null>({
+  const {
+    data: transferencia,
+    isLoading,
+    isError: isTransferenciaError,
+  } = useQuery<Transferencia | null>({
     queryKey: ["transferencias", id],
     queryFn: () => getTransferenciaById(Number(id)),
     enabled: isEdit,
@@ -76,7 +80,8 @@ export default function TransferenciasForm() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!data.numeroTransferencia || Number(data.numeroTransferencia) <= 0) {
+    const numeroTransferencia = Number(data.numeroTransferencia);
+    if (!Number.isInteger(numeroTransferencia) || numeroTransferencia <= 0) {
       newErrors.numeroTransferencia = "Debe ingresar un numero positivo";
     }
 
@@ -93,7 +98,8 @@ export default function TransferenciasForm() {
         "La descripcion debe tener al menos 10 caracteres";
     }
 
-    if (!data.monto || Number(data.monto) <= 0) {
+    const monto = Number(data.monto);
+    if (!Number.isFinite(monto) || monto <= 0) {
       newErrors.monto = "El monto debe ser mayor a 0";
     }
 
@@ -202,7 +208,7 @@ export default function TransferenciasForm() {
         queryKey: ["transferencia-historial", transferenciaId],
       });
 
-      navigate(`/transferencias/${transferenciaId}`, {
+      navigate(isEdit ? `/transferencias/${transferenciaId}` : "/transferencias", {
         replace: true,
         state: {
           successMessage: isEdit
@@ -212,30 +218,26 @@ export default function TransferenciasForm() {
       });
     },
     onError: (error) => {
-      const defaultMessage = isEdit
-        ? "No se pudo actualizar la transferencia."
-        : "No se pudo crear la transferencia.";
-
-      let backendMessage = defaultMessage;
-
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | { message?: string; error?: string; detalle?: string }
-          | undefined;
-
-        backendMessage =
-          body?.error || body?.message || body?.detalle || defaultMessage;
-      } else if (error instanceof Error) {
-        backendMessage = error.message || defaultMessage;
-      }
-
-      setErrorMessage(backendMessage);
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+        )
+      );
       setShowError(true);
     },
   });
 
   if (isEdit && isLoading) {
     return <p className="text-slate-500">Cargando transferencia...</p>;
+  }
+
+  if (isTiposError || isTransferenciaError) {
+    return (
+      <p className="text-slate-500">
+        Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente.
+      </p>
+    );
   }
 
   const inputClass = (field: string) =>

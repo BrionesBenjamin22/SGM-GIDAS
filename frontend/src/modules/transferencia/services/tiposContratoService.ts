@@ -19,7 +19,7 @@ export const TIPOS_CONTRATO_STATIC = [
 
 // ─── Helpers ─────────────────────────────────────────────────
 
-/** Devuelve `true` cuando el frontend opera sin backend (modo mock). */
+/** Devuelve `true` solo con el mock habilitado explicitamente en desarrollo. */
 export function isMockMode(): boolean {
   return (
     import.meta.env.DEV &&
@@ -31,7 +31,6 @@ export function isMockMode(): boolean {
 
 /** Obtener los tipos de contrato del backend. */
 export async function getTiposContrato(): Promise<TipoContratoItem[]> {
-  /** Forzar modo mock (poner false cuando el backend esté listo). */
   if (isMockMode()) {
     return TIPOS_CONTRATO_STATIC.map((nombre, i) => ({
       id: i + 1,
