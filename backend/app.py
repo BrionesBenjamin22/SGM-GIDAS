@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, g
 from extension import db, migrate, limiter
 from flask_cors import CORS
 from config import get_config_class
@@ -56,6 +56,16 @@ def create_app():
             "RATE_LIMIT_EXCEEDED",
             message="Lo sentimos, recibimos demasiadas solicitudes. Intente nuevamente en unos minutos.",
             status_code=429,
+        )
+
+    @app.errorhandler(413)
+    def request_too_large_handler(_error):
+        request_id = getattr(g, "request_id", None)
+        details = {"request_id": request_id} if request_id else {}
+        return error_response(
+            "REQUEST_TOO_LARGE",
+            details=details,
+            status_code=413,
         )
 
     @app.after_request

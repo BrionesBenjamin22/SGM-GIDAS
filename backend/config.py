@@ -33,6 +33,7 @@ def _parse_int_env_range(
     default: int,
     min_value: int,
     max_value: int,
+    unit: str = "minutos",
 ) -> int:
     raw_value = os.getenv(name)
     if raw_value is None or raw_value.strip() == "":
@@ -45,7 +46,7 @@ def _parse_int_env_range(
 
     if value < min_value or value > max_value:
         raise RuntimeError(
-            f"{name} debe estar entre {min_value} y {max_value} minutos"
+            f"{name} debe estar entre {min_value} y {max_value} {unit}"
         )
 
     return value
@@ -92,6 +93,13 @@ class Config:
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
     FRONTEND_URLS = _parse_csv_env(os.getenv("FRONTEND_URLS")) or [FRONTEND_URL]
     CORS_ORIGINS = FRONTEND_URLS
+    MAX_CONTENT_LENGTH = _parse_int_env_range(
+        "MAX_CONTENT_LENGTH",
+        default=10 * 1024 * 1024,
+        min_value=1024,
+        max_value=20 * 1024 * 1024,
+        unit="bytes",
+    )
 
     MAIL_SERVER = os.getenv("MAIL_SERVER")
     MAIL_PORT = int(os.getenv("MAIL_PORT", 587))

@@ -25,6 +25,10 @@ DEFAULT_ERROR_MESSAGES = {
         "Lo sentimos, recibimos demasiadas solicitudes. "
         "Intente nuevamente en unos minutos."
     ),
+    "REQUEST_TOO_LARGE": (
+        "Lo sentimos, la solicitud supera el tamano permitido. "
+        "Reduzca el contenido e intente nuevamente."
+    ),
     "INTERNAL_ERROR": (
         "Lo sentimos, no pudimos completar la operacion. "
         "Intente nuevamente."
