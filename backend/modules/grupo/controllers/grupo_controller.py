@@ -35,7 +35,7 @@ class GrupoUtnController:
             grupo = obtener_grupo_utn()
 
             if not grupo:
-                return jsonify({"error": "No se ha configurado un grupo."}), 404
+                return error_response("NOT_FOUND", status_code=404)
 
             return jsonify(grupo.serialize()), 200
 

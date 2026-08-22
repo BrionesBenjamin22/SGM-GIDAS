@@ -47,6 +47,19 @@ class GrupoDomainErrorsTestCase(unittest.TestCase):
         self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
         self.assertNotIn(marker, str(body))
 
+    def test_grupo_no_configurado_usa_contrato_compartido(self):
+        with self._auth("LECTURA"), patch(
+            "modules.grupo.controllers.grupo_controller.obtener_grupo_utn",
+            return_value=None,
+        ):
+            response = self.client.get(
+                "/api/v1/grupo/grupo-utn/",
+                headers=self._headers(),
+            )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.get_json()["error"]["code"], "NOT_FOUND")
+
 
 if __name__ == "__main__":
     unittest.main()

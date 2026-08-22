@@ -1,4 +1,4 @@
-from flask import Flask, g
+from flask import Flask
 from extension import db, migrate, limiter
 from flask_cors import CORS
 from config import get_config_class
@@ -6,16 +6,17 @@ from modules import blueprints
 from modules import models_registry  # noqa: F401
 from werkzeug.middleware.proxy_fix import ProxyFix
 from modules.shared.controllers.pagination import register_legacy_list_pagination
-from modules.shared.controllers.responses import error_response
 from modules.shared.routes.versioning import (
     register_api_version_header,
     register_blueprints,
 )
+from modules.shared.services.error_handlers import register_error_handlers
 from modules.shared.services.logging_config import (
     configure_logging,
     get_logger,
     register_request_logging,
 )
+from modules.shared.services.request_security import register_request_body_security
 
 
 logger = get_logger(__name__)
@@ -30,6 +31,8 @@ def create_app():
         app.config["APP_VERSION"],
     )
     register_request_logging(app)
+    register_request_body_security(app)
+    register_error_handlers(app)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     CORS(
@@ -49,24 +52,6 @@ def create_app():
 
     register_blueprints(app, blueprints)
     register_api_version_header(app)
-
-    @app.errorhandler(429)
-    def ratelimit_handler(_error):
-        return error_response(
-            "RATE_LIMIT_EXCEEDED",
-            message="Lo sentimos, recibimos demasiadas solicitudes. Intente nuevamente en unos minutos.",
-            status_code=429,
-        )
-
-    @app.errorhandler(413)
-    def request_too_large_handler(_error):
-        request_id = getattr(g, "request_id", None)
-        details = {"request_id": request_id} if request_id else {}
-        return error_response(
-            "REQUEST_TOO_LARGE",
-            details=details,
-            status_code=413,
-        )
 
     @app.after_request
     def add_security_headers(response):

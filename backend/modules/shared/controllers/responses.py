@@ -29,6 +29,14 @@ DEFAULT_ERROR_MESSAGES = {
         "Lo sentimos, la solicitud supera el tamano permitido. "
         "Reduzca el contenido e intente nuevamente."
     ),
+    "UNSUPPORTED_MEDIA_TYPE": (
+        "Lo sentimos, el formato de la solicitud no es compatible. "
+        "Envie la informacion como JSON e intente nuevamente."
+    ),
+    "HTTP_ERROR": (
+        "Lo sentimos, no pudimos completar la solicitud. "
+        "Revise la informacion e intente nuevamente."
+    ),
     "INTERNAL_ERROR": (
         "Lo sentimos, no pudimos completar la operacion. "
         "Intente nuevamente."

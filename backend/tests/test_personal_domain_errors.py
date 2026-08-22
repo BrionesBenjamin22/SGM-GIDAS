@@ -130,6 +130,20 @@ class PersonalDomainErrorsTestCase(unittest.TestCase):
         self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
         self.assertNotIn(marker, str(body))
 
+    def test_personal_no_encontrado_usa_contrato_compartido(self):
+        with self._auth("LECTURA"), patch(
+            "modules.personal.controllers.personal_controller."
+            "obtener_personal_por_tipo",
+            return_value=None,
+        ):
+            response = self.client.get(
+                "/api/v1/personal/investigador/999",
+                headers=self._headers(),
+            )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.get_json()["error"]["code"], "NOT_FOUND")
+
 
 if __name__ == "__main__":
     unittest.main()

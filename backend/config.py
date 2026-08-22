@@ -100,6 +100,13 @@ class Config:
         max_value=20 * 1024 * 1024,
         unit="bytes",
     )
+    MAX_JSON_CONTENT_LENGTH = _parse_int_env_range(
+        "MAX_JSON_CONTENT_LENGTH",
+        default=1024 * 1024,
+        min_value=1024,
+        max_value=MAX_CONTENT_LENGTH,
+        unit="bytes",
+    )
 
     MAIL_SERVER = os.getenv("MAIL_SERVER")
     MAIL_PORT = int(os.getenv("MAIL_PORT", 587))

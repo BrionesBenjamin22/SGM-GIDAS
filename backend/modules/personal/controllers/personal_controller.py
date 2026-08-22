@@ -9,7 +9,7 @@ from modules.personal.services.personal_service import (
 from modules.personal.services.personal_completo_service import (
     obtener_personal_por_tipo
 )
-from modules.shared.controllers.responses import exception_response
+from modules.shared.controllers.responses import error_response, exception_response
 
 
 class PersonalController:
@@ -20,7 +20,7 @@ class PersonalController:
 
         try:
             if not hasattr(g, "current_user_id"):
-                return jsonify({"error": "Usuario no autenticado"}), 401
+                return error_response("AUTH_REQUIRED", status_code=401)
 
             user_id = g.current_user_id  
 
@@ -49,7 +49,7 @@ class PersonalController:
             personal = obtener_personal_por_tipo(rol, id)
 
             if not personal:
-                return jsonify({"error": "Personal no encontrado"}), 404
+                return error_response("NOT_FOUND", status_code=404)
 
             return jsonify(personal), 200
 
@@ -72,7 +72,7 @@ class PersonalController:
 
         try:
             if not hasattr(g, "current_user_id"):
-                return jsonify({"error": "Usuario no autenticado"}), 401
+                return error_response("AUTH_REQUIRED", status_code=401)
 
             user_id = g.current_user_id
             personal = actualizar_personal(id, data, rol, user_id)
@@ -87,7 +87,7 @@ class PersonalController:
     def eliminar(req, rol, id):
         try:
             if not hasattr(g, "current_user_id"):
-                return jsonify({"error": "Usuario no autenticado"}), 401
+                return error_response("AUTH_REQUIRED", status_code=401)
 
             user_id = g.current_user_id  
 

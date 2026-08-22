@@ -7,6 +7,7 @@ from flask import Flask
 
 from modules.shared.services.logging_config import (
     SensitiveDataFilter,
+    SafeTextFormatter,
     JsonFormatter,
     configure_logging,
     get_logger,
@@ -113,6 +114,20 @@ class LoggingConfigTestCase(unittest.TestCase):
         self.assertEqual(payload["exception_type"], "RuntimeError")
         self.assertNotIn("exception", payload)
         self.assertNotIn("secreto-operativo", json.dumps(payload))
+
+    def test_text_formatter_redacta_detalle_sensible_de_excepcion(self):
+        try:
+            raise RuntimeError("password=secreto-operativo")
+        except RuntimeError:
+            exc_info = sys.exc_info()
+
+        record = logging.LogRecord(
+            "test", logging.ERROR, __file__, 1, "fallo", (), exc_info
+        )
+        output = SafeTextFormatter("%(message)s").format(record)
+
+        self.assertIn("[REDACTED]", output)
+        self.assertNotIn("secreto-operativo", output)
 
     def test_request_id_se_propaga_o_se_genera(self):
         app = Flask(__name__)

@@ -6,8 +6,7 @@ import time
 import uuid
 from datetime import datetime, timezone
 
-from flask import g, has_request_context, jsonify, request
-from werkzeug.exceptions import HTTPException
+from flask import g, has_request_context, request
 
 
 TEXT_LOG_FORMAT = "%(asctime)s %(levelname)s [%(name)s] %(module)s.%(funcName)s:%(lineno)d - %(message)s"
@@ -39,6 +38,11 @@ class SensitiveDataFilter(logging.Filter):
             else:
                 record.args = tuple(redact(value) for value in record.args)
         return True
+
+
+class SafeTextFormatter(logging.Formatter):
+    def formatException(self, exc_info):
+        return redact_sensitive(super().formatException(exc_info))
 
 
 class JsonFormatter(logging.Formatter):
@@ -94,7 +98,7 @@ def configure_logging(app_env="local", log_level="INFO", log_format="text", serv
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(
         JsonFormatter(service, app_env, version)
-        if log_format == "json" else logging.Formatter(TEXT_LOG_FORMAT)
+        if log_format == "json" else SafeTextFormatter(TEXT_LOG_FORMAT)
     )
     handler.addFilter(SensitiveDataFilter())
     root_logger.addHandler(handler)
@@ -126,15 +130,5 @@ def register_request_logging(app):
             response.status_code, duration_ms,
         )
         return response
-
-    @app.errorhandler(Exception)
-    def _unhandled_exception(error):
-        if isinstance(error, HTTPException):
-            return error
-        logging.getLogger("gidas.error").exception("unhandled exception")
-        return jsonify({
-            "error": "Lo sentimos, no pudimos completar la operación. Intente nuevamente.",
-            "request_id": getattr(g, "request_id", None),
-        }), 500
 
     return app

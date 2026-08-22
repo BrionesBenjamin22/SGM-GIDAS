@@ -8,7 +8,7 @@ from modules.personal.services.investigador_service import (
     obtener_investigador_por_id,
     obtener_historial_investigador
 )
-from modules.shared.controllers.responses import exception_response
+from modules.shared.controllers.responses import error_response, exception_response
 
 
 class InvestigadorController:
@@ -22,7 +22,7 @@ class InvestigadorController:
             data = req.get_json()
 
             if not hasattr(g, "current_user_id"):
-                return jsonify({"error": "Usuario no autenticado"}), 401
+                return error_response("AUTH_REQUIRED", status_code=401)
 
             user_id = g.current_user_id
 
@@ -81,7 +81,7 @@ class InvestigadorController:
             data = req.get_json()
 
             if not hasattr(g, "current_user_id"):
-                return jsonify({"error": "Usuario no autenticado"}), 401
+                return error_response("AUTH_REQUIRED", status_code=401)
 
             user_id = g.current_user_id
 
@@ -100,7 +100,7 @@ class InvestigadorController:
     def eliminar(req: Request, id: int) -> Response:
         try:
             if not hasattr(g, "current_user_id"):
-                return jsonify({"error": "Usuario no autenticado"}), 401
+                return error_response("AUTH_REQUIRED", status_code=401)
 
             user_id = g.current_user_id
 
