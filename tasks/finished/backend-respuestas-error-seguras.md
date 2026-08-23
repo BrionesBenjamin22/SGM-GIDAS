@@ -66,3 +66,8 @@ autenticacion autorizado por el usuario.
 ```text
 fix(api): evitar exposicion de errores internos
 ```
+
+## Mejoras introducidas
+
+- Evita que excepciones internas lleguen al cliente.
+- Conserva feedback funcional seguro y codigos estables para el frontend.

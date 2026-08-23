@@ -225,3 +225,8 @@ Riesgo residual:
 
 - navegadores sin Web Locks dependen de la tolerancia del backend a renovaciones concurrentes
 - la validacion manual completa en navegador sobre HTTPS queda ligada a la tarea `infra-https-lan-nginx`
+
+## Mejoras introducidas
+
+- Retira el refresh token del alcance de JavaScript y del storage del navegador.
+- Reduce impacto de XSS y agrega protecciones de origen, cookie y coordinacion.

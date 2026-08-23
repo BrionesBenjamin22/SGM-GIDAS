@@ -110,3 +110,8 @@ refactor(grupo): tipar errores de dominio
 refactor(proyectos): tipar errores de dominio
 refactor(api): completar migracion de errores seguros
 ```
+
+## Mejoras introducidas
+
+- Distingue validacion, conflicto y ausencia mediante errores de dominio explicitos.
+- Reduce uso de excepciones genericas y traducciones inconsistentes en controllers.

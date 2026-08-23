@@ -504,6 +504,11 @@ refactor(search): fortalecer calidad y seguridad frontend
 docs(tasks): cerrar auditoria de calidad y seguridad frontend
 ```
 
+## Mejoras introducidas
+
+- Uniforma contratos, validaciones, permisos, historial y paginacion por modulo.
+- Reduce deuda transversal y deja sucesoras explicitas para riesgos no cerrados.
+
 # Cierre 2026-08-20
 
 - Auditoria transversal final sin `any` funcional, `HttpError` manual, HTML

@@ -61,3 +61,8 @@ en `auth`, zona restringida que no se modifico. Se registro una tarea separada.
 ```text
 fix(security): reforzar logs y rate limiting del gateway
 ```
+
+## Mejoras introducidas
+
+- Limita abuso y concurrencia antes de consumir recursos del backend.
+- Mantiene respuestas y logs seguros para diagnostico sin filtrar informacion.

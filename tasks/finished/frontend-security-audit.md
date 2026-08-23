@@ -70,3 +70,8 @@ related_files:
 ```text
 fix(frontend): reforzar manejo seguro de datos y errores
 ```
+
+## Mejoras introducidas
+
+- Elimina patrones inseguros de almacenamiento, renderizado y manejo de errores.
+- Deja evidencia reproducible de riesgos revisados y riesgos residuales.
