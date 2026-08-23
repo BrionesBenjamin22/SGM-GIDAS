@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 from extension import db, migrate, limiter
 from flask_cors import CORS
 from config import get_config_class
@@ -42,7 +42,8 @@ def create_app():
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"]
         }},
-        supports_credentials=True
+        supports_credentials=True,
+        always_send=False,
     )
 
     db.init_app(app)
@@ -62,10 +63,16 @@ def create_app():
             "Permissions-Policy",
             "geolocation=(), microphone=(), camera=()"
         )
-        if not app.config["DEBUG"]:
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; "
+            "form-action 'none'",
+        )
+        response.headers.setdefault("Cache-Control", "private, no-store")
+        if app.config["HSTS_ENABLED"] and request.is_secure:
             response.headers.setdefault(
                 "Strict-Transport-Security",
-                "max-age=31536000; includeSubDomains"
+                f"max-age={app.config['HSTS_MAX_AGE']}; includeSubDomains",
             )
         return response
 
