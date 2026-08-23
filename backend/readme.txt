@@ -145,11 +145,10 @@ Archivos de referencia versionables:
 
 Archivos reales esperados:
 - .env para desarrollo local y compose de desarrollo
-- .env.docker como compatibilidad o configuracion alternativa explicita
 - .env.testing para testing
 - .env.production para produccion
 
-El archivo .env.docker del backend ya no es el default. El compose de desarrollo toma backend/.env cuando no se informa otro archivo con BACKEND_ENV_FILE. No se usa un .env.docker en la raiz del proyecto.
+El compose de desarrollo toma backend/.env cuando no se informa otro archivo con BACKEND_ENV_FILE.
 
 Variables importantes:
 - APP_ENV

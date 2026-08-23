@@ -51,6 +51,10 @@ Si un valor fue reutilizado en otro archivo, host o entorno, tambien debe rotars
 alli. Al cambiar contraseñas PostgreSQL deben actualizarse en la misma ventana las
 URLs que las contienen.
 
+`backend/.env.docker` fue eliminado durante la consolidacion de ambientes. Sus
+valores historicos igualmente deben considerarse comprometidos si fueron
+reutilizados en otro archivo o servicio.
+
 ## Verificacion posterior
 
 - reiniciar o recrear los servicios que consumen secretos;
