@@ -186,6 +186,13 @@ class Config:
         min_value=60,
         max_value=43200,
     )
+    REFRESH_SESSION_RETENTION_DAYS = _parse_int_env_range(
+        "REFRESH_SESSION_RETENTION_DAYS",
+        default=30,
+        min_value=1,
+        max_value=365,
+        unit="dias",
+    )
     REFRESH_COOKIE_NAME = "gidas_refresh"
     REFRESH_COOKIE_PATH = "/api/v1/auth"
     REFRESH_COOKIE_HTTPONLY = True

@@ -29,11 +29,23 @@ Todos los endpoints se publican bajo `/auth`.
 - Las respuestas de autenticación se marcan `no-store`.
 - Login, registro y cambio de contraseña poseen limitación de frecuencia.
 - Las sesiones de refresh se registran, rotan y revocan para conservar trazabilidad.
+- Las sesiones vencidas o revocadas se purgan conservando el periodo de evidencia
+  definido por `REFRESH_SESSION_RETENTION_DAYS`.
 - Los errores inesperados devuelven mensajes genéricos y no exponen detalles internos.
 
 ## Despliegue
 
 En servidores se deben definir secretos y orígenes permitidos mediante variables de entorno, habilitar cookies seguras detrás de HTTPS y conservar la misma topología de proxy para frontend y API. No se deben usar valores de desarrollo en producción.
+
+El scheduler del servidor debe ejecutar diariamente:
+
+```text
+flask auth purge-refresh-sessions
+```
+
+Antes de activarlo puede comprobarse el alcance con
+`flask auth purge-refresh-sessions --dry-run`. El comando no imprime tokens ni
+metadatos personales.
 
 ## Verificación
 

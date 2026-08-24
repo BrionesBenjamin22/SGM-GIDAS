@@ -26,6 +26,7 @@ los nombres y formatos.
 | `JWT_AUDIENCE` | Audiencia exclusiva del despliegue productivo. |
 | `JWT_EXPIRATION_MINUTES` | Valor aprobado; recomendado 15, maximo 60 sin aceptacion de riesgo. |
 | `REFRESH_TOKEN_EXPIRATION_MINUTES` | Periodo aprobado junto con retencion y purga de sesiones. |
+| `REFRESH_SESSION_RETENTION_DAYS` | Dias de trazabilidad antes de purgar sesiones vencidas o revocadas; default 30. |
 | `FRONTEND_URL` / `FRONTEND_URLS` | Origen HTTPS exacto, sin comodines ni URLs de desarrollo. |
 | `DATABASE_URL` | Conexion del usuario de aplicacion con privilegios minimos. |
 | `MIGRATION_DATABASE_URL` | Conexion separada para migraciones. |
@@ -43,7 +44,8 @@ Requisitos no expresables solo mediante variables:
 - reloj del host sincronizado;
 - volumen de PostgreSQL persistente y backups cifrados con restauracion probada;
 - logs restringidos, rotados y sin credenciales, cookies ni tokens;
-- scheduler para purga de sesiones refresh segun la retencion aprobada;
+- scheduler diario para `flask auth purge-refresh-sessions`, validado primero con
+  `--dry-run`, segun la retencion aprobada;
 - escaneo externo de puertos y validacion funcional desde otro equipo de la red.
 
 La aplicacion no debe considerarse aprobada solo porque inicia. Cada requisito debe

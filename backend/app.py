@@ -17,6 +17,7 @@ from modules.shared.services.logging_config import (
     register_request_logging,
 )
 from modules.shared.services.request_security import register_request_body_security
+from modules.auth.commands.refresh_sessions import register_refresh_session_commands
 
 
 logger = get_logger(__name__)
@@ -77,6 +78,7 @@ def create_app():
         return response
 
     register_legacy_list_pagination(app)
+    register_refresh_session_commands(app)
 
     logger.info("Aplicación inicializada. Usa 'flask db upgrade' para crear/migrar tablas.")
 

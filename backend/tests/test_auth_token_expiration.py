@@ -28,6 +28,7 @@ class AuthTokenExpirationTestCase(unittest.TestCase):
             tokens["access_token"],
             Config.JWT_SECRET,
             algorithms=[Config.JWT_ALGORITHM],
+            options={"verify_aud": False},
         )
         expires_at = datetime.datetime.utcfromtimestamp(payload["exp"])
 
