@@ -1,5 +1,54 @@
 # Guia operativa de despliegue en servidor
 
+> Estado de seguridad actualizado el 2026-08-24: antes de habilitar datos reales se
+> deben cerrar HTTPS, el aislamiento multi-UCT y la provision segura de secretos.
+> Consulte
+> [revision_seguridad_despliegue.md](./revision_seguridad_despliegue.md).
+
+Las condiciones de aprobacion por control, incluyendo pruebas y causas de rechazo,
+se mantienen en
+`tasks/in-progress/security-deployment-acceptance.md`.
+
+## Configuracion de seguridad requerida del servidor
+
+Estos valores no deben incorporarse al repositorio. El responsable del servidor
+debe proveerlos mediante archivos con permisos minimos, Docker secrets o el gestor
+de secretos disponible. Las plantillas `.env.production.example` solo documentan
+los nombres y formatos.
+
+| Configuracion | Requisito |
+| --- | --- |
+| `APP_ENV` | Valor exacto `production`. |
+| `SECRET_KEY` | Aleatorio, exclusivo del ambiente y de al menos 32 caracteres. |
+| `JWT_SECRET` | Aleatorio e independiente de `SECRET_KEY` y `REFRESH_SECRET`. |
+| `REFRESH_SECRET` | Aleatorio e independiente; su rotacion cierra sesiones. |
+| `JWT_ISSUER` | Identificador estable de esta API. |
+| `JWT_AUDIENCE` | Audiencia exclusiva del despliegue productivo. |
+| `JWT_EXPIRATION_MINUTES` | Valor aprobado; recomendado 15, maximo 60 sin aceptacion de riesgo. |
+| `REFRESH_TOKEN_EXPIRATION_MINUTES` | Periodo aprobado junto con retencion y purga de sesiones. |
+| `FRONTEND_URL` / `FRONTEND_URLS` | Origen HTTPS exacto, sin comodines ni URLs de desarrollo. |
+| `DATABASE_URL` | Conexion del usuario de aplicacion con privilegios minimos. |
+| `MIGRATION_DATABASE_URL` | Conexion separada para migraciones. |
+| `POSTGRES_ADMIN_PASSWORD` | Secreto administrativo, no utilizado por el backend en runtime. |
+| `POSTGRES_APP_PASSWORD` | Secreto exclusivo del usuario de aplicacion. |
+| `RATELIMIT_STORAGE_URI` | Redis interno compartido; nunca `memory://` en produccion. |
+| `VITE_API_BASE_URL` | `/api/v1` para mantener frontend y API en el mismo origen. |
+| `MAX_CONTENT_LENGTH` | Debe conservar un valor positivo que no supere `NGINX_CLIENT_MAX_BODY_SIZE`. |
+
+Requisitos no expresables solo mediante variables:
+
+- DNS o IP estable y certificado TLS confiable;
+- firewall que publique unicamente el proxy HTTPS y administracion autorizada;
+- PostgreSQL, Redis, backend y frontend sin acceso directo desde la LAN;
+- reloj del host sincronizado;
+- volumen de PostgreSQL persistente y backups cifrados con restauracion probada;
+- logs restringidos, rotados y sin credenciales, cookies ni tokens;
+- scheduler para purga de sesiones refresh segun la retencion aprobada;
+- escaneo externo de puertos y validacion funcional desde otro equipo de la red.
+
+La aplicacion no debe considerarse aprobada solo porque inicia. Cada requisito debe
+adjuntar la evidencia definida en la tarea de aceptacion.
+
 Esta guia describe el despliegue manual de Sistema GIDAS en un servidor propio
 mediante Docker Compose. No implementa CI/CD ni activa HTTPS. La configuracion
 TLS se tratara cuando el laboratorio defina DNS, certificados y proxy.
@@ -91,7 +140,6 @@ POSTGRES_APP_PASSWORD=<CLAVE_APP_ALEATORIA_DISTINTA>
 MIGRATION_DATABASE_URL=postgresql://gidas_admin:<CLAVE_ADMIN_URL_ENCODED>@db:5432/gidas_db
 NGINX_PORT=8080
 BACKEND_ENV_FILE=.env.production
-FRONTEND_ENV_FILE=.env.production
 LOG_MAX_SIZE=10m
 LOG_MAX_FILES=5
 ```

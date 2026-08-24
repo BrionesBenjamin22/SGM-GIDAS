@@ -341,6 +341,17 @@ Medidas operativas:
 - contenedores con restricciones como `read_only`, `tmpfs`,
   `no-new-privileges`, `cap_drop` y limites de procesos cuando aplica.
 
+La revisión de seguridad para despliegue, actualizada el 2026-08-24, mantiene como
+pendientes bloqueantes la activación de HTTPS, la definición del aislamiento
+multi-UCT y la provisión operativa de secretos. Los controles versionables de
+límites de solicitudes, topología, JWT/refresh, CORS, headers, errores seguros e
+inventario IDOR/BOLA ya están implementados, pero deben verificarse nuevamente
+sobre el servidor final.
+
+Documento de referencia:
+
+- [Revisión final de seguridad para despliegue](./docs/revision_seguridad_despliegue.md)
+
 No deben versionarse:
 
 - archivos `.env` reales
@@ -605,6 +616,8 @@ Puntos a seguir monitoreando:
 - sostener pruebas manuales de flujos completos antes de un despliegue real.
 - agregar una tarea programada futura para purgar sesiones refresh vencidas o
   revocadas luego del periodo de retencion definido.
+- no habilitar datos reales hasta cerrar los bloqueantes de la revisión de seguridad:
+  HTTPS, aislamiento multi-UCT y gestión de secretos del servidor.
 
 ---
 

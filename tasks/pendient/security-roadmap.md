@@ -14,6 +14,7 @@ commit_sugerido: "docs(security): ordenar plan de mitigacion de riesgos"
 owner: coordinator-agent
 blocked_by: []
 related_tasks:
+  - security-deployment-acceptance
   - auth-refresh-cookie-http-only
   - backend-excepciones-dominio-tipadas
   - infra-https-lan-nginx
@@ -89,3 +90,23 @@ produccion hasta probarla sobre HTTPS.
 - Documentacion backend/frontend actualizada.
 - Commits por modulo, sin cambios mezclados.
 - Pendientes externos claramente bloqueados y con responsable.
+
+# Revision final de despliegue actualizada el 2026-08-24
+
+La evidencia y el checklist operativo quedaron consolidados en
+`docs/revision_seguridad_despliegue.md`.
+Las condiciones de aprobacion separadas entre desarrollo y servidor quedaron
+definidas en `tasks/in-progress/security-deployment-acceptance.md`.
+
+Bloqueantes confirmados antes de datos reales:
+
+- HTTPS confiable y redireccion desde HTTP.
+- aislamiento multi-UCT con pertenencia y alcance definidos.
+- provision, permisos, rotacion y responsables de secretos en el servidor.
+
+Controles presentes que requieren validacion en el host final:
+
+- backend, PostgreSQL y Redis sin puertos publicados en Compose productivo;
+- JWT firmado, issuer/audience y expiracion configurables;
+- refresh token `HttpOnly`, `Secure`, rotativo, revocable y validado por origen;
+- CORS restrictivo, headers defensivos, rate limiting y errores genericos.
