@@ -10,6 +10,8 @@ from extension import db
 from modules.catalogos.models.categoria_utn import CategoriaUtn
 from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.grupo.models.directivos import Cargo, Directivo, DirectivoGrupo
+from modules.grupo.models.visita_grupo import VisitaAcademica
 from modules.memorias.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
 from modules.auth.models.persona import Persona
 from modules.personal.models.personal import (
@@ -30,6 +32,26 @@ from modules.proyectos.models.proyecto_investigacion import (
     TipoProyecto,
 )
 from modules.personal.models.tipo_personal import TipoPersonal
+from modules.produccion.models.actividad_docencia import ActividadDocencia
+from modules.produccion.models.articulo_divulgacion import ArticuloDivulgacion
+from modules.produccion.models.documentacion_autores import (
+    Autor,
+    DocumentacionBibliografica,
+)
+from modules.produccion.models.registro_patente import (
+    RegistrosPropiedad,
+    TipoRegistroPropiedad,
+)
+from modules.produccion.models.trabajo_reunion import TipoReunion, TrabajoReunionCientifica
+from modules.produccion.models.trabajo_revista import TrabajosRevistasReferato
+from modules.proyectos.models.participacion_relevante import ParticipacionRelevante
+from modules.recursos.models.becas import Beca
+from modules.recursos.models.equipamiento import Equipamiento
+from modules.recursos.models.erogacion import Erogacion, TipoErogacion
+from modules.transferencia.models.transferencia_socio import (
+    TipoContrato,
+    TransferenciaSocioProductiva,
+)
 from modules.auth.models.usuario import RolUsuario, Usuario
 
 
@@ -273,6 +295,181 @@ def _seed_memoria(admin_user_id):
     return memoria
 
 
+def _seed_search_coverage(grupo, catalogs, investigador, admin_user_id):
+    tipo_erogacion, _ = _get_or_create(
+        TipoErogacion,
+        nombre="Insumos de laboratorio TEST",
+    )
+    tipo_registro, _ = _get_or_create(
+        TipoRegistroPropiedad,
+        nombre="Patente experimental TEST",
+    )
+    tipo_contrato, _ = _get_or_create(
+        TipoContrato,
+        nombre="Convenio de asistencia TEST",
+    )
+    tipo_reunion, _ = _get_or_create(TipoReunion, nombre="Jornada academica TEST")
+
+    _get_or_create(
+        Beca,
+        nombre_beca="Beca de investigacion TEST",
+        defaults={
+            "descripcion": "Registro ficticio para validar la busqueda.",
+            "fecha_alta_grupo": date(2024, 4, 1),
+            "fuente_financiamiento_id": catalogs["fuente"].id,
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        ActividadDocencia,
+        curso="Seminario de datos TEST",
+        investigador_id=investigador.id,
+        defaults={
+            "institucion": "Universidad de Prueba",
+            "fecha_inicio": date(2024, 5, 1),
+            "fecha_fin": date(2024, 5, 31),
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        Equipamiento,
+        denominacion="Microscopio digital TEST",
+        grupo_utn_id=grupo.id,
+        defaults={
+            "descripcion_breve": "Equipo ficticio para validar recuperacion.",
+            "fecha_incorporacion": date(2024, 2, 15),
+            "monto_invertido": 125000.0,
+            "created_by": admin_user_id,
+        },
+    )
+
+    autor, _ = _get_or_create(Autor, nombre_apellido="Autora Ficticia TEST")
+    documento, _ = _get_or_create(
+        DocumentacionBibliografica,
+        titulo="Manual de investigacion TEST",
+        grupo_id=grupo.id,
+        defaults={
+            "editorial": "Editorial de Prueba",
+            "anio": 2024,
+            "fecha": date(2024, 6, 1),
+            "created_by": admin_user_id,
+        },
+    )
+    if autor not in documento.autores:
+        documento.autores.append(autor)
+
+    _get_or_create(
+        Erogacion,
+        numero_erogacion=990001,
+        grupo_utn_id=grupo.id,
+        defaults={
+            "egresos": 25000.0,
+            "ingresos": 0.0,
+            "fecha": date(2024, 6, 15),
+            "tipo_erogacion_id": tipo_erogacion.id,
+            "fuente_financiamiento_id": catalogs["fuente"].id,
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        ParticipacionRelevante,
+        nombre_evento="Congreso de tecnologia TEST",
+        defaults={
+            "forma_participacion": "Expositor ficticio",
+            "fecha": date(2024, 7, 10),
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        RegistrosPropiedad,
+        nombre_articulo="Dispositivo experimental TEST",
+        grupo_utn_id=grupo.id,
+        defaults={
+            "organismo_registrante": "Organismo de Prueba",
+            "fecha_registro": date(2024, 8, 1),
+            "tipo_registro_id": tipo_registro.id,
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        TransferenciaSocioProductiva,
+        numero_transferencia=990001,
+        defaults={
+            "denominacion": "Transferencia tecnologica TEST",
+            "demandante": "Empresa Ficticia",
+            "descripcion_actividad": "Asistencia tecnica integral TEST",
+            "monto": 50000.0,
+            "fecha_inicio": date(2024, 8, 15),
+            "tipo_contrato_id": tipo_contrato.id,
+            "grupo_utn_id": grupo.id,
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        TrabajoReunionCientifica,
+        titulo_trabajo="Resultados de laboratorio TEST",
+        defaults={
+            "nombre_reunion": "Jornada Ficticia",
+            "procedencia": "Universidad de Prueba",
+            "fecha_inicio": date(2024, 9, 1),
+            "tipo_reunion_id": tipo_reunion.id,
+            "grupo_utn_id": grupo.id,
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        TrabajosRevistasReferato,
+        titulo_trabajo="Articulo con referato TEST",
+        defaults={
+            "nombre_revista": "Revista Ficticia",
+            "editorial": "Editorial de Prueba",
+            "issn": "0000-0000",
+            "pais": "Argentina",
+            "fecha": date(2024, 9, 15),
+            "grupo_utn_id": grupo.id,
+            "tipo_reunion_id": tipo_reunion.id,
+            "created_by": admin_user_id,
+        },
+    )
+    directivo, _ = _get_or_create(
+        Directivo,
+        nombre_apellido="Directiva Ficticia TEST",
+        defaults={"created_by": admin_user_id},
+    )
+    cargo, _ = _get_or_create(Cargo, nombre="Director TEST")
+    _get_or_create(
+        DirectivoGrupo,
+        id_directivo=directivo.id,
+        id_grupo_utn=grupo.id,
+        defaults={
+            "id_cargo": cargo.id,
+            "fecha_inicio": date(2024, 1, 1),
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        ArticuloDivulgacion,
+        titulo="Divulgacion cientifica TEST",
+        defaults={
+            "descripcion": "Articulo ficticio para validar busqueda.",
+            "fecha_publicacion": date(2024, 10, 1),
+            "grupo_utn_id": grupo.id,
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        VisitaAcademica,
+        razon="Intercambio academico TEST",
+        defaults={
+            "fecha": date(2024, 10, 15),
+            "procedencia": "Instituto de Prueba",
+            "tipo_visita_id": tipo_reunion.id,
+            "grupo_utn_id": grupo.id,
+            "created_by": admin_user_id,
+        },
+    )
+
+
 def seed_testing_data():
     _assert_testing_environment()
     roles = _seed_roles()
@@ -303,6 +500,7 @@ def seed_testing_data():
     investigador, becario, _personal = _seed_people(grupo, catalogs, admin.id)
     _seed_project(grupo, catalogs, investigador, becario, admin.id)
     _seed_memoria(admin.id)
+    _seed_search_coverage(grupo, catalogs, investigador, admin.id)
 
     db.session.commit()
 
