@@ -134,6 +134,24 @@ class AuthService:
         return session
 
     @staticmethod
+    def _claim_refresh_session(
+        session_id: int,
+        claimed_at: datetime.datetime,
+    ) -> bool:
+        updated = RefreshTokenSession.query.filter(
+            RefreshTokenSession.id == session_id,
+            RefreshTokenSession.revoked_at.is_(None),
+            RefreshTokenSession.expires_at > claimed_at,
+        ).update(
+            {
+                RefreshTokenSession.revoked_at: claimed_at,
+                RefreshTokenSession.revoked_reason: "rotating",
+            },
+            synchronize_session="fetch",
+        )
+        return updated == 1
+
+    @staticmethod
     def generate_tokens(
         user: Usuario,
         persist_refresh: bool = False,
@@ -312,6 +330,11 @@ class AuthService:
                 db.session.commit()
                 raise Exception("Refresh token expirado")
 
+            claimed_at = datetime.datetime.utcnow()
+            if not AuthService._claim_refresh_session(current_session.id, claimed_at):
+                db.session.rollback()
+                raise Exception("Refresh token revocado")
+
             access_token = AuthService._generate_access_token(user)
             new_refresh_token, new_jti, expires_at = AuthService._generate_refresh_token(user)
             new_session = AuthService._store_refresh_session(
@@ -321,7 +344,8 @@ class AuthService:
                 expires_at,
                 metadata,
             )
-            current_session.revoke("rotated", replaced_by_id=new_session.id)
+            current_session.revoked_reason = "rotated"
+            current_session.replaced_by_id = new_session.id
             db.session.commit()
 
             return {
@@ -340,6 +364,9 @@ class AuthService:
             raise Exception("Refresh token expirado")
         except jwt.InvalidTokenError:
             raise Exception("Refresh token invalido")
+        except Exception:
+            db.session.rollback()
+            raise
 
     @staticmethod
     def revoke_refresh_token(refresh_token: str, reason: str = "logout"):

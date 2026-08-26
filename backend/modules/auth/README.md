@@ -28,7 +28,8 @@ Todos los endpoints se publican bajo `/auth`.
 - La cookie de refresh usa las opciones seguras configuradas por entorno y las operaciones con cookie validan origen.
 - Las respuestas de autenticación se marcan `no-store`.
 - Login, registro y cambio de contraseña poseen limitación de frecuencia.
-- Las sesiones de refresh se registran, rotan y revocan para conservar trazabilidad.
+- Las sesiones de refresh se registran, reclaman atomicamente, rotan y revocan para
+  conservar trazabilidad e impedir dos renovaciones simultaneas del mismo token.
 - Las sesiones vencidas o revocadas se purgan conservando el periodo de evidencia
   definido por `REFRESH_SESSION_RETENTION_DAYS`.
 - Los errores inesperados devuelven mensajes genéricos y no exponen detalles internos.
