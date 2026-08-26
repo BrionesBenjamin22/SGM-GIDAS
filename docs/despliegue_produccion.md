@@ -1,5 +1,31 @@
 # Guia operativa de despliegue en servidor
 
+## Escenario confirmado: maquina virtual administrada por SSH
+
+La primera instalacion se realizara en una unica maquina virtual Linux. El operador
+ingresara por SSH y ejecutara Docker Compose directamente en el host. No se requiere
+por ahora un pipeline de CD, Kubernetes, registro privado de imagenes ni servicios
+cloud administrados.
+
+Este alcance permite aprobar la preparacion versionable y el despliegue tecnico de
+la aplicacion. No permite dar por aprobados HTTPS, DNS, firewall, backups externos
+ni alertas hasta conocer los recursos reales de la VM.
+
+Topologia prevista:
+
+- SSH expuesto solo a las direcciones administrativas autorizadas;
+- Nginx como unico servicio HTTP publicado por Compose;
+- backend, frontend, PostgreSQL y Redis accesibles solo en la red Docker;
+- datos persistentes en el volumen nombrado de PostgreSQL;
+- codigo obtenido desde un tag o commit identificable;
+- configuracion real en archivos `.env.production` con permiso `600`.
+
+Si el acceso inicial debe limitarse al propio host, definir
+`NGINX_BIND_ADDRESS=127.0.0.1` y usar un tunel SSH para las comprobaciones tecnicas.
+Para acceso desde una red autorizada, usar `NGINX_BIND_ADDRESS=0.0.0.0` y restringir
+`NGINX_PORT` mediante el firewall de la VM. El acceso HTTP no debe exponerse a
+Internet ni tratarse como produccion con datos reales.
+
 > Estado de seguridad actualizado el 2026-08-24: antes de habilitar datos reales se
 > deben cerrar HTTPS, el aislamiento multi-UCT y la provision segura de secretos.
 > Consulte
@@ -120,8 +146,7 @@ Partir de las plantillas versionadas:
 ```bash
 cp .env.production.example .env.production
 cp backend/.env.production.example backend/.env.production
-cp frontend/.env.production.example frontend/.env.production
-chmod 600 .env.production backend/.env.production frontend/.env.production
+chmod 600 .env.production backend/.env.production
 ```
 
 Los archivos reales no deben agregarse a Git ni copiarse a tickets o chats.
@@ -140,15 +165,16 @@ POSTGRES_ADMIN_PASSWORD=<CLAVE_ADMIN_ALEATORIA>
 POSTGRES_APP_USER=gidas_app
 POSTGRES_APP_PASSWORD=<CLAVE_APP_ALEATORIA_DISTINTA>
 MIGRATION_DATABASE_URL=postgresql://gidas_admin:<CLAVE_ADMIN_URL_ENCODED>@db:5432/gidas_db
+NGINX_BIND_ADDRESS=0.0.0.0
 NGINX_PORT=8080
 BACKEND_ENV_FILE=.env.production
 LOG_MAX_SIZE=10m
 LOG_MAX_FILES=5
 ```
 
-`NGINX_PORT=8080` publica el puerto en las interfaces del servidor. Limitar su
-acceso mediante firewall a la red del laboratorio. Si posteriormente se usa un
-proxy externo, debe revisarse la vinculacion a loopback antes de habilitarlo.
+`NGINX_BIND_ADDRESS=0.0.0.0` publica el proxy en las interfaces de la VM. Limitar
+su acceso mediante firewall a la red autorizada. `127.0.0.1` permite validar por
+tunel SSH sin publicar el servicio a la red.
 
 Las contrasenas incluidas en URLs deben codificarse como URL. Para reducir
 errores operativos, se recomiendan contrasenas aleatorias compatibles con URI y
@@ -176,12 +202,19 @@ RATELIMIT_STORAGE_URI=redis://redis:6379/0
 Mientras el acceso sea HTTP, `SESSION_COOKIE_SECURE` no debe establecerse en
 `True`. Al activar HTTPS se actualizaran conjuntamente origen, cookies y proxy.
 
+Para una calificacion tecnica temporal sin TLS usar `APP_ENV=staging`. Este modo
+mantiene `DEBUG=False`, CORS restringido al origen configurado y permite la cookie
+por HTTP. No debe usarse con datos reales ni como sustituto permanente de HTTPS.
+Para produccion real conservar `APP_ENV=production`, usar origenes `https://` y
+validar la cookie `Secure`.
+
 El archivo del backend no debe contener la clave administrativa ni
 `MIGRATION_DATABASE_URL`.
 
-### Archivo `frontend/.env.production`
+### Build del frontend
 
-Mantener la API en el mismo origen:
+El frontend productivo recibe estas variables como argumentos de build desde el
+archivo raiz; no necesita un tercer archivo `.env` en la VM:
 
 ```env
 VITE_APP_ENV=production
@@ -192,6 +225,16 @@ VITE_SERVER_FILTER_PERSONAL=true
 Las variables `VITE_*` se incorporan al build y nunca deben contener secretos.
 
 ## 5. Validar antes de iniciar
+
+Ejecutar el preflight versionado desde la raiz:
+
+```bash
+chmod +x scripts/validate-vm-deployment.sh scripts/smoke-vm-deployment.sh
+./scripts/validate-vm-deployment.sh .env.production
+```
+
+El script no imprime los archivos renderizados ni sus secretos. Valida Compose,
+topologia, ausencia de secretos versionados y sintaxis de Nginx.
 
 Renderizar Compose permite detectar variables y estructura invalidas sin
 iniciar contenedores:
@@ -261,6 +304,18 @@ docker compose --env-file .env.production logs --tail=200 backend nginx
 `migrate` debe terminar con codigo `0`; no debe permanecer ejecutandose.
 
 ## 8. Verificacion tecnica y funcional
+
+Despues del arranque ejecutar:
+
+```bash
+./scripts/smoke-vm-deployment.sh .env.production
+```
+
+Opcionalmente puede indicarse la URL que realmente usaran los clientes:
+
+```bash
+./scripts/smoke-vm-deployment.sh .env.production http://<IP_VM>:8080
+```
 
 Desde el servidor:
 
@@ -410,12 +465,18 @@ PostgreSQL, Redis, frontend y backend no publican puertos; solo Nginx debe ser
 alcanzable desde la LAN. Por lo tanto, el rechazo normal por volumen se realiza
 en el gateway y no consume un worker de la aplicacion.
 
-## 14. HTTPS y CI/CD
+## 14. HTTPS y entrega
 
-HTTPS y CI/CD permanecen como etapas posteriores. Antes de activar HTTPS deben
-definirse DNS o IP estable, autoridad certificadora, ubicacion del proxy TLS,
-puertos y distribucion de confianza a los equipos cliente. Hasta entonces, el
-firewall debe limitar el acceso HTTP exclusivamente a la LAN autorizada.
+La entrega seleccionada es manual por SSH: obtener un tag o commit aprobado,
+ejecutar preflight, respaldar, levantar Compose y correr el smoke test. Un pipeline
+de CD queda diferido hasta que exista una necesidad operativa y se definan runner,
+aprobaciones y secretos del host.
+
+HTTPS permanece como etapa obligatoria antes de habilitar datos reales para
+usuarios remotos. Deben definirse DNS o IP estable, autoridad certificadora,
+ubicacion del proxy TLS, puertos y distribucion de confianza. Hasta entonces, el
+firewall debe limitar HTTP a la red autorizada o el proxy debe enlazarse a
+`127.0.0.1` para validacion mediante tunel SSH.
 
 ## 15. Registro recomendado de cada despliegue
 

@@ -4,6 +4,15 @@ Fecha de revisión inicial: 2026-08-18
 
 Última actualización de evidencia: 2026-08-24
 
+Decisión operativa del 2026-08-26: la primera instalación se realizará en una
+máquina virtual Linux administrada manualmente por SSH y Docker Compose. Esta
+decisión cierra la selección del mecanismo de entrega inicial, pero no sustituye
+los controles pendientes de HTTPS, firewall, backups y validación sobre el host.
+
+La calificación temporal sin certificado debe usar `APP_ENV=staging`, origen HTTP
+exacto y acceso restringido. `APP_ENV=production` conserva HTTPS y cookie segura
+como requisitos cerrados; no se relaja para acomodar la VM.
+
 ## Alcance y criterio
 
 Esta revisión compara la configuración versionada del repositorio con los controles

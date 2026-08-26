@@ -34,7 +34,25 @@ tipo(scope opcional): descripcion breve
 Tipos admitidos: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`,
 `build`, `ci`, `chore` y `revert`. Se admiten cambios incompatibles mediante `!`.
 
-## Configuracion manual pendiente para CD
+## Entrega elegida para la primera VM
+
+La primera entrega sera manual y controlada mediante SSH. No se agregara un job con
+acceso al servidor mientras no se definan infraestructura, aprobadores y gestion de
+secretos. El operador debe:
+
+1. conectarse a la VM con una identidad SSH individual;
+2. desplegar un tag o commit aprobado y registrar su hash;
+3. ejecutar `scripts/validate-vm-deployment.sh .env.production`;
+4. crear y comprobar el respaldo cuando sea una actualizacion;
+5. ejecutar `docker compose --env-file .env.production up --build -d`;
+6. ejecutar `scripts/smoke-vm-deployment.sh .env.production`;
+7. registrar version, operador, migracion, healthchecks y resultado funcional.
+
+Esta decision satisface la entrega inicial reproducible sin introducir credenciales
+SSH en GitHub. La automatizacion de CD es una mejora futura, no un requisito para
+poner la VM tecnicamente operativa.
+
+## Configuracion pendiente para un CD futuro
 
 Antes de agregar despliegue deben definirse:
 
@@ -47,7 +65,7 @@ Antes de agregar despliegue deben definirse:
 - HTTPS, DNS/IP y certificados del ambiente final.
 
 Hasta que esas decisiones existan, no debe agregarse un job de despliegue ni
-credenciales productivas a GitHub.
+credenciales de la VM a GitHub.
 
 ## Validacion local equivalente
 
