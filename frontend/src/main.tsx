@@ -1,4 +1,4 @@
-import { StrictMode, type ReactElement } from "react";
+import { Component, lazy, Suspense, type ReactElement, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 
 
@@ -9,80 +9,115 @@ import { Navigate } from "react-router-dom";
 import "./styles/index.css";
 
 import AppLayout from "@/layouts/AppLayout";
-import Home from "@/modules/dashboard/pages/Home";
-import UctForm from "@/modules/grupo/pages/UctForm";
-import NotFound from "@/modules/shared/pages/NotFound";
+const Home = lazy(() => import("@/modules/dashboard/pages/Home"));
+const UctForm = lazy(() => import("@/modules/grupo/pages/UctForm"));
+const NotFound = lazy(() => import("@/modules/shared/pages/NotFound"));
 
 // auth
-import Login from "@/modules/auth/pages/Login";
-import Register from "@/modules/auth/pages/Register";
-import Landing from "@/modules/auth/pages/Landing";
+const Login = lazy(() => import("@/modules/auth/pages/Login"));
+const Register = lazy(() => import("@/modules/auth/pages/Register"));
+const Landing = lazy(() => import("@/modules/auth/pages/Landing"));
 import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 // nuevas páginas
-import PersonalLanding from "@/modules/personal/pages/PersonalHome"; // título + botón Agregar + Volver
-import Personal from "@/modules/personal/pages/PersonalForm";               // formulario de personal
-import PersonalDetalle from "@/modules/personal/pages/PersonalDetalle";
-import ProyectosLanding from "@/modules/proyectos/pages/ProyectosHome";
-import ProyectosForm from "@/modules/proyectos/pages/ProyectosForm";
-import DocenciaLanding from "@/modules/produccion/pages/DocenciaHome";
-import DocenciaForm from "@/modules/produccion/pages/DocenciaForm";
-import DocenciaDetalle from "@/modules/produccion/pages/DocenciaDetalle";
-import TrabajosReunionHome from "@/modules/produccion/pages/TrabajosReunionHome";
-import TrabajosReunionForm from "@/modules/produccion/pages/TrabajosReunionForm";
-import ErogacionesLanding from "@/modules/recursos/pages/ErogacionesHome";
-import ErogacionesForm from "@/modules/recursos/pages/ErogacionesForm";
-import ErogacionesDetalle from "@/modules/recursos/pages/ErogacionesDetalle";
-import EquipamientoLanding from "@/modules/recursos/pages/EquipamientoHome";
-import EquipamientoForm from "@/modules/recursos/pages/EquipamientoForm";
-import EquipamientoDetalle from "@/modules/recursos/pages/EquipamientoDetalle";
-import ObjetosLanding from "@/modules/catalogos/pages/ObjetosFinHome";
-import SearchPage from "@/modules/search/pages/SearchPage";
-import DocumentacionDetalle from "@/modules/produccion/pages/DocumentacionDetalle";
-import DocumentacionForm from "@/modules/produccion/pages/DocumentacionForm";
-import DocumentacionLanding from "@/modules/produccion/pages/DocumentacionHome";
-import PersonalForm from "@/modules/personal/pages/PersonalForm";
-import ProyectosDetalle from "@/modules/proyectos/pages/ProyectosDetalle";
-import RegistrosPropiedadHome from "@/modules/produccion/pages/RegistrosPropiedadHome";
-import RegistrosPropiedadForm from "@/modules/produccion/pages/RegistrosPropiedadForm";
-import RegistrosPropiedadDetalle from "@/modules/produccion/pages/RegistrosPropiedadDetalle";
-import PlanificacionGrupoLanding from "@/modules/grupo/pages/PlanificacionesGrupoHome";
-import PlanificacionesGrupoForm from "@/modules/grupo/pages/PlanificacionesGrupoForm";
-import PlanificacionGrupoDetalle from "@/modules/grupo/pages/PlanificacionGrupoDetalle";
-import TrabajosReunionDetalle from "@/modules/produccion/pages/TrabajosReunionDetalle";
-import TrabajosRevistasHome from "@/modules/produccion/pages/TrabajosRevistasHome";
-import TrabajosRevistasForm from "@/modules/produccion/pages/TrabajosRevistasForm";
-import TrabajosRevistasDetalle from "@/modules/produccion/pages/TrabajosRevistasDetalle";
-import ArticulosDivulgacionLanding from "@/modules/produccion/pages/ArticulosDivulgacionHome";
-import ArticulosDivulgacionForm from "@/modules/produccion/pages/ArticulosDivulgacionForm";
-import ArticulosDivulgacionDetalle from "@/modules/produccion/pages/ArticulosDivulgacionDetalle";
-import TransferenciasForm from "@/modules/transferencia/pages/TransferenciasForm";
-import TransferenciasDetalle from "@/modules/transferencia/pages/TransferenciasDetalle";
-import TransferenciasHome from "@/modules/transferencia/pages/TransferenciasHome";
-import DistincionesHome from "@/modules/produccion/pages/DistincionesHome";
-import DistincionesForm from "@/modules/produccion/pages/DistincionesForm";
-import DistincionesDetalle from "@/modules/produccion/pages/DistincionesDetalle";
-import ParticipacionesHome from "@/modules/proyectos/pages/ParticipacionesHome";
-import ParticipacionesForm from "@/modules/proyectos/pages/ParticipacionesForm";
-import ParticipacionesDetalle from "@/modules/proyectos/pages/ParticipacionesDetalle";
-import VisitantesHome from "@/modules/grupo/pages/VisitantesHome";
-import VisitantesForm from "@/modules/grupo/pages/VisitantesForm";
-import VisitantesDetalle from "@/modules/grupo/pages/VisitantesDetalle";
-import MemoriasHome from "@/modules/memorias/pages/MemoriasHome";
-import MemoriaForm from "@/modules/memorias/pages/MemoriaForm";
-import MemoriaDetalle from "@/modules/memorias/pages/MemoriaDetalle";
-import MemoriaVersionDetalle from "@/modules/memorias/pages/MemoriaVersionDetalle";
+const PersonalLanding = lazy(() => import("@/modules/personal/pages/PersonalHome"));
+const PersonalDetalle = lazy(() => import("@/modules/personal/pages/PersonalDetalle"));
+const ProyectosLanding = lazy(() => import("@/modules/proyectos/pages/ProyectosHome"));
+const ProyectosForm = lazy(() => import("@/modules/proyectos/pages/ProyectosForm"));
+const DocenciaLanding = lazy(() => import("@/modules/produccion/pages/DocenciaHome"));
+const DocenciaForm = lazy(() => import("@/modules/produccion/pages/DocenciaForm"));
+const DocenciaDetalle = lazy(() => import("@/modules/produccion/pages/DocenciaDetalle"));
+const TrabajosReunionHome = lazy(() => import("@/modules/produccion/pages/TrabajosReunionHome"));
+const TrabajosReunionForm = lazy(() => import("@/modules/produccion/pages/TrabajosReunionForm"));
+const ErogacionesLanding = lazy(() => import("@/modules/recursos/pages/ErogacionesHome"));
+const ErogacionesForm = lazy(() => import("@/modules/recursos/pages/ErogacionesForm"));
+const ErogacionesDetalle = lazy(() => import("@/modules/recursos/pages/ErogacionesDetalle"));
+const EquipamientoLanding = lazy(() => import("@/modules/recursos/pages/EquipamientoHome"));
+const EquipamientoForm = lazy(() => import("@/modules/recursos/pages/EquipamientoForm"));
+const EquipamientoDetalle = lazy(() => import("@/modules/recursos/pages/EquipamientoDetalle"));
+const ObjetosLanding = lazy(() => import("@/modules/catalogos/pages/ObjetosFinHome"));
+const SearchPage = lazy(() => import("@/modules/search/pages/SearchPage"));
+const DocumentacionDetalle = lazy(() => import("@/modules/produccion/pages/DocumentacionDetalle"));
+const DocumentacionForm = lazy(() => import("@/modules/produccion/pages/DocumentacionForm"));
+const DocumentacionLanding = lazy(() => import("@/modules/produccion/pages/DocumentacionHome"));
+const PersonalForm = lazy(() => import("@/modules/personal/pages/PersonalForm"));
+const ProyectosDetalle = lazy(() => import("@/modules/proyectos/pages/ProyectosDetalle"));
+const RegistrosPropiedadHome = lazy(() => import("@/modules/produccion/pages/RegistrosPropiedadHome"));
+const RegistrosPropiedadForm = lazy(() => import("@/modules/produccion/pages/RegistrosPropiedadForm"));
+const RegistrosPropiedadDetalle = lazy(() => import("@/modules/produccion/pages/RegistrosPropiedadDetalle"));
+const TrabajosReunionDetalle = lazy(() => import("@/modules/produccion/pages/TrabajosReunionDetalle"));
+const TrabajosRevistasHome = lazy(() => import("@/modules/produccion/pages/TrabajosRevistasHome"));
+const TrabajosRevistasForm = lazy(() => import("@/modules/produccion/pages/TrabajosRevistasForm"));
+const TrabajosRevistasDetalle = lazy(() => import("@/modules/produccion/pages/TrabajosRevistasDetalle"));
+const ArticulosDivulgacionLanding = lazy(() => import("@/modules/produccion/pages/ArticulosDivulgacionHome"));
+const ArticulosDivulgacionForm = lazy(() => import("@/modules/produccion/pages/ArticulosDivulgacionForm"));
+const ArticulosDivulgacionDetalle = lazy(() => import("@/modules/produccion/pages/ArticulosDivulgacionDetalle"));
+const TransferenciasForm = lazy(() => import("@/modules/transferencia/pages/TransferenciasForm"));
+const TransferenciasDetalle = lazy(() => import("@/modules/transferencia/pages/TransferenciasDetalle"));
+const TransferenciasHome = lazy(() => import("@/modules/transferencia/pages/TransferenciasHome"));
+const DistincionesHome = lazy(() => import("@/modules/produccion/pages/DistincionesHome"));
+const DistincionesForm = lazy(() => import("@/modules/produccion/pages/DistincionesForm"));
+const DistincionesDetalle = lazy(() => import("@/modules/produccion/pages/DistincionesDetalle"));
+const ParticipacionesHome = lazy(() => import("@/modules/proyectos/pages/ParticipacionesHome"));
+const ParticipacionesForm = lazy(() => import("@/modules/proyectos/pages/ParticipacionesForm"));
+const ParticipacionesDetalle = lazy(() => import("@/modules/proyectos/pages/ParticipacionesDetalle"));
+const VisitantesHome = lazy(() => import("@/modules/grupo/pages/VisitantesHome"));
+const VisitantesForm = lazy(() => import("@/modules/grupo/pages/VisitantesForm"));
+const VisitantesDetalle = lazy(() => import("@/modules/grupo/pages/VisitantesDetalle"));
+const MemoriasHome = lazy(() => import("@/modules/memorias/pages/MemoriasHome"));
+const MemoriaForm = lazy(() => import("@/modules/memorias/pages/MemoriaForm"));
+const MemoriaDetalle = lazy(() => import("@/modules/memorias/pages/MemoriaDetalle"));
+const MemoriaVersionDetalle = lazy(() => import("@/modules/memorias/pages/MemoriaVersionDetalle"));
 
 // Gestión de usuarios
-import CambiarPassword from "@/modules/auth/pages/CambiarPassword";
-import UsuariosHome from "@/modules/auth/pages/UsuariosHome";
-import UsuariosForm from "@/modules/auth/pages/UsuariosForm";
-import CatalogosHome from "@/modules/catalogos/pages/CatalogosHome";
-import MiPerfil from "@/modules/auth/pages/MiPerfil";
+const CambiarPassword = lazy(() => import("@/modules/auth/pages/CambiarPassword"));
+const UsuariosHome = lazy(() => import("@/modules/auth/pages/UsuariosHome"));
+const UsuariosForm = lazy(() => import("@/modules/auth/pages/UsuariosForm"));
+const CatalogosHome = lazy(() => import("@/modules/catalogos/pages/CatalogosHome"));
+const MiPerfil = lazy(() => import("@/modules/auth/pages/MiPerfil"));
 
 function editorOnly(element: ReactElement) {
   return <ProtectedRoute allowedRoles={["ADMIN", "GESTOR"]}>{element}</ProtectedRoute>;
+}
+
+function RouteLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center px-4" role="status" aria-live="polite">
+      <p className="text-sm text-slate-600">Cargando contenido...</p>
+    </div>
+  );
+}
+
+class RouteErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex min-h-screen items-center justify-center px-4" role="alert">
+          <div className="max-w-md text-center">
+            <p className="text-sm text-slate-700">
+              Lo sentimos, no pudimos cargar el contenido. Verifique su conexión e intente nuevamente.
+            </p>
+            <button
+              className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white"
+              type="button"
+              onClick={() => window.location.reload()}
+            >
+              Reintentar
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 // Definición de rutas
@@ -295,7 +330,11 @@ const queryClient = new QueryClient();
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <RouterProvider router={router} />
+      <RouteErrorBoundary>
+        <Suspense fallback={<RouteLoading />}>
+          <RouterProvider router={router} />
+        </Suspense>
+      </RouteErrorBoundary>
     </AuthProvider>
   </QueryClientProvider>
 );
