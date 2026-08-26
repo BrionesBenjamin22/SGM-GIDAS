@@ -72,6 +72,24 @@ class ProductionTopologyTestCase(unittest.TestCase):
 
         self.assertIn("Runtime y migraciones no deben usar el mismo usuario", errors)
 
+    def test_rechaza_proxy_sin_puerto_publicado(self):
+        config = valid_config()
+        config["services"]["nginx"]["ports"] = []
+
+        errors = validate_config(config)
+
+        self.assertIn("nginx debe publicar exactamente un puerto", errors)
+
+    def test_rechaza_binding_no_soportado(self):
+        config = valid_config()
+        config["services"]["nginx"]["ports"] = [
+            {"host_ip": "no-es-una-ip", "published": "8080", "target": 8080}
+        ]
+
+        errors = validate_config(config)
+
+        self.assertIn("NGINX_BIND_ADDRESS no es un binding soportado", errors)
+
 
 if __name__ == "__main__":
     unittest.main()

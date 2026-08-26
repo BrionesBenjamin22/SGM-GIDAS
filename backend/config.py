@@ -258,6 +258,9 @@ class DevelopmentConfig(Config):
 class DockerConfig(Config):
     DEBUG = os.getenv("FLASK_DEBUG", "False") == "True"
 
+class StagingConfig(Config):
+    DEBUG = False
+
 class TestingConfig(Config):
     DEBUG = False
 
@@ -271,6 +274,8 @@ CONFIG_BY_ENV = {
     "local": DevelopmentConfig,
     "development": DevelopmentConfig,
     "docker": DockerConfig,
+    "staging": StagingConfig,
+    "preproduction": StagingConfig,
     "testing": TestingConfig,
     "production": ProductionConfig,
     "prod": ProductionConfig,

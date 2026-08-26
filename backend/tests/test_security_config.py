@@ -4,10 +4,14 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from config import _env_or_file, _require_production_security
+from config import StagingConfig, _env_or_file, _require_production_security
 
 
 class SecurityConfigTestCase(unittest.TestCase):
+
+    def test_staging_mantiene_debug_y_cors_restringidos(self):
+        self.assertFalse(StagingConfig.DEBUG)
+        self.assertNotEqual(StagingConfig.CORS_ORIGINS, "*")
 
     def _make_config(self, **overrides):
         config = {

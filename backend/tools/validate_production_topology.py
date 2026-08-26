@@ -1,6 +1,7 @@
 """Valida la topologia productiva renderizada sin imprimir secretos."""
 
 import argparse
+import ipaddress
 import json
 import subprocess
 from urllib.parse import urlsplit
@@ -34,6 +35,23 @@ def validate_config(config: dict) -> list[str]:
     for service_name, service in services.items():
         if _published_ports(service) and service_name not in PUBLIC_SERVICES:
             errors.append(f"{service_name} publica puertos sin estar autorizado")
+
+    proxy = services.get("nginx")
+    if proxy is None:
+        errors.append("Falta el servicio obligatorio nginx")
+    else:
+        proxy_ports = _published_ports(proxy)
+        if len(proxy_ports) != 1:
+            errors.append("nginx debe publicar exactamente un puerto")
+        elif isinstance(proxy_ports[0], dict):
+            published = proxy_ports[0]
+            if int(published.get("target", 0)) != 8080:
+                errors.append("nginx debe publicar el puerto interno 8080")
+            host_ip = published.get("host_ip") or "0.0.0.0"
+            try:
+                ipaddress.ip_address(host_ip)
+            except ValueError:
+                errors.append("NGINX_BIND_ADDRESS no es un binding soportado")
 
     backend_environment = (services.get("backend") or {}).get("environment") or {}
     migrate_environment = (services.get("migrate") or {}).get("environment") or {}
@@ -87,7 +105,10 @@ def main() -> int:
             print(f"ERROR: {error}")
         return 1
 
-    print("Topologia productiva valida: solo proxy publicado y roles separados.")
+    print(
+        "Topologia productiva valida: solo proxy publicado, binding controlado "
+        "y roles separados."
+    )
     return 0
 
 
