@@ -9,6 +9,7 @@ import {
   getHistorialPersonalByRolAndId,
   getPersonalCompletoByRolAndId,
 } from "@/modules/personal/services/personalCompletoServices";
+import type { HistorialHorasItem } from "@/modules/personal/services/personalCompletoServices";
 import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import { useTiposFormacion } from "@/modules/personal/hooks/useTiposFormacion";
@@ -97,7 +98,9 @@ export default function PersonalDetalle() {
       .replace(/\b\w/g, (l: string) => l.toUpperCase());
   };
 
-  const renderArray = (arr: any[]) => {
+  const renderArray = (
+    arr?: Array<{ nombre_apellido?: string; nombre?: string; titulo?: string }>
+  ) => {
     if (!arr || arr.length === 0) return null;
     return arr
       .map((v) => v.nombre_apellido || v.nombre || v.titulo || "")
@@ -258,14 +261,14 @@ export default function PersonalDetalle() {
               </p>
             )}
 
-            {relaciones.proyectos?.length > 0 && (
+            {(relaciones.proyectos?.length ?? 0) > 0 && (
               <p>
                 <span className="font-medium text-slate-700">Proyectos:</span>{" "}
                 {renderArray(relaciones.proyectos)}
               </p>
             )}
 
-            {relaciones.actividades_docencia?.length > 0 && (
+            {(relaciones.actividades_docencia?.length ?? 0) > 0 && (
               <p>
                 <span className="font-medium text-slate-700">
                   Actividades de Docencia:
@@ -274,7 +277,7 @@ export default function PersonalDetalle() {
               </p>
             )}
 
-            {relaciones.trabajos_reunion_cientifica?.length > 0 && (
+            {(relaciones.trabajos_reunion_cientifica?.length ?? 0) > 0 && (
               <p>
                 <span className="font-medium text-slate-700">
                   Trabajos en Reunion Cientifica:
@@ -283,7 +286,7 @@ export default function PersonalDetalle() {
               </p>
             )}
 
-            {relaciones.participaciones_relevantes?.length > 0 && (
+            {(relaciones.participaciones_relevantes?.length ?? 0) > 0 && (
               <p>
                 <span className="font-medium text-slate-700">
                   Participaciones Relevantes:
@@ -321,7 +324,7 @@ export default function PersonalDetalle() {
                   Array.isArray(data.historial_horas) &&
                   data.historial_horas.length > 0 && (
                     <div className="ml-4 space-y-1 border-l border-slate-200 pl-4 text-sm text-slate-600">
-                      {data.historial_horas.map((h: any) => (
+                      {data.historial_horas.map((h: HistorialHorasItem) => (
                         <p key={h.id}>
                           Horas: {h.horas_semanales} - Periodo:{" "}
                           {formatFecha(h.fecha_inicio)} - {formatFecha(h.fecha_fin)}
@@ -341,7 +344,7 @@ export default function PersonalDetalle() {
 
                 {data.becas.length > 0 && (
                   <div className="ml-4 space-y-2 border-l border-slate-200 pl-4 text-sm text-slate-600">
-                    {data.becas.map((b: any, index: number) => (
+                    {data.becas.map((b, index: number) => (
                       <div key={b.id ?? index}>
                         <p>
                           <span className="font-medium text-slate-700">
@@ -395,7 +398,11 @@ export default function PersonalDetalle() {
               .map(([key, value]) => {
                 if (key.endsWith("_id")) {
                   const relacionKey = key.replace("_id", "");
-                  const nombreRelacion = relaciones?.[relacionKey]?.nombre;
+                  const relacion = Object.entries(relaciones).find(
+                    ([nombre]) => nombre === relacionKey
+                  )?.[1];
+                  const nombreRelacion =
+                    relacion && !Array.isArray(relacion) ? relacion.nombre : null;
 
                   if (nombreRelacion) {
                     return (

@@ -9,8 +9,11 @@ import SuccessToast from "@/components/SuccessToast";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 
 import { useTransferencias } from "@/modules/transferencia/hooks/useTransferencias";
-import { deleteTransferencia } from "@/modules/transferencia/services/transferenciasServices";
-import { HttpError } from "@/lib/http";
+import {
+  deleteTransferencia,
+  type Transferencia,
+} from "@/modules/transferencia/services/transferenciasServices";
+import { getErrorMessage } from "@/lib/httpError";
 import { useAuth } from "@/context/AuthContext";
 import {
   applyMemoriaSectionFilter,
@@ -78,7 +81,8 @@ export default function TransferenciasHome() {
     }
   }, [location.state, navigate, location.pathname]);
 
-  const isTransferenciaDeleted = (item: any) => item.activo === false || !!item.deletedAt;
+  const isTransferenciaDeleted = (item: Transferencia) =>
+    item.activo === false || Boolean(item.deletedAt);
 
   const transferenciasFiltradas = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
@@ -226,22 +230,12 @@ export default function TransferenciasHome() {
     } catch (error) {
       setShowConfirm(false);
 
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | { message?: string; error?: string; detalle?: string }
-          | undefined;
-
-        setErrorMessage(
-          body?.message ||
-            body?.error ||
-            body?.detalle ||
-            "No se pudo eliminar la transferencia."
-        );
-      } else {
-        setErrorMessage(
-          "Ocurrio un error inesperado al eliminar la transferencia."
-        );
-      }
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+        )
+      );
 
       setShowError(true);
     }
@@ -383,7 +377,9 @@ export default function TransferenciasHome() {
         {isLoading ? (
           <p className="py-10 text-center text-slate-500">Cargando...</p>
         ) : isError ? (
-          <p className="py-10 text-center text-slate-500">Error al cargar.</p>
+          <p className="py-10 text-center text-slate-500">
+            Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente.
+          </p>
         ) : transferenciasFiltradas.length === 0 ? (
           <p className="py-10 text-center text-slate-500">
             No hay transferencias registradas.

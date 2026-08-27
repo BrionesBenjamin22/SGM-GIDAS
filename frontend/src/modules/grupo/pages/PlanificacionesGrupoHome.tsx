@@ -7,7 +7,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import { usePlanificaciones } from "@/modules/grupo/hooks/usePlanificacionesGrupo";
 import { deletePlanificacion } from "@/modules/grupo/services/planificacionGrupoServices";
 import SuccessToast from "@/components/SuccessToast";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import { useAuth } from "@/context/AuthContext";
 
 export default function PlanificacionGrupoLanding() {
@@ -97,29 +97,15 @@ export default function PlanificacionGrupoLanding() {
           : "Planificaciones eliminadas con éxito."
       );
       setShowSuccess(true);
-    } catch (error) {
+    } catch (error: unknown) {
       setShowConfirm(false);
 
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | {
-              message?: string;
-              error?: string;
-              detalle?: string;
-            }
-          | undefined;
-
-        setErrorMessage(
-          body?.message ||
-            body?.error ||
-            body?.detalle ||
-            "No se pudo eliminar la planificación."
-        );
-      } else {
-        setErrorMessage(
-          "Ocurrió un error inesperado al eliminar la planificación."
-        );
-      }
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+        )
+      );
 
       setShowError(true);
     }
@@ -297,6 +283,7 @@ export default function PlanificacionGrupoLanding() {
         open={showError}
         message={errorMessage}
         onClose={() => setShowError(false)}
+        variant="error"
       />
     </section>
   );

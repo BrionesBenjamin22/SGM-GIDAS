@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { CheckCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { SYSTEM_SETUP_QUERY_KEY } from "@/modules/auth/hooks/useSystemSetup";
+import { getErrorMessage } from "@/lib/httpError";
 
 export default function RegisterPage() {
   const { register, esPrimerUsuario } = useAuth();
@@ -17,17 +18,20 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [esPrimero, setEsPrimero] = useState<boolean | null>(null);
   const [verificando, setVerificando] = useState(true);
+  const [verificationError, setVerificationError] = useState(false);
   const [registroExitoso, setRegistroExitoso] = useState(false);
 
   // Verificar si es el primer usuario al cargar la página
   useEffect(() => {
     async function verificar() {
       try {
+        setVerificationError(false);
         const esElPrimero = await esPrimerUsuario();
         setEsPrimero(esElPrimero);
       } catch {
-        // Si hay error, asumimos que no es el primero (más seguro)
-        setEsPrimero(false);
+        // Un fallo de verificación no debe habilitar ni ocultar el registro inicial.
+        setEsPrimero(null);
+        setVerificationError(true);
       } finally {
         setVerificando(false);
       }
@@ -47,8 +51,8 @@ export default function RegisterPage() {
       setTimeout(() => {
         nav("/login", { replace: true });
       }, 2000);
-    } catch (err: any) {
-      setError(err?.message ?? "Error al registrarse");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Lo sentimos, no pudimos crear la cuenta. Verifique los datos e intente nuevamente."));
     } finally {
       setLoading(false);
     }
@@ -63,6 +67,22 @@ export default function RegisterPage() {
             <div className="h-8 w-48 bg-slate-200 rounded mx-auto mb-4"></div>
             <div className="h-4 w-32 bg-slate-200 rounded mx-auto"></div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (verificationError) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-[#F6F6FB]">
+        <div className="card w-full max-w-md text-center">
+          <h1 className="text-xl font-semibold mb-3">No pudimos verificar la configuración</h1>
+          <p className="text-slate-600 mb-6">
+            Lo sentimos, no pudimos recuperar la información. Intente nuevamente antes de crear una cuenta.
+          </p>
+          <button type="button" onClick={() => window.location.reload()} className="inline-block w-full rounded-full bg-slate-900 text-white py-2.5 hover:opacity-90">
+            Reintentar
+          </button>
         </div>
       </div>
     );
@@ -112,7 +132,7 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Nombre de usuario</label>
                 <input

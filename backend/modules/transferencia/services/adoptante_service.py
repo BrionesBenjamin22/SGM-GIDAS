@@ -1,6 +1,7 @@
 from modules.transferencia.models.transferencia_socio import Adoptante
 from extension import db
 from datetime import datetime
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
 
 
 class AdoptanteService:
@@ -14,7 +15,7 @@ class AdoptanteService:
         adoptante = db.session.get(Adoptante, adoptante_id)
 
         if not adoptante or adoptante.deleted_at is not None:
-            raise ValueError("Adoptante no encontrado.")
+            raise NotFoundError("Adoptante no encontrado.")
 
         return adoptante
 
@@ -65,7 +66,7 @@ class AdoptanteService:
         )
 
         if existente:
-            raise ValueError("Ya existe un adoptante con ese nombre.")
+            raise ConflictError("Ya existe un adoptante con ese nombre.")
 
         adoptante = Adoptante(
             nombre=nombre,
@@ -110,7 +111,7 @@ class AdoptanteService:
         adoptante = db.session.get(Adoptante, adoptante_id)
 
         if not adoptante or adoptante.deleted_at is not None:
-            raise ValueError("Adoptante no encontrado.")
+            raise NotFoundError("Adoptante no encontrado.")
 
         adoptante.soft_delete(user_id)
 

@@ -47,3 +47,11 @@ continuan protegidas individualmente y registran historial relacional.
 - `tests/test_planificacion_historial.py`
 - `tests/test_pagination.py`
 - pruebas de auditoria de relaciones y visitas
+- `tests/test_grupo_domain_errors.py`
+
+## Contrato de errores
+
+Los services distinguen validaciones (`VALIDATION_ERROR`), recursos inexistentes
+(`NOT_FOUND`) y conflictos de estado (`CONFLICT`). Los controladores serializan
+unicamente errores de dominio conocidos; una falla inesperada responde
+`INTERNAL_ERROR` con `request_id` y no expone detalles internos.

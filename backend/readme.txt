@@ -145,11 +145,10 @@ Archivos de referencia versionables:
 
 Archivos reales esperados:
 - .env para desarrollo local y compose de desarrollo
-- .env.docker como compatibilidad o configuracion alternativa explicita
 - .env.testing para testing
 - .env.production para produccion
 
-El archivo .env.docker del backend ya no es el default. El compose de desarrollo toma backend/.env cuando no se informa otro archivo con BACKEND_ENV_FILE. No se usa un .env.docker en la raiz del proyecto.
+El compose de desarrollo toma backend/.env cuando no se informa otro archivo con BACKEND_ENV_FILE.
 
 Variables importantes:
 - APP_ENV
@@ -176,7 +175,7 @@ JWT_EXPIRATION_MINUTES controla la duracion real del access token. Debe ser un n
 
 JWT_ISSUER identifica al emisor esperado de tokens y por defecto usa auth-service. JWT_AUDIENCE es opcional: cuando se define, el backend la incluye en los access tokens y rechaza tokens destinados a otra audiencia.
 
-RATELIMIT_STORAGE_URI define el almacenamiento usado por Flask-Limiter. En local y testing puede ser memory://, pero en produccion debe apuntar a un almacenamiento compartido como Redis. La aplicacion falla al iniciar en produccion si RATELIMIT_STORAGE_URI queda en memory://. Los endpoints de autenticacion tienen limites dedicados mediante AUTH_LOGIN_LIMIT, AUTH_REFRESH_LIMIT, AUTH_REGISTER_LIMIT y AUTH_CHANGE_PASSWORD_LIMIT.
+RATELIMIT_STORAGE_URI define el almacenamiento usado por Flask-Limiter. En local y testing puede ser memory://, pero en produccion debe apuntar a un almacenamiento compartido como Redis. La aplicacion falla al iniciar en produccion si RATELIMIT_STORAGE_URI queda en memory://. Los endpoints de autenticacion tienen limites dedicados mediante AUTH_LOGIN_LIMIT, AUTH_REFRESH_LIMIT, AUTH_REGISTER_LIMIT y AUTH_CHANGE_PASSWORD_LIMIT. Redis no se usa actualmente como cache de datos de negocio: coordina contadores entre workers/instancias y evita que reinicios del backend restablezcan localmente los limites.
 
 Valor por defecto de base de datos:
 postgresql://postgres:postgres@localhost:5432/gidas_db
@@ -274,7 +273,15 @@ Observabilidad
 
 Produccion utiliza logs JSON en stdout con `X-Request-ID`, servicio, entorno y
 version. `/api/v1/health/live` valida el proceso y `/api/v1/health/ready` valida
-PostgreSQL y Redis. Los secretos se redactan como `[REDACTED]`.
+PostgreSQL y Redis. Los secretos se redactan como `[REDACTED]`. Los detalles de
+traceback se omiten en produccion y solo se conserva el tipo de excepcion. El
+`X-Request-ID` recibido se acepta unicamente si posee hasta 128 caracteres del
+conjunto alfanumerico, punto, guion, guion bajo o dos puntos; en otro caso se
+genera un UUID.
+
+No registrar cuerpos completos, query strings, credenciales, cookies, tokens ni
+datos personales. Las herramientas de testing tampoco deben imprimir
+contrasenas en consola.
 
 Variables obligatorias en produccion:
 - APP_ENV=production
@@ -291,12 +298,34 @@ Variables obligatorias en produccion:
 Las claves SECRET_KEY, JWT_SECRET y REFRESH_SECRET deben tener al menos 32 caracteres y no pueden usar placeholders. La aplicacion falla al iniciar si detecta una configuracion insegura para produccion, CORS con comodin o ausencia de DATABASE_URL.
 
 Controles de seguridad de API:
+
+- las reglas funcionales nuevas usan excepciones tipadas de dominio
+  (`ValidationError`, `NotFoundError`, `ConflictError`, `ForbiddenError`). Solo
+  sus mensajes se exponen al cliente; las excepciones inesperadas responden
+  `INTERNAL_ERROR` con `request_id` y se registran únicamente por tipo.
+- el modulo de memorias aplica este contrato a consultas, snapshots,
+  transiciones, versionado y exportaciones, preservando estados 400, 404, 409 y
+  500 según la naturaleza del error.
+- produccion migra por subdominios. Autores y documentacion bibliografica ya
+  diferencian validaciones, inexistencias, conflictos relacionales y fallas
+  internas sin exponer excepciones de persistencia.
 - CORS restringido por FRONTEND_URLS en produccion.
 - rate limit global y limites especificos para autenticacion.
 - almacenamiento de rate limit en Redis interno para evitar contadores aislados por worker.
 - headers defensivos: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy y HSTS cuando DEBUG esta desactivado.
 - cookies de sesion con HttpOnly, SameSite y Secure en produccion.
+- el refresh token se entrega exclusivamente en la cookie `gidas_refresh`, con
+  `HttpOnly`, `SameSite=Lax`, `Path=/api/v1/auth` y `Secure` en produccion.
+- login, registro inicial y refresh devuelven el access token y el usuario seguro,
+  pero nunca incluyen el refresh token en JSON. Las respuestas usan
+  `Cache-Control: no-store`.
+- refresh y logout solo leen la cookie y validan `Origin` o, si esa cabecera no fue
+  enviada, `Referer`, contra `FRONTEND_URLS` antes de rotar o revocar sesiones.
+- logout es idempotente y, en solicitudes de origen confiable, siempre expira la
+  cookie incluso si falta o es invalida. Un origen hostil se rechaza sin modificarla.
 - ejecucion en contenedor no root, filesystem read-only desde Compose y capacidades Linux reducidas.
+- autenticacion no refleja excepciones internas, detalles de persistencia ni la
+  existencia de usuarios, correos o tokens en sus respuestas de error.
 
 No se deben versionar archivos .env reales. Los archivos .env.example y .env.production.example son plantillas y sus valores deben reemplazarse antes de desplegar.
 

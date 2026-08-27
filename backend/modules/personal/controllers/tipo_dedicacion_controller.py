@@ -1,12 +1,14 @@
 from flask import Request, Response, jsonify, g
+
+from modules.personal.models.personal import TipoDedicacion
 from modules.personal.services.tipo_dedicacion_service import (
-    crear_tipo_dedicacion,
     actualizar_tipo_dedicacion,
+    crear_tipo_dedicacion,
     eliminar_tipo_dedicacion,
     listar_tipos_dedicacion,
-    obtener_tipo_dedicacion_por_id
+    obtener_tipo_dedicacion_por_id,
 )
-from modules.personal.models.personal import TipoDedicacion
+from modules.shared.controllers.responses import exception_response
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
@@ -14,65 +16,48 @@ class TipoDedicacionController:
 
     @staticmethod
     def crear(req: Request) -> Response:
-        data = req.get_json()
         try:
-            tipo = crear_tipo_dedicacion(data, getattr(g, "current_user_id", None))
+            tipo = crear_tipo_dedicacion(req.get_json(), getattr(g, "current_user_id", None))
             return jsonify(tipo.serialize()), 201
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="crear tipo de dedicacion")
 
     @staticmethod
     def listar(req: Request) -> Response:
         try:
             tipos = listar_tipos_dedicacion(req.args.get("activos", "true"))
-            return jsonify([t.serialize() for t in tipos]), 200
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+            return jsonify([tipo.serialize() for tipo in tipos]), 200
+        except Exception as error:
+            return exception_response(error, operation="listar tipos de dedicacion")
 
     @staticmethod
     def obtener_por_id(req: Request, id: int) -> Response:
         try:
-            tipo = obtener_tipo_dedicacion_por_id(id)
-            return jsonify(tipo.serialize()), 200
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 404
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+            return jsonify(obtener_tipo_dedicacion_por_id(id).serialize()), 200
+        except Exception as error:
+            return exception_response(error, operation="consultar tipo de dedicacion")
 
     @staticmethod
     def historial(req: Request, id: int) -> Response:
         try:
-            return jsonify(
-                CatalogoAuditoriaService.historial_por_modelo(TipoDedicacion, id)
-            ), 200
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 404
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+            return jsonify(CatalogoAuditoriaService.historial_por_modelo(TipoDedicacion, id)), 200
+        except Exception as error:
+            return exception_response(error, operation="consultar historial de tipo de dedicacion")
 
     @staticmethod
     def actualizar(req: Request, id: int) -> Response:
-        data = req.get_json()
         try:
             tipo = actualizar_tipo_dedicacion(
-                id,
-                data,
-                getattr(g, "current_user_id", None)
+                id, req.get_json(), getattr(g, "current_user_id", None)
             )
             return jsonify(tipo.serialize()), 200
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="actualizar tipo de dedicacion")
 
     @staticmethod
     def eliminar(req: Request, id: int) -> Response:
         try:
             tipo = eliminar_tipo_dedicacion(id, getattr(g, "current_user_id", None))
             return jsonify(tipo.serialize()), 200
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception as error:
+            return exception_response(error, operation="eliminar tipo de dedicacion")

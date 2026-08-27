@@ -6,7 +6,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 import Tarjeta from "@/components/Tarjeta";
 import { useAuth } from "@/context/AuthContext";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import {
   deleteMemoria,
   getMemorias,
@@ -153,19 +153,12 @@ export default function MemoriasHome() {
       setShowConfirm(false);
     },
     onError: (error) => {
-      const fallback = "No se pudo eliminar la memoria.";
-
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | { error?: string; message?: string; detalle?: string }
-          | undefined;
-
-        setErrorMessage(body?.error || body?.message || body?.detalle || fallback);
-      } else if (error instanceof Error) {
-        setErrorMessage(error.message || fallback);
-      } else {
-        setErrorMessage(fallback);
-      }
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+        )
+      );
 
       setShowError(true);
       setShowConfirm(false);

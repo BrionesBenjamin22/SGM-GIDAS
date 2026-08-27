@@ -8,7 +8,7 @@ import SuccessToast from "@/components/SuccessToast";
 import Tarjeta from "@/components/Tarjeta";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { useAuth } from "@/context/AuthContext";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import { useRegistrosPropiedad } from "@/modules/produccion/hooks/useRegistrosPropiedad";
 import {
   deleteRegistroPropiedad,
@@ -220,23 +220,12 @@ export default function RegistrosPropiedadLanding() {
       setShowSuccess(true);
     } catch (error) {
       setShowConfirm(false);
-
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | { message?: string; error?: string; detalle?: string }
-          | undefined;
-
-        setErrorMessage(
-          body?.message ||
-            body?.error ||
-            body?.detalle ||
-            "No se pudo eliminar el registro de propiedad."
-        );
-      } else {
-        setErrorMessage(
-          "Ocurrio un error inesperado al eliminar el registro de propiedad."
-        );
-      }
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+        )
+      );
 
       setShowError(true);
     }

@@ -3,8 +3,21 @@
 Este directorio organiza la aplicacion React como monolito modular. Cada modulo
 agrupa la implementacion real de sus vistas, hooks y services por dominio.
 
-El router y los consumidores importan directamente desde los modulos. No se
+El router carga las paginas de cada modulo mediante `lazy` e imports dinamicos.
+Los consumidores internos importan directamente desde los modulos. No se
 mantienen fachadas paralelas en `src/pages`, `src/services` ni `src/hooks`.
+
+## Carga y recuperacion de rutas
+
+- Cada pagina se entrega como chunk diferido; el layout, la autenticacion y las
+  protecciones de rutas permanecen en el bundle base.
+- `Suspense` muestra feedback accesible mientras se descarga una pagina.
+- Un limite de errores global ofrece una accion de reintento si falla la descarga
+  o evaluacion del chunk.
+- Agregar una pagina al router con un import estatico invalida la prueba
+  `tests/routeCodeSplitting.test.ts`.
+- Los nombres de chunks no deben contener secretos y ninguna variable `VITE_*`
+  debe almacenar credenciales.
 
 ## Capas por modulo
 

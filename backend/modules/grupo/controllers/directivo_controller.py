@@ -1,5 +1,6 @@
 from flask import jsonify, request, g
 from modules.grupo.services.directivo_service import DirectivoGrupoService
+from modules.shared.controllers.responses import error_response, exception_response
 
 
 class DirectivoController:
@@ -13,10 +14,10 @@ class DirectivoController:
             data = request.get_json()
 
             if not data:
-                return jsonify({"error": "Body requerido"}), 400
+                return error_response("VALIDATION_ERROR", status_code=400)
 
             if not hasattr(g, "current_user_id"):
-                return jsonify({"error": "Usuario no autenticado"}), 401
+                return error_response("AUTH_REQUIRED", status_code=401)
 
             user_id = g.current_user_id
 
@@ -24,11 +25,8 @@ class DirectivoController:
 
             return jsonify(result), 201
 
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="crear directivo")
 
 
     # ==========================================
@@ -40,8 +38,8 @@ class DirectivoController:
             result = DirectivoGrupoService.get_all_srv()
             return jsonify(result), 200
 
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="listar directivos")
 
 
     # ==========================================
@@ -53,10 +51,10 @@ class DirectivoController:
             data = request.get_json()
 
             if not data:
-                return jsonify({"error": "Body requerido"}), 400
+                return error_response("VALIDATION_ERROR", status_code=400)
 
             if not hasattr(g, "current_user_id"):
-                return jsonify({"error": "Usuario no autenticado"}), 401
+                return error_response("AUTH_REQUIRED", status_code=401)
 
             user_id = g.current_user_id
 
@@ -68,11 +66,8 @@ class DirectivoController:
 
             return jsonify(result), 200
 
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="actualizar directivo")
 
 
     # ==========================================
@@ -84,10 +79,10 @@ class DirectivoController:
             data = request.get_json()
 
             if not data:
-                return jsonify({"error": "Body requerido"}), 400
+                return error_response("VALIDATION_ERROR", status_code=400)
 
             if not hasattr(g, "current_user_id"):
-                return jsonify({"error": "Usuario no autenticado"}), 401
+                return error_response("AUTH_REQUIRED", status_code=401)
 
             user_id = g.current_user_id
 
@@ -95,11 +90,8 @@ class DirectivoController:
 
             return jsonify(result), 201
 
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="asignar directivo")
 
 
     # ==========================================
@@ -111,10 +103,10 @@ class DirectivoController:
             data = request.get_json()
 
             if not data:
-                return jsonify({"error": "Body requerido"}), 400
+                return error_response("VALIDATION_ERROR", status_code=400)
 
             if not hasattr(g, "current_user_id"):
-                return jsonify({"error": "Usuario no autenticado"}), 401
+                return error_response("AUTH_REQUIRED", status_code=401)
 
             user_id = g.current_user_id
 
@@ -122,11 +114,8 @@ class DirectivoController:
 
             return jsonify(result), 200
 
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="finalizar cargo directivo")
 
 
     # ==========================================
@@ -138,11 +127,8 @@ class DirectivoController:
             result = DirectivoGrupoService.get_por_grupo(grupo_id)
             return jsonify(result), 200
 
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 404
-
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="consultar directivos por grupo")
 
 
     @staticmethod
@@ -151,5 +137,5 @@ class DirectivoController:
             result = DirectivoGrupoService.get_actuales_por_grupo(grupo_id)
             return jsonify(result), 200
 
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="consultar directivos actuales")

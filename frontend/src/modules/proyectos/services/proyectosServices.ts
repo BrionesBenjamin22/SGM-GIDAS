@@ -64,7 +64,51 @@ export type Proyecto = {
   becarios?: BecarioProyecto[];
 };
 
-function mapProyecto(p: any): Proyecto {
+export type ProyectoPayload = {
+  id?: string;
+  codigoProyecto?: string | number;
+  nombreProyecto?: string;
+  fechaInicio?: string;
+  fechaFinalizacion?: string | null;
+  tipoProyectoId?: number | null;
+  fuenteFinanciamientoId?: number | null;
+  descripcionProyecto?: string;
+  dificultadesProyecto?: string;
+  montoDestinado?: number | null;
+  grupoUtnId?: number | null;
+};
+
+type ProyectoApiResponse = {
+  id: number | string;
+  created_by?: number | null;
+  created_by_nombre?: string | null;
+  created_at?: string | null;
+  updated_by?: number | null;
+  updated_by_nombre?: string | null;
+  updated_at?: string | null;
+  deleted_by?: number | null;
+  deleted_by_nombre?: string | null;
+  deleted_at?: string | null;
+  activo?: boolean;
+  cerrado?: boolean;
+  codigo_proyecto: string | number;
+  nombre_proyecto: string;
+  descripcion_proyecto?: string | null;
+  dificultades_proyecto?: string | null;
+  monto_destinado?: string | number | null;
+  fecha_inicio: string;
+  fecha_fin?: string | null;
+  tipo_proyecto_id: number;
+  tipo_proyecto?: { id: number; nombre?: string | null } | null;
+  fuente_financiamiento_id?: number | null;
+  fuente_financiamiento?: { id: number; nombre?: string | null } | null;
+  grupo_utn_id?: number | null;
+  grupo_utn?: { id: number; nombre?: string | null; nombre_sigla_grupo?: string | null } | null;
+  investigadores?: InvestigadorProyecto[];
+  becarios?: BecarioProyecto[];
+};
+
+function mapProyecto(p: ProyectoApiResponse): Proyecto {
   return {
     id: String(p.id),
     created_by: p.created_by ?? null,
@@ -96,14 +140,14 @@ function mapProyecto(p: any): Proyecto {
     grupoUtnId: p.grupo_utn?.id ?? p.grupo_utn_id ?? null,
     grupoUtnNombre:
       p.grupo_utn?.nombre || p.grupo_utn?.nombre_sigla_grupo || undefined,
-    investigadores: (p.investigadores || []).map((inv: any) => ({
+    investigadores: (p.investigadores || []).map((inv) => ({
       id: inv.id,
       nombre_apellido: inv.nombre_apellido,
       fecha_inicio: inv.fecha_inicio,
       fecha_fin: inv.fecha_fin,
       es_coordinador: Boolean(inv.es_coordinador),
     })),
-    becarios: (p.becarios || []).map((bec: any) => ({
+    becarios: (p.becarios || []).map((bec) => ({
       id: bec.id,
       nombre_apellido: bec.nombre_apellido,
       fecha_inicio: bec.fecha_inicio,
@@ -120,11 +164,11 @@ export async function getProyectos(
       ? activos
       : "true";
 
-  const data = await http<any[]>(`/proyectos?activos=${activosParam}`);
+  const data = await http<ProyectoApiResponse[]>(`/proyectos?activos=${activosParam}`);
   return data.map(mapProyecto);
 }
 
-export async function upsertProyectos(payload: any) {
+export async function upsertProyectos(payload: ProyectoPayload): Promise<Proyecto> {
   const body: Record<string, unknown> = {};
 
   if ("codigoProyecto" in payload) {
@@ -154,8 +198,7 @@ export async function upsertProyectos(payload: any) {
   if ("montoDestinado" in payload) {
     body.monto_destinado =
       payload.montoDestinado !== undefined &&
-      payload.montoDestinado !== null &&
-      payload.montoDestinado !== ""
+      payload.montoDestinado !== null
         ? Number(payload.montoDestinado)
         : null;
   }
@@ -175,7 +218,11 @@ export async function upsertProyectos(payload: any) {
   const url = payload.id ? `/proyectos/${payload.id}` : "/proyectos";
   const method = payload.id ? "PUT" : "POST";
 
-  return http(url, { method, body: JSON.stringify(body) });
+  const response = await http<ProyectoApiResponse>(url, {
+    method,
+    body: JSON.stringify(body),
+  });
+  return mapProyecto(response);
 }
 
 export async function deleteProyectos(id: string) {
@@ -183,7 +230,7 @@ export async function deleteProyectos(id: string) {
 }
 
 export async function getProyectoById(id: number): Promise<Proyecto> {
-  const data = await http<any>(`/proyectos/${id}`);
+  const data = await http<ProyectoApiResponse>(`/proyectos/${id}`);
   return mapProyecto(data);
 }
 
@@ -263,10 +310,12 @@ export function desvincularInvestigadores(
 ) {
   return http(`/proyectos/${proyectoId}/investigadores`, {
     method: "PUT",
-    body: JSON.stringify({
-      investigadores_ids: investigadoresIds,
-      fecha_fin: fechaFin,
-    }),
+    body: JSON.stringify(
+      investigadoresIds.map((id) => ({
+        id_investigador: id,
+        fecha_fin: fechaFin,
+      }))
+    ),
   });
 }
 
@@ -277,9 +326,11 @@ export function desvincularBecarios(
 ) {
   return http(`/proyectos/${proyectoId}/becarios`, {
     method: "PUT",
-    body: JSON.stringify({
-      becarios_ids: becariosIds,
-      fecha_fin: fechaFin,
-    }),
+    body: JSON.stringify(
+      becariosIds.map((id) => ({
+        id_becario: id,
+        fecha_fin: fechaFin,
+      }))
+    ),
   });
 }

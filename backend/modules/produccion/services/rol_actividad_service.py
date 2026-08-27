@@ -1,5 +1,6 @@
 from modules.produccion.models.actividad_docencia import RolActividad
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 from extension import db
 from sqlalchemy import func
 
@@ -9,29 +10,29 @@ class RolActividadService:
     @staticmethod
     def _validar_id(rol_id: int):
         if isinstance(rol_id, bool) or not isinstance(rol_id, int) or rol_id <= 0:
-            raise ValueError("El id debe ser un entero positivo")
+            raise ValidationError("El id debe ser un entero positivo")
         return rol_id
 
     @staticmethod
     def _validar_payload(data: dict):
         if data is None or not isinstance(data, dict) or not data:
-            raise ValueError("Los datos no pueden estar vacios")
+            raise ValidationError("Los datos no pueden estar vacios")
         return data
 
     @staticmethod
     def _validar_nombre(nombre: str, rol_id: int = None):
         if nombre is None:
-            raise ValueError("El nombre es obligatorio")
+            raise ValidationError("El nombre es obligatorio")
 
         if not isinstance(nombre, str):
-            raise ValueError("El nombre debe ser texto")
+            raise ValidationError("El nombre debe ser texto")
 
         nombre = nombre.strip()
         if not nombre:
-            raise ValueError("El nombre no puede estar vacio")
+            raise ValidationError("El nombre no puede estar vacio")
 
         if len(nombre) < 2:
-            raise ValueError("El nombre debe tener al menos 2 caracteres")
+            raise ValidationError("El nombre debe tener al menos 2 caracteres")
 
         query = RolActividad.query.filter(
             func.lower(RolActividad.nombre) == nombre.lower()
@@ -41,7 +42,7 @@ class RolActividadService:
             query = query.filter(RolActividad.id != rol_id)
 
         if query.first():
-            raise ValueError("Ya existe un rol de actividad con ese nombre")
+            raise ConflictError("Ya existe un rol de actividad con ese nombre")
 
         return nombre
 
@@ -49,7 +50,7 @@ class RolActividadService:
     def _get_or_404(rol_id: int):
         rol = RolActividad.query.get(RolActividadService._validar_id(rol_id))
         if not rol:
-            raise ValueError("Rol de Actividad no encontrado")
+            raise NotFoundError("Rol de Actividad no encontrado")
         return rol
 
     @staticmethod
@@ -92,7 +93,7 @@ class RolActividadService:
         rol = RolActividadService._get_or_404(rol_id)
 
         if rol.deleted_at is not None:
-            raise ValueError("No se puede editar un rol de actividad inactivo")
+            raise ConflictError("No se puede editar un rol de actividad inactivo")
 
         if "nombre" in data:
             nombre = RolActividadService._validar_nombre(
@@ -119,7 +120,7 @@ class RolActividadService:
         rol = RolActividadService._get_or_404(rol_id)
 
         if rol.actividades_docencia:
-            raise ValueError(
+            raise ConflictError(
                 "No se puede eliminar el rol de actividad porque tiene actividades asociadas"
             )
 

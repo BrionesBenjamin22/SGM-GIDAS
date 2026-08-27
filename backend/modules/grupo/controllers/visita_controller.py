@@ -7,6 +7,7 @@ from modules.grupo.services.visita_service import (
     obtener_visita_por_id,
     obtener_historial_visita,
 )
+from modules.shared.controllers.responses import exception_response
 
 
 class VisitaAcademicaController:
@@ -17,10 +18,8 @@ class VisitaAcademicaController:
         try:
             visita = crear_visita_academica(data, g.current_user_id)
             return jsonify(visita.serialize()), 201
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="crear visita academica")
 
     @staticmethod
     def listar(req: Request) -> Response:
@@ -28,18 +27,16 @@ class VisitaAcademicaController:
             activos = req.args.get("activos", "true")
             visitas = listar_visitas(activos)
             return jsonify([v.serialize() for v in visitas]), 200
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="listar visitas academicas")
 
     @staticmethod
     def obtener_por_id(req: Request, id: int) -> Response:
         try:
             visita = obtener_visita_por_id(id)
             return jsonify(visita.serialize()), 200
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 404
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="consultar visita academica")
 
     @staticmethod
     def actualizar(req: Request, id: int) -> Response:
@@ -48,20 +45,16 @@ class VisitaAcademicaController:
             data["user_id"] = g.current_user_id
             visita = actualizar_visita_academica(id, data)
             return jsonify(visita.serialize()), 200
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="actualizar visita academica")
 
     @staticmethod
     def obtener_historial(req: Request, id: int) -> Response:
         try:
             historial = obtener_historial_visita(id)
             return jsonify(historial), 200
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 404
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="consultar historial de visita")
 
     @staticmethod
     def eliminar(req: Request, id: int) -> Response:
@@ -70,7 +63,5 @@ class VisitaAcademicaController:
             return jsonify(
                 {"message": "Visita academica eliminada correctamente"}
             ), 200
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="eliminar visita academica")

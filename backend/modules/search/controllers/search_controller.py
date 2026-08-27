@@ -3,6 +3,8 @@ from math import ceil
 from flask import current_app, jsonify, request
 
 from modules.search.services.search_service import SearchService
+from modules.shared.controllers.responses import exception_response
+from modules.shared.exceptions import ValidationError
 
 
 class SearchController:
@@ -18,23 +20,20 @@ class SearchController:
             per_page = min(per_page, current_app.config["SEARCH_MAX_PER_PAGE"])
 
             if not query_text:
-                return jsonify({"error": 'El parametro "q" es obligatorio'}), 400
+                raise ValidationError('El parametro "q" es obligatorio')
 
             if len(query_text) < 2:
-                return jsonify({"error": "El texto debe tener al menos 2 caracteres"}), 400
+                raise ValidationError("El texto debe tener al menos 2 caracteres")
 
             if len(query_text) > current_app.config["SEARCH_MAX_QUERY_LENGTH"]:
-                return jsonify({
-                    "error": (
-                        "El texto de busqueda es demasiado largo. "
-                        "Ingrese una consulta mas breve."
-                    )
-                }), 400
+                raise ValidationError(
+                    "El texto de busqueda es demasiado largo. Ingrese una consulta mas breve."
+                )
 
             if eliminados not in ("false", "true", "all"):
-                return jsonify({
-                    "error": 'El parametro "eliminados" debe ser "false", "true" o "all"'
-                }), 400
+                raise ValidationError(
+                    'El parametro "eliminados" debe ser "false", "true" o "all"'
+                )
 
             resultados = SearchService.search(
                 query_text=query_text,
@@ -63,13 +62,8 @@ class SearchController:
             response.headers["Cache-Control"] = "private, no-store"
             return response, 200
 
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-
-        except Exception:
-            return jsonify({
-                "error": "Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente."
-            }), 500
+        except Exception as error:
+            return exception_response(error, operation="realizar busqueda global")
 
     @staticmethod
     def _parse_positive_int(param_name: str, default: int) -> int:
@@ -78,9 +72,9 @@ class SearchController:
         try:
             value = int(raw_value)
         except ValueError as exc:
-            raise ValueError(f'El parametro "{param_name}" debe ser numerico') from exc
+            raise ValidationError(f'El parametro "{param_name}" debe ser numerico') from exc
 
         if value < 1:
-            raise ValueError(f'El parametro "{param_name}" debe ser mayor o igual a 1')
+            raise ValidationError(f'El parametro "{param_name}" debe ser mayor o igual a 1')
 
         return value

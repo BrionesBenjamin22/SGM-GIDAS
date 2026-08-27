@@ -6,20 +6,24 @@ import time
 import uuid
 from datetime import datetime, timezone
 
-from flask import g, has_request_context, jsonify, request
-from werkzeug.exceptions import HTTPException
+from flask import g, has_request_context, request
 
 
 TEXT_LOG_FORMAT = "%(asctime)s %(levelname)s [%(name)s] %(module)s.%(funcName)s:%(lineno)d - %(message)s"
 SENSITIVE_PATTERN = re.compile(
-    r"(?i)(authorization|password|contrasena|token|secret)(\s*[:=]\s*)([^\s,;]+)"
+    r'''(?ix)
+    (["']?(?:authorization|password|contrasena|contraseña|token|access_token|
+    refresh_token|secret|api_key|cookie|set-cookie)["']?\s*[:=]\s*)
+    (?:"[^"]*"|'[^']*'|[^\s,;}]+)
+    '''
 )
 BEARER_PATTERN = re.compile(r"(?i)(bearer\s+)([^\s,;]+)")
+REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
 
 
 def redact_sensitive(value: str) -> str:
     redacted = SENSITIVE_PATTERN.sub(
-        lambda match: f"{match.group(1)}{match.group(2)}[REDACTED]", value
+        lambda match: f"{match.group(1)}[REDACTED]", value
     )
     return BEARER_PATTERN.sub(lambda match: f"{match.group(1)}[REDACTED]", redacted)
 
@@ -36,12 +40,18 @@ class SensitiveDataFilter(logging.Filter):
         return True
 
 
+class SafeTextFormatter(logging.Formatter):
+    def formatException(self, exc_info):
+        return redact_sensitive(super().formatException(exc_info))
+
+
 class JsonFormatter(logging.Formatter):
     def __init__(self, service="gidas-backend", environment="local", version="development"):
         super().__init__()
         self.service = service
         self.environment = environment
         self.version = version
+        self.include_exception_details = environment not in {"production", "prod"}
 
     def format(self, record):
         payload = {
@@ -65,7 +75,11 @@ class JsonFormatter(logging.Formatter):
                 "role": getattr(g, "current_user_rol", None),
             })
         if record.exc_info:
-            payload["exception"] = self.formatException(record.exc_info)
+            payload["exception_type"] = record.exc_info[0].__name__
+            if self.include_exception_details:
+                payload["exception"] = redact_sensitive(
+                    self.formatException(record.exc_info)
+                )
         return json.dumps(payload, ensure_ascii=False, default=str)
 
 
@@ -84,7 +98,7 @@ def configure_logging(app_env="local", log_level="INFO", log_format="text", serv
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(
         JsonFormatter(service, app_env, version)
-        if log_format == "json" else logging.Formatter(TEXT_LOG_FORMAT)
+        if log_format == "json" else SafeTextFormatter(TEXT_LOG_FORMAT)
     )
     handler.addFilter(SensitiveDataFilter())
     root_logger.addHandler(handler)
@@ -99,7 +113,9 @@ def register_request_logging(app):
     @app.before_request
     def _start_request():
         incoming = request.headers.get("X-Request-ID", "").strip()
-        g.request_id = incoming[:128] if incoming else str(uuid.uuid4())
+        g.request_id = (
+            incoming if REQUEST_ID_PATTERN.fullmatch(incoming) else str(uuid.uuid4())
+        )
         g.request_started_at = time.perf_counter()
 
     @app.after_request
@@ -114,15 +130,5 @@ def register_request_logging(app):
             response.status_code, duration_ms,
         )
         return response
-
-    @app.errorhandler(Exception)
-    def _unhandled_exception(error):
-        if isinstance(error, HTTPException):
-            return error
-        logging.getLogger("gidas.error").exception("unhandled exception")
-        return jsonify({
-            "error": "Lo sentimos, no pudimos completar la operación. Intente nuevamente.",
-            "request_id": getattr(g, "request_id", None),
-        }), 500
 
     return app

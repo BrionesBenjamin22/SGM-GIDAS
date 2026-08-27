@@ -117,6 +117,21 @@ export type DashboardResumenResponse = {
 function buildDashboardResumenQuery(params?: DashboardResumenParams) {
   if (!params) return "";
 
+  if (
+    params.anios !== undefined &&
+    (!Number.isInteger(params.anios) || params.anios <= 0)
+  ) {
+    throw new Error("La cantidad de anos debe ser un entero mayor a cero.");
+  }
+
+  if (
+    params.fecha_desde &&
+    params.fecha_hasta &&
+    params.fecha_desde > params.fecha_hasta
+  ) {
+    throw new Error("La fecha desde no puede ser posterior a la fecha hasta.");
+  }
+
   const searchParams = new URLSearchParams();
 
   if (params.anios !== undefined) {
@@ -144,7 +159,7 @@ function buildDashboardResumenQuery(params?: DashboardResumenParams) {
 
 export async function getDashboardResumen(
   params?: DashboardResumenParams
-) {
+): Promise<DashboardResumenResponse> {
   const query = buildDashboardResumenQuery(params);
 
   return http<DashboardResumenResponse>(`/dashboards/resumen${query}`, {

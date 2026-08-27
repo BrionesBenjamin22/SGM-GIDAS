@@ -1,3 +1,4 @@
+import builtins
 from datetime import datetime
 from sqlalchemy import func
 from sqlalchemy import extract, or_
@@ -10,6 +11,7 @@ from modules.personal.models.personal import Becario
 from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import validar_fecha_alta_grupo
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
 
 
 # =====================================================
@@ -19,7 +21,7 @@ from modules.memorias.services.memoria_periodo_service import validar_fecha_alta
 def _get_beca_activa_or_404(beca_id: int):
     beca = db.session.get(Beca, beca_id)
     if not beca or beca.deleted_at is not None:
-        raise ValueError("Beca no encontrada.")
+        raise NotFoundError("Beca no encontrada.")
     return beca
 
 
@@ -56,7 +58,7 @@ def _validar_fuente_financiamiento(fuente_financiamiento_id):
 def _parsear_fecha(valor, campo):
     try:
         return datetime.strptime(valor, "%Y-%m-%d").date()
-    except (TypeError, ValueError):
+    except (TypeError, builtins.ValueError):
         raise ValueError(f"Formato de {campo} invalido.")
 
 
@@ -227,7 +229,7 @@ class BecaService:
 
         becario = db.session.get(Becario, data.get("id_becario"))
         if not becario or becario.deleted_at is not None:
-            raise ValueError("Becario no encontrado.")
+            raise NotFoundError("Becario no encontrado.")
 
         fecha_inicio = _parsear_fecha(data.get("fecha_inicio"), "fecha_inicio")
 
@@ -243,7 +245,7 @@ class BecaService:
         if monto_percibido is not None:
             try:
                 monto_percibido = float(monto_percibido)
-            except (TypeError, ValueError):
+            except (TypeError, builtins.ValueError):
                 raise ValueError("El monto_percibido debe ser numerico.")
 
             if monto_percibido < 0:
@@ -251,7 +253,7 @@ class BecaService:
 
         existe = _get_relacion_activa(beca.id, becario.id)
         if existe:
-            raise ValueError("El becario ya está vinculado a esta beca.")
+            raise ConflictError("El becario ya está vinculado a esta beca.")
 
         relacion = Beca_Becario(
             id_beca=beca.id,
@@ -292,7 +294,7 @@ class BecaService:
         relacion = _get_relacion_activa(beca_id, becario_id)
 
         if not relacion:
-            raise ValueError("La relación no existe.")
+            raise NotFoundError("La relación no existe.")
 
         relacion.soft_delete(user_id)
         beca = _get_beca_activa_or_404(beca_id)

@@ -5,12 +5,13 @@ import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 import {
   createArticulo,
   getArticuloById,
   updateArticulo,
+  type ArticuloPayload,
 } from "@/modules/produccion/services/articulosDivulgacionServices";
 
 export default function ArticulosDivulgacionForm() {
@@ -88,10 +89,10 @@ export default function ArticulosDivulgacionForm() {
   };
 
   const mutation = useMutation({
-    mutationFn: (payload: any) =>
+    mutationFn: (payload: Partial<ArticuloPayload>) =>
       isEdit
         ? updateArticulo(Number(id), payload)
-        : createArticulo(payload),
+        : createArticulo(payload as ArticuloPayload),
     onSuccess: async (saved) => {
       const articuloId = isEdit ? Number(id) : saved.id;
 
@@ -101,7 +102,7 @@ export default function ArticulosDivulgacionForm() {
         queryKey: ["articulo-divulgacion-historial", articuloId],
       });
 
-      navigate(`/articulos-divulgacion/${articuloId}`, {
+      navigate(isEdit ? `/articulos-divulgacion/${articuloId}` : "/articulos-divulgacion", {
         replace: true,
         state: {
           successMessage: isEdit
@@ -111,37 +112,18 @@ export default function ArticulosDivulgacionForm() {
       });
     },
     onError: (error) => {
-      const defaultMessage = isEdit
-        ? "No se pudo actualizar el articulo de divulgacion."
-        : "No se pudo crear el articulo de divulgacion.";
+      const backendMessage = getErrorMessage(
+        error,
+        "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+      );
+      const lowerMessage = backendMessage.toLowerCase();
 
-      let backendMessage = defaultMessage;
-
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | { message?: string; error?: string; detalle?: string }
-          | undefined;
-
-        backendMessage = body?.error || body?.message || body?.detalle || defaultMessage;
-
-        const lowerMessage = backendMessage.toLowerCase();
-
-        if (lowerMessage.includes("titulo")) {
-          setErrors((prev) => ({
-            ...prev,
-            titulo: backendMessage,
-          }));
-        } else if (lowerMessage.includes("descripcion")) {
-          setErrors((prev) => ({
-            ...prev,
-            descripcion: backendMessage,
-          }));
-        } else if (lowerMessage.includes("fecha")) {
-          setErrors((prev) => ({
-            ...prev,
-            fecha: backendMessage,
-          }));
-        }
+      if (lowerMessage.includes("titulo")) {
+        setErrors((prev) => ({ ...prev, titulo: backendMessage }));
+      } else if (lowerMessage.includes("descripcion")) {
+        setErrors((prev) => ({ ...prev, descripcion: backendMessage }));
+      } else if (lowerMessage.includes("fecha")) {
+        setErrors((prev) => ({ ...prev, fecha: backendMessage }));
       }
 
       setErrorMessage(backendMessage);
@@ -208,6 +190,7 @@ export default function ArticulosDivulgacionForm() {
       </h2>
 
       <form
+        noValidate
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >

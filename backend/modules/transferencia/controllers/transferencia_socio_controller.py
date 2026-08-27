@@ -1,212 +1,91 @@
-from flask import jsonify, request, g
-from modules.transferencia.services.transferencia_service import (
-    TransferenciaSocioProductivaService
-)
+from flask import g, jsonify, request
+
+from modules.shared.controllers.responses import exception_response
+from modules.shared.exceptions import ValidationError
+from modules.transferencia.services.transferencia_service import TransferenciaSocioProductivaService
 
 
 class TransferenciaSocioProductivaController:
-
-    # =================================================
-    # GET ALL
-    # =================================================
     @staticmethod
     def get_all():
         try:
             filtros = {
                 "grupo_utn_id": request.args.get("grupo_utn_id", type=int),
                 "tipo_contrato_id": request.args.get("tipo_contrato_id", type=int),
-                "activos": request.args.get("activos", "true")
+                "activos": request.args.get("activos", "true"),
             }
+            return jsonify(TransferenciaSocioProductivaService.get_all(filtros)), 200
+        except Exception as error:
+            return exception_response(error, operation="listar transferencias")
 
-            result = TransferenciaSocioProductivaService.get_all(filtros)
-
-            return jsonify(result), 200
-
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
-
-
-    # =================================================
-    # GET BY ID
-    # =================================================
     @staticmethod
     def get_by_id(transferencia_id):
         try:
-            result = TransferenciaSocioProductivaService.get_by_id(transferencia_id)
-            return jsonify(result), 200
-
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 404
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+            return jsonify(TransferenciaSocioProductivaService.get_by_id(transferencia_id)), 200
+        except Exception as error:
+            return exception_response(error, operation="consultar transferencia")
 
     @staticmethod
     def get_historial(transferencia_id):
         try:
-            result = TransferenciaSocioProductivaService.get_historial(
-                transferencia_id
-            )
-            return jsonify(result), 200
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 404
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+            return jsonify(TransferenciaSocioProductivaService.get_historial(transferencia_id)), 200
+        except Exception as error:
+            return exception_response(error, operation="consultar historial de transferencia")
 
-
-    # =================================================
-    # CREATE
-    # =================================================
     @staticmethod
     def create():
         try:
             data = request.get_json()
-
             if not data:
-                return jsonify({"error": "Body requerido"}), 400
+                raise ValidationError("Body requerido")
+            return jsonify(TransferenciaSocioProductivaService.create(data, g.current_user_id)), 201
+        except Exception as error:
+            return exception_response(error, operation="crear transferencia")
 
-            user_id = g.current_user_id
-
-            result = TransferenciaSocioProductivaService.create(
-                data,
-                user_id
-            )
-
-            return jsonify(result), 201
-
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
-
-
-    # =================================================
-    # UPDATE
-    # =================================================
     @staticmethod
     def update(transferencia_id):
         try:
             data = request.get_json()
-            user_id = g.current_user_id
-
             if not data:
-                return jsonify({"error": "Body requerido"}), 400
+                raise ValidationError("Body requerido")
+            return jsonify(TransferenciaSocioProductivaService.update(transferencia_id, data, g.current_user_id)), 200
+        except Exception as error:
+            return exception_response(error, operation="actualizar transferencia")
 
-            result = TransferenciaSocioProductivaService.update(
-                transferencia_id,
-                data,
-                user_id
-            )
-
-            return jsonify(result), 200
-
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
-
-
-    # =================================================
-    # SOFT DELETE
-    # =================================================
     @staticmethod
     def delete(transferencia_id):
         try:
-            user_id = g.current_user_id  
+            return jsonify(TransferenciaSocioProductivaService.delete(transferencia_id, g.current_user_id)), 200
+        except Exception as error:
+            return exception_response(error, operation="eliminar transferencia")
 
-            result = TransferenciaSocioProductivaService.delete(
-                transferencia_id,
-                user_id
-            )
-
-            return jsonify(result), 200
-
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
-
-
-    # =================================================
-    # RESTORE
-    # =================================================
     @staticmethod
     def restore(transferencia_id):
         try:
-            result = TransferenciaSocioProductivaService.restore(
-                transferencia_id
-            )
+            return jsonify(TransferenciaSocioProductivaService.restore(transferencia_id)), 200
+        except Exception as error:
+            return exception_response(error, operation="restaurar transferencia")
 
-            return jsonify(result), 200
+    @staticmethod
+    def _adoptantes_ids():
+        data = request.get_json()
+        if not data:
+            raise ValidationError("Body requerido")
+        adoptantes_ids = data.get("adoptantes_ids")
+        if not isinstance(adoptantes_ids, list) or not adoptantes_ids:
+            raise ValidationError("adoptantes_ids debe ser una lista no vacía")
+        return adoptantes_ids
 
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
-
-
-    # =================================================
-    # VINCULAR ADOPTANTES
-    # =================================================
     @staticmethod
     def add_adoptantes(transferencia_id):
         try:
-            data = request.get_json()
+            return jsonify(TransferenciaSocioProductivaService.add_adoptantes(transferencia_id, TransferenciaSocioProductivaController._adoptantes_ids(), g.current_user_id)), 200
+        except Exception as error:
+            return exception_response(error, operation="vincular adoptantes")
 
-            if not data:
-                return jsonify({"error": "Body requerido"}), 400
-
-            adoptantes_ids = data.get("adoptantes_ids")
-
-            if not isinstance(adoptantes_ids, list) or not adoptantes_ids:
-                return jsonify({
-                    "error": "adoptantes_ids debe ser una lista no vacía"
-                }), 400
-
-            user_id = g.current_user_id
-
-            result = TransferenciaSocioProductivaService.add_adoptantes(
-                transferencia_id,
-                adoptantes_ids,
-                user_id
-            )
-
-            return jsonify(result), 200
-
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
-
-
-    # =================================================
-    # DESVINCULAR ADOPTANTES
-    # =================================================
     @staticmethod
     def remove_adoptantes(transferencia_id):
         try:
-            data = request.get_json()
-
-            if not data:
-                return jsonify({"error": "Body requerido"}), 400
-
-            adoptantes_ids = data.get("adoptantes_ids")
-
-            if not isinstance(adoptantes_ids, list) or not adoptantes_ids:
-                return jsonify({
-                    "error": "adoptantes_ids debe ser una lista no vacía"
-                }), 400
-
-            user_id = g.current_user_id
-
-            result = TransferenciaSocioProductivaService.remove_adoptantes(
-                transferencia_id,
-                adoptantes_ids,
-                user_id
-            )
-
-            return jsonify(result), 200
-
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+            return jsonify(TransferenciaSocioProductivaService.remove_adoptantes(transferencia_id, TransferenciaSocioProductivaController._adoptantes_ids(), g.current_user_id)), 200
+        except Exception as error:
+            return exception_response(error, operation="desvincular adoptantes")

@@ -1,5 +1,6 @@
 from modules.produccion.models.documentacion_autores import DocumentacionBibliografica, Autor
 from extension import db
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 
 
 class AutorService:
@@ -11,25 +12,25 @@ class AutorService:
     @staticmethod
     def _validar_payload(data: dict):
         if not isinstance(data, dict) or not data:
-            raise Exception("Los datos no pueden estar vacios")
+            raise ValidationError("Los datos no pueden estar vacios")
 
     @staticmethod
     def _validar_id(valor, campo: str):
         if not isinstance(valor, int) or valor <= 0:
-            raise Exception(f"El campo '{campo}' debe ser un entero positivo")
+            raise ValidationError(f"El campo '{campo}' debe ser un entero positivo")
         return valor
 
     @staticmethod
     def _validar_nombre(nombre: str):
         if not nombre or not isinstance(nombre, str) or not nombre.strip():
-            raise Exception("El nombre es obligatorio")
+            raise ValidationError("El nombre es obligatorio")
         return nombre.strip()
 
     @staticmethod
     def _get_or_404(autor_id: int):
         autor = db.session.get(Autor, AutorService._validar_id(autor_id, "autor_id"))
         if not autor:
-            raise Exception("Autor no encontrado")
+            raise NotFoundError("Autor no encontrado")
         return autor
 
     # =========================
@@ -58,7 +59,7 @@ class AutorService:
         )
 
         if existente:
-            raise Exception("Ya existe un autor con ese nombre")
+            raise ConflictError("Ya existe un autor con ese nombre")
 
         autor = Autor(nombre_apellido=nombre)
 
@@ -89,7 +90,7 @@ class AutorService:
             )
 
             if existente:
-                raise Exception("Ya existe un autor con ese nombre")
+                raise ConflictError("Ya existe un autor con ese nombre")
 
             autor.nombre_apellido = nombre
 
@@ -106,7 +107,7 @@ class AutorService:
         autor = AutorService._get_or_404(autor_id)
 
         if autor.libros:
-            raise Exception("No se puede eliminar un autor con libros asociados")
+            raise ConflictError("No se puede eliminar un autor con libros asociados")
 
         db.session.delete(autor)
         try:
@@ -130,10 +131,10 @@ class AutorService:
             AutorService._validar_id(libro_id, "libro_id")
         )
         if not libro or libro.deleted_at is not None:
-            raise Exception("Libro no encontrado")
+            raise NotFoundError("Libro no encontrado")
 
         if libro in autor.libros:
-            raise Exception("El libro ya esta asociado a este autor")
+            raise ConflictError("El libro ya esta asociado a este autor")
 
         autor.libros.append(libro)
         try:
@@ -153,10 +154,10 @@ class AutorService:
             AutorService._validar_id(libro_id, "libro_id")
         )
         if not libro or libro.deleted_at is not None:
-            raise Exception("Libro no encontrado")
+            raise NotFoundError("Libro no encontrado")
 
         if libro not in autor.libros:
-            raise Exception("La relacion no existe")
+            raise NotFoundError("La relacion no existe")
 
         autor.libros.remove(libro)
         try:

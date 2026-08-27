@@ -1,12 +1,14 @@
 import unittest
 
-from flask import Flask
+from flask import Flask, g
 
 from modules.shared.controllers.responses import (
     error_response,
+    exception_response,
     paginated_response,
     success_response,
 )
+from modules.shared.exceptions import NotFoundError, ValidationError
 from modules.shared.routes.status import health_bp
 
 
@@ -79,6 +81,44 @@ class ApiResponsesTestCase(unittest.TestCase):
                 "error": None,
             },
         )
+
+    def test_exception_response_expone_solo_error_de_dominio(self):
+        with self.app.test_request_context():
+            response, status_code = exception_response(
+                ValidationError("El periodo es obligatorio", details={"campo": "periodo"}),
+                operation="crear memoria",
+            )
+
+        self.assertEqual(status_code, 400)
+        self.assertEqual(response.get_json()["error"], {
+            "code": "VALIDATION_ERROR",
+            "message": "El periodo es obligatorio",
+            "details": {"campo": "periodo"},
+        })
+
+    def test_exception_response_respeta_estado_not_found(self):
+        with self.app.test_request_context():
+            response, status_code = exception_response(
+                NotFoundError("Memoria no encontrada"),
+                operation="consultar memoria",
+            )
+
+        self.assertEqual(status_code, 404)
+        self.assertEqual(response.get_json()["error"]["code"], "NOT_FOUND")
+
+    def test_exception_response_oculta_error_inesperado_y_agrega_request_id(self):
+        with self.app.test_request_context():
+            g.request_id = "req-seguro-123"
+            response, status_code = exception_response(
+                RuntimeError("postgresql://usuario:secreto@db/interna"),
+                operation="consultar memoria",
+            )
+
+        body = response.get_json()
+        self.assertEqual(status_code, 500)
+        self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
+        self.assertEqual(body["error"]["details"], {"request_id": "req-seguro-123"})
+        self.assertNotIn("secreto", str(body))
 
 
 if __name__ == "__main__":

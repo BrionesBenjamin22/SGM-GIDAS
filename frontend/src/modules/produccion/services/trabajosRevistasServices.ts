@@ -55,7 +55,10 @@ type GetTrabajosRevistasOptions = {
   orden?: "asc" | "desc";
 };
 
-const normalizeTrabajoRevista = (item: any): TrabajoRevista => ({
+type TrabajoRevistaBackend = Partial<TrabajoRevista> & { id: number };
+type ApiListResponse<T> = T[] | { data?: T[] };
+
+const normalizeTrabajoRevista = (item: TrabajoRevistaBackend): TrabajoRevista => ({
   id: item.id,
   created_by: item.created_by ?? null,
   created_by_nombre: item.created_by_nombre ?? null,
@@ -80,7 +83,7 @@ const normalizeTrabajoRevista = (item: any): TrabajoRevista => ({
 
 export const getTrabajosRevistas = async (
   options: GetTrabajosRevistasOptions = {}
-) => {
+): Promise<TrabajoRevista[]> => {
   const { activos, orden = "asc" } = options;
 
   const params = new URLSearchParams();
@@ -98,7 +101,7 @@ export const getTrabajosRevistas = async (
     ? `/trabajos-revistas?${query}`
     : "/trabajos-revistas";
 
-  const response = await http<any>(endpoint, {
+  const response = await http<ApiListResponse<TrabajoRevistaBackend>>(endpoint, {
     method: "GET",
   });
 
@@ -111,8 +114,8 @@ export const getTrabajosRevistas = async (
   return items.map(normalizeTrabajoRevista);
 };
 
-export const getTrabajoRevistaById = async (id: number) => {
-  const response = await http<any>(`/trabajos-revistas/${id}`, {
+export const getTrabajoRevistaById = async (id: number): Promise<TrabajoRevista> => {
+  const response = await http<TrabajoRevistaBackend>(`/trabajos-revistas/${id}`, {
     method: "GET",
   });
 
@@ -122,7 +125,7 @@ export const getTrabajoRevistaById = async (id: number) => {
 export const getHistorialTrabajoRevistaById = async (
   id: number
 ): Promise<HistorialTrabajoRevistaItem[]> => {
-  const response = await http<any>(`/trabajos-revistas/${id}/historial`, {
+  const response = await http<ApiListResponse<HistorialTrabajoRevistaItem>>(`/trabajos-revistas/${id}/historial`, {
     method: "GET",
   });
 
@@ -137,8 +140,8 @@ export const getHistorialTrabajoRevistaById = async (
   return [];
 };
 
-export const createTrabajoRevista = async (data: TrabajoRevistaPayload) => {
-  const response = await http<any>("/trabajos-revistas/", {
+export const createTrabajoRevista = async (data: TrabajoRevistaPayload): Promise<TrabajoRevista> => {
+  const response = await http<TrabajoRevistaBackend>("/trabajos-revistas/", {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -149,7 +152,7 @@ export const createTrabajoRevista = async (data: TrabajoRevistaPayload) => {
 export const updateTrabajoRevista = async (
   id: number,
   data: Partial<TrabajoRevistaPayload>
-) => {
+): Promise<TrabajoRevista> => {
   const body: Record<string, unknown> = {};
 
   if ("titulo_trabajo" in data) body.titulo_trabajo = data.titulo_trabajo;
@@ -161,7 +164,7 @@ export const updateTrabajoRevista = async (
   if ("tipo_reunion_id" in data) body.tipo_reunion_id = data.tipo_reunion_id;
   if ("grupo_utn_id" in data) body.grupo_utn_id = data.grupo_utn_id;
 
-  const response = await http<any>(`/trabajos-revistas/${id}`, {
+  const response = await http<TrabajoRevistaBackend>(`/trabajos-revistas/${id}`, {
     method: "PUT",
     body: JSON.stringify(body),
   });

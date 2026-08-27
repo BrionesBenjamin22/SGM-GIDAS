@@ -2,8 +2,7 @@ import { http } from "@/lib/http";
 import { isMockMode } from "./tiposContratoService";
 
 /** Forzar modo mock para adoptantes (poner false cuando el backend esté listo). */
-const FORCE_MOCK = false;
-const useMock = () => FORCE_MOCK || isMockMode();
+const useMock = () => isMockMode();
 
 // ─── Tipos ───────────────────────────────────────────────────
 // El backend solo tiene: id (number) y nombre (string)
@@ -23,7 +22,22 @@ const delay = (ms = 300) => new Promise((r) => setTimeout(r, ms));
 
 function readMock(): Adoptante[] {
     const raw = localStorage.getItem(MOCK_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+
+    try {
+        const parsed: unknown = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+
+        return parsed.filter(
+            (item): item is Adoptante =>
+                Boolean(item) &&
+                typeof item === "object" &&
+                typeof (item as { id?: unknown }).id === "number" &&
+                typeof (item as { nombre?: unknown }).nombre === "string"
+        );
+    } catch {
+        return [];
+    }
 }
 
 function writeMock(items: Adoptante[]) {
@@ -33,7 +47,11 @@ function writeMock(items: Adoptante[]) {
 let _mockIdCounter = 100;
 
 function ensureSeed() {
-    if (localStorage.getItem(MOCK_KEY) !== null) return;
+    if (localStorage.getItem(MOCK_KEY) !== null) {
+        const current = readMock();
+        _mockIdCounter = Math.max(100, ...current.map((item) => item.id));
+        return;
+    }
     const seed: Adoptante[] = [
         { id: 1, nombre: "Empresa Tech SA" },
         { id: 2, nombre: "Municipalidad de Resistencia" },
@@ -104,14 +122,12 @@ export async function updateAdoptante(
     });
 }
 
-/** Eliminar un adoptante (solo mock — backend no tiene DELETE). */
+/** Eliminar logicamente un adoptante. */
 export async function deleteAdoptante(id: number): Promise<void> {
     if (useMock()) {
         await delay();
         writeMock(readMock().filter((a) => a.id !== id));
         return;
     }
-    // Backend no tiene endpoint DELETE para adoptantes.
-    // Ver backend_gaps.md
-    console.warn("DELETE /adoptantes/:id no existe en el backend aún");
+    await http(`/adoptantes/${id}`, { method: "DELETE" });
 }

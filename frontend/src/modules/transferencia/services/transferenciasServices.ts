@@ -2,8 +2,7 @@ import { http } from "@/lib/http";
 import { isMockMode } from "./tiposContratoService";
 import type { Adoptante } from "./adoptantesServices";
 
-const FORCE_MOCK = false;
-const useMock = () => FORCE_MOCK || isMockMode();
+const useMock = () => isMockMode();
 
 interface TransferenciaBackend {
   id: number;
@@ -29,6 +28,10 @@ interface TransferenciaBackend {
   deleted_by?: number | string | null;
   deleted_by_nombre?: string | null;
 }
+
+type TransferenciasResponse =
+  | TransferenciaBackend[]
+  | { data?: TransferenciaBackend[] };
 
 export interface Transferencia {
   id: number;
@@ -65,6 +68,10 @@ export type HistorialTransferenciaItem = {
   valor_nuevo?: unknown;
   tipo?: string;
 };
+
+type HistorialTransferenciaResponse =
+  | HistorialTransferenciaItem[]
+  | { data?: HistorialTransferenciaItem[] };
 
 export interface TransferenciaPayload {
   numeroTransferencia: number;
@@ -153,7 +160,9 @@ export async function getTransferencias(
     return [];
   }
 
-  const response = await http<any>(`/transferencias?activos=${activos}`);
+  const response = await http<TransferenciasResponse>(
+    `/transferencias?activos=${activos}`
+  );
   const items = Array.isArray(response)
     ? response
     : Array.isArray(response?.data)
@@ -170,16 +179,19 @@ export async function getTransferenciaById(
     return null;
   }
 
-  const raw = await http<TransferenciaBackend | null>(`/transferencias/${id}`);
+  const raw = await http<TransferenciaBackend | null>(`/transferencias/${id}`, {
+    allowNotFound: true,
+  });
   return raw ? fromBackend(raw) : null;
 }
 
 export async function getHistorialTransferenciaById(
   id: number
 ): Promise<HistorialTransferenciaItem[]> {
-  const response = await http<any>(`/transferencias/${id}/historial`, {
-    method: "GET",
-  });
+  const response = await http<HistorialTransferenciaResponse>(
+    `/transferencias/${id}/historial`,
+    { method: "GET" }
+  );
 
   if (Array.isArray(response)) return response;
   if (Array.isArray(response?.data)) return response.data;

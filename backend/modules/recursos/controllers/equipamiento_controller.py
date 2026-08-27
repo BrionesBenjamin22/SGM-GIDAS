@@ -1,5 +1,6 @@
 from flask import jsonify, request, g
 from modules.recursos.services.equipamiento_service import EquipamientoService
+from modules.shared.controllers.responses import exception_response
 
 
 class EquipamientoController:
@@ -9,8 +10,8 @@ class EquipamientoController:
         try:
             activos = request.args.get("activos", "true")
             return jsonify(EquipamientoService.get_all(activos)), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="listar equipamiento")
 
 
     @staticmethod
@@ -19,8 +20,8 @@ class EquipamientoController:
             return jsonify(
                 EquipamientoService.get_by_id(equipamiento_id)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar equipamiento")
 
     @staticmethod
     def get_historial(equipamiento_id):
@@ -28,8 +29,8 @@ class EquipamientoController:
             return jsonify(
                 EquipamientoService.get_historial(equipamiento_id)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar historial de equipamiento")
 
 
     @staticmethod
@@ -42,8 +43,8 @@ class EquipamientoController:
                 EquipamientoService.create(data, user_id)
             ), 201
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="crear equipamiento")
 
 
     @staticmethod
@@ -56,8 +57,8 @@ class EquipamientoController:
                 EquipamientoService.update(equipamiento_id, data, user_id)
             ), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="actualizar equipamiento")
 
 
     @staticmethod
@@ -69,5 +70,5 @@ class EquipamientoController:
                 EquipamientoService.delete(equipamiento_id, user_id)
             ), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="eliminar equipamiento")

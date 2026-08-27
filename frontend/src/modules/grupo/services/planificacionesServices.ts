@@ -6,7 +6,7 @@ export type Planificacion = {
 };
 
 export async function getPlanificaciones(): Promise<Planificacion[]> {
-  const data = await http<any[]>("/planificaciones/");
+  const data = await http<Planificacion[]>("/planificaciones/");
 
   return data.map((p) => ({
     id: p.id,

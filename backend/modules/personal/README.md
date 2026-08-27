@@ -74,3 +74,11 @@ completa ante cualquier fallo.
 - `tests/test_personal_relaciones_consolidadas.py`
 - `tests/test_auditoria_personal_services.py`
 - pruebas `*_memoria_historial.py` de personal
+
+## Datos ficticios de testing
+
+El seed integral crea doce registros deterministas para cada categoria visible:
+Tecnico administrativo y de apoyo, Profesional, Becario e Investigador. Varia
+fecha de alta y carga horaria para habilitar pruebas manuales de filtros,
+ordenamiento y paginacion. La carga es idempotente y mantiene la proteccion que
+impide ejecutarla accidentalmente en produccion.

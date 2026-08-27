@@ -1,5 +1,6 @@
 from flask import jsonify, request, g
 from modules.produccion.services.distincion_service import DistincionRecibidaService
+from modules.shared.controllers.responses import exception_response
 
 
 class DistincionRecibidaController:
@@ -17,8 +18,8 @@ class DistincionRecibidaController:
                 DistincionRecibidaService.get_all(filtros)
             ), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="listar distinciones")
 
     @staticmethod
     def get_by_id(distincion_id):
@@ -26,8 +27,8 @@ class DistincionRecibidaController:
             return jsonify(
                 DistincionRecibidaService.get_by_id(distincion_id)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar distincion")
 
     @staticmethod
     def get_historial(distincion_id):
@@ -35,8 +36,8 @@ class DistincionRecibidaController:
             return jsonify(
                 DistincionRecibidaService.get_historial(distincion_id)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar historial de distincion")
 
     @staticmethod
     def create():
@@ -46,8 +47,8 @@ class DistincionRecibidaController:
             return jsonify(
                 DistincionRecibidaService.create(data, user_id)
             ), 201
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="crear distincion")
 
     @staticmethod
     def update(distincion_id):
@@ -57,8 +58,8 @@ class DistincionRecibidaController:
             return jsonify(
                 DistincionRecibidaService.update(distincion_id, data, user_id)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="actualizar distincion")
 
     @staticmethod
     def delete(distincion_id):
@@ -67,5 +68,5 @@ class DistincionRecibidaController:
             return jsonify(
                 DistincionRecibidaService.delete(distincion_id, user_id)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="eliminar distincion")

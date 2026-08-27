@@ -5,11 +5,12 @@ import DatePicker from "@/components/Calendar";
 import Field from "@/components/Field";
 import React, { useState, useEffect } from "react";
 import SuccessToast from "@/components/SuccessToast";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import {
   createEquipamiento,
   getEquipamientoById,
   updateEquipamiento,
+  type EquipamientoPayload,
 } from "@/modules/recursos/services/equipamientoServices";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 
@@ -78,7 +79,11 @@ export default function EquipamientoForm() {
       newErrors.fecha_incorporacion = "La fecha es obligatoria";
     }
 
-    if (data.monto_invertido === undefined || data.monto_invertido <= 0) {
+    if (
+      data.monto_invertido === undefined ||
+      !Number.isFinite(data.monto_invertido) ||
+      data.monto_invertido <= 0
+    ) {
       newErrors.monto = "El monto debe ser mayor a 0";
     }
 
@@ -87,10 +92,10 @@ export default function EquipamientoForm() {
   };
 
   const { mutateAsync, isPending } = useMutation({
-    mutationFn: (payload: any) =>
+    mutationFn: (payload: Partial<EquipamientoPayload>) =>
       isEdit
         ? updateEquipamiento(Number(id), payload)
-        : createEquipamiento(payload),
+        : createEquipamiento(payload as EquipamientoPayload),
     onSuccess: async (saved) => {
       const equipamientoId = isEdit ? Number(id) : saved.id;
 
@@ -100,7 +105,7 @@ export default function EquipamientoForm() {
         queryKey: ["equipamiento-historial", equipamientoId],
       });
 
-      navigate(`/equipamiento/${equipamientoId}`, {
+      navigate(isEdit ? `/equipamiento/${equipamientoId}` : "/equipamiento", {
         replace: true,
         state: {
           successMessage: isEdit
@@ -110,43 +115,20 @@ export default function EquipamientoForm() {
       });
     },
     onError: (error) => {
-      const defaultMessage = isEdit
-        ? "No se pudo actualizar el equipamiento."
-        : "No se pudo crear el equipamiento.";
+      const backendMessage = getErrorMessage(
+        error,
+        "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+      );
+      const lowerMessage = backendMessage.toLowerCase();
 
-      let backendMessage = defaultMessage;
-
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | { message?: string; error?: string; detalle?: string }
-          | undefined;
-
-        backendMessage =
-          body?.error || body?.message || body?.detalle || defaultMessage;
-
-        const lowerMessage = backendMessage.toLowerCase();
-
-        if (lowerMessage.includes("denominacion")) {
-          setErrors((prev) => ({
-            ...prev,
-            denominacion: backendMessage,
-          }));
-        } else if (lowerMessage.includes("descripcion")) {
-          setErrors((prev) => ({
-            ...prev,
-            descripcion: backendMessage,
-          }));
-        } else if (lowerMessage.includes("monto")) {
-          setErrors((prev) => ({
-            ...prev,
-            monto: backendMessage,
-          }));
-        } else if (lowerMessage.includes("fecha")) {
-          setErrors((prev) => ({
-            ...prev,
-            fecha_incorporacion: backendMessage,
-          }));
-        }
+      if (lowerMessage.includes("denominacion")) {
+        setErrors((prev) => ({ ...prev, denominacion: backendMessage }));
+      } else if (lowerMessage.includes("descripcion")) {
+        setErrors((prev) => ({ ...prev, descripcion: backendMessage }));
+      } else if (lowerMessage.includes("monto")) {
+        setErrors((prev) => ({ ...prev, monto: backendMessage }));
+      } else if (lowerMessage.includes("fecha")) {
+        setErrors((prev) => ({ ...prev, fecha_incorporacion: backendMessage }));
       }
 
       setErrorMessage(backendMessage);
@@ -211,6 +193,7 @@ export default function EquipamientoForm() {
       </h2>
 
       <form
+        noValidate
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >

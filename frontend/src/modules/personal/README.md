@@ -22,6 +22,16 @@ hay cambios no ejecutan el `PUT`, pero conservan la navegacion al detalle.
 Las becas de un becario se editan localmente y se envian juntas en `becas` al
 guardar. El frontend no desvincula ni vincula cada fila individualmente.
 
+La seleccion de alta presenta cuatro categorias funcionales: Tecnico
+administrativo y de apoyo, Personal Profesional, Becario e Investigador. `PTAA`
+se conserva unicamente como identificador tecnico compatible con rutas y contratos
+existentes; no se muestra como etiqueta al usuario.
+
+Todos los formularios usan las validaciones controladas por React, conservan los
+valores ingresados cuando una validacion o peticion falla y muestran el mensaje
+junto al campo correspondiente. Los errores no asociados a un campo se anuncian
+como feedback general accionable.
+
 ## Navegacion
 
 - alta: vuelve a `/personal` con `successMessage`
@@ -30,8 +40,19 @@ guardar. El frontend no desvincula ni vincula cada fila individualmente.
 ## Permisos y errores
 
 La UI respeta permisos provistos por auth; el backend sigue siendo la autoridad.
-Los errores deben mostrarse con texto visible y accionable, priorizando
-`body.error` o `body.message`. No se deben silenciar fallos relacionales.
+Los formularios especializados informan sus fallos al contenedor `PersonalForm`,
+que obtiene un mensaje seguro mediante `getErrorMessage` y lo presenta en un toast
+visible. Una operacion fallida detiene la navegacion y nunca muestra exito.
+
+Las cargas usan el mensaje accionable del proyecto. Los contratos aceptan el error
+tipado `{ error: { code, message, details } }` y formatos heredados estructurados;
+no se reflejan cuerpos de texto desconocidos ni se silencian fallos relacionales.
+
+## Contratos y seguridad
+
+`PersonalCompleto`, becas, catalogos, relaciones e historiales tienen tipos
+explicitos. Los services declaran el resultado de altas, actualizaciones, consultas
+y bajas. El modulo no usa `any`, HTML no confiable, storage ni `fetch` directo.
 
 ## Validaciones
 

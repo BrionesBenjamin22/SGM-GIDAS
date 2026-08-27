@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from app import create_app
+from modules.shared.exceptions import ValidationError
 
 
 class ExportacionesSeguridadTestCase(unittest.TestCase):
@@ -64,7 +65,7 @@ class ExportacionesSeguridadTestCase(unittest.TestCase):
     def test_exportar_memoria_error_controlado_no_expone_traceback(self):
         with self._auth_patch(), patch(
             "modules.memorias.controllers.memoria_controller.ExportService.generar_excel_memoria",
-            side_effect=ValueError("detalle interno sensible"),
+            side_effect=ValidationError("No se puede exportar esta memoria"),
         ):
             response = self.client.get(
                 "/api/v1/memorias/1/versiones/2/exportar-excel",

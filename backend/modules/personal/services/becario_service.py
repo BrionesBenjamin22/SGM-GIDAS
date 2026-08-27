@@ -1,6 +1,12 @@
+import builtins
 from datetime import date, datetime
 
 from extension import db
+from modules.shared.exceptions import (
+    ConflictError,
+    NotFoundError,
+    ValidationError as ValueError,
+)
 from modules.personal.models.personal import Becario, TipoFormacion, BecarioHorasHistorial, BecarioMemoriaVersion
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.proyectos.models.proyecto_investigacion import ProyectoInvestigacion
@@ -169,7 +175,7 @@ def _get_activo_or_404(id: int):
     becario = db.session.get(Becario, id)
 
     if not becario or becario.deleted_at is not None:
-        raise ValueError("Becario no encontrado.")
+        raise NotFoundError("Becario no encontrado.")
 
     return becario
 
@@ -181,7 +187,7 @@ def _parsear_fecha_relacion(valor, campo, permitir_none=False):
         raise ValueError(f"El campo '{campo}' debe tener formato YYYY-MM-DD.")
     try:
         return datetime.strptime(valor, "%Y-%m-%d").date()
-    except ValueError as exc:
+    except builtins.ValueError as exc:
         raise ValueError(f"El campo '{campo}' debe tener formato YYYY-MM-DD.") from exc
 
 
@@ -207,7 +213,7 @@ def _sincronizar_becas(becario, becas_data, user_id):
         if monto is not None:
             try:
                 monto = float(monto)
-            except (TypeError, ValueError) as exc:
+            except (TypeError, builtins.ValueError) as exc:
                 raise ValueError("El monto_percibido debe ser numerico.") from exc
             if monto < 0:
                 raise ValueError("El monto_percibido no puede ser negativo.")
@@ -464,7 +470,7 @@ def eliminar_becario(id: int, user_id: int):
     becario = _get_activo_or_404(id)
 
     if not becario.activo:
-        raise ValueError("El becario ya se encuentra dado de baja.")
+        raise ConflictError("El becario ya se encuentra dado de baja.")
 
     historial_activo = _obtener_historial_activo_unico(becario)
 
@@ -519,7 +525,7 @@ def obtener_becario_por_id(id: int):
 
     becario = db.session.get(Becario, id)
     if not becario:
-        raise ValueError("Becario no encontrado.")
+        raise NotFoundError("Becario no encontrado.")
 
     return becario
 

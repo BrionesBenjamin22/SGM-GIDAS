@@ -15,8 +15,12 @@ export interface InvestigadorPayload {
   activo: boolean;
 }
 
+export interface Investigador extends InvestigadorPayload {
+  id: number;
+}
+
 export function crearInvestigador(payload: InvestigadorPayload) {
-  return http("/investigadores/", {
+  return http<Investigador>("/investigadores/", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -27,7 +31,7 @@ export function actualizarInvestigador(
   payload: Partial<InvestigadorPayload>,
   rol: string
 ) {
-  return http(`/personal/${rol}/${id}`, {
+  return http<Investigador>(`/personal/${rol}/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });
@@ -35,13 +39,13 @@ export function actualizarInvestigador(
 
 
 export function getInvestigadorById(id: number) {
-  return http(`/investigadores/${id}`, {
+  return http<Investigador>(`/investigadores/${id}`, {
     method: "GET",
   });
 }
 
 export function getInvestigadores() {
-  return http("/investigadores/", {
+  return http<Investigador[]>("/investigadores/", {
     method: "GET",
   });
 }

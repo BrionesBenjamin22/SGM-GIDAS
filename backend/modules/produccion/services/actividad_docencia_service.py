@@ -12,6 +12,7 @@ from modules.personal.models.personal import Investigador
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 
 
 class ActividadDocenciaService:
@@ -19,40 +20,40 @@ class ActividadDocenciaService:
     @staticmethod
     def _validar_payload(data):
         if not isinstance(data, dict) or not data:
-            raise ValueError("Los datos enviados son invalidos")
+            raise ValidationError("Los datos enviados son invalidos")
 
     @staticmethod
     def _validar_user_id(user_id):
         if not isinstance(user_id, int) or user_id <= 0:
-            raise ValueError("El user_id es invalido")
+            raise ValidationError("El user_id es invalido")
         return user_id
 
     @staticmethod
     def _validar_id(valor, campo):
         if not isinstance(valor, int) or valor <= 0:
-            raise ValueError(f"El campo '{campo}' debe ser un entero positivo")
+            raise ValidationError(f"El campo '{campo}' debe ser un entero positivo")
         return valor
 
     @staticmethod
     def _validar_texto(valor, campo, min_len=2, max_len=255):
         if valor is None:
-            raise ValueError(f"El campo '{campo}' es obligatorio")
+            raise ValidationError(f"El campo '{campo}' es obligatorio")
 
         if not isinstance(valor, str):
-            raise ValueError(f"El campo '{campo}' debe ser texto")
+            raise ValidationError(f"El campo '{campo}' debe ser texto")
 
         valor = " ".join(valor.strip().split())
 
         if not valor:
-            raise ValueError(f"El campo '{campo}' no puede estar vacio")
+            raise ValidationError(f"El campo '{campo}' no puede estar vacio")
 
         if len(valor) < min_len:
-            raise ValueError(
+            raise ValidationError(
                 f"El campo '{campo}' debe tener al menos {min_len} caracteres"
             )
 
         if len(valor) > max_len:
-            raise ValueError(
+            raise ValidationError(
                 f"El campo '{campo}' no puede superar los {max_len} caracteres"
             )
 
@@ -63,17 +64,17 @@ class ActividadDocenciaService:
         try:
             return datetime.strptime(valor, "%Y-%m-%d").date()
         except (TypeError, ValueError):
-            raise ValueError(
+            raise ValidationError(
                 f"El campo '{campo}' es obligatorio y debe tener formato YYYY-MM-DD"
             )
 
     @staticmethod
     def _validar_fechas(fecha_inicio, fecha_fin):
         if fecha_inicio > date.today():
-            raise ValueError("La fecha de inicio no puede ser futura")
+            raise ValidationError("La fecha de inicio no puede ser futura")
 
         if fecha_fin < fecha_inicio:
-            raise ValueError(
+            raise ValidationError(
                 "La fecha de fin no puede ser anterior a la fecha de inicio"
             )
 
@@ -87,9 +88,9 @@ class ActividadDocenciaService:
     def _get_or_404(model, obj_id, message, permitir_eliminado=False):
         obj = db.session.get(model, obj_id)
         if not obj:
-            raise ValueError(message)
+            raise NotFoundError(message)
         if not permitir_eliminado and getattr(obj, "deleted_at", None) is not None:
-            raise ValueError(message)
+            raise NotFoundError(message)
         return obj
 
     @staticmethod
@@ -112,7 +113,7 @@ class ActividadDocenciaService:
         ).all()
 
         if len(historiales) > 1:
-            raise ValueError(
+            raise ConflictError(
                 "La actividad tiene mas de un historial de grado activo"
             )
 
@@ -186,7 +187,7 @@ class ActividadDocenciaService:
             query = query.filter(ActividadDocencia.id != actividad_id)
 
         if query.first():
-            raise ValueError(
+            raise ConflictError(
                 "Ya existe una actividad de docencia con los mismos datos para ese investigador"
             )
 
@@ -390,7 +391,7 @@ class ActividadDocenciaService:
         cambios = {}
 
         if "investigador_id" in data and "grado_academico_id" in data:
-            raise ValueError(
+            raise ConflictError(
                 "No se puede actualizar investigador y grado academico en la misma operacion"
             )
 
@@ -399,7 +400,7 @@ class ActividadDocenciaService:
                 data["investigador_id"]
             )
             if nuevo_investigador.id != actividad.investigador_id:
-                raise ValueError(
+                raise ConflictError(
                     "No se puede cambiar el investigador de una actividad existente"
                 )
 
@@ -464,7 +465,7 @@ class ActividadDocenciaService:
         )
 
         if historial_activo and historial_activo.fecha_inicio > actividad.fecha_fin:
-            raise ValueError(
+            raise ConflictError(
                 "El historial activo tiene una fecha de inicio invalida respecto de la actividad"
             )
 
@@ -489,7 +490,7 @@ class ActividadDocenciaService:
                 db.session.add(nuevo_historial)
             elif historial_activo.grado_academico_id != nuevo_grado.id:
                 if historial_activo.fecha_inicio > date.today():
-                    raise ValueError(
+                    raise ConflictError(
                         "El historial activo tiene una fecha de inicio invalida"
                     )
 

@@ -12,10 +12,13 @@ import { useFuentesFinanciamiento } from "@/modules/catalogos/hooks/useFuenteFin
 import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
 import { useTiposProyecto } from "@/modules/proyectos/hooks/useTiposProyecto";
 import { useUct } from "@/modules/grupo/hooks/useUct";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import {
+  desvincularBecarios,
+  desvincularInvestigadores,
   getProyectoById,
   type Proyecto,
+  type ProyectoPayload,
   upsertProyectos,
   vincularBecarios,
   vincularInvestigadores,
@@ -125,28 +128,89 @@ export default function ProyectosForm() {
     [initialData]
   );
 
+  const coordinadorInicialId = useMemo(
+    () =>
+      initialData?.investigadores?.find(
+        (investigador) => investigador.es_coordinador
+      )?.id ?? null,
+    [initialData]
+  );
+
+  type ProyectoFormMutationPayload = ProyectoPayload & {
+    _skipUpsert?: boolean;
+  };
+
   const mutation = useMutation({
-    mutationFn: async (payload: any) => {
+    mutationFn: async (payload: ProyectoFormMutationPayload) => {
       const shouldSkipUpsert = payload._skipUpsert === true;
-      const proyecto: any = shouldSkipUpsert
-        ? { id: payload.id }
-        : await upsertProyectos(payload);
-      const proyectoId = Number(proyecto?.id ?? payload.id);
+      const proyectoId = shouldSkipUpsert
+        ? Number(payload.id)
+        : Number((await upsertProyectos(payload)).id);
       const fechaInicioVinculacion =
         payload.fechaInicio ?? initialData?.fechaInicio;
 
-      const investigadoresAAgregar = isEdit
-        ? investigadoresIds.filter(
+      if (!fechaInicioVinculacion || !Number.isFinite(proyectoId)) {
+        throw new Error("No se pudo determinar el proyecto o su fecha de inicio.");
+      }
+
+      const cambioCoordinador = isEdit && coordinadorInicialId !== coordinadorId;
+      const investigadoresConRolCambiado = cambioCoordinador
+        ? [coordinadorInicialId, coordinadorId].filter(
+            (value): value is number =>
+              value !== null &&
+              investigadoresInicialesIds.includes(value) &&
+              investigadoresIds.includes(value)
+          )
+        : [];
+
+      const investigadoresAAgregar = Array.from(new Set(isEdit
+        ? [
+            ...investigadoresIds.filter(
             (idInvestigador) =>
               !investigadoresInicialesIds.includes(idInvestigador)
-          )
-        : investigadoresIds;
+            ),
+            ...investigadoresConRolCambiado,
+          ]
+        : investigadoresIds));
+
+      const investigadoresADesvincular = isEdit
+        ? Array.from(new Set([
+            ...investigadoresInicialesIds.filter(
+              (idInvestigador) => !investigadoresIds.includes(idInvestigador)
+            ),
+            ...investigadoresConRolCambiado,
+          ]))
+        : [];
 
       const becariosAAgregar = isEdit
         ? becariosIds.filter(
             (idBecario) => !becariosInicialesIds.includes(idBecario)
           )
         : becariosIds;
+
+      const becariosADesvincular = isEdit
+        ? becariosInicialesIds.filter(
+            (idBecario) => !becariosIds.includes(idBecario)
+          )
+        : [];
+
+      const fechaDesvinculacion = new Date().toISOString().split("T")[0];
+
+      if (investigadoresADesvincular.length > 0) {
+        await desvincularInvestigadores(
+          proyectoId,
+          fechaDesvinculacion,
+          investigadoresADesvincular
+        );
+      }
+
+      if (becariosADesvincular.length > 0) {
+        await desvincularBecarios(
+          proyectoId,
+          fechaDesvinculacion,
+          becariosADesvincular
+        );
+      }
 
       if (investigadoresAAgregar.length > 0) {
         await vincularInvestigadores(
@@ -168,7 +232,7 @@ export default function ProyectosForm() {
         );
       }
 
-      return proyecto;
+      return { id: proyectoId };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["proyectos"] });
@@ -196,19 +260,7 @@ export default function ProyectosForm() {
         ? "No se pudo actualizar el proyecto."
         : "No se pudo crear el proyecto.";
 
-      if (error instanceof HttpError && error.body && typeof error.body === "object") {
-        const body = error.body as Record<string, unknown>;
-        const backendMessage =
-          typeof body.error === "string"
-            ? body.error
-            : typeof body.message === "string"
-              ? body.message
-              : null;
-
-        setErrorMessage(backendMessage ?? defaultMessage);
-      } else {
-        setErrorMessage(defaultMessage);
-      }
+      setErrorMessage(getErrorMessage(error, defaultMessage));
 
       setShowError(true);
     },
@@ -239,6 +291,13 @@ export default function ProyectosForm() {
 
     if (!fechaInicio) {
       newErrors.fechaInicio = "Debe seleccionar fecha de inicio";
+    }
+
+    if (
+      montoDestinado.trim() !== "" &&
+      (!Number.isFinite(Number(montoDestinado)) || Number(montoDestinado) < 0)
+    ) {
+      newErrors.montoDestinado = "El monto debe ser un numero mayor o igual a cero";
     }
 
     if (investigadoresIds.length > 0 && coordinadorId === null) {
@@ -307,6 +366,7 @@ export default function ProyectosForm() {
 
     const changedPayload = Object.fromEntries(
       Object.entries(payload).filter(([key, value]) => {
+        if (key === "id") return false;
         return initialPayload[key as keyof typeof initialPayload] !== value;
       })
     );
@@ -317,11 +377,21 @@ export default function ProyectosForm() {
     const hayNuevosBecarios = becariosIds.some(
       (idBecario) => !becariosInicialesIds.includes(idBecario)
     );
+    const hayInvestigadoresDesvinculados = investigadoresInicialesIds.some(
+      (idInvestigador) => !investigadoresIds.includes(idInvestigador)
+    );
+    const hayBecariosDesvinculados = becariosInicialesIds.some(
+      (idBecario) => !becariosIds.includes(idBecario)
+    );
+    const cambioCoordinador = coordinadorInicialId !== coordinadorId;
 
     if (
       Object.keys(changedPayload).length === 0 &&
       !hayNuevosInvestigadores &&
-      !hayNuevosBecarios
+      !hayNuevosBecarios &&
+      !hayInvestigadoresDesvinculados &&
+      !hayBecariosDesvinculados &&
+      !cambioCoordinador
     ) {
       navigate(`/proyectos/${id}`, {
         replace: true,
@@ -338,7 +408,7 @@ export default function ProyectosForm() {
             id,
             _skipUpsert: true,
           }
-        : changedPayload
+        : { ...changedPayload, id }
     );
   };
 
@@ -364,6 +434,7 @@ export default function ProyectosForm() {
       )}
 
       <form
+        noValidate
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
@@ -479,16 +550,26 @@ export default function ProyectosForm() {
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Field label="Monto destinado">
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              className="input"
-              value={montoDestinado}
-              onChange={(e) => setMontoDestinado(e.target.value)}
-              placeholder="Ej: 1500000"
-              disabled={proyectoCerrado}
-            />
+            <>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                className={inputClass("montoDestinado")}
+                value={montoDestinado}
+                onChange={(e) => {
+                  setMontoDestinado(e.target.value);
+                  clearError("montoDestinado");
+                }}
+                placeholder="Ej: 1500000"
+                disabled={proyectoCerrado}
+              />
+              {errors.montoDestinado && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.montoDestinado}
+                </p>
+              )}
+            </>
           </Field>
         </div>
 

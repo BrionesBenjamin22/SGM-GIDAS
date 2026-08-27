@@ -18,25 +18,58 @@ export interface HistorialCambioItem {
   [key: string]: unknown;
 }
 
+type CatalogoRelacionado = { id?: number; nombre?: string };
+type ColeccionRelacionada = Array<{
+  nombre_apellido?: string;
+  nombre?: string;
+  titulo?: string;
+}>;
+
+export interface RelacionesPersonal {
+  tipo_personal?: CatalogoRelacionado;
+  tipo_formacion?: CatalogoRelacionado;
+  categoria_utn?: CatalogoRelacionado;
+  programa_incentivos?: CatalogoRelacionado;
+  tipo_dedicacion?: CatalogoRelacionado;
+  proyectos?: ColeccionRelacionada;
+  actividades_docencia?: ColeccionRelacionada;
+  trabajos_reunion_cientifica?: ColeccionRelacionada;
+  participaciones_relevantes?: ColeccionRelacionada;
+}
+
 export interface PersonalCompleto {
   id: number;
   nombre_apellido: string;
   created_by: number | null;
   created_at: string | null | undefined;
+  updated_at?: string | null;
   deleted_by: number | null;
   deleted_at: string | null | undefined;
+  updated_by_nombre?: string | null;
+  fecha_alta_grupo?: string | null;
   horas_semanales: number;
   historial_horas?: HistorialHorasItem[];
   activo: boolean;
   tipo_personal_id?: number;
   tipo_formacion_id?: number;
+  tipo_dedicacion_id?: number;
+  categoria_utn_id?: number;
+  programa_incentivos_id?: number;
+  grupo_utn_id?: number;
   rol: "personal" | "becario" | "investigador" | "profesional";
   grupo?: {
     id: number;
     nombre: string;
   } | null;
-  relaciones?: any;
-  [key: string]: any;
+  relaciones?: RelacionesPersonal;
+  becas?: Array<{
+    id: number;
+    nombre_beca?: string;
+    descripcion?: string;
+    fecha_inicio?: string | null;
+    fecha_fin?: string | null;
+    monto_percibido?: number | null;
+  }>;
 }
 
 export const getPersonalCompletoByRolAndId = (

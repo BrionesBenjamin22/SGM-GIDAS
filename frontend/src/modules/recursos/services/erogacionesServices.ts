@@ -58,7 +58,10 @@ export type UpdateErogacionPayload = Partial<
   Pick<CreateErogacionPayload, "ingresos" | "egresos">
 >;
 
-const normalizeErogacion = (item: any): Erogacion => ({
+type ErogacionBackend = Partial<Erogacion> & { id: number };
+type ApiListResponse<T> = T[] | { data?: T[] };
+
+const normalizeErogacion = (item: ErogacionBackend): Erogacion => ({
   id: item.id,
   created_by: item.created_by ?? null,
   created_by_nombre: item.created_by_nombre ?? null,
@@ -81,7 +84,7 @@ const normalizeErogacion = (item: any): Erogacion => ({
     item.tipo_erogacion_id ?? item.tipo_erogacion?.id ?? null,
   fuente_financiamiento_id:
     item.fuente_financiamiento_id ?? item.fuente?.id ?? null,
-  grupo_utn_id: item.grupo_utn_id,
+  grupo_utn_id: item.grupo_utn_id ?? 0,
   tipo_erogacion: item.tipo_erogacion ?? null,
   fuente: item.fuente ?? null,
   grupo: item.grupo ?? null,
@@ -90,7 +93,7 @@ const normalizeErogacion = (item: any): Erogacion => ({
 export async function getErogaciones(
   activos: "true" | "false" | "all" = "true"
 ): Promise<Erogacion[]> {
-  const response = await http<any>(`/erogaciones/?activos=${activos}`);
+  const response = await http<ApiListResponse<ErogacionBackend>>(`/erogaciones/?activos=${activos}`);
   const items = Array.isArray(response)
     ? response
     : Array.isArray(response?.data)
@@ -101,14 +104,14 @@ export async function getErogaciones(
 }
 
 export async function getErogacionById(id: number): Promise<Erogacion> {
-  const response = await http<any>(`/erogaciones/${id}`);
+  const response = await http<ErogacionBackend>(`/erogaciones/${id}`);
   return normalizeErogacion(response);
 }
 
 export async function getHistorialErogacionById(
   id: number
 ): Promise<HistorialErogacionItem[]> {
-  const response = await http<any>(`/erogaciones/${id}/historial`, {
+  const response = await http<ApiListResponse<HistorialErogacionItem>>(`/erogaciones/${id}/historial`, {
     method: "GET",
   });
 
@@ -126,7 +129,7 @@ export async function getHistorialErogacionById(
 export async function createErogacion(
   payload: CreateErogacionPayload
 ): Promise<Erogacion> {
-  const response = await http<any>("/erogaciones/", {
+  const response = await http<ErogacionBackend>("/erogaciones/", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -143,7 +146,7 @@ export async function updateErogacion(
   if ("ingresos" in payload) body.ingresos = payload.ingresos;
   if ("egresos" in payload) body.egresos = payload.egresos;
 
-  const response = await http<any>(`/erogaciones/${id}`, {
+  const response = await http<ErogacionBackend>(`/erogaciones/${id}`, {
     method: "PUT",
     body: JSON.stringify(body),
   });

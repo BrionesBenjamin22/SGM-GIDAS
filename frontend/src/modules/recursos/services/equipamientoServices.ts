@@ -37,7 +37,10 @@ export type EquipamientoPayload = {
   grupo_utn_id: number;
 };
 
-const normalizeEquipamiento = (item: any): Equipamiento => ({
+type EquipamientoBackend = Partial<Equipamiento> & { id: number };
+type ApiListResponse<T> = T[] | { data?: T[] };
+
+const normalizeEquipamiento = (item: EquipamientoBackend): Equipamiento => ({
   id: item.id,
   denominacion: item.denominacion ?? "",
   created_by: item.created_by ?? null,
@@ -55,14 +58,14 @@ const normalizeEquipamiento = (item: any): Equipamiento => ({
     typeof item.monto_invertido === "number"
       ? item.monto_invertido
       : Number(item.monto_invertido ?? 0),
-  grupo_utn_id: item.grupo_utn_id,
+  grupo_utn_id: item.grupo_utn_id ?? 0,
   grupo: item.grupo ?? null,
 });
 
 export async function getEquipamiento(
   activos: "true" | "false" | "all" = "true"
 ): Promise<Equipamiento[]> {
-  const response = await http<any>(`/equipamiento/?activos=${activos}`);
+  const response = await http<ApiListResponse<EquipamientoBackend>>(`/equipamiento/?activos=${activos}`);
   const items = Array.isArray(response)
     ? response
     : Array.isArray(response?.data)
@@ -73,14 +76,14 @@ export async function getEquipamiento(
 }
 
 export async function getEquipamientoById(id: number): Promise<Equipamiento> {
-  const response = await http<any>(`/equipamiento/${id}`);
+  const response = await http<EquipamientoBackend>(`/equipamiento/${id}`);
   return normalizeEquipamiento(response);
 }
 
 export async function getHistorialEquipamientoById(
   id: number
 ): Promise<HistorialEquipamientoItem[]> {
-  const response = await http<any>(`/equipamiento/${id}/historial`, {
+  const response = await http<ApiListResponse<HistorialEquipamientoItem>>(`/equipamiento/${id}/historial`, {
     method: "GET",
   });
 
@@ -98,7 +101,7 @@ export async function getHistorialEquipamientoById(
 export async function createEquipamiento(
   payload: EquipamientoPayload
 ): Promise<Equipamiento> {
-  const response = await http<any>("/equipamiento/", {
+  const response = await http<EquipamientoBackend>("/equipamiento/", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -122,7 +125,7 @@ export async function updateEquipamiento(
   if ("monto_invertido" in payload) body.monto_invertido = payload.monto_invertido;
   if ("grupo_utn_id" in payload) body.grupo_utn_id = payload.grupo_utn_id;
 
-  const response = await http<any>(`/equipamiento/${id}`, {
+  const response = await http<EquipamientoBackend>(`/equipamiento/${id}`, {
     method: "PUT",
     body: JSON.stringify(body),
   });

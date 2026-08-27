@@ -30,6 +30,7 @@ from modules.grupo.models.visita_grupo import VisitaAcademica
 from modules.grupo.models.programa_actividades import PlanificacionGrupo
 from modules.memorias.models.memorias import EstadoMemoria
 from modules.memorias.services.memoria_service import MemoriaService
+from modules.shared.exceptions import ConflictError, NotFoundError
 
 
 class ExportService:
@@ -278,7 +279,7 @@ class ExportService:
         query = GrupoInvestigacionUtn.query.filter(GrupoInvestigacionUtn.deleted_at.is_(None))
         grupo = query.filter(GrupoInvestigacionUtn.id == grupo_id).first() if grupo_id is not None else query.order_by(GrupoInvestigacionUtn.id.asc()).first()
         if not grupo:
-            raise ValueError("Grupo UTN no encontrado")
+            raise NotFoundError("Grupo UTN no encontrado")
         return grupo
 
     @staticmethod
@@ -992,10 +993,10 @@ class ExportService:
         version = MemoriaService._get_version_or_404(memoria_version_id)
 
         if version.memoria_id != memoria.id:
-            raise ValueError("La version no pertenece a la memoria indicada")
+            raise NotFoundError("La version no pertenece a la memoria indicada")
 
         if version.estado != EstadoMemoria.CERRADA:
-            raise ValueError("Solo puede exportarse una memoria con version cerrada")
+            raise ConflictError("Solo puede exportarse una memoria con version cerrada")
 
         return {
             "memoria": memoria,

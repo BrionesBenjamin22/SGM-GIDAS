@@ -1,6 +1,7 @@
 from datetime import datetime, date
 
 from extension import db
+from modules.shared.exceptions import ValidationError as ValueError
 from modules.grupo.models.visita_grupo import (
     VisitaAcademica,
     VisitaAcademicaMemoriaVersion,
