@@ -175,7 +175,7 @@ JWT_EXPIRATION_MINUTES controla la duracion real del access token. Debe ser un n
 
 JWT_ISSUER identifica al emisor esperado de tokens y por defecto usa auth-service. JWT_AUDIENCE es opcional: cuando se define, el backend la incluye en los access tokens y rechaza tokens destinados a otra audiencia.
 
-RATELIMIT_STORAGE_URI define el almacenamiento usado por Flask-Limiter. En local y testing puede ser memory://, pero en produccion debe apuntar a un almacenamiento compartido como Redis. La aplicacion falla al iniciar en produccion si RATELIMIT_STORAGE_URI queda en memory://. Los endpoints de autenticacion tienen limites dedicados mediante AUTH_LOGIN_LIMIT, AUTH_REFRESH_LIMIT, AUTH_REGISTER_LIMIT y AUTH_CHANGE_PASSWORD_LIMIT.
+RATELIMIT_STORAGE_URI define el almacenamiento usado por Flask-Limiter. En local y testing puede ser memory://, pero en produccion debe apuntar a un almacenamiento compartido como Redis. La aplicacion falla al iniciar en produccion si RATELIMIT_STORAGE_URI queda en memory://. Los endpoints de autenticacion tienen limites dedicados mediante AUTH_LOGIN_LIMIT, AUTH_REFRESH_LIMIT, AUTH_REGISTER_LIMIT y AUTH_CHANGE_PASSWORD_LIMIT. Redis no se usa actualmente como cache de datos de negocio: coordina contadores entre workers/instancias y evita que reinicios del backend restablezcan localmente los limites.
 
 Valor por defecto de base de datos:
 postgresql://postgres:postgres@localhost:5432/gidas_db

@@ -83,7 +83,8 @@ Componentes:
 - `frontend`: React, TypeScript y Vite.
 - `backend`: Flask, SQLAlchemy, Flask-Migrate y servicios de dominio.
 - `db`: PostgreSQL.
-- `redis`: almacenamiento compartido para rate limiting.
+- `redis`: almacenamiento compartido exclusivamente para los contadores de rate
+  limiting. Actualmente no se utiliza como cache de datos funcionales.
 - `nginx`: proxy reverso y publicacion de frontend/API.
 
 ---
