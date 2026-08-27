@@ -53,6 +53,7 @@ la informacion ya consolidada y presentada.
 - Gestion de transferencia socio-productiva, adoptantes y contratos.
 - Catalogos transversales.
 - Busqueda global.
+- Panel visual de administracion para usuarios, organizacion y catalogos.
 - Carga diferida de paginas por modulo con recuperacion ante fallos de chunks.
 - Historial de cambios por entidad cuando el modulo lo expone.
 

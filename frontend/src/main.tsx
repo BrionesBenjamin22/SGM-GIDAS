@@ -76,6 +76,7 @@ const UsuariosHome = lazy(() => import("@/modules/auth/pages/UsuariosHome"));
 const UsuariosForm = lazy(() => import("@/modules/auth/pages/UsuariosForm"));
 const CatalogosHome = lazy(() => import("@/modules/catalogos/pages/CatalogosHome"));
 const MiPerfil = lazy(() => import("@/modules/auth/pages/MiPerfil"));
+const AdministracionHome = lazy(() => import("@/modules/administracion/pages/AdministracionHome"));
 
 function editorOnly(element: ReactElement) {
   return <ProtectedRoute allowedRoles={["ADMIN", "GESTOR"]}>{element}</ProtectedRoute>;
@@ -136,6 +137,15 @@ const router = createBrowserRouter([
     ),
     children: [
       { path: "inicio", element: <Home /> },
+
+      {
+        path: "administracion",
+        element: (
+          <ProtectedRoute requiredRole="ADMIN">
+            <AdministracionHome />
+          </ProtectedRoute>
+        ),
+      },
 
       { path: "busqueda", element: <SearchPage /> },
 

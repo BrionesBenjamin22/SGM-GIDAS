@@ -216,10 +216,10 @@ export default function UsuariosForm() {
           <div className="flex gap-3">
             <Button
               variant="secondary"
-              onClick={() => nav("/usuarios")}
+              onClick={() => nav("/administracion")}
               className="flex-1"
             >
-              Volver al Listado
+              Volver a Administración
             </Button>
 
             <Button
@@ -390,7 +390,7 @@ export default function UsuariosForm() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => nav("/usuarios")}
+              onClick={() => nav("/administracion")}
               className="flex-1"
               disabled={crearMutation.isPending}
             >

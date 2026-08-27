@@ -15,7 +15,6 @@ import Button from "@/components/Button";
 import type { Rol } from "@/modules/auth/services/authService";
 import {
   Users,
-  Plus,
   Trash2,
   Edit3,
   AlertCircle,
@@ -245,9 +244,14 @@ export default function UsuariosHome() {
 
   return (
     <section className="w-full">
-      <h2 className="text-2xl md:text-3xl font-semibold leading-none">
-        Gestión de Usuarios
-      </h2>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-2xl md:text-3xl font-semibold leading-none">
+          Gestión de Usuarios
+        </h2>
+        <Button variant="secondary" size="sm" onClick={() => nav("/administracion")}>
+          Volver a Administración
+        </Button>
+      </div>
 
       <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3">
@@ -261,14 +265,6 @@ export default function UsuariosHome() {
           </div>
         </div>
 
-        <Button
-          variant="primary"
-          onClick={() => nav("/usuarios/nuevo")}
-          className="flex self-start items-center justify-center gap-2 whitespace-nowrap lg:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          Nuevo Usuario
-        </Button>
       </div>
 
       <div className="mt-6 grid gap-3 md:grid-cols-3">

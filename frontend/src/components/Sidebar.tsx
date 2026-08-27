@@ -47,8 +47,7 @@ const baseItems: Item[] = [
 ];
 
 const adminItems: Item[] = [
-  { label: "Gestion de Usuarios", to: "/usuarios" },
-  { label: "Gestionar Catalogos", to: "/catalogos" },
+  { label: "Administración", to: "/administracion" },
 ];
 
 const catalogosItem: Item = {
