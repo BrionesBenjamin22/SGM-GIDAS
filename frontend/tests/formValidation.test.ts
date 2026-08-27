@@ -3,6 +3,10 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
+function isPagesPath(path: string): boolean {
+  return path.split(/[\\/]/).includes("pages");
+}
+
 function tsxFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);
@@ -16,7 +20,7 @@ test("los formularios de captura usan validacion controlada", () => {
   const forms = tsxFiles(modulesDirectory).filter((path) => {
     const source = readFileSync(path, "utf8");
     return (
-      path.includes(`${join("pages", "")}\\`) &&
+      isPagesPath(path) &&
       source.includes("<form") &&
       !path.endsWith(join("search", "pages", "SearchPage.tsx"))
     );
@@ -27,6 +31,12 @@ test("los formularios de captura usan validacion controlada", () => {
     const source = readFileSync(path, "utf8");
     assert.match(source, /<form[\s\S]{0,120}?noValidate/, `${path} debe usar noValidate`);
   }
+});
+
+test("detecta formularios dentro de pages en Windows y Linux", () => {
+  assert.equal(isPagesPath("src\\modules\\personal\\pages\\PersonalForm.tsx"), true);
+  assert.equal(isPagesPath("src/modules/personal/pages/PersonalForm.tsx"), true);
+  assert.equal(isPagesPath("src/modules/personal/components/PersonalForm.tsx"), false);
 });
 
 test("personal muestra etiquetas claras y el error de catalogo profesional", () => {
