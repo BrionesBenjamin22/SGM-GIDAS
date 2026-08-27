@@ -306,6 +306,7 @@ export default function UctForm() {
       <h2 className="text-3xl font-semibold mb-6">Configuración de la UCT</h2>
 
       <form
+        noValidate
         onSubmit={onSubmit}
         className="rounded-2xl border border-slate-200 bg-white p-6 space-y-8"
       >

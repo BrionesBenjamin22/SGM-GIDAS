@@ -250,7 +250,7 @@ export default function UsuariosForm() {
       </h2>
 
       <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} noValidate className="space-y-6">
           <Field label="Nombre de Usuario" required error={errors.nombre}>
             <input
               type="text"

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
+import Field from "@/components/Field";
 import { useUct } from "@/modules/grupo/hooks/useUct";
 import { useTiposPersonal } from "@/modules/personal/hooks/useTiposPersonal";
 import {
@@ -193,47 +194,50 @@ export default function FormPTAAProfesional({
   return (
     <form
       onSubmit={submit}
+      noValidate
       className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
     >
-      <Field label="Nombre y apellido">
-        <>
-          <input
-            className={`input ${
-              errors.nombre ? "border-red-500 ring-2 ring-red-500" : ""
-            }`}
-            value={nombreApellido}
-            onChange={(e) => {
-              setNombre(e.target.value);
-              if (e.target.value.trim()) clearError("nombre");
-            }}
-          />
-          {errors.nombre && (
-            <p className="mt-1 text-sm text-red-500">{errors.nombre}</p>
-          )}
-        </>
+      {errors.tipoPersonal && !requiereSeleccionTipoPersonal && (
+        <div
+          role="alert"
+          className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+        >
+          {errors.tipoPersonal}. Revise el catalogo de tipos de personal e intente nuevamente.
+        </div>
+      )}
+
+      <Field label="Nombre y apellido" required error={errors.nombre}>
+        <input
+          className={`input ${
+            errors.nombre ? "border-red-500 ring-2 ring-red-500" : ""
+          }`}
+          value={nombreApellido}
+          aria-invalid={Boolean(errors.nombre)}
+          onChange={(e) => {
+            setNombre(e.target.value);
+            if (e.target.value.trim()) clearError("nombre");
+          }}
+        />
       </Field>
 
-      <Field label="Horas semanales">
-        <>
-          <input
-            type="number"
-            className={`input ${
-              errors.horas ? "border-red-500 ring-2 ring-red-500" : ""
-            }`}
-            value={horasSemanales}
-            onChange={(e) => {
-              const value = e.target.value === "" ? "" : +e.target.value;
-              setHoras(value);
-              if (value) clearError("horas");
-            }}
-          />
-          {errors.horas && (
-            <p className="mt-1 text-sm text-red-500">{errors.horas}</p>
-          )}
-        </>
+      <Field label="Horas semanales" required error={errors.horas}>
+        <input
+          type="number"
+          min="1"
+          className={`input ${
+            errors.horas ? "border-red-500 ring-2 ring-red-500" : ""
+          }`}
+          value={horasSemanales}
+          aria-invalid={Boolean(errors.horas)}
+          onChange={(e) => {
+            const value = e.target.value === "" ? "" : +e.target.value;
+            setHoras(value);
+            if (value) clearError("horas");
+          }}
+        />
       </Field>
 
-      <Field label="Fecha de alta en el grupo">
+      <Field label="Fecha de alta en el grupo" required error={errors.fechaAltaGrupo}>
         <Calendar
           value={fechaAltaGrupo}
           onChange={(date) => {
@@ -243,37 +247,33 @@ export default function FormPTAAProfesional({
           className={`input ${
             errors.fechaAltaGrupo ? "border-red-500 ring-2 ring-red-500" : ""
           }`}
-          helperText={errors.fechaAltaGrupo ?? "DD/MM/AAAA"}
+          helperText={errors.fechaAltaGrupo ? undefined : "DD/MM/AAAA"}
         />
       </Field>
 
       {requiereSeleccionTipoPersonal && (
-        <Field label="Tipo de personal">
-          <>
-            <select
-              className={`input ${
-                errors.tipoPersonal ? "border-red-500 ring-2 ring-red-500" : ""
-              }`}
-              value={tipoPersonalId}
-              onChange={(e) => {
-                const value = e.target.value ? +e.target.value : "";
-                setTipoPersonalId(value);
-                if (value) clearError("tipoPersonal");
-              }}
-            >
-              <option value="" disabled>
-                Seleccionar tipo de personal
+        <Field label="Tipo de personal" required error={errors.tipoPersonal}>
+          <select
+            className={`input ${
+              errors.tipoPersonal ? "border-red-500 ring-2 ring-red-500" : ""
+            }`}
+            value={tipoPersonalId}
+            aria-invalid={Boolean(errors.tipoPersonal)}
+            onChange={(e) => {
+              const value = e.target.value ? +e.target.value : "";
+              setTipoPersonalId(value);
+              if (value) clearError("tipoPersonal");
+            }}
+          >
+            <option value="" disabled>
+              Seleccionar tipo de personal
+            </option>
+            {tiposPersonalParaPTAA.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.nombre}
               </option>
-              {tiposPersonalParaPTAA.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.nombre}
-                </option>
-              ))}
-            </select>
-            {errors.tipoPersonal && (
-              <p className="mt-1 text-sm text-red-500">{errors.tipoPersonal}</p>
-            )}
-          </>
+            ))}
+          </select>
         </Field>
       )}
 
@@ -292,20 +292,5 @@ export default function FormPTAAProfesional({
         </Button>
       </div>
     </form>
-  );
-}
-
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-medium">{label}</label>
-      {children}
-    </div>
   );
 }

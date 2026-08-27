@@ -434,6 +434,7 @@ export default function ProyectosForm() {
       )}
 
       <form
+        noValidate
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >

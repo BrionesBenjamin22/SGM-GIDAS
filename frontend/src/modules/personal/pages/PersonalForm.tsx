@@ -124,7 +124,7 @@ export default function PersonalForm() {
               <option value="">
                 Selecciona el rol del personal
               </option>
-              <option value="PTAA">PTAA</option>
+              <option value="PTAA">Técnico administrativo y de apoyo</option>
               <option value="PROFESIONAL">Personal Profesional</option>
               <option value="BECARIO">Becario</option>
               <option value="INVESTIGADOR">Investigador</option>

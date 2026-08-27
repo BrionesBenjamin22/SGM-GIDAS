@@ -248,6 +248,7 @@ export default function DocumentacionForm() {
       </h2>
 
       <form
+        noValidate
         onSubmit={async (e) => {
           e.preventDefault();
           if (!validate()) return;

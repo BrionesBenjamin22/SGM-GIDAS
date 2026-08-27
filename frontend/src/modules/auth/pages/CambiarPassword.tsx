@@ -101,7 +101,7 @@ export default function CambiarPasswordPage() {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} noValidate className="space-y-5">
               {!esPrimerLogin && (
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1.5">

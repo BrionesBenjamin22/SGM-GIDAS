@@ -250,6 +250,7 @@ export default function TransferenciasForm() {
       </h2>
 
       <form
+        noValidate
         onSubmit={async (e) => {
           e.preventDefault();
           if (!uct) return;
