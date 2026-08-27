@@ -492,6 +492,7 @@ de CD queda diferido hasta que exista una necesidad operativa y se definan runne
 aprobaciones y secretos del host.
 
 HTTPS permanece como etapa obligatoria antes de habilitar datos reales para
+<<<<<<< HEAD
 usuarios remotos. La arquitectura elegida termina TLS en el Nginx instalado en la
 VM Ubuntu y mantiene el Nginx de Docker Compose en `127.0.0.1:8080`. PostgreSQL,
 Redis, backend y frontend permanecen sin puertos publicados.
@@ -605,6 +606,12 @@ Si la activacion falla antes de habilitar HSTS:
 Si HSTS ya fue entregado a los navegadores, volver a HTTP no constituye un rollback
 seguro. Por ese motivo HSTS permanece desactivado hasta completar la aceptacion
 extremo a extremo.
+=======
+usuarios remotos. Deben definirse DNS o IP estable, autoridad certificadora,
+ubicacion del proxy TLS, puertos y distribucion de confianza. Hasta entonces, el
+firewall debe limitar HTTP a la red autorizada o el proxy debe enlazarse a
+`127.0.0.1` para validacion mediante tunel SSH.
+>>>>>>> origin/main
 
 ## 15. Registro recomendado de cada despliegue
 
