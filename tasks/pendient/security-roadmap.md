@@ -8,7 +8,7 @@ priority: critica
 risk_level: gobernanza
 execution_order: 0
 created_at: 2026-08-12
-updated_at: 2026-08-12
+updated_at: 2026-08-26
 source: security-audit
 commit_sugerido: "docs(security): ordenar plan de mitigacion de riesgos"
 owner: coordinator-agent
@@ -62,9 +62,10 @@ produccion hasta probarla sobre HTTPS.
 
 ## 5. Performance frontend
 
-- Riesgo: bajo; bundle inicial grande.
-- Objetivo: carga diferida por modulos sin cambiar seguridad.
-- Tarea: `frontend-code-splitting.md`.
+- Estado: completado el 2026-08-26.
+- Resultado: carga diferida por modulos sin cambiar rutas ni permisos; bundle
+  inicial reducido de 1.284,65 kB a 338,48 kB y sin chunks mayores a 500 kB.
+- Evidencia: `tasks/finished/frontend-code-splitting.md`.
 
 ## 6. Observabilidad integral
 

@@ -33,5 +33,11 @@ validos se reflejan en la URL para permitir navegacion reproducible.
 
 Antes de desplegar deben ejecutarse typecheck, build, tests backend y
 `python tools/verify_search_retrieval.py`. Este ultimo comando es de solo lectura
-y valida recuperacion real en los 24 modulos buscables. La falta de datos activos
-se considera una validacion pendiente, no un resultado exitoso.
+y valida recuperacion real en los 24 modulos buscables.
+
+La cobertura integral se valida con los datos ficticios e idempotentes de
+`backend/tools/seed_testing_data.py` en una base aislada. El seed requiere
+`APP_ENV=testing` o una habilitacion efimera y consciente mediante
+`ALLOW_TEST_SEED=true` en staging. Esta variable no debe persistirse ni utilizarse
+contra produccion. La validacion de referencia recupera correctamente los 24
+modulos.

@@ -334,6 +334,25 @@ Resultados esperados:
 
 Si `NGINX_PORT` no es `8080`, reemplazarlo en los comandos.
 
+### Datos ficticios para calificacion de staging
+
+La busqueda global dispone de un seed integral e idempotente para sus 24 modulos.
+Solo debe cargarse en una base aislada sin datos reales. En `APP_ENV=testing` se
+ejecuta directamente; para una calificacion temporal con `APP_ENV=staging`, la
+habilitacion debe limitarse al proceso puntual:
+
+```bash
+docker compose --env-file .env.production run --rm --no-deps \
+  -e ALLOW_TEST_SEED=true \
+  --entrypoint python backend tools/seed_testing_data.py
+docker compose --env-file .env.production exec backend \
+  python tools/verify_search_retrieval.py
+```
+
+El resultado esperado es `Recuperacion validada para 24 modulos.`. No agregar
+`ALLOW_TEST_SEED` a archivos `.env`, Compose ni servicios persistentes. Este seed
+no se ejecuta en produccion y no reemplaza la validacion posterior con datos reales.
+
 Desde otro equipo autorizado de la LAN, verificar:
 
 ```text

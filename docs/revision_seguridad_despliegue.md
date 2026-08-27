@@ -2,7 +2,7 @@
 
 Fecha de revisión inicial: 2026-08-18
 
-Última actualización de evidencia: 2026-08-24
+Última actualización de evidencia: 2026-08-26
 
 Decisión operativa del 2026-08-26: la primera instalación se realizará en una
 máquina virtual Linux administrada manualmente por SSH y Docker Compose. Esta
@@ -12,6 +12,13 @@ los controles pendientes de HTTPS, firewall, backups y validación sobre el host
 La calificación temporal sin certificado debe usar `APP_ENV=staging`, origen HTTP
 exacto y acceso restringido. `APP_ENV=production` conserva HTTPS y cookie segura
 como requisitos cerrados; no se relaja para acomodar la VM.
+
+La topologia fue calificada en un stack aislado con `APP_ENV=staging`: migraciones
+terminaron con codigo `0`; PostgreSQL, Redis, backend y frontend alcanzaron estado
+saludable; liveness, readiness, frontend y chunk inicial respondieron HTTP `200`.
+La busqueda recupero 24 de 24 modulos mediante fixtures ficticios idempotentes. Esta
+evidencia valida el mecanismo de despliegue, no los controles externos del host ni
+autoriza datos reales por HTTP.
 
 ## Alcance y criterio
 
@@ -49,7 +56,7 @@ habilitarse con datos reales hasta resolver y verificar los siguientes puntos:
 | HTTPS | Pendiente, bloqueante | El Compose publica HTTP y `nginx/gidas.external.conf.example` escucha en puerto 80. Existe una tarea de preparación, pero no hay certificado ni bloque TLS activo. | Definir DNS, certificado, terminación TLS, redirección 80 a 443 y validar login/refresh/logout por HTTPS. |
 | Backend no expuesto directamente | Cumple en Compose de producción | `backend` usa `expose: 5000` y una red bridge; solo `nginx` declara `ports`. | Usar solo `docker-compose.yml` en producción. No aplicar el override de desarrollo, que publica backend. Validar con escaneo desde otra máquina. |
 | PostgreSQL no expuesto | Cumple en Compose de producción | `db` no declara `ports`; comparte únicamente la red Docker. | No aplicar `docker-compose.dev.yml`, porque ese override publica PostgreSQL. Restringir además el firewall del host. |
-| JWT seguro y de corta duración | Parcialmente cumple | HS256 con secreto obligatorio de al menos 32 caracteres en producción, issuer, audience configurable y expiración validada. El valor de ejemplo es 60 minutos. | Usar secretos independientes y aleatorios. Para mayor reducción de riesgo, evaluar 15 minutos para access tokens y validar expiración/audience en el entorno final. |
+| JWT seguro y de corta duración | Desarrollo aprobado; servidor pendiente | HS256 con secreto obligatorio de al menos 32 caracteres, issuer/audience validados y access token de 15 minutos en configuración y plantillas. | Usar secretos independientes y aleatorios, reloj sincronizado y validar expiración/audience en el entorno final. |
 | Protección del refresh token | Cumple en diseño; requiere prueba final | Cookie `HttpOnly`, `Secure` en producción, `SameSite=Lax`, path limitado a `/api/v1/auth`, respuestas `no-store`, origen/referer validado, hash persistido, `jti`, rotación y revocación. | Ejecutar pruebas de replay, rotación, logout, cambio de contraseña y origen no permitido sobre HTTPS. Confirmar limpieza periódica de sesiones vencidas. |
 | Protección IDOR/BOLA | Desarrollo aprobado para RBAC; multi-UCT diferido | Existe inventario versionado y cobertura dinámica transversal para roles y operaciones. El modelo de pertenencia multi-UCT todavía no está definido. | Mantener las pruebas RBAC en CI y completar `security-multitenancy-uct` antes de prometer aislamiento entre grupos. |
 | CORS restrictivo | Cumple si `APP_ENV=production` | Producción rechaza `*` al arrancar y usa `FRONTEND_URLS`; CORS admite credenciales solo para orígenes configurados. | Definir el origen HTTPS exacto, sin comodín, incluyendo puerto si corresponde. Verificar preflight permitido y origen malicioso rechazado. |
@@ -113,13 +120,13 @@ La matriz pendiente debe cubrir como mínimo:
 ### CORS, headers y errores
 
 CORS debe usar el origen HTTPS exacto. No reemplaza autenticación ni protección
-CSRF. Las cabeceras actuales son una buena base, pero falta una política CSP para
-reducir el impacto de una eventual inyección en frontend.
+CSRF. Flask y Nginx aplican una CSP sin `unsafe-eval`, además de `nosniff`, política
+de frame, referrer y permissions. HSTS permanece condicionado a HTTPS validado.
 
-Los errores de autenticación ya evitan exponer la excepción original. La revisión
-completa debe extender la misma regla a todos los módulos: registrar el detalle con
-un identificador de solicitud y responder un código/mensaje estable sin información
-de infraestructura.
+Los errores inesperados se centralizan para todos los modulos: el detalle queda en
+logs internos asociado a un identificador de solicitud y la API responde un codigo
+y mensaje estables sin informacion de infraestructura. Este comportamiento debe
+mantenerse cubierto por pruebas y verificarse nuevamente en el servidor final.
 
 ### Requests y secretos
 
