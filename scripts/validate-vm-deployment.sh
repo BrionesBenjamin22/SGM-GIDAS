@@ -35,4 +35,8 @@ docker run --rm \
     -v "$PWD/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro" \
     nginxinc/nginx-unprivileged:1.27-alpine nginx -t
 
-echo "Preflight de VM correcto: configuracion, topologia, secretos y Nginx validados."
+docker run --rm \
+    -v "$PWD/nginx/gidas.external.conf.example:/etc/nginx/conf.d/default.conf:ro" \
+    nginxinc/nginx-unprivileged:1.27-alpine nginx -t
+
+echo "Preflight de VM correcto: configuracion, topologia, secretos y proxies Nginx validados."
