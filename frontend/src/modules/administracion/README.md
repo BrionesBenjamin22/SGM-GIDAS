@@ -11,8 +11,11 @@ usuarios, UCT y directivos para presentar conteos y pendientes accionables.
 - ruta: `/administracion`
 - permiso frontend: solo `ADMIN`
 - autoridad final: los endpoints backend conservan sus controles actuales
-- el menu del administrador presenta una unica entrada `Administracion`
+- el menu del administrador se limita a `Inicio`, `Administracion` y `Busqueda`
 - `GESTOR` conserva su acceso directo a catalogos
+- la barra superior conserva solo el icono de usuario
+- la identidad, el rol, el perfil, el cambio de contrasena y el cierre de sesion
+  se concentran en el pie desplegable del menu lateral
 
 ## Secciones
 
