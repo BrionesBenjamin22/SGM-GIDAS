@@ -21,7 +21,7 @@ export default function Field({
       </label>
       {children}
       {error && (
-        <p className="text-xs text-rose-600 mt-1.5">{error}</p>
+        <p role="alert" className="text-xs text-rose-600 mt-1.5">{error}</p>
       )}
     </div>
   );

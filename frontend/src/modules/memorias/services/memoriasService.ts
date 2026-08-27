@@ -1,4 +1,5 @@
-import { http, httpDownload, HttpError } from "@/lib/http";
+import { http, httpDownload } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 
 export type MemoriaActivosFilter = "true" | "false" | "all";
 export type MemoriaEstado = "abierta" | "en revision" | "cerrada";
@@ -83,7 +84,7 @@ export async function getMemorias(
 }
 
 export async function getMemoriaById(id: number): Promise<Memoria | null> {
-  return http<Memoria | null>(`/memorias/${id}`);
+  return http<Memoria | null>(`/memorias/${id}`, { allowNotFound: true });
 }
 
 export async function createMemoria(payload: MemoriaPayload): Promise<Memoria> {
@@ -140,28 +141,6 @@ function getFilenameFromDisposition(contentDisposition: string | null): string {
   return "memoria.xlsx";
 }
 
-function extractHttpErrorMessage(error: unknown): string {
-  if (error instanceof HttpError) {
-    const body = error.body as any;
-
-    if (typeof body === "string" && body.trim()) {
-      return body;
-    }
-
-    if (body?.error) return body.error;
-    if (body?.message) return body.message;
-    if (error.status === 401) return "No autorizado. Inicia sesion nuevamente.";
-
-    return `Error al exportar el Excel. (${error.status})`;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Error al exportar el Excel.";
-}
-
 export async function exportarExcelMemoria(
   memoriaId: number,
   versionId: number
@@ -202,11 +181,18 @@ export async function exportarExcelMemoria(
       size: blob.size,
     };
   } catch (error) {
-    throw new Error(extractHttpErrorMessage(error));
+    throw new Error(
+      getErrorMessage(
+        error,
+        "Lo sentimos, no pudimos exportar la memoria. Intente nuevamente."
+      )
+    );
   }
 }
 
-async function getSnapshot<T = any>(
+export type MemoriaSnapshotEntry = Record<string, unknown>;
+
+async function getSnapshot<T = MemoriaSnapshotEntry>(
   memoriaId: number,
   versionId: number,
   path: SnapshotPath

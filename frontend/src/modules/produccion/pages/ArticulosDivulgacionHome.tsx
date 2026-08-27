@@ -7,7 +7,7 @@ import Tarjeta from "@/components/Tarjeta";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 
 import { useArticulosDivulgacion } from "@/modules/produccion/hooks/useArticulosDivulgacion";
 import type { ArticuloDivulgacion } from "@/modules/produccion/services/articulosDivulgacionServices";
@@ -203,23 +203,12 @@ export default function ArticulosDivulgacionHome() {
       setShowSuccess(true);
     } catch (error) {
       setShowConfirm(false);
-
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | { message?: string; error?: string; detalle?: string }
-          | undefined;
-
-        setErrorMessage(
-          body?.message ||
-            body?.error ||
-            body?.detalle ||
-            "No se pudo eliminar el articulo de divulgacion."
-        );
-      } else {
-        setErrorMessage(
-          "Ocurrio un error inesperado al eliminar el articulo de divulgacion."
-        );
-      }
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+        )
+      );
 
       setShowError(true);
     }

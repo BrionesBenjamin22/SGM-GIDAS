@@ -3,6 +3,7 @@ from datetime import datetime, date
 from sqlalchemy import or_
 
 from extension import db
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 from modules.produccion.models.registro_patente import (
     RegistrosPropiedad,
     TipoRegistroPropiedad,
@@ -21,18 +22,18 @@ class RegistrosPropiedadService:
     @staticmethod
     def _validar_payload(data: dict):
         if not isinstance(data, dict) or not data:
-            raise ValueError("Los datos no pueden estar vacios")
+            raise ValidationError("Los datos no pueden estar vacios")
 
     @staticmethod
     def _validar_id(valor, campo: str):
         if not isinstance(valor, int) or valor <= 0:
-            raise ValueError(f"El campo '{campo}' debe ser un entero positivo")
+            raise ValidationError(f"El campo '{campo}' debe ser un entero positivo")
         return valor
 
     @staticmethod
     def _validar_texto(valor: str, campo: str):
         if not isinstance(valor, str) or not valor.strip():
-            raise ValueError(f"{campo} es obligatorio")
+            raise ValidationError(f"{campo} es obligatorio")
         return " ".join(valor.strip().split())
 
     @staticmethod
@@ -46,12 +47,12 @@ class RegistrosPropiedadService:
         try:
             fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
         except (KeyError, TypeError, ValueError):
-            raise ValueError(
+            raise ValidationError(
                 "fecha_registro es obligatoria y debe tener formato YYYY-MM-DD"
             )
 
         if fecha > date.today():
-            raise ValueError("fecha_registro no puede ser futura")
+            raise ValidationError("fecha_registro no puede ser futura")
 
         return fecha
 
@@ -62,7 +63,7 @@ class RegistrosPropiedadService:
             RegistrosPropiedadService._validar_id(registro_id, "registro_id")
         )
         if not registro:
-            raise ValueError("Registro de propiedad no encontrado")
+            raise NotFoundError("Registro de propiedad no encontrado")
         return registro
 
     @staticmethod
@@ -72,7 +73,7 @@ class RegistrosPropiedadService:
         )
         tipo_registro = db.session.get(TipoRegistroPropiedad, tipo_registro_id)
         if not tipo_registro:
-            raise ValueError("tipo_registro_id invalido")
+            raise ValidationError("tipo_registro_id invalido")
         return tipo_registro.id
 
     @staticmethod
@@ -82,7 +83,7 @@ class RegistrosPropiedadService:
         )
         grupo = db.session.get(GrupoInvestigacionUtn, grupo_utn_id)
         if not grupo or grupo.deleted_at is not None:
-            raise ValueError("grupo_utn_id invalido")
+            raise ValidationError("grupo_utn_id invalido")
         return grupo.id
 
     # =========================
@@ -181,7 +182,7 @@ class RegistrosPropiedadService:
         cambios = {}
 
         if not registro.activo:
-            raise ValueError(
+            raise ConflictError(
                 "No se puede modificar un registro eliminado. Restaurarlo primero."
             )
 
@@ -237,10 +238,10 @@ class RegistrosPropiedadService:
             try:
                 nuevo_valor = datetime.strptime(data["fecha_registro"], "%Y-%m-%d").date()
             except (TypeError, ValueError):
-                raise ValueError("fecha_registro debe tener formato YYYY-MM-DD")
+                raise ValidationError("fecha_registro debe tener formato YYYY-MM-DD")
 
             if nuevo_valor > date.today():
-                raise ValueError("fecha_registro no puede ser futura")
+                raise ValidationError("fecha_registro no puede ser futura")
 
             cambio = AuditoriaService.construir_cambio(
                 registro.fecha_registro,
@@ -276,7 +277,7 @@ class RegistrosPropiedadService:
         registro = RegistrosPropiedadService._get_or_404(registro_id)
 
         if not registro.activo:
-            raise ValueError("El registro ya se encuentra eliminado.")
+            raise ConflictError("El registro ya se encuentra eliminado.")
 
         registro.soft_delete(user_id)
         try:
@@ -295,7 +296,7 @@ class RegistrosPropiedadService:
         registro = RegistrosPropiedadService._get_or_404(registro_id)
 
         if registro.activo:
-            raise ValueError("El registro ya se encuentra activo.")
+            raise ConflictError("El registro ya se encuentra activo.")
 
         registro.restore()
         registro.activo = True

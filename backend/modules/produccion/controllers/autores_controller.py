@@ -1,5 +1,6 @@
 from flask import jsonify, request
 from modules.produccion.services.autores_service import AutorService
+from modules.shared.controllers.responses import exception_response
 
 class AutorController:
 
@@ -7,8 +8,8 @@ class AutorController:
     def get_all():
         try:
             return jsonify(AutorService.get_all()), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="listar autores")
 
     @staticmethod
     def get_by_id(autor_id):
@@ -16,8 +17,8 @@ class AutorController:
             return jsonify(
                 AutorService.get_by_id(autor_id)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar autor")
 
     @staticmethod
     def create():
@@ -26,8 +27,8 @@ class AutorController:
             return jsonify(
                 AutorService.create(data)
             ), 201
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="crear autor")
 
     @staticmethod
     def update(autor_id):
@@ -36,8 +37,8 @@ class AutorController:
             return jsonify(
                 AutorService.update(autor_id, data)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="actualizar autor")
 
     @staticmethod
     def delete(autor_id):
@@ -45,8 +46,8 @@ class AutorController:
             return jsonify(
                 AutorService.delete(autor_id)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="eliminar autor")
 
     # -------- RELACIÓN AUTOR - LIBRO --------
 
@@ -60,8 +61,8 @@ class AutorController:
                     data["libro_id"]
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="asociar libro a autor")
 
     @staticmethod
     def remove_libro(autor_id, libro_id):
@@ -72,5 +73,5 @@ class AutorController:
                     libro_id
                 )
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="desasociar libro de autor")

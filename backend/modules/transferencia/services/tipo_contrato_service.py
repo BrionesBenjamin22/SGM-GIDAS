@@ -2,6 +2,7 @@ from modules.transferencia.models.transferencia_socio import TipoContrato
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from extension import db
 from sqlalchemy import func
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
 
 
 class TipoContratoService:
@@ -50,7 +51,7 @@ class TipoContratoService:
             query = query.filter(TipoContrato.id != contrato_id)
 
         if query.first():
-            raise ValueError("Ya existe un tipo de contrato con ese nombre")
+            raise ConflictError("Ya existe un tipo de contrato con ese nombre")
 
         return nombre
 
@@ -58,7 +59,7 @@ class TipoContratoService:
     def _get_or_404(tipo_contrato_id):
         tipo = TipoContrato.query.get(TipoContratoService._validar_id(tipo_contrato_id))
         if not tipo:
-            raise ValueError("Tipo de contrato no encontrado")
+            raise NotFoundError("Tipo de contrato no encontrado")
         return tipo
 
     # -------------------------------------------------
@@ -105,7 +106,7 @@ class TipoContratoService:
         tipo = TipoContratoService._get_or_404(tipo_contrato_id)
 
         if tipo.deleted_at is not None:
-            raise ValueError("No se puede editar un tipo de contrato inactivo")
+            raise ConflictError("No se puede editar un tipo de contrato inactivo")
 
         if "nombre" in data:
             nombre = TipoContratoService._validar_nombre(
@@ -132,7 +133,7 @@ class TipoContratoService:
         tipo = TipoContratoService._get_or_404(tipo_contrato_id)
 
         if any(t.deleted_at is None for t in tipo.transferencias):
-            raise ValueError(
+            raise ConflictError(
                 "No se puede eliminar el tipo de contrato porque tiene transferencias asociadas"
             )
 

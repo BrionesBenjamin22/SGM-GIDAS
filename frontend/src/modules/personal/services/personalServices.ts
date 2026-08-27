@@ -45,21 +45,21 @@ export function getPersonal(
 
 // 👉 POST / PUT PTAA + Profesional
 export function upsertPersonal(payload: PersonalPayload) {
-  return http("/personal/", {
+  return http<PersonalItem>("/personal/", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
 export function actualizarPersonal(id: number, payload: Partial<PersonalPayload>, rol: string) {
-  return http(`/personal/${rol}/${id}`, {
+  return http<PersonalItem>(`/personal/${rol}/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });
 }
 
 export function eliminarPersonal(id: number, rol: string) {
-  return http(`/personal/${rol}/${id}`, {
+  return http<{ message: string }>(`/personal/${rol}/${id}`, {
     method: "DELETE",
   });
 }

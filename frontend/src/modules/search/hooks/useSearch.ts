@@ -8,12 +8,23 @@ import {
   type SearchPageResult,
   type SearchResult,
 } from "@/modules/search/services/searchService";
+import { getErrorMessage } from "@/lib/httpError";
 
 const DEBOUNCE_MS = 400;
 const CACHE_TTL_MS = 30_000;
 const CACHE_MAX_ENTRIES = 30;
 const EMPTY_META: SearchMeta = { page: 1, per_page: 9, total: 0, total_pages: 1 };
 type CacheEntry = { expiresAt: number; value: SearchPageResult };
+const VALID_ORDERS: Orden[] = ["alf_asc", "alf_desc", "fecha_asc", "fecha_desc"];
+
+function parseOrder(value: string | null): Orden {
+  return VALID_ORDERS.includes(value as Orden) ? value as Orden : "alf_asc";
+}
+
+function parsePage(value: string | null): number {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+}
 
 export function useSearch() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -23,12 +34,12 @@ export function useSearch() {
     : initialEstadoParam === "all" ? "all" : "activos";
 
   const [q, setQState] = useState(searchParams.get("q") || "");
-  const [orden, setOrdenState] = useState<Orden>((searchParams.get("orden") as Orden) || "alf_asc");
+  const [orden, setOrdenState] = useState<Orden>(parseOrder(searchParams.get("orden")));
   const [estado, setEstadoState] = useState<EstadoBusqueda>(initialEstado);
   const [selectedTypes, setSelectedTypes] = useState<string[]>(searchParams.get("tipos")?.split(",").filter(Boolean) || []);
   const [dateFrom, setDateFrom] = useState<string | undefined>(searchParams.get("desde") || undefined);
   const [dateTo, setDateTo] = useState<string | undefined>(searchParams.get("hasta") || undefined);
-  const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
+  const [page, setPage] = useState(parsePage(searchParams.get("page")));
   const [meta, setMeta] = useState<SearchMeta>(EMPTY_META);
   const [loading, setLoading] = useState(false);
   const [rawResults, setRawResults] = useState<SearchResult[]>([]);
@@ -107,9 +118,12 @@ export function useSearch() {
     } catch (caught: unknown) {
       if (caught instanceof DOMException && caught.name === "AbortError") return;
       if (requestId !== requestIdRef.current) return;
-      setError(caught instanceof Error
-        ? caught.message
-        : "Lo sentimos, no pudimos recuperar la información. Intente nuevamente.");
+      setError(
+        getErrorMessage(
+          caught,
+          "Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente."
+        )
+      );
       setHasSearched(false);
     } finally {
       if (requestId === requestIdRef.current) setLoading(false);
@@ -145,6 +159,9 @@ export function useSearch() {
     if (dateTo && (!result.fecha || result.fecha > dateTo)) return false;
     return true;
   }), [rawResults, selectedTypes, dateFrom, dateTo]);
+  const filterError = dateFrom && dateTo && dateFrom > dateTo
+    ? "La fecha desde no puede ser posterior a la fecha hasta."
+    : null;
 
   function toggleType(type: string) {
     setSelectedTypes((current) => current.includes(type)
@@ -178,7 +195,11 @@ export function useSearch() {
   return {
     q, setQ, orden, setOrden, estado, setEstado, selectedTypes, setSelectedTypes,
     toggleType, dateFrom, setDateFrom, dateTo, setDateTo, availableTypes, loading,
-    results, totalRaw: rawResults.length, error, clearAll, executeSearch,
+    results: filterError ? [] : results,
+    totalRaw: rawResults.length,
+    error: filterError ?? error,
+    clearAll,
+    executeSearch,
     executeImmediateSearch,
     hasSearched, page, setPage, meta,
   };

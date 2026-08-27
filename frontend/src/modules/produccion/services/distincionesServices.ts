@@ -43,7 +43,10 @@ type GetDistincionesOptions = {
   orden?: "asc" | "desc";
 };
 
-const normalizeDistincion = (item: any): Distincion => ({
+type DistincionBackend = Partial<Distincion> & { id: number };
+type ApiListResponse<T> = T[] | { data?: T[] };
+
+const normalizeDistincion = (item: DistincionBackend): Distincion => ({
   id: item.id,
   fecha: item.fecha ?? "",
   descripcion: item.descripcion ?? "",
@@ -73,7 +76,7 @@ export const getDistinciones = async (
   const query = params.toString();
   const endpoint = query ? `/distinciones/?${query}` : "/distinciones/";
 
-  const response = await http<any>(endpoint, { method: "GET" });
+  const response = await http<ApiListResponse<DistincionBackend>>(endpoint, { method: "GET" });
   const items = Array.isArray(response)
     ? response
     : Array.isArray(response?.data)
@@ -84,14 +87,14 @@ export const getDistinciones = async (
 };
 
 export const getDistincionById = async (id: number): Promise<Distincion> => {
-  const response = await http<any>(`/distinciones/${id}`, { method: "GET" });
+  const response = await http<DistincionBackend>(`/distinciones/${id}`, { method: "GET" });
   return normalizeDistincion(response);
 };
 
 export const getHistorialDistincionById = async (
   id: number
 ): Promise<HistorialDistincionItem[]> => {
-  const response = await http<any>(`/distinciones/${id}/historial`, {
+  const response = await http<ApiListResponse<HistorialDistincionItem>>(`/distinciones/${id}/historial`, {
     method: "GET",
   });
 
@@ -109,7 +112,7 @@ export const getHistorialDistincionById = async (
 export const crearDistincion = async (
   payload: DistincionPayload
 ): Promise<Distincion> => {
-  const response = await http<any>("/distinciones/", {
+  const response = await http<DistincionBackend>("/distinciones/", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -129,7 +132,7 @@ export const actualizarDistincion = async (
     body.proyecto_investigacion_id = payload.proyecto_investigacion_id;
   }
 
-  const response = await http<any>(`/distinciones/${id}`, {
+  const response = await http<DistincionBackend>(`/distinciones/${id}`, {
     method: "PUT",
     body: JSON.stringify(body),
   });

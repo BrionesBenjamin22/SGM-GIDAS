@@ -1,214 +1,103 @@
 from flask import jsonify, request, g
+
 from modules.produccion.services.trabajo_revista_service import (
-    TrabajosRevistasReferatoService
+    TrabajosRevistasReferatoService,
 )
+from modules.shared.controllers.responses import exception_response
+from modules.shared.exceptions import ValidationError
 
 
 class TrabajosRevistasReferatoController:
 
-    # =================================================
-    # GET ALL
-    # =================================================
     @staticmethod
     def get_all():
         try:
             args = request.args
-            filters = {}
-
-            # 🔥 Filtro activos
-            filters["activos"] = args.get("activos", "true")
-
-            # -------------------------
-            # Filtros válidos
-            # -------------------------
+            filters = {"activos": args.get("activos", "true")}
             if args.get("grupo_utn_id"):
-                filters["grupo_utn_id"] = int(args.get("grupo_utn_id"))
-
-            if args.get("pais"):
-                filters["pais"] = args.get("pais")
-
-            if args.get("editorial"):
-                filters["editorial"] = args.get("editorial")
-
+                filters["grupo_utn_id"] = args.get("grupo_utn_id")
+            for field in ("pais", "editorial"):
+                if args.get(field):
+                    filters[field] = args.get(field)
             if args.get("orden") in ("asc", "desc"):
                 filters["orden"] = args.get("orden")
+            return jsonify(TrabajosRevistasReferatoService.get_all(filters)), 200
+        except Exception as error:
+            return exception_response(error, operation="listar trabajos en revistas")
 
-            result = TrabajosRevistasReferatoService.get_all(filters)
-
-            return jsonify(result), 200
-
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
-
-
-    # =================================================
-    # GET BY ID
-    # =================================================
     @staticmethod
     def get_by_id(trabajo_id):
         try:
-            result = TrabajosRevistasReferatoService.get_by_id(trabajo_id)
-            return jsonify(result), 200
-
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 404
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+            return jsonify(TrabajosRevistasReferatoService.get_by_id(trabajo_id)), 200
+        except Exception as error:
+            return exception_response(error, operation="consultar trabajo en revista")
 
     @staticmethod
     def get_historial(trabajo_id):
         try:
-            result = TrabajosRevistasReferatoService.get_historial(trabajo_id)
-            return jsonify(result), 200
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 404
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+            return jsonify(TrabajosRevistasReferatoService.get_historial(trabajo_id)), 200
+        except Exception as error:
+            return exception_response(error, operation="consultar historial de trabajo en revista")
 
-
-    # =================================================
-    # CREATE
-    # =================================================
     @staticmethod
     def create():
         try:
-            data = request.get_json()
+            return jsonify(TrabajosRevistasReferatoService.create(
+                request.get_json(), g.current_user_id
+            )), 201
+        except Exception as error:
+            return exception_response(error, operation="crear trabajo en revista")
 
-            if not data:
-                return jsonify({"error": "Body requerido"}), 400
-
-            user_id = g.current_user_id  
-
-            result = TrabajosRevistasReferatoService.create(data, user_id)
-
-            return jsonify(result), 201
-
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
-
-
-    # =================================================
-    # UPDATE
-    # =================================================
     @staticmethod
     def update(trabajo_id):
         try:
-            data = request.get_json()
-            user_id = g.current_user_id
+            return jsonify(TrabajosRevistasReferatoService.update(
+                trabajo_id, request.get_json(), g.current_user_id
+            )), 200
+        except Exception as error:
+            return exception_response(error, operation="actualizar trabajo en revista")
 
-            if not data:
-                return jsonify({"error": "Body requerido"}), 400
-
-            result = TrabajosRevistasReferatoService.update(
-                trabajo_id,
-                data,
-                user_id
-            )
-
-            return jsonify(result), 200
-
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
-
-
-    # =================================================
-    # SOFT DELETE
-    # =================================================
     @staticmethod
     def delete(trabajo_id):
         try:
-            user_id = g.current_user_id  
+            return jsonify(TrabajosRevistasReferatoService.delete(
+                trabajo_id, g.current_user_id
+            )), 200
+        except Exception as error:
+            return exception_response(error, operation="eliminar trabajo en revista")
 
-            result = TrabajosRevistasReferatoService.delete(trabajo_id, user_id)
-
-            return jsonify(result), 200
-
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
-
-
-    # =================================================
-    # RESTORE
-    # =================================================
     @staticmethod
     def restore(trabajo_id):
         try:
-            result = TrabajosRevistasReferatoService.restore(trabajo_id)
-            return jsonify(result), 200
+            return jsonify(TrabajosRevistasReferatoService.restore(trabajo_id)), 200
+        except Exception as error:
+            return exception_response(error, operation="restaurar trabajo en revista")
 
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+    @staticmethod
+    def _investigadores_ids():
+        data = request.get_json()
+        if not isinstance(data, dict):
+            raise ValidationError("Body requerido")
+        return data.get("investigadores_ids")
 
-
-    # =================================================
-    # VINCULAR INVESTIGADORES
-    # =================================================
     @staticmethod
     def add_investigadores(trabajo_id):
         try:
-            data = request.get_json()
-
-            if not data:
-                return jsonify({"error": "Body requerido"}), 400
-
-            investigadores_ids = data.get("investigadores_ids")
-
-            if not isinstance(investigadores_ids, list) or not investigadores_ids:
-                return jsonify({
-                    "error": "investigadores_ids debe ser una lista no vacía"
-                }), 400
-
-            user_id = g.current_user_id
-            result = TrabajosRevistasReferatoService.vincular_investigadores(
+            return jsonify(TrabajosRevistasReferatoService.vincular_investigadores(
                 trabajo_id,
-                investigadores_ids,
-                user_id
-            )
+                TrabajosRevistasReferatoController._investigadores_ids(),
+                g.current_user_id,
+            )), 200
+        except Exception as error:
+            return exception_response(error, operation="vincular investigadores a trabajo en revista")
 
-            return jsonify(result), 200
-
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
-
-
-    # =================================================
-    # DESVINCULAR INVESTIGADORES
-    # =================================================
     @staticmethod
     def remove_investigadores(trabajo_id):
         try:
-            data = request.get_json()
-
-            if not data:
-                return jsonify({"error": "Body requerido"}), 400
-
-            investigadores_ids = data.get("investigadores_ids")
-
-            if not isinstance(investigadores_ids, list) or not investigadores_ids:
-                return jsonify({
-                    "error": "investigadores_ids debe ser una lista no vacía"
-                }), 400
-
-            user_id = g.current_user_id
-            result = TrabajosRevistasReferatoService.desvincular_investigadores(
+            return jsonify(TrabajosRevistasReferatoService.desvincular_investigadores(
                 trabajo_id,
-                investigadores_ids,
-                user_id
-            )
-
-            return jsonify(result), 200
-
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+                TrabajosRevistasReferatoController._investigadores_ids(),
+                g.current_user_id,
+            )), 200
+        except Exception as error:
+            return exception_response(error, operation="desvincular investigadores de trabajo en revista")

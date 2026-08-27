@@ -1,6 +1,8 @@
-from flask import jsonify, request, g
-from modules.produccion.services.grado_academico_service import GradoAcademicoService
+from flask import g, jsonify, request
+
 from modules.produccion.models.actividad_docencia import GradoAcademico
+from modules.produccion.services.grado_academico_service import GradoAcademicoService
+from modules.shared.controllers.responses import exception_response
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 
 
@@ -12,17 +14,15 @@ class GradoAcademicoController:
             return jsonify(
                 GradoAcademicoService.get_all(request.args.get("activos", "true"))
             ), 200
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="listar grados academicos")
 
     @staticmethod
     def get_by_id(grado_id):
         try:
             return jsonify(GradoAcademicoService.get_by_id(grado_id)), 200
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 404
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="consultar grado academico")
 
     @staticmethod
     def get_historial(grado_id):
@@ -30,25 +30,27 @@ class GradoAcademicoController:
             return jsonify(
                 CatalogoAuditoriaService.historial_por_modelo(
                     GradoAcademico,
-                    grado_id
+                    grado_id,
                 )
             ), 200
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 404
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(
+                error,
+                operation="consultar historial de grado academico",
+            )
 
     @staticmethod
     def create():
         data = request.get_json()
         try:
             return jsonify(
-                GradoAcademicoService.create(data, getattr(g, "current_user_id", None))
+                GradoAcademicoService.create(
+                    data,
+                    getattr(g, "current_user_id", None),
+                )
             ), 201
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="crear grado academico")
 
     @staticmethod
     def update(grado_id):
@@ -58,23 +60,20 @@ class GradoAcademicoController:
                 GradoAcademicoService.update(
                     grado_id,
                     data,
-                    getattr(g, "current_user_id", None)
+                    getattr(g, "current_user_id", None),
                 )
             ), 200
-        except ValueError as e:
-            status = 404 if "no encontrado" in str(e).lower() else 400
-            return jsonify({"error": str(e)}), status
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="actualizar grado academico")
 
     @staticmethod
     def delete(grado_id):
         try:
             return jsonify(
-                GradoAcademicoService.delete(grado_id, getattr(g, "current_user_id", None))
+                GradoAcademicoService.delete(
+                    grado_id,
+                    getattr(g, "current_user_id", None),
+                )
             ), 200
-        except ValueError as e:
-            status = 404 if "no encontrado" in str(e).lower() else 400
-            return jsonify({"error": str(e)}), status
-        except Exception:
-            return jsonify({"error": "Error interno del servidor"}), 500
+        except Exception as error:
+            return exception_response(error, operation="eliminar grado academico")

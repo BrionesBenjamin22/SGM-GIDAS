@@ -3,44 +3,45 @@ from sqlalchemy import func
 from extension import db
 from modules.personal.models.personal import TipoFormacion
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 
 
 def _validar_id_positivo(tipo_formacion_id):
     if isinstance(tipo_formacion_id, bool) or not isinstance(tipo_formacion_id, int):
-        raise ValueError("El id debe ser un entero positivo.")
+        raise ValidationError("El id debe ser un entero positivo.")
 
     if tipo_formacion_id <= 0:
-        raise ValueError("El id debe ser un entero positivo.")
+        raise ValidationError("El id debe ser un entero positivo.")
 
     return tipo_formacion_id
 
 
 def _validar_data(data):
     if data is None:
-        raise ValueError("Los datos no pueden estar vacíos.")
+        raise ValidationError("Los datos no pueden estar vacíos.")
 
     if not isinstance(data, dict):
-        raise ValueError("Los datos deben enviarse en un objeto válido.")
+        raise ValidationError("Los datos deben enviarse en un objeto válido.")
 
     if not data:
-        raise ValueError("Los datos no pueden estar vacíos.")
+        raise ValidationError("Los datos no pueden estar vacíos.")
 
     return data
 
 
 def _validar_nombre(nombre, tipo_formacion_id=None):
     if nombre is None:
-        raise ValueError("El nombre es obligatorio.")
+        raise ValidationError("El nombre es obligatorio.")
 
     if not isinstance(nombre, str):
-        raise ValueError("El nombre debe ser un texto no vacío.")
+        raise ValidationError("El nombre debe ser un texto no vacío.")
 
     nombre = nombre.strip()
     if not nombre:
-        raise ValueError("El nombre no puede estar vacío.")
+        raise ValidationError("El nombre no puede estar vacío.")
 
     if len(nombre) < 2:
-        raise ValueError("El nombre debe tener al menos 2 caracteres.")
+        raise ValidationError("El nombre debe tener al menos 2 caracteres.")
 
     query = TipoFormacion.query.filter(
         func.lower(TipoFormacion.nombre) == nombre.lower()
@@ -50,7 +51,7 @@ def _validar_nombre(nombre, tipo_formacion_id=None):
         query = query.filter(TipoFormacion.id != tipo_formacion_id)
 
     if query.first():
-        raise ValueError("Ya existe un tipo de formación con ese nombre.")
+        raise ConflictError("Ya existe un tipo de formación con ese nombre.")
 
     return nombre
 
@@ -60,7 +61,7 @@ def _obtener_tipo_formacion_o_error(tipo_formacion_id):
     tipo = TipoFormacion.query.get(tipo_formacion_id)
 
     if not tipo:
-        raise ValueError("Tipo de formación no encontrado.")
+        raise NotFoundError("Tipo de formación no encontrado.")
 
     return tipo
 
@@ -85,7 +86,7 @@ def actualizar_tipo_formacion(id, data, user_id=None):
     data = _validar_data(data)
     tipo = _obtener_tipo_formacion_o_error(id)
     if tipo.deleted_at is not None:
-        raise ValueError("No se puede editar un tipo de formacion inactivo.")
+        raise ConflictError("No se puede editar un tipo de formacion inactivo.")
 
     nombre = _validar_nombre(data.get("nombre"), tipo_formacion_id=tipo.id)
 
@@ -105,7 +106,7 @@ def eliminar_tipo_formacion(id, user_id=None):
     tipo = _obtener_tipo_formacion_o_error(id)
 
     if len(tipo.becarios) > 0:
-        raise ValueError(
+        raise ConflictError(
             "No se puede eliminar el tipo de formación porque está asociado a becarios."
         )
 

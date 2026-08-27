@@ -11,7 +11,6 @@ venv/
 .venv/
 instance/
 tests/
-tools/
 *.log
 Dockerfile
 .dockerignore

@@ -24,6 +24,8 @@ import {
   getTrabajosRevistasSnapshot,
   getTransferenciasSnapshot,
   getVisitasAcademicasSnapshot,
+  type Memoria,
+  type MemoriaSnapshotEntry,
 } from "@/modules/memorias/services/memoriasService";
 import {
   createPlanificacion,
@@ -37,7 +39,10 @@ type SnapshotSection = {
   key: string;
   label: string;
   queryKey: string;
-  queryFn: (memoriaId: number, versionId: number) => Promise<any[]>;
+  queryFn: (
+    memoriaId: number,
+    versionId: number
+  ) => Promise<MemoriaSnapshotEntry[]>;
   homePath?: string;
 };
 
@@ -156,7 +161,7 @@ const sections: SnapshotSection[] = [
   },
 ];
 
-function buildMemoriaLabel(memoria: any) {
+function buildMemoriaLabel(memoria: Memoria | null | undefined) {
   const year = memoria?.periodo_fin ? new Date(memoria.periodo_fin).getFullYear() : "";
   return year ? `Memoria ${year}` : "Memoria";
 }
@@ -180,7 +185,10 @@ const snapshotEntityIdKeys: Record<string, string> = {
   "visitas-academicas": "visita_academica_id",
 };
 
-function getSnapshotEntityId(sectionKey: string, entry: any) {
+function getSnapshotEntityId(
+  sectionKey: string,
+  entry: MemoriaSnapshotEntry
+): unknown {
   const mappedKey = snapshotEntityIdKeys[sectionKey];
 
   if (mappedKey && entry?.[mappedKey] !== undefined && entry?.[mappedKey] !== null) {
@@ -231,7 +239,7 @@ export default function MemoriaVersionDetalle() {
     [snapshotQueries]
   );
   const versionActual = (memoria?.versiones || []).find(
-    (version: any) => version.id === memoriaVersionId
+    (version) => version.id === memoriaVersionId
   );
   const versionCerrada = versionActual?.estado === "cerrada";
   const sectionsWithItems = sectionData.filter((section) => section.items.length > 0);
@@ -328,7 +336,7 @@ export default function MemoriaVersionDetalle() {
 
     const entries = sectionData.find((current) => current.key === section.key)?.items ?? [];
     const ids = entries
-      .map((entry: any) => getSnapshotEntityId(section.key, entry))
+      .map((entry) => getSnapshotEntityId(section.key, entry))
       .filter((value: unknown) => value !== undefined && value !== null);
 
     navigate(section.homePath, {

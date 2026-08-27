@@ -26,7 +26,8 @@ import ErrorText from "@/components/ErrorText";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
 import Tarjeta from "@/components/Tarjeta";
-import { HttpError } from "@/lib/http";
+import { useAuth } from "@/context/AuthContext";
+import { getErrorMessage as getSafeErrorMessage } from "@/lib/httpError";
 
 type CatalogGroup =
   | "Institucionales / normativos"
@@ -89,7 +90,8 @@ const CATALOG_GROUPS: CatalogGroup[] = [
   "Propiedad intelectual",
 ];
 
-const CATALOG_ITEMS_PER_PAGE = 5;
+const CATALOG_ITEMS_PER_PAGE = 9;
+const HISTORY_ITEMS_PER_PAGE = 3;
 
 function scrollToPageTop() {
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -391,7 +393,7 @@ function mapBackendMessage(
   return null;
 }
 
-function getErrorMessage(
+function getCatalogErrorMessage(
   error: unknown,
   action: "crear" | "actualizar" | "eliminar",
   entityName: string
@@ -404,24 +406,10 @@ function getErrorMessage(
     eliminar: `No se pudo eliminar ${cleanEntity}. Puede estar en uso en otros registros.`,
   };
 
-  if (error instanceof HttpError) {
-    const body = error.body as
-      | { message?: string; error?: string; detail?: string }
-      | string
-      | undefined;
-
-    let backendMessage = "";
-
-    if (typeof body === "string") {
-      backendMessage = body;
-    } else if (body && typeof body === "object") {
-      backendMessage = body.message || body.error || body.detail || "";
-    }
-
-    if (backendMessage) {
-      const mapped = mapBackendMessage(backendMessage, action, entityName);
-      return mapped ?? backendMessage;
-    }
+  const backendMessage = getSafeErrorMessage(error, "");
+  if (backendMessage) {
+    const mapped = mapBackendMessage(backendMessage, action, entityName);
+    return mapped ?? backendMessage;
   }
 
   return fallbackMap[action];
@@ -442,9 +430,15 @@ function Metric({ children }: { children: ReactNode }) {
 function CatalogPanel({
   def,
   onSummaryChange,
+  canCreate,
+  canEdit,
+  canDelete,
 }: {
   def: CatalogDef;
   onSummaryChange: (label: string, summary: CatalogSummary) => void;
+  canCreate: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
 }) {
   const queryClient = useQueryClient();
   const nameField = def.nameField ?? "nombre";
@@ -453,6 +447,8 @@ function CatalogPanel({
   const [loading, setLoading] = useState(false);
   const [fkOptions, setFkOptions] = useState<CatalogItem[]>([]);
   const [historyByItem, setHistoryByItem] = useState<CatalogHistoryMap>({});
+  const [historyLoadFailed, setHistoryLoadFailed] = useState(false);
+  const [historyPageByItem, setHistoryPageByItem] = useState<Record<number, number>>({});
 
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
@@ -489,20 +485,25 @@ function CatalogPanel({
       const data = await getCatalogItems(def.endpoint);
       setItems(data);
       onSummaryChange(def.label, getCatalogSummary(data));
+      let historyFailed = false;
       const histories = await Promise.all(
         data.map(async (item) => {
           try {
             const history = await getCatalogHistory(def.endpoint, item.id);
             return [item.id, history] as const;
           } catch {
+            historyFailed = true;
             return [item.id, []] as const;
           }
         })
       );
       setHistoryByItem(Object.fromEntries(histories));
+      setHistoryLoadFailed(historyFailed);
       setErrorMessage("");
     } catch {
-      setErrorMessage(`No se pudo cargar el catalogo de ${entityLabel}.`);
+      setErrorMessage(
+        "Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente."
+      );
     } finally {
       setLoading(false);
     }
@@ -512,7 +513,11 @@ function CatalogPanel({
     if (def.fkField) {
       getCatalogItems(def.fkField.endpoint)
         .then(setFkOptions)
-        .catch(() => {});
+        .catch(() =>
+          setErrorMessage(
+            `Lo sentimos, no pudimos recuperar las opciones de ${fkLabel.toLowerCase()}. Intente nuevamente.`
+          )
+        );
     }
   }, [def.fkField]);
 
@@ -573,8 +578,14 @@ function CatalogPanel({
   }, [currentPage, totalPages]);
 
   const handleAdd = async () => {
+    if (!canCreate) return;
     if (!newName.trim()) {
       setErrorMessage("Debe ingresar un nombre antes de crear el registro.");
+      return;
+    }
+
+    if (def.fkField && !newFkId) {
+      setErrorMessage(`Debe seleccionar ${fkLabel.toLowerCase()}.`);
       return;
     }
 
@@ -593,14 +604,23 @@ function CatalogPanel({
       queryClient.invalidateQueries();
       load();
     } catch (error) {
-      const message = getErrorMessage(error, "crear", `el registro de ${def.label}`);
+      const message = getCatalogErrorMessage(
+        error,
+        "crear",
+        `el registro de ${def.label}`
+      );
       setErrorMessage(message);
       showToast(message, "error");
     }
   };
 
   const handleUpdate = async (id: number) => {
+    if (!canEdit) return;
     const item = items.find((current) => current.id === id);
+    if (!item) {
+      setErrorMessage("No se encontro el registro que desea actualizar.");
+      return;
+    }
     if (item && isInactive(item)) {
       const message = `No se puede editar el registro de ${def.label} porque esta inactivo.`;
       setEditId(null);
@@ -614,9 +634,26 @@ function CatalogPanel({
       return;
     }
 
-    const body: Record<string, unknown> = { [nameField]: editName.trim() };
-    if (def.descField) body[def.descField] = editDesc.trim();
-    if (def.fkField) body[def.fkField.idField] = editFkId ? Number(editFkId) : null;
+    const body: Record<string, unknown> = {};
+    const normalizedName = editName.trim();
+    if (normalizedName !== getDisplayName(item)) body[nameField] = normalizedName;
+    if (def.descField) {
+      const currentDescription =
+        typeof item?.[def.descField] === "string" ? item[def.descField] : "";
+      if (editDesc.trim() !== currentDescription) body[def.descField] = editDesc.trim();
+    }
+    if (def.fkField) {
+      const nextFkId = editFkId ? Number(editFkId) : null;
+      const currentFkId = getFkId(item);
+      if (nextFkId !== (currentFkId || null)) body[def.fkField.idField] = nextFkId;
+    }
+
+    if (Object.keys(body).length === 0) {
+      setEditId(null);
+      setErrorMessage("");
+      showToast("No hubo cambios para actualizar.", "success");
+      return;
+    }
 
     try {
       await updateCatalogItem(def.endpoint, id, body);
@@ -626,7 +663,7 @@ function CatalogPanel({
       queryClient.invalidateQueries();
       load();
     } catch (error) {
-      const message = getErrorMessage(
+      const message = getCatalogErrorMessage(
         error,
         "actualizar",
         `el registro de ${def.label}`
@@ -637,6 +674,7 @@ function CatalogPanel({
   };
 
   const handleDelete = async () => {
+    if (!canDelete) return;
     if (!deleteTarget) return;
     if (isInactive(deleteTarget)) {
       const message = `No se puede eliminar el registro de ${def.label} porque ya esta inactivo.`;
@@ -654,7 +692,7 @@ function CatalogPanel({
       queryClient.invalidateQueries();
       load();
     } catch (error) {
-      const message = getErrorMessage(
+      const message = getCatalogErrorMessage(
         error,
         "eliminar",
         `el registro de ${def.label}`
@@ -711,6 +749,11 @@ function CatalogPanel({
 
       {loading && <p className="text-sm text-slate-400">Cargando...</p>}
       {!!errorMessage && <ErrorText>{errorMessage}</ErrorText>}
+      {historyLoadFailed && (
+        <ErrorText>
+          Lo sentimos, no pudimos recuperar parte del historial. Intente nuevamente.
+        </ErrorText>
+      )}
 
       {!loading && items.length === 0 && (
         <p className="text-sm text-slate-400 italic">Sin registros</p>
@@ -838,13 +881,73 @@ function CatalogPanel({
                         Historial de cambios
                       </p>
                       {(historyByItem[item.id] ?? []).length > 0 ? (
-                        <ul className="mt-2 space-y-1">
-                          {(historyByItem[item.id] ?? []).slice(0, 3).map((history) => (
+                        <>
+                          <ul className="mt-2 space-y-1">
+                          {(historyByItem[item.id] ?? [])
+                            .slice(
+                              ((historyPageByItem[item.id] ?? 1) - 1) *
+                                HISTORY_ITEMS_PER_PAGE,
+                              (historyPageByItem[item.id] ?? 1) *
+                                HISTORY_ITEMS_PER_PAGE
+                            )
+                            .map((history) => (
                             <li key={history.id} className="text-xs text-slate-600">
                               {formatHistoryItem(history)}
                             </li>
                           ))}
-                        </ul>
+                          </ul>
+                          {(historyByItem[item.id] ?? []).length > HISTORY_ITEMS_PER_PAGE && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                disabled={(historyPageByItem[item.id] ?? 1) === 1}
+                                onClick={() =>
+                                  setHistoryPageByItem((current) => ({
+                                    ...current,
+                                    [item.id]: Math.max(1, (current[item.id] ?? 1) - 1),
+                                  }))
+                                }
+                              >
+                                Anterior
+                              </Button>
+                              <span className="text-xs text-slate-500">
+                                Pagina {historyPageByItem[item.id] ?? 1} de{" "}
+                                {Math.ceil(
+                                  (historyByItem[item.id] ?? []).length /
+                                    HISTORY_ITEMS_PER_PAGE
+                                )}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                disabled={
+                                  (historyPageByItem[item.id] ?? 1) >=
+                                  Math.ceil(
+                                    (historyByItem[item.id] ?? []).length /
+                                      HISTORY_ITEMS_PER_PAGE
+                                  )
+                                }
+                                onClick={() =>
+                                  setHistoryPageByItem((current) => ({
+                                    ...current,
+                                    [item.id]: Math.min(
+                                      Math.ceil(
+                                        (historyByItem[item.id] ?? []).length /
+                                          HISTORY_ITEMS_PER_PAGE
+                                      ),
+                                      (current[item.id] ?? 1) + 1
+                                    ),
+                                  }))
+                                }
+                              >
+                                Siguiente
+                              </Button>
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <p className="mt-2 text-xs text-slate-400">
                           Sin cambios registrados para este valor.
@@ -876,7 +979,7 @@ function CatalogPanel({
                       {getAuditLabel(item, historyByItem[item.id] ?? [])}
                     </div>
 
-                    {!isInactive(item) && (
+                    {canEdit && !isInactive(item) && (
                       <Button
                         type="button"
                         variant="secondary"
@@ -896,7 +999,7 @@ function CatalogPanel({
                       </Button>
                     )}
 
-                    {!isInactive(item) && (
+                    {canDelete && !isInactive(item) && (
                       <Button
                         type="button"
                         variant="secondary"
@@ -954,7 +1057,7 @@ function CatalogPanel({
         </div>
       )}
 
-      {showAdd ? (
+      {canCreate && (showAdd ? (
         <div className="space-y-3 rounded-lg border border-emerald-200 bg-emerald-50/30 px-4 py-4">
           <Field
             label={def.nameField === "nombre_beca" ? "Nombre de la beca" : "Nombre"}
@@ -1033,7 +1136,7 @@ function CatalogPanel({
             <Plus size={16} /> Agregar nuevo
           </span>
         </Button>
-      )}
+      ))}
 
       <ConfirmDialog
         open={!!deleteTarget}
@@ -1063,6 +1166,10 @@ function CatalogPanel({
 
 export default function CatalogosHome() {
   const navigate = useNavigate();
+  const { canCreateRecords, canEditRecords, canDeleteRecords } = useAuth();
+  const canCreate = canCreateRecords();
+  const canEdit = canEditRecords();
+  const canDelete = canDeleteRecords();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [catalogSummaries, setCatalogSummaries] = useState<Record<string, CatalogSummary>>(
     {}
@@ -1286,6 +1393,9 @@ export default function CatalogosHome() {
                           <CatalogPanel
                             def={catalog}
                             onSummaryChange={handleSummaryChange}
+                            canCreate={canCreate}
+                            canEdit={canEdit}
+                            canDelete={canDelete}
                           />
                         )}
                       </div>

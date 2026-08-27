@@ -1,5 +1,6 @@
 from datetime import datetime
 from extension import db
+from modules.shared.exceptions import ValidationError as ValueError
 from sqlalchemy.orm import joinedload
 from modules.grupo.models.directivos import Directivo, DirectivoGrupo, Cargo
 from modules.grupo.models.grupo import GrupoInvestigacionUtn

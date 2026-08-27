@@ -19,19 +19,19 @@ export const TIPOS_CONTRATO_STATIC = [
 
 // ─── Helpers ─────────────────────────────────────────────────
 
-/** Devuelve `true` cuando el frontend opera sin backend (modo mock). */
+/** Devuelve `true` solo con el mock habilitado explicitamente en desarrollo. */
 export function isMockMode(): boolean {
-  const url = import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL;
-  return !url || url === "";
+  return (
+    import.meta.env.DEV &&
+    import.meta.env.VITE_ENABLE_TRANSFERENCIA_MOCK === "true"
+  );
 }
 
 // ─── API ─────────────────────────────────────────────────────
 
 /** Obtener los tipos de contrato del backend. */
 export async function getTiposContrato(): Promise<TipoContratoItem[]> {
-  /** Forzar modo mock (poner false cuando el backend esté listo). */
-  const FORCE_MOCK = false;
-  if (FORCE_MOCK || isMockMode()) {
+  if (isMockMode()) {
     return TIPOS_CONTRATO_STATIC.map((nombre, i) => ({
       id: i + 1,
       nombre,

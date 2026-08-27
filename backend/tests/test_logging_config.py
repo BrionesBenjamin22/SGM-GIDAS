@@ -1,11 +1,13 @@
 import logging
 import json
+import sys
 import unittest
 
 from flask import Flask
 
 from modules.shared.services.logging_config import (
     SensitiveDataFilter,
+    SafeTextFormatter,
     JsonFormatter,
     configure_logging,
     get_logger,
@@ -41,6 +43,24 @@ class LoggingConfigTestCase(unittest.TestCase):
         self.assertIn("[REDACTED]", record_token.getMessage())
         self.assertIn("[REDACTED]", record_password.getMessage())
         self.assertTrue(filtro.filter(record_seguro))
+
+    def test_sensitive_filter_redacta_json_cookies_y_secretos_con_espacios(self):
+        filtro = SensitiveDataFilter()
+        record = logging.LogRecord(
+            "test",
+            logging.INFO,
+            __file__,
+            1,
+            'payload={"refresh_token": "token privado", "cookie": "sid=abc"}',
+            (),
+            None,
+        )
+
+        self.assertTrue(filtro.filter(record))
+        message = record.getMessage()
+        self.assertNotIn("token privado", message)
+        self.assertNotIn("sid=abc", message)
+        self.assertEqual(message.count("[REDACTED]"), 2)
 
     def test_configure_logging_define_handler_y_nivel(self):
         logger = configure_logging(app_env="testing", log_level="ERROR")
@@ -78,6 +98,37 @@ class LoggingConfigTestCase(unittest.TestCase):
         self.assertEqual(payload["version"], "abc123")
         self.assertEqual(payload["message"], "evento")
 
+    def test_json_formatter_no_expone_detalle_de_excepcion_en_produccion(self):
+        try:
+            raise RuntimeError("password=secreto-operativo")
+        except RuntimeError:
+            exc_info = sys.exc_info()
+
+        record = logging.LogRecord(
+            "test", logging.ERROR, __file__, 1, "fallo", (), exc_info
+        )
+        payload = json.loads(
+            JsonFormatter("gidas", "production", "abc123").format(record)
+        )
+
+        self.assertEqual(payload["exception_type"], "RuntimeError")
+        self.assertNotIn("exception", payload)
+        self.assertNotIn("secreto-operativo", json.dumps(payload))
+
+    def test_text_formatter_redacta_detalle_sensible_de_excepcion(self):
+        try:
+            raise RuntimeError("password=secreto-operativo")
+        except RuntimeError:
+            exc_info = sys.exc_info()
+
+        record = logging.LogRecord(
+            "test", logging.ERROR, __file__, 1, "fallo", (), exc_info
+        )
+        output = SafeTextFormatter("%(message)s").format(record)
+
+        self.assertIn("[REDACTED]", output)
+        self.assertNotIn("secreto-operativo", output)
+
     def test_request_id_se_propaga_o_se_genera(self):
         app = Flask(__name__)
         register_request_logging(app)
@@ -90,6 +141,20 @@ class LoggingConfigTestCase(unittest.TestCase):
         generated = app.test_client().get("/ping")
         self.assertEqual(supplied.headers["X-Request-ID"], "laboratorio-1")
         self.assertTrue(generated.headers["X-Request-ID"])
+
+    def test_request_id_invalido_no_se_refleja(self):
+        app = Flask(__name__)
+        register_request_logging(app)
+
+        @app.get("/ping")
+        def ping():
+            return {"ok": True}
+
+        response = app.test_client().get(
+            "/ping", headers={"X-Request-ID": "valor con espacios"}
+        )
+
+        self.assertNotEqual(response.headers["X-Request-ID"], "valor con espacios")
 
 
 if __name__ == "__main__":

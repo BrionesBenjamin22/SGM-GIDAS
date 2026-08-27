@@ -1,5 +1,6 @@
 from sqlalchemy import func
 from extension import db
+from modules.shared.exceptions import ValidationError as ValueError
 from modules.grupo.models.directivos import Cargo
 from modules.shared.controllers.pagination import paginate_query
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService

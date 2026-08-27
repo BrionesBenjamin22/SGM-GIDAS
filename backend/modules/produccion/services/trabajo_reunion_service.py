@@ -11,6 +11,7 @@ from modules.produccion.models.trabajo_reunion import (
 )
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 from extension import db
 
 
@@ -19,7 +20,7 @@ class TrabajoReunionCientificaService:
     @staticmethod
     def _validar_payload(data: dict):
         if not isinstance(data, dict) or not data:
-            raise ValueError("Los datos no pueden estar vacios")
+            raise ValidationError("Los datos no pueden estar vacios")
 
     @staticmethod
     def _validar_id(valor, campo: str, permitir_none: bool = False):
@@ -27,7 +28,7 @@ class TrabajoReunionCientificaService:
             return None
 
         if not isinstance(valor, int) or valor <= 0:
-            raise ValueError(f"El campo '{campo}' debe ser un entero positivo")
+            raise ValidationError(f"El campo '{campo}' debe ser un entero positivo")
 
         return valor
 
@@ -38,23 +39,23 @@ class TrabajoReunionCientificaService:
     @staticmethod
     def _validar_texto(valor, campo, min_len=2, max_len=255):
         if valor is None:
-            raise ValueError(f"El campo '{campo}' es obligatorio")
+            raise ValidationError(f"El campo '{campo}' es obligatorio")
 
         if not isinstance(valor, str):
-            raise ValueError(f"El campo '{campo}' debe ser texto")
+            raise ValidationError(f"El campo '{campo}' debe ser texto")
 
         valor = " ".join(valor.strip().split())
 
         if not valor:
-            raise ValueError(f"El campo '{campo}' no puede estar vacio")
+            raise ValidationError(f"El campo '{campo}' no puede estar vacio")
 
         if len(valor) < min_len:
-            raise ValueError(
+            raise ValidationError(
                 f"El campo '{campo}' debe tener al menos {min_len} caracteres"
             )
 
         if len(valor) > max_len:
-            raise ValueError(
+            raise ValidationError(
                 f"El campo '{campo}' no puede superar los {max_len} caracteres"
             )
 
@@ -65,10 +66,10 @@ class TrabajoReunionCientificaService:
         try:
             fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
         except (TypeError, ValueError):
-            raise ValueError("La fecha debe tener formato YYYY-MM-DD")
+            raise ValidationError("La fecha debe tener formato YYYY-MM-DD")
 
         if fecha > date.today():
-            raise ValueError("La fecha de inicio no puede ser futura")
+            raise ValidationError("La fecha de inicio no puede ser futura")
 
         return fecha
 
@@ -92,7 +93,7 @@ class TrabajoReunionCientificaService:
         try:
             valor = int(valor)
         except (TypeError, ValueError):
-            raise ValueError(f"El campo '{campo}' debe ser un entero positivo")
+            raise ValidationError(f"El campo '{campo}' debe ser un entero positivo")
 
         return TrabajoReunionCientificaService._validar_id(valor, campo)
 
@@ -107,7 +108,7 @@ class TrabajoReunionCientificaService:
 
         grupo = db.session.get(GrupoInvestigacionUtn, grupo_utn_id)
         if not grupo or getattr(grupo, "deleted_at", None) is not None:
-            raise ValueError("Grupo UTN invalido")
+            raise NotFoundError("Grupo UTN invalido")
 
         return grupo.id
 
@@ -118,7 +119,7 @@ class TrabajoReunionCientificaService:
         )
         tipo_reunion = db.session.get(TipoReunion, tipo_reunion_id)
         if not tipo_reunion:
-            raise ValueError("Tipo de reunion cientifica invalido")
+            raise NotFoundError("Tipo de reunion cientifica invalido")
         return tipo_reunion.id
 
     @staticmethod
@@ -128,14 +129,14 @@ class TrabajoReunionCientificaService:
             TrabajoReunionCientificaService._validar_id(trabajo_id, "trabajo_id")
         )
         if not trabajo:
-            raise ValueError("Trabajo en reunion cientifica no encontrado")
+            raise NotFoundError("Trabajo en reunion cientifica no encontrado")
         return trabajo
 
     @staticmethod
     def _get_activo_or_404(trabajo_id: int):
         trabajo = TrabajoReunionCientificaService._get_or_404(trabajo_id)
         if trabajo.deleted_at is not None:
-            raise ValueError("No se puede operar sobre un trabajo eliminado")
+            raise ConflictError("No se puede operar sobre un trabajo eliminado")
         return trabajo
 
     @staticmethod
@@ -158,14 +159,14 @@ class TrabajoReunionCientificaService:
             query = query.filter(TrabajoReunionCientifica.id != trabajo_id)
 
         if query.first():
-            raise ValueError(
+            raise ConflictError(
                 "Ya existe un trabajo en reunion cientifica con los mismos datos"
             )
 
     @staticmethod
     def _validar_investigadores_ids(investigadores_ids):
         if not isinstance(investigadores_ids, list) or not investigadores_ids:
-            raise ValueError("investigadores_ids debe ser una lista no vacia")
+            raise ValidationError("investigadores_ids debe ser una lista no vacia")
 
         ids = []
         vistos = set()
@@ -174,7 +175,7 @@ class TrabajoReunionCientificaService:
                 investigador_id, "investigadores_ids"
             )
             if investigador_id in vistos:
-                raise ValueError(
+                raise ValidationError(
                     "investigadores_ids no puede contener IDs repetidos"
                 )
             vistos.add(investigador_id)
@@ -430,7 +431,7 @@ class TrabajoReunionCientificaService:
         trabajo = TrabajoReunionCientificaService._get_or_404(trabajo_id)
 
         if trabajo.deleted_at is None and trabajo.activo is True:
-            raise ValueError("El trabajo ya se encuentra activo")
+            raise ConflictError("El trabajo ya se encuentra activo")
 
         trabajo.restore()
         trabajo.activo = True
@@ -466,7 +467,7 @@ class TrabajoReunionCientificaService:
         )
 
         if len(investigadores) != len(investigadores_ids):
-            raise ValueError("Uno o mas investigadores no existen o estan eliminados")
+            raise NotFoundError("Uno o mas investigadores no existen o estan eliminados")
 
         hubo_cambios = False
         for inv in investigadores:

@@ -5,7 +5,7 @@ import Button from "@/components/Button";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 import { useAuth } from "@/context/AuthContext";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import {
   cambiarEstadoMemoria,
   getMemoriaById,
@@ -55,18 +55,7 @@ export default function MemoriaDetalle() {
   }, [location.pathname, location.state, navigate]);
 
   const handleMutationError = (error: unknown, fallback: string) => {
-    if (error instanceof HttpError) {
-      const body = error.body as
-        | { error?: string; message?: string; detalle?: string }
-        | undefined;
-
-      setErrorMessage(body?.error || body?.message || body?.detalle || fallback);
-    } else if (error instanceof Error) {
-      setErrorMessage(error.message || fallback);
-    } else {
-      setErrorMessage(fallback);
-    }
-
+    setErrorMessage(getErrorMessage(error, fallback));
     setShowError(true);
   };
 
@@ -87,7 +76,10 @@ export default function MemoriaDetalle() {
     },
     onError: (error) => {
       setEstadoPendiente(null);
-      handleMutationError(error, "No se pudo actualizar el estado de la memoria.");
+      handleMutationError(
+        error,
+        "Lo sentimos, no pudimos guardar los cambios. Intente nuevamente."
+      );
     },
   });
 
@@ -106,7 +98,10 @@ export default function MemoriaDetalle() {
     },
     onError: (error) => {
       setShowReopenConfirm(false);
-      handleMutationError(error, "No se pudo reabrir la memoria.");
+      handleMutationError(
+        error,
+        "Lo sentimos, no pudimos guardar los cambios. Intente nuevamente."
+      );
     },
   });
 

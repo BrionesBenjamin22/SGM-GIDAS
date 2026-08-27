@@ -8,7 +8,7 @@ import SuccessToast from "@/components/SuccessToast";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import { useDocumentacion } from "@/modules/produccion/hooks/useDocumentacion";
 import { deleteDocumentacion } from "@/modules/produccion/services/documentacionServices";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import { useAuth } from "@/context/AuthContext";
 import {
   applyMemoriaSectionFilter,
@@ -206,23 +206,12 @@ export default function DocumentacionHome() {
       setShowSuccess(true);
     } catch (error) {
       setShowConfirm(false);
-
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | { message?: string; error?: string; detalle?: string }
-          | undefined;
-
-        setErrorMessage(
-          body?.message ||
-            body?.error ||
-            body?.detalle ||
-            "No se pudo eliminar la documentacion."
-        );
-      } else {
-        setErrorMessage(
-          "Ocurrio un error inesperado al eliminar la documentacion."
-        );
-      }
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+        )
+      );
 
       setShowError(true);
     }

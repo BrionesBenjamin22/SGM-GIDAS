@@ -3,6 +3,7 @@ import Button from "@/components/Button";
 import SuccessToast from "@/components/SuccessToast";
 import { useAdoptantes, useCreateAdoptante } from "@/modules/transferencia/hooks/useAdoptantes";
 import type { Adoptante, AdoptantePayload } from "@/modules/transferencia/services/adoptantesServices";
+import { getErrorMessage } from "@/lib/httpError";
 
 type Props = {
     selected: Adoptante[];
@@ -56,9 +57,8 @@ export default function AdoptanteSelector({ selected, onChange }: Props) {
             add(created);
             setFormNombre("");
             setShowForm(false);
-        } catch (err: any) {
-            const msg = err?.body?.error ?? err?.message ?? "Error al crear el adoptante";
-            setErrorMessage(msg);
+        } catch (err: unknown) {
+            setErrorMessage(getErrorMessage(err, "Lo sentimos, no pudimos crear el adoptante. Verifique los datos e intente nuevamente."));
             setShowError(true);
         }
     };

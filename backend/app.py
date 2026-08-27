@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 from extension import db, migrate, limiter
 from flask_cors import CORS
 from config import get_config_class
@@ -6,16 +6,18 @@ from modules import blueprints
 from modules import models_registry  # noqa: F401
 from werkzeug.middleware.proxy_fix import ProxyFix
 from modules.shared.controllers.pagination import register_legacy_list_pagination
-from modules.shared.controllers.responses import error_response
 from modules.shared.routes.versioning import (
     register_api_version_header,
     register_blueprints,
 )
+from modules.shared.services.error_handlers import register_error_handlers
 from modules.shared.services.logging_config import (
     configure_logging,
     get_logger,
     register_request_logging,
 )
+from modules.shared.services.request_security import register_request_body_security
+from modules.auth.commands.refresh_sessions import register_refresh_session_commands
 
 
 logger = get_logger(__name__)
@@ -30,6 +32,8 @@ def create_app():
         app.config["APP_VERSION"],
     )
     register_request_logging(app)
+    register_request_body_security(app)
+    register_error_handlers(app)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     CORS(
@@ -39,7 +43,8 @@ def create_app():
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"]
         }},
-        supports_credentials=True
+        supports_credentials=True,
+        always_send=False,
     )
 
     db.init_app(app)
@@ -50,14 +55,6 @@ def create_app():
     register_blueprints(app, blueprints)
     register_api_version_header(app)
 
-    @app.errorhandler(429)
-    def ratelimit_handler(_error):
-        return error_response(
-            "RATE_LIMIT_EXCEEDED",
-            message="Lo sentimos, recibimos demasiadas solicitudes. Intente nuevamente en unos minutos.",
-            status_code=429,
-        )
-
     @app.after_request
     def add_security_headers(response):
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
@@ -67,14 +64,21 @@ def create_app():
             "Permissions-Policy",
             "geolocation=(), microphone=(), camera=()"
         )
-        if not app.config["DEBUG"]:
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; "
+            "form-action 'none'",
+        )
+        response.headers.setdefault("Cache-Control", "private, no-store")
+        if app.config["HSTS_ENABLED"] and request.is_secure:
             response.headers.setdefault(
                 "Strict-Transport-Security",
-                "max-age=31536000; includeSubDomains"
+                f"max-age={app.config['HSTS_MAX_AGE']}; includeSubDomains",
             )
         return response
 
     register_legacy_list_pagination(app)
+    register_refresh_session_commands(app)
 
     logger.info("Aplicación inicializada. Usa 'flask db upgrade' para crear/migrar tablas.")
 

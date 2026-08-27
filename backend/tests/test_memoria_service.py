@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from modules.memorias.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
 from modules.memorias.services.memoria_service import MemoriaService
+from modules.shared.exceptions import ConflictError
 
 
 class MemoriaServiceTestCase(unittest.TestCase):
@@ -114,7 +115,7 @@ class MemoriaServiceTestCase(unittest.TestCase):
         self.mock_commit.assert_called_once()
 
     def test_update_falla_porque_memoria_es_inmutable(self):
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(ConflictError) as ctx:
             MemoriaService.update(1, {"periodo_inicio": "2026-01-01"})
 
         self.assertEqual(
@@ -228,7 +229,7 @@ class MemoriaServiceTestCase(unittest.TestCase):
 
         self.mock_get.return_value = memoria
 
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(ConflictError) as ctx:
             MemoriaService.reopen(memoria.id, user_id=3)
 
         self.assertEqual(

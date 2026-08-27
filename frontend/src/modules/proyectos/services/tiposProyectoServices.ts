@@ -9,7 +9,7 @@ export type TipoProyecto = {
    GET ALL
 ========================= */
 export async function getTiposProyecto(): Promise<TipoProyecto[]> {
-  const data = await http<any[]>("/tipos-proyecto/");
+  const data = await http<TipoProyecto[]>("/tipos-proyecto/");
 
   return data.map((t) => ({
     id: t.id,
@@ -23,7 +23,7 @@ export async function getTiposProyecto(): Promise<TipoProyecto[]> {
 export async function createTipoProyecto(
   nombre: string
 ): Promise<TipoProyecto> {
-  const data = await http<any>("/tipos-proyecto/", {
+  const data = await http<TipoProyecto>("/tipos-proyecto/", {
     method: "POST",
     body: JSON.stringify({ nombre }),
   });

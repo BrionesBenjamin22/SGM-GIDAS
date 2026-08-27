@@ -1,4 +1,9 @@
+import concurrent.futures
+import os
+import tempfile
+import threading
 import unittest
+from unittest.mock import patch
 
 from flask import Flask
 
@@ -71,6 +76,13 @@ class AuthRefreshTokenTestCase(unittest.TestCase):
 
             self.assertIn("access_token", rotated)
             self.assertIn("refresh_token", rotated)
+            self.assertEqual(rotated["user"], {
+                "id": self.user_id,
+                "nombre_usuario": "usuario.refresh",
+                "mail": "refresh@example.com",
+                "rol": "GESTOR",
+                "primer_login": False,
+            })
             self.assertNotEqual(tokens["refresh_token"], rotated["refresh_token"])
 
             sessions = RefreshTokenSession.query.order_by(RefreshTokenSession.id).all()
@@ -81,6 +93,9 @@ class AuthRefreshTokenTestCase(unittest.TestCase):
 
             with self.assertRaisesRegex(Exception, "revocado"):
                 AuthService.refresh_tokens(tokens["refresh_token"])
+
+            db.session.refresh(sessions[1])
+            self.assertIsNone(sessions[1].revoked_at)
 
     def test_refresh_rechaza_usuario_inactivo(self):
         with self.app.app_context():
@@ -119,6 +134,97 @@ class AuthRefreshTokenTestCase(unittest.TestCase):
 
             with self.assertRaisesRegex(Exception, "revocado"):
                 AuthService.refresh_tokens(tokens["refresh_token"])
+
+    def test_error_durante_rotacion_revierte_reclamacion(self):
+        with self.app.app_context():
+            tokens = self._login()
+
+            with patch.object(
+                AuthService,
+                "_generate_access_token",
+                side_effect=RuntimeError("fallo controlado"),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "fallo controlado"):
+                    AuthService.refresh_tokens(tokens["refresh_token"])
+
+            session = RefreshTokenSession.query.one()
+            self.assertIsNone(session.revoked_at)
+            self.assertIsNone(session.revoked_reason)
+
+
+class AuthConcurrentRefreshTokenTestCase(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        database_path = os.path.join(self.temp_dir.name, "refresh-concurrency.db")
+        self.app = Flask(__name__)
+        self.app.config.update(
+            TESTING=True,
+            SQLALCHEMY_DATABASE_URI=f"sqlite:///{database_path}",
+            SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        )
+        db.init_app(self.app)
+
+        with self.app.app_context():
+            db.create_all()
+            role = RolUsuario(nombre="GESTOR")
+            db.session.add(role)
+            db.session.flush()
+            user = Usuario(
+                nombre_usuario="usuario.concurrente",
+                mail="concurrente@example.com",
+                id_rol=role.id,
+                primer_login=False,
+            )
+            user.set_password("password123")
+            db.session.add(user)
+            db.session.commit()
+            self.refresh_token = AuthService.login(
+                "usuario.concurrente",
+                "password123",
+            )["refresh_token"]
+
+    def tearDown(self):
+        with self.app.app_context():
+            db.session.remove()
+            db.drop_all()
+        self.temp_dir.cleanup()
+
+    def test_doble_refresh_concurrente_solo_rota_una_vez(self):
+        barrier = threading.Barrier(2)
+        original_claim = AuthService._claim_refresh_session
+
+        def synchronized_claim(session_id, claimed_at):
+            barrier.wait(timeout=5)
+            return original_claim(session_id, claimed_at)
+
+        def refresh_once():
+            with self.app.app_context():
+                try:
+                    return AuthService.refresh_tokens(self.refresh_token)
+                except Exception as exc:
+                    return exc
+                finally:
+                    db.session.remove()
+
+        with patch.object(
+            AuthService,
+            "_claim_refresh_session",
+            side_effect=synchronized_claim,
+        ):
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                results = list(executor.map(lambda _: refresh_once(), range(2)))
+
+        successes = [result for result in results if isinstance(result, dict)]
+        failures = [result for result in results if isinstance(result, Exception)]
+        self.assertEqual(len(successes), 1)
+        self.assertEqual(len(failures), 1)
+        self.assertRegex(str(failures[0]), "revocado")
+
+        with self.app.app_context():
+            sessions = RefreshTokenSession.query.order_by(RefreshTokenSession.id).all()
+            self.assertEqual(len(sessions), 2)
+            self.assertEqual(sessions[0].revoked_reason, "rotated")
+            self.assertEqual(sessions[0].replaced_by_id, sessions[1].id)
 
 
 if __name__ == "__main__":

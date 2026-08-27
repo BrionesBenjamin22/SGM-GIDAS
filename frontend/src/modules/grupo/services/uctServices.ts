@@ -1,4 +1,5 @@
-import { http, httpDownload, HttpError } from "@/lib/http";
+import { http, httpDownload } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 
 export type Uct = {
   id: number;
@@ -17,13 +18,24 @@ export type Uct = {
   }[];
 };
 
+type UctApiResponse = {
+  id: number;
+  nombre_unidad_academica: string;
+  nombre_sigla_grupo: string;
+  mail: string;
+  objetivo_desarrollo: string;
+  director: string;
+  vicedirector: string;
+  directivos?: Uct["directivos"];
+};
+
 const BASE = import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL;
 
 export async function getUct() {
   if (!BASE) return null;
 
   try {
-    const data = await http<any>("/grupo-utn/");
+    const data = await http<UctApiResponse>("/grupo-utn/");
 
     if (!data) return null;
 
@@ -88,31 +100,6 @@ function getFilenameFromDisposition(contentDisposition: string | null): string {
   return "grupo_utn.xlsx";
 }
 
-function extractHttpErrorMessage(error: unknown): string {
-  if (error instanceof HttpError) {
-    const body = error.body as any;
-
-    if (typeof body === "string" && body.trim()) {
-      return body;
-    }
-
-    if (body?.error) return body.error;
-    if (body?.message) return body.message;
-
-    if (error.status === 401) {
-      return "No autorizado. Iniciá sesión nuevamente.";
-    }
-
-    return `Error al exportar el Excel. (${error.status})`;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Error al exportar el Excel.";
-}
-
 export async function exportarExcelGrupo(): Promise<{
   filename: string;
   size: number;
@@ -166,6 +153,11 @@ export async function exportarExcelGrupo(): Promise<{
       size: blob.size,
     };
   } catch (error) {
-    throw new Error(extractHttpErrorMessage(error));
+    throw new Error(
+      getErrorMessage(
+        error,
+        "Lo sentimos, no pudimos exportar el archivo. Intente nuevamente."
+      )
+    );
   }
 }

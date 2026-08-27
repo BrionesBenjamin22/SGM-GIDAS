@@ -9,14 +9,15 @@ import {
   login as loginService,
   register as registerService,
   logout as logoutService,
-  getStoredAuth,
   restoreSession,
+  subscribeToAuthEvents,
   esPrimerUsuario as esPrimerUsuarioService,
   cambiarPassword as cambiarPasswordService,
   type User,
   type Rol,
   type AuthResponse,
 } from "@/modules/auth/services/authService";
+import { clearAccessToken } from "@/lib/http";
 
 type AuthContextValue = {
   user: User | null;
@@ -25,7 +26,7 @@ type AuthContextValue = {
 
   login: (usuario: string, password: string) => Promise<AuthResponse>;
   register: (nombre: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   esPrimerUsuario: () => Promise<boolean>;
   cambiarPassword: (params: {
     passwordNueva: string;
@@ -50,8 +51,6 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const AUTH_KEY = "gidas_auth_current_session";
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -62,13 +61,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function initializeSession() {
       setLoading(true);
-      const stored = await restoreSession();
-
-      if (!active) return;
-
-      setUser(stored?.user ?? null);
-      setToken(stored?.token ?? null);
-      setLoading(false);
+      try {
+        const stored = await restoreSession();
+        if (!active) return;
+        setUser(stored?.user ?? null);
+        setToken(stored?.token ?? null);
+      } catch {
+        if (!active) return;
+        clearAccessToken();
+        setUser(null);
+        setToken(null);
+      } finally {
+        if (active) setLoading(false);
+      }
     }
 
     void initializeSession();
@@ -79,42 +84,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    async function handleStorage(event: StorageEvent) {
-      if (event.key === AUTH_KEY) {
-        setLoading(true);
-        const stored = await restoreSession();
-        setUser(stored?.user ?? null);
-        setToken(stored?.token ?? null);
-        setLoading(false);
-      }
-    }
-
-    window.addEventListener("storage", handleStorage);
+    const clearSession = () => {
+      clearAccessToken();
+      setUser(null);
+      setToken(null);
+    };
+    const unsubscribe = subscribeToAuthEvents(clearSession);
+    window.addEventListener("gidas:session-expired", clearSession);
 
     return () => {
-      window.removeEventListener("storage", handleStorage);
+      unsubscribe();
+      window.removeEventListener("gidas:session-expired", clearSession);
     };
   }, []);
 
-  function persistUser(updatedUser: User) {
-    setUser(updatedUser);
-
-    const stored = getStoredAuth();
-    if (stored) {
-      localStorage.setItem(
-        AUTH_KEY,
-        JSON.stringify({
-          ...stored,
-          user: updatedUser,
-        })
-      );
-    }
-  }
-
   function updateUserInSession(partial: Partial<User>) {
     if (!user) return;
-    const updatedUser = { ...user, ...partial };
-    persistUser(updatedUser);
+    setUser({ ...user, ...partial });
   }
 
   async function login(usuario: string, password: string): Promise<AuthResponse> {
@@ -142,14 +128,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await cambiarPasswordService({ passwordNueva, passwordActual });
 
     if (user) {
-      persistUser({ ...user, primer_login: false });
+      setUser({ ...user, primer_login: false });
     }
   }
 
-  function logout() {
-    logoutService();
+  async function logout() {
     setUser(null);
     setToken(null);
+    await logoutService();
   }
 
   function isAdmin(): boolean {
@@ -185,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function canReadRecords(): boolean {
-    return true;
+    return !!user;
   }
 
   function canEditOwnProfile(): boolean {

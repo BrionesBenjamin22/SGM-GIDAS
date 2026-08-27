@@ -3,10 +3,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import Button from "@/components/Button";
 import Field from "@/components/Field";
+import SuccessToast from "@/components/SuccessToast";
+import { getErrorMessage } from "@/lib/httpError";
 import {
   createPlanificacion,
   getPlanificacionById,
   updatePlanificacion,
+  type PlanificacionGrupoPayload,
 } from "@/modules/grupo/services/planificacionGrupoServices";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 
@@ -23,6 +26,7 @@ export default function PlanificacionGrupoForm() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errorMessage, setErrorMessage] = useState("");
 
   const { data: planificacion, isLoading } = useQuery({
     queryKey: ["planificaciones", id],
@@ -63,10 +67,14 @@ export default function PlanificacionGrupoForm() {
   };
 
   const { mutateAsync, isPending } = useMutation({
-    mutationFn: (payload: any) =>
-      isEdit
-        ? updatePlanificacion(Number(id), payload)
-        : createPlanificacion(payload),
+    mutationFn: (
+      input:
+        | { mode: "create"; payload: PlanificacionGrupoPayload }
+        | { mode: "edit"; payload: Partial<PlanificacionGrupoPayload> }
+    ) =>
+      input.mode === "edit"
+        ? updatePlanificacion(Number(id), input.payload)
+        : createPlanificacion(input.payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["planificaciones"] });
     },
@@ -94,9 +102,29 @@ export default function PlanificacionGrupoForm() {
         navigate(`/planificaciones/${id}`);
         return;
       }
-      await mutateAsync(changedPayload);
+      try {
+        await mutateAsync({ mode: "edit", payload: changedPayload });
+      } catch (error: unknown) {
+        setErrorMessage(
+          getErrorMessage(
+            error,
+            "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+          )
+        );
+        return;
+      }
     } else {
-      await mutateAsync(payload);
+      try {
+        await mutateAsync({ mode: "create", payload });
+      } catch (error: unknown) {
+        setErrorMessage(
+          getErrorMessage(
+            error,
+            "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+          )
+        );
+        return;
+      }
     }
 
     if (isEdit) {
@@ -128,6 +156,7 @@ export default function PlanificacionGrupoForm() {
       </h2>
 
       <form
+        noValidate
         onSubmit={submit}
         className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 space-y-6"
       >
@@ -200,6 +229,13 @@ export default function PlanificacionGrupoForm() {
       </form>
 
       {uctGuard}
+
+      <SuccessToast
+        open={Boolean(errorMessage)}
+        message={errorMessage}
+        onClose={() => setErrorMessage("")}
+        variant="error"
+      />
     </section>
   );
 }

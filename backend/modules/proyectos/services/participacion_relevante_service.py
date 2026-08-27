@@ -1,3 +1,4 @@
+import builtins
 from datetime import date, datetime
 import unicodedata
 
@@ -9,6 +10,7 @@ from modules.personal.models.personal import Investigador
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
 
 
 def normalizar_texto(texto: str) -> str:
@@ -51,7 +53,7 @@ class ParticipacionRelevanteService:
 
         try:
             valor = int(valor)
-        except (TypeError, ValueError):
+        except (TypeError, builtins.ValueError):
             raise ValueError(f"El campo '{campo}' debe ser un entero positivo")
 
         return ParticipacionRelevanteService._validar_id(valor, campo)
@@ -70,7 +72,7 @@ class ParticipacionRelevanteService:
     def _validar_fecha(fecha_str: str):
         try:
             fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
-        except (TypeError, ValueError):
+        except (TypeError, builtins.ValueError):
             raise ValueError(
                 "La fecha es obligatoria y debe tener formato YYYY-MM-DD"
             )
@@ -87,7 +89,7 @@ class ParticipacionRelevanteService:
         )
         investigador = db.session.get(Investigador, investigador_id)
         if not investigador or investigador.deleted_at is not None:
-            raise ValueError("Investigador invalido")
+            raise NotFoundError("Investigador invalido")
         return investigador.id
 
     @staticmethod
@@ -99,14 +101,14 @@ class ParticipacionRelevanteService:
             )
         )
         if not participacion:
-            raise ValueError("Participacion relevante no encontrada")
+            raise NotFoundError("Participacion relevante no encontrada")
         return participacion
 
     @staticmethod
     def _get_activa_or_404(participacion_id: int):
         participacion = ParticipacionRelevanteService._get_or_404(participacion_id)
         if participacion.deleted_at is not None:
-            raise ValueError("Participacion relevante no encontrada")
+            raise NotFoundError("Participacion relevante no encontrada")
         return participacion
 
     @staticmethod
@@ -129,7 +131,7 @@ class ParticipacionRelevanteService:
             query = query.filter(ParticipacionRelevante.id != participacion_id)
 
         if query.first():
-            raise ValueError(
+            raise ConflictError(
                 "El investigador ya tiene una participacion relevante identica en esa fecha"
             )
 

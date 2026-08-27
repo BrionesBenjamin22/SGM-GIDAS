@@ -11,6 +11,7 @@ from modules.produccion.models.trabajo_revista import (
 )
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 from extension import db
 
 
@@ -19,7 +20,7 @@ class TrabajosRevistasReferatoService:
     @staticmethod
     def _validar_payload(data: dict):
         if not isinstance(data, dict) or not data:
-            raise ValueError("Los datos no pueden estar vacios")
+            raise ValidationError("Los datos no pueden estar vacios")
 
     @staticmethod
     def _validar_id(valor, campo: str, permitir_none: bool = False):
@@ -27,7 +28,7 @@ class TrabajosRevistasReferatoService:
             return None
 
         if not isinstance(valor, int) or valor <= 0:
-            raise ValueError(f"El campo '{campo}' debe ser un entero positivo")
+            raise ValidationError(f"El campo '{campo}' debe ser un entero positivo")
 
         return valor
 
@@ -38,12 +39,12 @@ class TrabajosRevistasReferatoService:
     @staticmethod
     def _validar_texto(valor: str, campo: str, max_len: int = 255):
         if not isinstance(valor, str) or not valor.strip():
-            raise ValueError(f"El campo '{campo}' es obligatorio")
+            raise ValidationError(f"El campo '{campo}' es obligatorio")
 
         valor = " ".join(valor.strip().split())
 
         if len(valor) > max_len:
-            raise ValueError(
+            raise ValidationError(
                 f"El campo '{campo}' no puede superar los {max_len} caracteres"
             )
 
@@ -54,10 +55,10 @@ class TrabajosRevistasReferatoService:
         try:
             fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
         except (TypeError, ValueError):
-            raise ValueError("La fecha debe tener formato YYYY-MM-DD")
+            raise ValidationError("La fecha debe tener formato YYYY-MM-DD")
 
         if fecha > date.today():
-            raise ValueError("La fecha no puede ser futura")
+            raise ValidationError("La fecha no puede ser futura")
 
         return fecha
 
@@ -88,7 +89,7 @@ class TrabajosRevistasReferatoService:
         try:
             valor = int(valor)
         except (TypeError, ValueError):
-            raise ValueError(f"El campo '{campo}' debe ser un entero positivo")
+            raise ValidationError(f"El campo '{campo}' debe ser un entero positivo")
 
         return TrabajosRevistasReferatoService._validar_id(valor, campo)
 
@@ -103,7 +104,7 @@ class TrabajosRevistasReferatoService:
 
         grupo = db.session.get(GrupoInvestigacionUtn, grupo_utn_id)
         if not grupo or getattr(grupo, "deleted_at", None) is not None:
-            raise ValueError("Grupo UTN invalido")
+            raise NotFoundError("Grupo UTN invalido")
 
         return grupo.id
 
@@ -114,7 +115,7 @@ class TrabajosRevistasReferatoService:
         )
         tipo_reunion = db.session.get(TipoReunion, tipo_reunion_id)
         if not tipo_reunion:
-            raise ValueError("Tipo de reunion invalido")
+            raise NotFoundError("Tipo de reunion invalido")
         return tipo_reunion.id
 
     @staticmethod
@@ -127,7 +128,7 @@ class TrabajosRevistasReferatoService:
         )
 
         if not trabajo:
-            raise ValueError("Trabajo en revista no encontrado")
+            raise NotFoundError("Trabajo en revista no encontrado")
 
         return trabajo
 
@@ -136,7 +137,7 @@ class TrabajosRevistasReferatoService:
         trabajo = TrabajosRevistasReferatoService._get_or_404(trabajo_id)
 
         if trabajo.deleted_at is not None:
-            raise ValueError("No se puede operar sobre un trabajo eliminado")
+            raise ConflictError("No se puede operar sobre un trabajo eliminado")
 
         return trabajo
 
@@ -164,12 +165,12 @@ class TrabajosRevistasReferatoService:
             query = query.filter(TrabajosRevistasReferato.id != trabajo_id)
 
         if query.first():
-            raise ValueError("Ya existe un trabajo en revista con los mismos datos")
+            raise ConflictError("Ya existe un trabajo en revista con los mismos datos")
 
     @staticmethod
     def _validar_investigadores_ids(investigadores_ids):
         if not isinstance(investigadores_ids, list) or not investigadores_ids:
-            raise ValueError("investigadores_ids debe ser una lista no vacia")
+            raise ValidationError("investigadores_ids debe ser una lista no vacia")
 
         ids = []
         vistos = set()
@@ -178,7 +179,7 @@ class TrabajosRevistasReferatoService:
                 investigador_id, "investigadores_ids"
             )
             if investigador_id in vistos:
-                raise ValueError(
+                raise ValidationError(
                     "investigadores_ids no puede contener IDs repetidos"
                 )
             vistos.add(investigador_id)
@@ -468,7 +469,7 @@ class TrabajosRevistasReferatoService:
         trabajo = TrabajosRevistasReferatoService._get_or_404(trabajo_id)
 
         if trabajo.deleted_at is None and trabajo.activo is True:
-            raise ValueError("El trabajo ya se encuentra activo")
+            raise ConflictError("El trabajo ya se encuentra activo")
 
         trabajo.restore()
         trabajo.activo = True
@@ -504,7 +505,7 @@ class TrabajosRevistasReferatoService:
         )
 
         if len(investigadores) != len(investigadores_ids):
-            raise ValueError(
+            raise NotFoundError(
                 "Uno o mas investigadores no existen o estan eliminados"
             )
 

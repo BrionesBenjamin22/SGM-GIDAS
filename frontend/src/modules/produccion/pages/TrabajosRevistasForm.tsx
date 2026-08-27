@@ -9,7 +9,7 @@ import Field from "@/components/Field";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import { toTitleCase } from "@/utils/format";
 
 import {
@@ -18,6 +18,8 @@ import {
   getTrabajoRevistaById,
   vincularInvestigadoresRevista,
   desvincularInvestigadoresRevista,
+  type TrabajoRevista,
+  type TrabajoRevistaPayload,
 } from "@/modules/produccion/services/trabajosRevistasServices";
 
 import { useTiposReunion } from "@/modules/produccion/hooks/useTiposReunion";
@@ -128,7 +130,9 @@ export default function TrabajosRevistasForm() {
   };
 
   const mutation = useMutation({
-    mutationFn: async (payload: any) => {
+    mutationFn: async (
+      payload: Partial<TrabajoRevistaPayload> & { _skipUpdate?: boolean }
+    ): Promise<TrabajoRevista | null> => {
       const currentInvestigadoresIds =
         initialData?.investigadores?.map((i: { id: number }) => i.id) ?? [];
       const nuevosInvestigadoresIds = isEdit
@@ -137,15 +141,15 @@ export default function TrabajosRevistasForm() {
           )
         : investigadoresIds;
 
-      let trabajo = initialData;
+      let trabajo = initialData ?? null;
 
       if (!isEdit) {
-        trabajo = await createTrabajoRevista(payload);
+        trabajo = await createTrabajoRevista(payload as TrabajoRevistaPayload);
       } else if (!payload._skipUpdate) {
         trabajo = await updateTrabajoRevista(Number(id), payload);
       }
 
-      const trabajoId = (trabajo as any)?.id;
+      const trabajoId = trabajo?.id;
 
       if (trabajoId && nuevosInvestigadoresIds.length > 0) {
         await vincularInvestigadoresRevista(trabajoId, nuevosInvestigadoresIds);
@@ -153,14 +157,14 @@ export default function TrabajosRevistasForm() {
 
       return trabajo;
     },
-    onSuccess: async (saved: any) => {
+    onSuccess: async (saved) => {
       const trabajoId = saved?.id ?? Number(id);
 
       await qc.invalidateQueries({ queryKey: ["trabajos-revistas"] });
       await qc.invalidateQueries({ queryKey: ["trabajo-revista", trabajoId] });
       await qc.invalidateQueries({ queryKey: ["trabajo-revista-historial", trabajoId] });
 
-      navigate(`/trabajos-revistas/${trabajoId}`, {
+      navigate(isEdit ? `/trabajos-revistas/${trabajoId}` : "/trabajos-revistas", {
         replace: true,
         state: {
           successMessage: isEdit
@@ -170,40 +174,26 @@ export default function TrabajosRevistasForm() {
       });
     },
     onError: (error) => {
-      const defaultMessage = isEdit
-        ? "No se pudo actualizar el trabajo en revista."
-        : "No se pudo crear el trabajo en revista.";
+      const backendMessage = getErrorMessage(
+        error,
+        "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+      );
+      const lowerMessage = backendMessage.toLowerCase();
 
-      let backendMessage = defaultMessage;
-
-      if (error instanceof HttpError && error.body && typeof error.body === "object") {
-        const body = error.body as Record<string, unknown>;
-        backendMessage =
-          typeof body.error === "string"
-            ? body.error
-            : typeof body.message === "string"
-              ? body.message
-              : typeof body.detalle === "string"
-                ? body.detalle
-                : defaultMessage;
-
-        const lowerMessage = backendMessage.toLowerCase();
-
-        if (lowerMessage.includes("titulo")) {
-          setErrors((prev) => ({ ...prev, titulo: backendMessage }));
-        } else if (lowerMessage.includes("revista")) {
-          setErrors((prev) => ({ ...prev, nombreRevista: backendMessage }));
-        } else if (lowerMessage.includes("editorial")) {
-          setErrors((prev) => ({ ...prev, editorial: backendMessage }));
-        } else if (lowerMessage.includes("issn")) {
-          setErrors((prev) => ({ ...prev, issn: backendMessage }));
-        } else if (lowerMessage.includes("pais")) {
-          setErrors((prev) => ({ ...prev, pais: backendMessage }));
-        } else if (lowerMessage.includes("tipo")) {
-          setErrors((prev) => ({ ...prev, tipoId: backendMessage }));
-        } else if (lowerMessage.includes("fecha")) {
-          setErrors((prev) => ({ ...prev, fecha: backendMessage }));
-        }
+      if (lowerMessage.includes("titulo")) {
+        setErrors((prev) => ({ ...prev, titulo: backendMessage }));
+      } else if (lowerMessage.includes("revista")) {
+        setErrors((prev) => ({ ...prev, nombreRevista: backendMessage }));
+      } else if (lowerMessage.includes("editorial")) {
+        setErrors((prev) => ({ ...prev, editorial: backendMessage }));
+      } else if (lowerMessage.includes("issn")) {
+        setErrors((prev) => ({ ...prev, issn: backendMessage }));
+      } else if (lowerMessage.includes("pais")) {
+        setErrors((prev) => ({ ...prev, pais: backendMessage }));
+      } else if (lowerMessage.includes("tipo")) {
+        setErrors((prev) => ({ ...prev, tipoId: backendMessage }));
+      } else if (lowerMessage.includes("fecha")) {
+        setErrors((prev) => ({ ...prev, fecha: backendMessage }));
       }
 
       setErrorMessage(backendMessage);
@@ -225,22 +215,13 @@ export default function TrabajosRevistasForm() {
       setShowSuccess(true);
     },
     onError: (error) => {
-      let message = "No se pudo desvincular el investigador.";
-
-      if (error instanceof HttpError && error.body && typeof error.body === "object") {
-        const body = error.body as Record<string, unknown>;
-        message =
-          typeof body.error === "string"
-            ? body.error
-            : typeof body.message === "string"
-              ? body.message
-              : typeof body.detalle === "string"
-                ? body.detalle
-                : message;
-      }
-
       setInvestigadorAEliminar(null);
-      setErrorMessage(message);
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+        )
+      );
       setShowError(true);
     },
   });
@@ -320,6 +301,7 @@ export default function TrabajosRevistasForm() {
       </h2>
 
       <form
+        noValidate
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >

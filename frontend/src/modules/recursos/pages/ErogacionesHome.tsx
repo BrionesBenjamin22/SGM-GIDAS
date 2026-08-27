@@ -12,7 +12,7 @@ import { useErogaciones } from "@/modules/recursos/hooks/useErogaciones";
 import { useTiposErogacion } from "@/modules/recursos/hooks/useTipoErogacion";
 import { useFuentesFinanciamiento } from "@/modules/catalogos/hooks/useFuenteFinanciamiento";
 import { deleteErogaciones } from "@/modules/recursos/services/erogacionesServices";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import { useAuth } from "@/context/AuthContext";
 import {
   applyMemoriaSectionFilter,
@@ -206,21 +206,12 @@ export default function ErogacionesLanding() {
       setShowSuccess(true);
     } catch (error) {
       setShowConfirm(false);
-
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | { message?: string; error?: string; detalle?: string }
-          | undefined;
-
-        setErrorMessage(
-          body?.message ||
-            body?.error ||
-            body?.detalle ||
-            "No se pudo eliminar la erogacion."
-        );
-      } else {
-        setErrorMessage("Ocurrio un error inesperado al eliminar la erogacion.");
-      }
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+        )
+      );
 
       setShowError(true);
     } finally {

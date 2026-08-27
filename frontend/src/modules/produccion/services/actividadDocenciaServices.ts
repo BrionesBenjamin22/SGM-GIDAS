@@ -44,8 +44,8 @@ export interface ActividadDocenciaPayload {
   institucion: string;
   fecha_inicio: string;
   fecha_fin: string;
-  grado_academico: string;
-  rol_actividad: string;
+  grado_academico_id: number;
+  rol_actividad_id: number;
   investigador_id: number;
 }
 

@@ -2,7 +2,8 @@ import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { crearUsuario, rolToRolId } from "@/modules/auth/services/usuariosService";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
+import { generateTemporaryPassword } from "@/modules/auth/utils/password";
 import type { Rol } from "@/modules/auth/services/authService";
 import Button from "@/components/Button";
 import Field from "@/components/Field";
@@ -15,19 +16,6 @@ import {
   Loader2,
   BookOpen,
 } from "lucide-react";
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof HttpError) {
-    const body = error.body as any;
-    if (body?.error) return body.error;
-    if (body?.message) return body.message;
-    return error.message;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Error desconocido";
-}
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -47,6 +35,7 @@ export default function UsuariosForm() {
   const [rol, setRol] = useState<Rol>("GESTOR");
   const [showPassword, setShowPassword] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
 
   const [creado, setCreado] = useState(false);
   const [usuarioCreado, setUsuarioCreado] = useState<{
@@ -147,22 +136,30 @@ export default function UsuariosForm() {
     }
   }
 
-  function copiarPassword() {
+  async function copiarPassword() {
     if (usuarioCreado) {
-      navigator.clipboard.writeText(usuarioCreado.password);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2000);
+      try {
+        await navigator.clipboard.writeText(usuarioCreado.password);
+        setCopyError(null);
+        setCopiado(true);
+        setTimeout(() => setCopiado(false), 2000);
+      } catch {
+        setCopyError("No pudimos copiar la contraseña. Selecciónela manualmente e intente nuevamente.");
+      }
     }
   }
 
   function generarPassword() {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-    let result = "";
-    for (let i = 0; i < 12; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    try {
+      setPassword(generateTemporaryPassword());
+      setCopyError(null);
+    } catch (error) {
+      setErrors((prev) => ({
+        ...prev,
+        password: getErrorMessage(error, "No pudimos generar una contraseña segura. Intente nuevamente."),
+      }));
+      return;
     }
-    setPassword(result);
     if (errors.password) {
       setErrors((prev) => ({ ...prev, password: undefined }));
     }
@@ -198,13 +195,15 @@ export default function UsuariosForm() {
                 {usuarioCreado.password}
               </code>
               <button
-                onClick={copiarPassword}
+                onClick={() => void copiarPassword()}
+                type="button"
                 className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition-colors"
                 title="Copiar contraseña"
               >
                 {copiado ? "¡Copiado!" : <Copy className="w-4 h-4" />}
               </button>
             </div>
+            {copyError && <p className="mt-2 text-sm text-rose-600">{copyError}</p>}
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 mb-6 text-left">
@@ -217,10 +216,10 @@ export default function UsuariosForm() {
           <div className="flex gap-3">
             <Button
               variant="secondary"
-              onClick={() => nav("/usuarios")}
+              onClick={() => nav("/administracion")}
               className="flex-1"
             >
-              Volver al Listado
+              Volver a Administración
             </Button>
 
             <Button
@@ -251,7 +250,7 @@ export default function UsuariosForm() {
       </h2>
 
       <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} noValidate className="space-y-6">
           <Field label="Nombre de Usuario" required error={errors.nombre}>
             <input
               type="text"
@@ -380,7 +379,10 @@ export default function UsuariosForm() {
 
           {crearMutation.isError && (
             <div className="bg-rose-50 text-rose-600 text-sm px-4 py-3 rounded-lg border border-rose-200">
-              {getErrorMessage(crearMutation.error)}
+              {getErrorMessage(
+                crearMutation.error,
+                "Lo sentimos, no pudimos crear el usuario. Verifique los datos e intente nuevamente."
+              )}
             </div>
           )}
 
@@ -388,7 +390,7 @@ export default function UsuariosForm() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => nav("/usuarios")}
+              onClick={() => nav("/administracion")}
               className="flex-1"
               disabled={crearMutation.isPending}
             >

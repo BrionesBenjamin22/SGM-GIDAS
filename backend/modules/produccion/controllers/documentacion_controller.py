@@ -2,6 +2,7 @@ from flask import jsonify, request, g
 from modules.produccion.services.documentacion_service import (
     DocumentacionBibliograficaService
 )
+from modules.shared.controllers.responses import exception_response
 
 class DocumentacionBibliograficaController:
 
@@ -15,8 +16,8 @@ class DocumentacionBibliograficaController:
             return jsonify(
                 DocumentacionBibliograficaService.get_all(filters)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="listar documentacion bibliografica")
 
 
     @staticmethod
@@ -25,8 +26,8 @@ class DocumentacionBibliograficaController:
             return jsonify(
                 DocumentacionBibliograficaService.get_by_id(doc_id)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar documentacion bibliografica")
 
     @staticmethod
     def get_historial(doc_id):
@@ -34,8 +35,8 @@ class DocumentacionBibliograficaController:
             return jsonify(
                 DocumentacionBibliograficaService.get_historial(doc_id)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar historial de documentacion")
 
 
     @staticmethod
@@ -48,8 +49,8 @@ class DocumentacionBibliograficaController:
                 DocumentacionBibliograficaService.create(data, user_id)
             ), 201
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="crear documentacion bibliografica")
 
 
     @staticmethod
@@ -62,8 +63,8 @@ class DocumentacionBibliograficaController:
                 DocumentacionBibliograficaService.update(doc_id, data, user_id)
             ), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="actualizar documentacion bibliografica")
 
 
     @staticmethod
@@ -75,8 +76,8 @@ class DocumentacionBibliograficaController:
                 DocumentacionBibliograficaService.delete(doc_id, user_id)
             ), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="eliminar documentacion bibliografica")
 
 
     # -------- RELACIÓN DOCUMENTO - AUTOR --------
@@ -93,8 +94,8 @@ class DocumentacionBibliograficaController:
                 )
             ), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="asociar autor a documentacion")
 
 
     @staticmethod
@@ -107,5 +108,5 @@ class DocumentacionBibliograficaController:
                 )
             ), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="desasociar autor de documentacion")

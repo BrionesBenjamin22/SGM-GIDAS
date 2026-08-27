@@ -53,6 +53,8 @@ la informacion ya consolidada y presentada.
 - Gestion de transferencia socio-productiva, adoptantes y contratos.
 - Catalogos transversales.
 - Busqueda global.
+- Panel visual de administracion para usuarios, organizacion y catalogos.
+- Carga diferida de paginas por modulo con recuperacion ante fallos de chunks.
 - Historial de cambios por entidad cuando el modulo lo expone.
 
 ---
@@ -82,7 +84,8 @@ Componentes:
 - `frontend`: React, TypeScript y Vite.
 - `backend`: Flask, SQLAlchemy, Flask-Migrate y servicios de dominio.
 - `db`: PostgreSQL.
-- `redis`: almacenamiento compartido para rate limiting.
+- `redis`: almacenamiento compartido exclusivamente para los contadores de rate
+  limiting. Actualmente no se utiliza como cache de datos funcionales.
 - `nginx`: proxy reverso y publicacion de frontend/API.
 
 ---
@@ -271,6 +274,7 @@ El router usa rutas protegidas bajo `/` y rutas publicas para autenticacion:
 Publicas:
 
 ```text
+/
 /login
 /registro
 ```
@@ -278,7 +282,6 @@ Publicas:
 Protegidas:
 
 ```text
-/
 /busqueda
 /mi-perfil
 /cambiar-password
@@ -340,6 +343,17 @@ Medidas operativas:
 - frontend servido como estatico por Nginx no privilegiado.
 - contenedores con restricciones como `read_only`, `tmpfs`,
   `no-new-privileges`, `cap_drop` y limites de procesos cuando aplica.
+
+La revisión de seguridad para despliegue, actualizada el 2026-08-24, mantiene como
+pendientes bloqueantes la activación de HTTPS, la definición del aislamiento
+multi-UCT y la provisión operativa de secretos. Los controles versionables de
+límites de solicitudes, topología, JWT/refresh, CORS, headers, errores seguros e
+inventario IDOR/BOLA ya están implementados, pero deben verificarse nuevamente
+sobre el servidor final.
+
+Documento de referencia:
+
+- [Revisión final de seguridad para despliegue](./docs/revision_seguridad_despliegue.md)
 
 No deben versionarse:
 
@@ -555,6 +569,12 @@ Cobertura actual mas fuerte:
 - snapshots de memorias
 - pertenencia temporal de entidades a memorias
 - contratos HTTP principales
+- recuperacion de busqueda para 24 modulos mediante fixtures ficticios idempotentes
+- carga diferida de rutas y manejo accesible de espera/error
+
+El seed integral de busqueda vive en `backend/tools/seed_testing_data.py`. Solo se
+habilita en testing o de forma efimera en una base aislada de staging; no debe
+ejecutarse contra datos productivos.
 
 La validacion manual sigue siendo importante para flujos completos de UI:
 login, logout, refresh, cambio de contrasena, navegacion entre modulos,
@@ -588,6 +608,11 @@ Estado observado en el repositorio:
 - backend y frontend estan organizados por los mismos dominios principales.
 - las rutas backend estan registradas bajo `/api/v1`.
 - el frontend consume la API versionada mediante cliente HTTP centralizado.
+- las paginas se entregan mediante chunks diferidos; el bundle inicial validado es
+  de aproximadamente 338 kB minificado y no existen chunks mayores a 500 kB.
+- el stack aislado de staging supera migraciones, healthchecks y smoke HTTP.
+- la busqueda global recupera correctamente los 24 modulos con datos ficticios
+  idempotentes de testing.
 - los modulos principales tienen pantallas de home, formulario y detalle cuando
   aplica.
 - los endpoints de historial existen en la mayoria de entidades operativas
@@ -603,8 +628,10 @@ Puntos a seguir monitoreando:
 - revisar periodicamente que todos los detalles consuman historial cuando el
   endpoint exista.
 - sostener pruebas manuales de flujos completos antes de un despliegue real.
-- agregar una tarea programada futura para purgar sesiones refresh vencidas o
-  revocadas luego del periodo de retencion definido.
+- configurar en el servidor la ejecucion diaria de la purga de sesiones refresh
+  vencidas o revocadas luego del periodo de retencion definido.
+- no habilitar datos reales hasta cerrar los bloqueantes de la revisión de seguridad:
+  HTTPS, aislamiento multi-UCT y gestión de secretos del servidor.
 
 ---
 

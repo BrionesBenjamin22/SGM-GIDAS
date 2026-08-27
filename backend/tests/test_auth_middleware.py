@@ -74,6 +74,20 @@ class AuthMiddlewareTestCase(unittest.TestCase):
         self.assertEqual(payload, {"sub": "9", "rol": "ADMIN"})
         mock_verify_token.assert_not_called()
 
+    def test_controller_no_expone_excepcion_inesperada(self):
+        with self.app.test_request_context("/primer-usuario"):
+            with patch(
+                "modules.auth.controllers.auth_controller.AuthService.existe_primer_usuario",
+                side_effect=RuntimeError("postgresql://usuario:secreto@db/interna"),
+            ):
+                response, status_code = AuthController.primer_usuario()
+
+        body = response.get_json()
+        self.assertEqual(status_code, 500)
+        self.assertEqual(body["error"]["code"], "INTERNAL_ERROR")
+        self.assertNotIn("postgresql", str(body).lower())
+        self.assertNotIn("secreto", str(body).lower())
+
 
 if __name__ == "__main__":
     unittest.main()

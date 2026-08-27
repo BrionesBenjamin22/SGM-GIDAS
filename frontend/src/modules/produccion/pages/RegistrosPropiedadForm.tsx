@@ -8,11 +8,13 @@ import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
 import { useTiposRegistroPropiedad } from "@/modules/produccion/hooks/useTipoRegistroPropiedad";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import {
   createRegistroPropiedad,
   getRegistroPropiedadById,
   updateRegistroPropiedad,
+  type RegistroPropiedad,
+  type RegistroPropiedadPayload,
 } from "@/modules/produccion/services/registrosPropiedadServices";
 import { toTitleCase } from "@/utils/format";
 
@@ -93,11 +95,11 @@ export default function RegistrosPropiedadForm() {
   };
 
   const mutation = useMutation({
-    mutationFn: (payload: any) =>
+    mutationFn: (payload: Partial<RegistroPropiedadPayload>) =>
       isEdit
         ? updateRegistroPropiedad(registroId as number, payload)
-        : createRegistroPropiedad(payload),
-    onSuccess: async (saved: any) => {
+        : createRegistroPropiedad(payload as RegistroPropiedadPayload),
+    onSuccess: async (saved: RegistroPropiedad) => {
       await qc.invalidateQueries({ queryKey: ["registros-propiedad"] });
       await qc.invalidateQueries({ queryKey: ["registro-propiedad", registroId] });
       await qc.invalidateQueries({
@@ -116,30 +118,20 @@ export default function RegistrosPropiedadForm() {
         return;
       }
 
-      navigate(`/registros-propiedad/${savedId}`, {
+      navigate("/registros-propiedad", {
+        replace: true,
         state: {
           successMessage: "Registro creado con exito.",
         },
       });
     },
     onError: (error) => {
-      const defaultMessage = isEdit
-        ? "No se pudo actualizar el registro de propiedad."
-        : "No se pudo crear el registro de propiedad.";
-
-      if (error instanceof HttpError && error.body && typeof error.body === "object") {
-        const body = error.body as Record<string, unknown>;
-        const backendMessage =
-          typeof body.error === "string"
-            ? body.error
-            : typeof body.message === "string"
-              ? body.message
-              : null;
-
-        setErrorMessage(backendMessage ?? defaultMessage);
-      } else {
-        setErrorMessage(defaultMessage);
-      }
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+        )
+      );
 
       setShowError(true);
     },
@@ -205,6 +197,7 @@ export default function RegistrosPropiedadForm() {
       </h2>
 
       <form
+        noValidate
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >

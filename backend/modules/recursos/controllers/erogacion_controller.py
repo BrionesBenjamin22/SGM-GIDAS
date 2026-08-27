@@ -1,5 +1,6 @@
 from flask import jsonify, request, g
 from modules.recursos.services.erogacion_service import ErogacionService
+from modules.shared.controllers.responses import exception_response
 
 
 class ErogacionController:
@@ -11,8 +12,8 @@ class ErogacionController:
             return jsonify(
                 ErogacionService.get_all(filters)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="listar erogaciones")
 
 
     @staticmethod
@@ -21,8 +22,8 @@ class ErogacionController:
             return jsonify(
                 ErogacionService.get_by_id(erogacion_id)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar erogacion")
 
     @staticmethod
     def get_historial(erogacion_id):
@@ -30,8 +31,8 @@ class ErogacionController:
             return jsonify(
                 ErogacionService.get_historial(erogacion_id)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception as error:
+            return exception_response(error, operation="consultar historial de erogacion")
 
 
     @staticmethod
@@ -44,8 +45,8 @@ class ErogacionController:
                 ErogacionService.create(data, user_id)
             ), 201
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="crear erogacion")
 
 
     @staticmethod
@@ -56,8 +57,8 @@ class ErogacionController:
             return jsonify(
                 ErogacionService.update(erogacion_id, data, user_id)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="actualizar erogacion")
 
 
     @staticmethod
@@ -68,5 +69,5 @@ class ErogacionController:
             return jsonify(
                 ErogacionService.delete(erogacion_id, user_id)
             ), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="eliminar erogacion")

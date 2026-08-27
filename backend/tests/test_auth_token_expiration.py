@@ -28,6 +28,7 @@ class AuthTokenExpirationTestCase(unittest.TestCase):
             tokens["access_token"],
             Config.JWT_SECRET,
             algorithms=[Config.JWT_ALGORITHM],
+            options={"verify_aud": False},
         )
         expires_at = datetime.datetime.utcfromtimestamp(payload["exp"])
 
@@ -69,6 +70,51 @@ class AuthTokenExpirationTestCase(unittest.TestCase):
         with self.assertRaisesRegex(Exception, "Token inv"):
             AuthService.verify_token(token)
 
+    def test_verify_token_rechaza_token_vencido(self):
+        token = jwt.encode(
+            {
+                "sub": "7",
+                "rol": "GESTOR",
+                "iss": Config.JWT_ISSUER,
+                "exp": datetime.datetime.utcnow() - datetime.timedelta(seconds=1),
+            },
+            Config.JWT_SECRET,
+            algorithm=Config.JWT_ALGORITHM,
+        )
+
+        with self.assertRaisesRegex(Exception, "Token expirado"):
+            AuthService.verify_token(token)
+
+    def test_verify_token_rechaza_firma_invalida(self):
+        token = jwt.encode(
+            {
+                "sub": "7",
+                "rol": "GESTOR",
+                "iss": Config.JWT_ISSUER,
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=5),
+            },
+            "secreto-distinto-de-al-menos-32-caracteres",
+            algorithm=Config.JWT_ALGORITHM,
+        )
+
+        with self.assertRaisesRegex(Exception, "Token inv"):
+            AuthService.verify_token(token)
+
+    def test_verify_token_rechaza_algoritmo_no_permitido(self):
+        token = jwt.encode(
+            {
+                "sub": "7",
+                "rol": "GESTOR",
+                "iss": Config.JWT_ISSUER,
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=5),
+            },
+            Config.JWT_SECRET,
+            algorithm="HS512",
+        )
+
+        with self.assertRaisesRegex(Exception, "Token inv"):
+            AuthService.verify_token(token)
+
     def test_generate_tokens_incluye_y_valida_audience_si_esta_configurada(self):
         with patch.object(Config, "JWT_AUDIENCE", "gidas-api"):
             tokens = AuthService.generate_tokens(self._make_user())
@@ -82,6 +128,23 @@ class AuthTokenExpirationTestCase(unittest.TestCase):
                 "sub": "7",
                 "rol": "GESTOR",
                 "iss": Config.JWT_ISSUER,
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=5),
+            },
+            Config.JWT_SECRET,
+            algorithm=Config.JWT_ALGORITHM,
+        )
+
+        with patch.object(Config, "JWT_AUDIENCE", "gidas-api"):
+            with self.assertRaisesRegex(Exception, "Token inv"):
+                AuthService.verify_token(token)
+
+    def test_verify_token_rechaza_audience_incorrecta(self):
+        token = jwt.encode(
+            {
+                "sub": "7",
+                "rol": "GESTOR",
+                "iss": Config.JWT_ISSUER,
+                "aud": "otra-api",
                 "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=5),
             },
             Config.JWT_SECRET,

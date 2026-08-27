@@ -7,7 +7,7 @@ import AutoresField from "@/components/AutoresField";
 import DatePicker from "@/components/Calendar";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
-import { HttpError } from "@/lib/http";
+import { getErrorMessage } from "@/lib/httpError";
 import {
   addAutorToDocumento,
   createDocumentacion,
@@ -216,7 +216,7 @@ export default function DocumentacionForm() {
         queryKey: ["documentacion-historial", documentacionId],
       });
 
-      navigate(`/documentacion/${documentacionId}`, {
+      navigate(isEdit ? `/documentacion/${documentacionId}` : "/documentacion", {
         replace: true,
         state: {
           successMessage: isEdit
@@ -226,24 +226,12 @@ export default function DocumentacionForm() {
       });
     },
     onError: (error) => {
-      const defaultMessage = isEdit
-        ? "No se pudo actualizar la documentacion."
-        : "No se pudo crear la documentacion.";
-
-      let backendMessage = defaultMessage;
-
-      if (error instanceof HttpError) {
-        const body = error.body as
-          | { message?: string; error?: string; detalle?: string }
-          | undefined;
-
-        backendMessage =
-          body?.error || body?.message || body?.detalle || defaultMessage;
-      } else if (error instanceof Error) {
-        backendMessage = error.message || defaultMessage;
-      }
-
-      setErrorMessage(backendMessage);
+      setErrorMessage(
+        getErrorMessage(
+          error,
+          "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+        )
+      );
       setShowError(true);
     },
   });
@@ -260,6 +248,7 @@ export default function DocumentacionForm() {
       </h2>
 
       <form
+        noValidate
         onSubmit={async (e) => {
           e.preventDefault();
           if (!validate()) return;

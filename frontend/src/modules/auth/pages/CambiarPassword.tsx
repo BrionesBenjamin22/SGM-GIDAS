@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Lock, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { getErrorMessage } from "@/lib/httpError";
 
 export default function CambiarPasswordPage() {
   const { cambiarPassword, debeCambiarPassword, logout } = useAuth();
@@ -60,10 +61,11 @@ export default function CambiarPasswordPage() {
       setTimeout(() => {
         nav("/inicio", { replace: true });
       }, 1500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(
-        err?.message ??
+        getErrorMessage(err,
           "Lo sentimos, no pudimos cambiar la contraseña. Verifique los datos e intente nuevamente."
+        )
       );
     } finally {
       setLoading(false);
@@ -99,7 +101,7 @@ export default function CambiarPasswordPage() {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} noValidate className="space-y-5">
               {!esPrimerLogin && (
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1.5">

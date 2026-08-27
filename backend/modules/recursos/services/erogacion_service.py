@@ -6,6 +6,7 @@ from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
+from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 
 
 class ErogacionService:
@@ -14,7 +15,7 @@ class ErogacionService:
     def _get_activa_or_404(erogacion_id: int):
         erogacion = db.session.get(Erogacion, erogacion_id)
         if not erogacion or erogacion.deleted_at is not None:
-            raise Exception("Erogacion no encontrada")
+            raise NotFoundError("Erogacion no encontrada")
         return erogacion
 
     @staticmethod
@@ -53,14 +54,14 @@ class ErogacionService:
     def get_by_id(erogacion_id: int):
         erogacion = db.session.get(Erogacion, erogacion_id)
         if not erogacion:
-            raise Exception("Erogacion no encontrada")
+            raise NotFoundError("Erogacion no encontrada")
         return erogacion.serialize()
 
     @staticmethod
     def get_historial(erogacion_id: int):
         erogacion = db.session.get(Erogacion, erogacion_id)
         if not erogacion:
-            raise Exception("Erogacion no encontrada")
+            raise NotFoundError("Erogacion no encontrada")
         return AuditoriaService.obtener_historial_entidad(
             entidad="erogacion",
             registro_id=erogacion.id
@@ -79,29 +80,29 @@ class ErogacionService:
 
         existe = query.first()
         if existe:
-            raise Exception("Ya existe una erogacion activa con ese numero en el grupo")
+            raise ConflictError("Ya existe una erogacion activa con ese numero en el grupo")
         
         numero_int = int(numero)  # Validar que sea un número entero
         if numero_int <= 0:
-            raise Exception("El numero de erogacion debe ser un entero positivo")
+            raise ValidationError("El numero de erogacion debe ser un entero positivo")
         
     @staticmethod
     def create(data: dict, user_id: int):
         if not data:
-            raise Exception("El body es obligatorio")
+            raise ValidationError("El body es obligatorio")
 
         numero = data.get("numero_erogacion")
         ErogacionService.vaLidar_numero_erogacion(numero, data.get("grupo_utn_id"))
         grupo_id = data.get("grupo_utn_id")
 
         if not numero:
-            raise ValueError("El numero de erogacion es obligatorio")
+            raise ValidationError("El numero de erogacion es obligatorio")
         if not grupo_id:
-            raise ValueError("El grupo es obligatorio")
+            raise ValidationError("El grupo es obligatorio")
 
         grupo = db.session.get(GrupoInvestigacionUtn, grupo_id)
         if not grupo or grupo.deleted_at is not None:
-            raise Exception("Grupo invalido")
+            raise NotFoundError("Grupo invalido")
 
         existe = Erogacion.query.filter(
             Erogacion.numero_erogacion == numero,
@@ -109,29 +110,29 @@ class ErogacionService:
             Erogacion.deleted_at.is_(None)
         ).first()
         if existe:
-            raise Exception("Ya existe una erogacion activa con ese numero en el grupo")
+            raise ConflictError("Ya existe una erogacion activa con ese numero en el grupo")
 
         try:
             egresos = float(data["egresos"])
             ingresos = float(data["ingresos"])
         except Exception:
-            raise Exception("Ingresos y egresos deben ser numericos")
+            raise ValidationError("Ingresos y egresos deben ser numericos")
 
         if egresos < 0 or ingresos < 0:
-            raise Exception("Ingresos y egresos no pueden ser negativos")
+            raise ValidationError("Ingresos y egresos no pueden ser negativos")
         if egresos == 0 and ingresos == 0:
-            raise Exception("Egresos e ingresos no pueden ser ambos 0")
+            raise ValidationError("Egresos e ingresos no pueden ser ambos 0")
 
         tipo = db.session.get(TipoErogacion, data.get("tipo_erogacion_id"))
         if not tipo:
-            raise Exception("Tipo de erogacion invalido")
+            raise NotFoundError("Tipo de erogacion invalido")
 
         fuente = db.session.get(
             FuenteFinanciamiento,
             data.get("fuente_financiamiento_id")
         )
         if not fuente:
-            raise Exception("Fuente de financiamiento invalida")
+            raise NotFoundError("Fuente de financiamiento invalida")
 
         fecha = (
             datetime.strptime(data.get("fecha"), "%Y-%m-%d").date()
@@ -179,7 +180,7 @@ class ErogacionService:
                 erogacion.ingresos = nuevo_ingreso
 
         if erogacion.egresos == 0 and erogacion.ingresos == 0:
-            raise Exception("Egresos e ingresos no pueden ser ambos 0")
+            raise ValidationError("Egresos e ingresos no pueden ser ambos 0")
 
         if cambios:
             erogacion.mark_updated(user_id)

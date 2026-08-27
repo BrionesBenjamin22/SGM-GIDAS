@@ -1,4 +1,5 @@
 from extension import db
+from modules.shared.exceptions import ValidationError as ValueError
 from sqlalchemy import func
 from modules.grupo.models.programa_incentivos import ProgramaIncentivos
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService

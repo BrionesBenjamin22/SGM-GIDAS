@@ -38,14 +38,14 @@ export interface Becario {
 }
 
 export function crearBecario(payload: BecarioPayload) {
-  return http("/becarios", {
+  return http<Becario>("/becarios", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
 export function actualizarBecario(id: number, payload: Partial<BecarioPayload>) {
-  return http(`/becarios/${id}`, {
+  return http<Becario>(`/becarios/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });

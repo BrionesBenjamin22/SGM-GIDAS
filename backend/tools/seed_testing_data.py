@@ -10,6 +10,8 @@ from extension import db
 from modules.catalogos.models.categoria_utn import CategoriaUtn
 from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.grupo.models.directivos import Cargo, Directivo, DirectivoGrupo
+from modules.grupo.models.visita_grupo import VisitaAcademica
 from modules.memorias.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
 from modules.auth.models.persona import Persona
 from modules.personal.models.personal import (
@@ -30,10 +32,31 @@ from modules.proyectos.models.proyecto_investigacion import (
     TipoProyecto,
 )
 from modules.personal.models.tipo_personal import TipoPersonal
+from modules.produccion.models.actividad_docencia import ActividadDocencia
+from modules.produccion.models.articulo_divulgacion import ArticuloDivulgacion
+from modules.produccion.models.documentacion_autores import (
+    Autor,
+    DocumentacionBibliografica,
+)
+from modules.produccion.models.registro_patente import (
+    RegistrosPropiedad,
+    TipoRegistroPropiedad,
+)
+from modules.produccion.models.trabajo_reunion import TipoReunion, TrabajoReunionCientifica
+from modules.produccion.models.trabajo_revista import TrabajosRevistasReferato
+from modules.proyectos.models.participacion_relevante import ParticipacionRelevante
+from modules.recursos.models.becas import Beca
+from modules.recursos.models.equipamiento import Equipamiento
+from modules.recursos.models.erogacion import Erogacion, TipoErogacion
+from modules.transferencia.models.transferencia_socio import (
+    TipoContrato,
+    TransferenciaSocioProductiva,
+)
 from modules.auth.models.usuario import RolUsuario, Usuario
 
 
 TEST_PASSWORD = "Testing123!"
+MANUAL_VARIANT_COUNT = 12
 
 
 def _assert_testing_environment():
@@ -93,7 +116,11 @@ def _seed_catalogs():
     dedicacion, _ = _get_or_create(TipoDedicacion, nombre="Exclusiva")
     programa, _ = _get_or_create(ProgramaIncentivos, nombre="Categoria III")
     tipo_formacion, _ = _get_or_create(TipoFormacion, nombre="Beca doctoral")
-    tipo_personal, _ = _get_or_create(TipoPersonal, nombre="Administrativo")
+    tipo_personal, _ = _get_or_create(
+        TipoPersonal,
+        nombre="Técnico administrativo y de apoyo",
+    )
+    tipo_profesional, _ = _get_or_create(TipoPersonal, nombre="Profesional")
     tipo_proyecto, _ = _get_or_create(TipoProyecto, nombre="I+D")
     fuente, _ = _get_or_create(FuenteFinanciamiento, nombre="UTN")
     return {
@@ -102,6 +129,7 @@ def _seed_catalogs():
         "programa": programa,
         "tipo_formacion": tipo_formacion,
         "tipo_personal": tipo_personal,
+        "tipo_profesional": tipo_profesional,
         "tipo_proyecto": tipo_proyecto,
         "fuente": fuente,
     }
@@ -194,6 +222,84 @@ def _seed_people(grupo, catalogs, admin_user_id):
     return investigador, becario, personal
 
 
+def _seed_manual_people(grupo, catalogs, admin_user_id):
+    """Crea personal variado de las cuatro categorias visibles en la UI."""
+    for index in range(1, MANUAL_VARIANT_COUNT + 1):
+        year = 2022 + ((index - 1) % 4)
+        month = ((index - 1) % 12) + 1
+        hours = [10, 20, 30, 40][(index - 1) % 4]
+        suffix = f"{index:02d} TEST"
+
+        for prefix, tipo_personal in [
+            ("Tecnico Administrativo", catalogs["tipo_personal"]),
+            ("Profesional", catalogs["tipo_profesional"]),
+        ]:
+            person, _ = _get_or_create(
+                Personal,
+                nombre_apellido=f"{prefix} {suffix}",
+                defaults={
+                    "horas_semanales": hours,
+                    "fecha_alta_grupo": date(year, month, 1),
+                    "tipo_personal_id": tipo_personal.id,
+                    "grupo_utn_id": grupo.id,
+                    "created_by": admin_user_id,
+                },
+            )
+            if not person.historial_horas:
+                db.session.add(
+                    PersonalHorasHistorial(
+                        personal=person,
+                        horas_semanales=hours,
+                        fecha_inicio=date(year, month, 1),
+                        created_by=admin_user_id,
+                    )
+                )
+
+        becario, _ = _get_or_create(
+            Becario,
+            nombre_apellido=f"Becario {suffix}",
+            defaults={
+                "horas_semanales": hours,
+                "fecha_alta_grupo": date(year, month, 2),
+                "tipo_formacion_id": catalogs["tipo_formacion"].id,
+                "grupo_utn_id": grupo.id,
+                "created_by": admin_user_id,
+            },
+        )
+        if not becario.historial_horas:
+            db.session.add(
+                BecarioHorasHistorial(
+                    becario=becario,
+                    horas_semanales=hours,
+                    fecha_inicio=date(year, month, 2),
+                    created_by=admin_user_id,
+                )
+            )
+
+        investigador, _ = _get_or_create(
+            Investigador,
+            nombre_apellido=f"Investigador {suffix}",
+            defaults={
+                "horas_semanales": hours,
+                "fecha_alta_grupo": date(year, month, 3),
+                "tipo_dedicacion_id": catalogs["dedicacion"].id,
+                "categoria_utn_id": catalogs["categoria"].id,
+                "programa_incentivos_id": catalogs["programa"].id,
+                "grupo_utn_id": grupo.id,
+                "created_by": admin_user_id,
+            },
+        )
+        if not investigador.historial_horas:
+            db.session.add(
+                InvestigadorHorasHistorial(
+                    investigador=investigador,
+                    horas_semanales=hours,
+                    fecha_inicio=date(year, month, 3),
+                    created_by=admin_user_id,
+                )
+            )
+
+
 def _seed_project(grupo, catalogs, investigador, becario, admin_user_id):
     proyecto = ProyectoInvestigacion.query.filter_by(
         codigo_proyecto=2026001
@@ -273,6 +379,377 @@ def _seed_memoria(admin_user_id):
     return memoria
 
 
+def _seed_search_coverage(grupo, catalogs, investigador, admin_user_id):
+    tipo_erogacion, _ = _get_or_create(
+        TipoErogacion,
+        nombre="Insumos de laboratorio TEST",
+    )
+    tipo_registro, _ = _get_or_create(
+        TipoRegistroPropiedad,
+        nombre="Patente experimental TEST",
+    )
+    tipo_contrato, _ = _get_or_create(
+        TipoContrato,
+        nombre="Convenio de asistencia TEST",
+    )
+    tipo_reunion, _ = _get_or_create(TipoReunion, nombre="Jornada academica TEST")
+
+    _get_or_create(
+        Beca,
+        nombre_beca="Beca de investigacion TEST",
+        defaults={
+            "descripcion": "Registro ficticio para validar la busqueda.",
+            "fecha_alta_grupo": date(2024, 4, 1),
+            "fuente_financiamiento_id": catalogs["fuente"].id,
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        ActividadDocencia,
+        curso="Seminario de datos TEST",
+        investigador_id=investigador.id,
+        defaults={
+            "institucion": "Universidad de Prueba",
+            "fecha_inicio": date(2024, 5, 1),
+            "fecha_fin": date(2024, 5, 31),
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        Equipamiento,
+        denominacion="Microscopio digital TEST",
+        grupo_utn_id=grupo.id,
+        defaults={
+            "descripcion_breve": "Equipo ficticio para validar recuperacion.",
+            "fecha_incorporacion": date(2024, 2, 15),
+            "monto_invertido": 125000.0,
+            "created_by": admin_user_id,
+        },
+    )
+
+    autor, _ = _get_or_create(Autor, nombre_apellido="Autora Ficticia TEST")
+    documento, _ = _get_or_create(
+        DocumentacionBibliografica,
+        titulo="Manual de investigacion TEST",
+        grupo_id=grupo.id,
+        defaults={
+            "editorial": "Editorial de Prueba",
+            "anio": 2024,
+            "fecha": date(2024, 6, 1),
+            "created_by": admin_user_id,
+        },
+    )
+    if autor not in documento.autores:
+        documento.autores.append(autor)
+
+    _get_or_create(
+        Erogacion,
+        numero_erogacion=990001,
+        grupo_utn_id=grupo.id,
+        defaults={
+            "egresos": 25000.0,
+            "ingresos": 0.0,
+            "fecha": date(2024, 6, 15),
+            "tipo_erogacion_id": tipo_erogacion.id,
+            "fuente_financiamiento_id": catalogs["fuente"].id,
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        ParticipacionRelevante,
+        nombre_evento="Congreso de tecnologia TEST",
+        defaults={
+            "forma_participacion": "Expositor ficticio",
+            "fecha": date(2024, 7, 10),
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        RegistrosPropiedad,
+        nombre_articulo="Dispositivo experimental TEST",
+        grupo_utn_id=grupo.id,
+        defaults={
+            "organismo_registrante": "Organismo de Prueba",
+            "fecha_registro": date(2024, 8, 1),
+            "tipo_registro_id": tipo_registro.id,
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        TransferenciaSocioProductiva,
+        numero_transferencia=990001,
+        defaults={
+            "denominacion": "Transferencia tecnologica TEST",
+            "demandante": "Empresa Ficticia",
+            "descripcion_actividad": "Asistencia tecnica integral TEST",
+            "monto": 50000.0,
+            "fecha_inicio": date(2024, 8, 15),
+            "tipo_contrato_id": tipo_contrato.id,
+            "grupo_utn_id": grupo.id,
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        TrabajoReunionCientifica,
+        titulo_trabajo="Resultados de laboratorio TEST",
+        defaults={
+            "nombre_reunion": "Jornada Ficticia",
+            "procedencia": "Universidad de Prueba",
+            "fecha_inicio": date(2024, 9, 1),
+            "tipo_reunion_id": tipo_reunion.id,
+            "grupo_utn_id": grupo.id,
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        TrabajosRevistasReferato,
+        titulo_trabajo="Articulo con referato TEST",
+        defaults={
+            "nombre_revista": "Revista Ficticia",
+            "editorial": "Editorial de Prueba",
+            "issn": "0000-0000",
+            "pais": "Argentina",
+            "fecha": date(2024, 9, 15),
+            "grupo_utn_id": grupo.id,
+            "tipo_reunion_id": tipo_reunion.id,
+            "created_by": admin_user_id,
+        },
+    )
+    directivo, _ = _get_or_create(
+        Directivo,
+        nombre_apellido="Directiva Ficticia TEST",
+        defaults={"created_by": admin_user_id},
+    )
+    cargo, _ = _get_or_create(Cargo, nombre="Director TEST")
+    _get_or_create(
+        DirectivoGrupo,
+        id_directivo=directivo.id,
+        id_grupo_utn=grupo.id,
+        defaults={
+            "id_cargo": cargo.id,
+            "fecha_inicio": date(2024, 1, 1),
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        ArticuloDivulgacion,
+        titulo="Divulgacion cientifica TEST",
+        defaults={
+            "descripcion": "Articulo ficticio para validar busqueda.",
+            "fecha_publicacion": date(2024, 10, 1),
+            "grupo_utn_id": grupo.id,
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        VisitaAcademica,
+        razon="Intercambio academico TEST",
+        defaults={
+            "fecha": date(2024, 10, 15),
+            "procedencia": "Instituto de Prueba",
+            "tipo_visita_id": tipo_reunion.id,
+            "grupo_utn_id": grupo.id,
+            "created_by": admin_user_id,
+        },
+    )
+
+
+def _seed_manual_testing_dataset(grupo, catalogs, investigador, admin_user_id):
+    """Crea variantes deterministas para probar filtros y paginacion manual."""
+    tipos_erogacion = [
+        _get_or_create(TipoErogacion, nombre=nombre)[0]
+        for nombre in [
+            "Insumos TEST",
+            "Servicios TEST",
+            "Viaticos TEST",
+        ]
+    ]
+    tipos_registro = [
+        _get_or_create(TipoRegistroPropiedad, nombre=nombre)[0]
+        for nombre in [
+            "Patente TEST",
+            "Modelo de utilidad TEST",
+            "Software TEST",
+        ]
+    ]
+    tipos_contrato = [
+        _get_or_create(TipoContrato, nombre=nombre)[0]
+        for nombre in [
+            "Asistencia tecnica TEST",
+            "Licencia TEST",
+            "Convenio TEST",
+        ]
+    ]
+    tipos_reunion = [
+        _get_or_create(TipoReunion, nombre=nombre)[0]
+        for nombre in [
+            "Congreso TEST",
+            "Jornada TEST",
+            "Seminario TEST",
+        ]
+    ]
+
+    instituciones = [
+        "Universidad Regional Norte",
+        "Instituto Tecnologico Centro",
+        "Facultad Regional Sur",
+    ]
+    paises = ["Argentina", "Uruguay", "Chile"]
+    demandantes = ["Cooperativa Alfa", "Municipalidad Beta", "PyME Gamma"]
+
+    for index in range(1, MANUAL_VARIANT_COUNT + 1):
+        year = 2022 + ((index - 1) % 4)
+        month = ((index - 1) % 12) + 1
+        variant = f"{index:02d} TEST"
+        tipo_index = (index - 1) % 3
+
+        _get_or_create(
+            Beca,
+            nombre_beca=f"Beca {variant}",
+            defaults={
+                "descripcion": f"Beca ficticia de la cohorte {year} para pruebas manuales.",
+                "fecha_alta_grupo": date(year, month, 1),
+                "fuente_financiamiento_id": catalogs["fuente"].id,
+                "created_by": admin_user_id,
+            },
+        )
+        _get_or_create(
+            ActividadDocencia,
+            curso=f"Curso de innovacion {variant}",
+            investigador_id=investigador.id,
+            defaults={
+                "institucion": instituciones[tipo_index],
+                "fecha_inicio": date(year, month, 1),
+                "fecha_fin": date(year, month, min(20 + tipo_index, 28)),
+                "created_by": admin_user_id,
+            },
+        )
+        _get_or_create(
+            Equipamiento,
+            denominacion=f"Equipo de laboratorio {variant}",
+            grupo_utn_id=grupo.id,
+            defaults={
+                "descripcion_breve": f"Equipamiento ficticio categoria {tipo_index + 1}.",
+                "fecha_incorporacion": date(year, month, 10),
+                "monto_invertido": 50000.0 + index * 17500.0,
+                "created_by": admin_user_id,
+            },
+        )
+
+        autor, _ = _get_or_create(
+            Autor,
+            nombre_apellido=f"Autor Ficticio {variant}",
+        )
+        documento, _ = _get_or_create(
+            DocumentacionBibliografica,
+            titulo=f"Publicacion tecnica {variant}",
+            grupo_id=grupo.id,
+            defaults={
+                "editorial": f"Editorial {paises[tipo_index]}",
+                "anio": year,
+                "fecha": date(year, month, 12),
+                "created_by": admin_user_id,
+            },
+        )
+        if autor not in documento.autores:
+            documento.autores.append(autor)
+
+        _get_or_create(
+            Erogacion,
+            numero_erogacion=991000 + index,
+            grupo_utn_id=grupo.id,
+            defaults={
+                "egresos": 10000.0 + index * 2500.0 if index % 2 else 0.0,
+                "ingresos": 15000.0 + index * 3000.0 if index % 2 == 0 else 0.0,
+                "fecha": date(year, month, 15),
+                "tipo_erogacion_id": tipos_erogacion[tipo_index].id,
+                "fuente_financiamiento_id": catalogs["fuente"].id,
+                "created_by": admin_user_id,
+            },
+        )
+        _get_or_create(
+            ParticipacionRelevante,
+            nombre_evento=f"Evento academico {variant}",
+            defaults={
+                "forma_participacion": ["Expositor", "Organizador", "Asistente"][tipo_index],
+                "fecha": date(year, month, 16),
+                "created_by": admin_user_id,
+            },
+        )
+        _get_or_create(
+            RegistrosPropiedad,
+            nombre_articulo=f"Desarrollo registrable {variant}",
+            grupo_utn_id=grupo.id,
+            defaults={
+                "organismo_registrante": instituciones[tipo_index],
+                "fecha_registro": date(year, month, 17),
+                "tipo_registro_id": tipos_registro[tipo_index].id,
+                "created_by": admin_user_id,
+            },
+        )
+        _get_or_create(
+            TransferenciaSocioProductiva,
+            numero_transferencia=991000 + index,
+            defaults={
+                "denominacion": f"Transferencia aplicada {variant}",
+                "demandante": demandantes[tipo_index],
+                "descripcion_actividad": f"Actividad ficticia del sector {tipo_index + 1}.",
+                "monto": 25000.0 + index * 12500.0,
+                "fecha_inicio": date(year, month, 5),
+                "tipo_contrato_id": tipos_contrato[tipo_index].id,
+                "grupo_utn_id": grupo.id,
+                "created_by": admin_user_id,
+            },
+        )
+        _get_or_create(
+            TrabajoReunionCientifica,
+            titulo_trabajo=f"Ponencia cientifica {variant}",
+            defaults={
+                "nombre_reunion": f"{tipos_reunion[tipo_index].nombre} {year}",
+                "procedencia": instituciones[tipo_index],
+                "fecha_inicio": date(year, month, 18),
+                "tipo_reunion_id": tipos_reunion[tipo_index].id,
+                "grupo_utn_id": grupo.id,
+                "created_by": admin_user_id,
+            },
+        )
+        _get_or_create(
+            TrabajosRevistasReferato,
+            titulo_trabajo=f"Articulo indexado {variant}",
+            defaults={
+                "nombre_revista": f"Revista {paises[tipo_index]} de Tecnologia",
+                "editorial": f"Editorial {tipo_index + 1}",
+                "issn": f"{1000 + index:04d}-{2000 + index:04d}",
+                "pais": paises[tipo_index],
+                "fecha": date(year, month, 19),
+                "grupo_utn_id": grupo.id,
+                "tipo_reunion_id": tipos_reunion[tipo_index].id,
+                "created_by": admin_user_id,
+            },
+        )
+        _get_or_create(
+            ArticuloDivulgacion,
+            titulo=f"Nota de divulgacion {variant}",
+            defaults={
+                "descripcion": f"Contenido ficticio sobre la linea {tipo_index + 1}.",
+                "fecha_publicacion": date(year, month, 20),
+                "grupo_utn_id": grupo.id,
+                "created_by": admin_user_id,
+            },
+        )
+        _get_or_create(
+            VisitaAcademica,
+            razon=f"Visita por cooperacion {variant}",
+            defaults={
+                "fecha": date(year, month, 21),
+                "procedencia": instituciones[tipo_index],
+                "tipo_visita_id": tipos_reunion[tipo_index].id,
+                "grupo_utn_id": grupo.id,
+                "created_by": admin_user_id,
+            },
+        )
+
+
 def seed_testing_data():
     _assert_testing_environment()
     roles = _seed_roles()
@@ -301,16 +778,19 @@ def seed_testing_data():
     catalogs = _seed_catalogs()
     grupo = _seed_group()
     investigador, becario, _personal = _seed_people(grupo, catalogs, admin.id)
+    _seed_manual_people(grupo, catalogs, admin.id)
     _seed_project(grupo, catalogs, investigador, becario, admin.id)
     _seed_memoria(admin.id)
+    _seed_search_coverage(grupo, catalogs, investigador, admin.id)
+    _seed_manual_testing_dataset(grupo, catalogs, investigador, admin.id)
 
     db.session.commit()
 
     print("Datos ficticios de testing cargados correctamente")
-    print("Usuarios disponibles:")
-    print(f"- admin.testing / {TEST_PASSWORD}")
-    print(f"- gestor.testing / {TEST_PASSWORD}")
-    print(f"- lector.testing / {TEST_PASSWORD}")
+    print(
+        f"Variantes manuales cargadas: {MANUAL_VARIANT_COUNT} por modulo operativo"
+    )
+    print("Usuarios de testing cargados; consulte la configuracion local para sus credenciales.")
 
 
 if __name__ == "__main__":

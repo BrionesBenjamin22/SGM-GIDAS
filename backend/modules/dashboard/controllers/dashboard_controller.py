@@ -3,6 +3,8 @@ from datetime import date
 from flask import jsonify, request
 
 from modules.dashboard.services.dashboard_service import DashboardService
+from modules.shared.controllers.responses import exception_response
+from modules.shared.exceptions import ValidationError
 
 
 class DashboardController:
@@ -24,14 +26,10 @@ class DashboardController:
             )
 
             if anios is None or anios <= 0:
-                return jsonify({
-                    "error": 'El parámetro "anios" debe ser un entero mayor a 0'
-                }), 400
+                raise ValidationError('El parámetro "anios" debe ser un entero mayor a 0')
 
             if fecha_desde and fecha_hasta and fecha_desde > fecha_hasta:
-                return jsonify({
-                    "error": '"fecha_desde" no puede ser mayor que "fecha_hasta"'
-                }), 400
+                raise ValidationError('"fecha_desde" no puede ser mayor que "fecha_hasta"')
 
             return jsonify(
                 DashboardService.get_resumen(
@@ -42,8 +40,8 @@ class DashboardController:
                 )
             ), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception as error:
+            return exception_response(error, operation="generar resumen de dashboard")
 
     @staticmethod
     def _parse_fecha(valor, nombre_parametro):
@@ -53,7 +51,7 @@ class DashboardController:
         try:
             return date.fromisoformat(valor)
         except ValueError:
-            raise ValueError(
+            raise ValidationError(
                 f'El parámetro "{nombre_parametro}" debe tener formato YYYY-MM-DD'
             )
 
@@ -68,6 +66,6 @@ class DashboardController:
         if valor_normalizado in ("false", "0", "no"):
             return False
 
-        raise ValueError(
+        raise ValidationError(
             f'El parámetro "{nombre_parametro}" debe ser booleano'
         )

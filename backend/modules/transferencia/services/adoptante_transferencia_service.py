@@ -4,6 +4,7 @@ from modules.transferencia.models.transferencia_socio import (
     TransferenciaSocioProductiva
 )
 from extension import db
+from modules.shared.exceptions import ConflictError, NotFoundError
 
 
 class AdoptanteTransferenciaService:
@@ -16,10 +17,10 @@ class AdoptanteTransferenciaService:
         transferencia = db.session.get(TransferenciaSocioProductiva, transferencia_id)
 
         if not adoptante or adoptante.deleted_at:
-            raise ValueError("Adoptante inválido.")
+            raise NotFoundError("Adoptante inválido.")
 
         if not transferencia or transferencia.deleted_at:
-            raise ValueError("Transferencia inválida.")
+            raise NotFoundError("Transferencia inválida.")
 
         # Buscar relación existente (activa o eliminada)
         relacion = (
@@ -33,7 +34,7 @@ class AdoptanteTransferenciaService:
 
         if relacion:
             if relacion.deleted_at is None:
-                raise ValueError("El adoptante ya está vinculado a la transferencia.")
+                raise ConflictError("El adoptante ya está vinculado a la transferencia.")
             else:
                 # Restaurar
                 relacion.restore()
@@ -65,7 +66,7 @@ class AdoptanteTransferenciaService:
         )
 
         if not relacion:
-            raise ValueError("La relación no existe.")
+            raise NotFoundError("La relación no existe.")
 
         relacion.soft_delete(user_id)
 

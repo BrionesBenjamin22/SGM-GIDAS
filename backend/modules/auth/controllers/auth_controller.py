@@ -1,9 +1,91 @@
-from flask import Request, Response, g, jsonify, request
+﻿from flask import Request, Response, g, jsonify, request
+
+from urllib.parse import urlsplit
+
+from flask import current_app
 
 from modules.auth.services.auth_service import AuthService
+from modules.shared.controllers.responses import error_response
+from modules.shared.services.logging_config import get_logger
+
+
+logger = get_logger(__name__)
 
 
 class AuthController:
+
+    @staticmethod
+    def _cookie_options() -> dict:
+        return {
+            "httponly": current_app.config["REFRESH_COOKIE_HTTPONLY"],
+            "secure": current_app.config["REFRESH_COOKIE_SECURE"],
+            "samesite": current_app.config["REFRESH_COOKIE_SAMESITE"],
+            "path": current_app.config["REFRESH_COOKIE_PATH"],
+        }
+
+    @staticmethod
+    def _set_refresh_cookie(response: Response, token: str) -> None:
+        response.set_cookie(
+            current_app.config["REFRESH_COOKIE_NAME"], token,
+            max_age=current_app.config["REFRESH_TOKEN_EXPIRATION_MINUTES"] * 60,
+            **AuthController._cookie_options(),
+        )
+        response.headers["Cache-Control"] = "no-store"
+
+    @staticmethod
+    def _delete_refresh_cookie(response: Response) -> None:
+        response.delete_cookie(
+            current_app.config["REFRESH_COOKIE_NAME"],
+            **AuthController._cookie_options(),
+        )
+        response.headers["Cache-Control"] = "no-store"
+
+    @staticmethod
+    def _no_store(result):
+        response = result[0] if isinstance(result, tuple) else result
+        response.headers["Cache-Control"] = "no-store"
+        return result
+
+    @staticmethod
+    def _normalized_origin(
+        value: str | None,
+        allow_path: bool = False,
+    ) -> str | None:
+        if not value:
+            return None
+        parsed = urlsplit(value.strip())
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.netloc
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.query
+            or parsed.fragment
+            or (not allow_path and parsed.path not in {"", "/"})
+        ):
+            return None
+        return f"{parsed.scheme.lower()}://{parsed.netloc.lower()}"
+
+    @staticmethod
+    def _is_trusted_cookie_request(req: Request) -> bool:
+        origin_header = req.headers.get("Origin")
+        supplied = AuthController._normalized_origin(origin_header)
+        if origin_header is None:
+            supplied = AuthController._normalized_origin(
+                req.headers.get("Referer"),
+                allow_path=True,
+            )
+        trusted = {
+            AuthController._normalized_origin(origin)
+            for origin in current_app.config["FRONTEND_URLS"]
+        }
+        trusted.discard(None)
+        return supplied in trusted
+
+    @staticmethod
+    def _unexpected_error(status_code: int = 500):
+        logger.exception("Error interno en operacion de autenticacion")
+        return error_response("INTERNAL_ERROR", status_code=status_code)
 
     @staticmethod
     def _get_token_from_request(req: Request = None) -> str:
@@ -46,8 +128,8 @@ class AuthController:
         try:
             existe = AuthService.existe_primer_usuario()
             return jsonify({"existe": existe}), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception:
+            return AuthController._unexpected_error(500)
 
     @staticmethod
     def register(req: Request = None) -> Response:
@@ -65,8 +147,8 @@ class AuthController:
                     return jsonify({
                         "error": "Token requerido. El sistema ya tiene usuarios registrados."
                     }), 403
-                except PermissionError as pe:
-                    return jsonify({"error": str(pe)}), 403
+                except PermissionError:
+                    return error_response("FORBIDDEN", status_code=403)
 
             user = AuthService.register(
                 nombre_usuario=data["nombre_usuario"],
@@ -84,7 +166,7 @@ class AuthController:
                 metadata=AuthController._request_metadata(req),
             )
 
-            return jsonify({
+            response = jsonify({
                 "mensaje": "Usuario creado exitosamente",
                 "usuario": {
                     "id": user.id,
@@ -93,12 +175,13 @@ class AuthController:
                     "rol": user.rol.nombre,
                     "primer_login": user.primer_login
                 },
-                "access_token": tokens["access_token"],
-                "refresh_token": tokens["refresh_token"]
-            }), 201
+                "access_token": tokens["access_token"]
+            })
+            AuthController._set_refresh_cookie(response, tokens["refresh_token"])
+            return response, 201
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception:
+            return AuthController._no_store(AuthController._unexpected_error(400))
 
     @staticmethod
     def primer_usuario() -> Response:
@@ -107,8 +190,8 @@ class AuthController:
             # El frontend espera { "existe": boolean } donde "existe" es True si YA HAY usuarios.
             # Por lo tanto, si es_primer_usuario es True, significa que "existe" = False
             return jsonify({"existe": not es_primero}), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        except Exception:
+            return AuthController._unexpected_error(500)
 
 
     @staticmethod
@@ -122,14 +205,15 @@ class AuthController:
                 metadata=AuthController._request_metadata(request),
             )
 
-            return jsonify({
+            response = jsonify({
                 "access_token": result["access_token"],
-                "refresh_token": result["refresh_token"],
                 "user": result["user"]
-            }), 200
+            })
+            AuthController._set_refresh_cookie(response, result["refresh_token"])
+            return response, 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 401
+        except Exception:
+            return AuthController._no_store(AuthController._unexpected_error(401))
 
     @staticmethod
     def perfil(req: Request = None):
@@ -143,50 +227,58 @@ class AuthController:
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 401
-        except Exception as e:
-            return jsonify({"error": str(e)}), 401
+        except Exception:
+            return AuthController._unexpected_error(401)
 
     @staticmethod
     def refresh(req: Request = None) -> Response:
         req = req or request
-        refresh_token = req.cookies.get("refresh_token")
+        if not AuthController._is_trusted_cookie_request(req):
+            return AuthController._no_store(
+                error_response("FORBIDDEN", status_code=403)
+            )
+
+        refresh_token = req.cookies.get(current_app.config["REFRESH_COOKIE_NAME"])
 
         if not refresh_token:
-            data = req.get_json()
-            if data and data.get("refresh_token"):
-                refresh_token = data["refresh_token"]
-
-        if not refresh_token:
-            return jsonify({"error": "Refresh token requerido"}), 401
+            return AuthController._no_store(
+                (jsonify({"error": "Refresh token requerido"}), 401)
+            )
 
         try:
             tokens = AuthService.refresh_tokens(
                 refresh_token,
                 metadata=AuthController._request_metadata(req),
             )
-            return jsonify(tokens), 200
+            response = jsonify({
+                "access_token": tokens["access_token"],
+                "user": tokens["user"],
+            })
+            AuthController._set_refresh_cookie(response, tokens["refresh_token"])
+            return response, 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 401
+        except Exception:
+            return AuthController._no_store(AuthController._unexpected_error(401))
 
     @staticmethod
     def logout(req: Request = None) -> Response:
         req = req or request
-        refresh_token = req.cookies.get("refresh_token")
+        refresh_token = req.cookies.get(current_app.config["REFRESH_COOKIE_NAME"])
+        response = jsonify({"mensaje": "Sesion cerrada exitosamente"})
 
-        if not refresh_token:
-            data = req.get_json(silent=True)
-            if data and data.get("refresh_token"):
-                refresh_token = data["refresh_token"]
-
-        if not refresh_token:
-            return jsonify({"error": "Refresh token requerido"}), 401
+        if not AuthController._is_trusted_cookie_request(req):
+            return AuthController._no_store(
+                error_response("FORBIDDEN", status_code=403)
+            )
 
         try:
-            AuthService.revoke_refresh_token(refresh_token, reason="logout")
-            return jsonify({"mensaje": "Sesion cerrada exitosamente"}), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 401
+            if refresh_token:
+                AuthService.revoke_refresh_token(refresh_token, reason="logout")
+        except Exception:
+            logger.warning("No se pudo revocar la sesion durante logout")
+
+        AuthController._delete_refresh_cookie(response)
+        return response, 200
 
     @staticmethod
     def change_password(req: Request = None) -> Response:
@@ -232,8 +324,8 @@ class AuthController:
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 401
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception:
+            return AuthController._unexpected_error(400)
 
     @staticmethod
     def delete_user(user_id: int, req: Request = None):
@@ -251,8 +343,8 @@ class AuthController:
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 401
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception:
+            return AuthController._unexpected_error(400)
 
     @staticmethod
     def get_all_users(req: Request = None):
@@ -266,10 +358,10 @@ class AuthController:
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 401
-        except PermissionError as pe:
-            return jsonify({"error": str(pe)}), 403
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except PermissionError:
+            return error_response("FORBIDDEN", status_code=403)
+        except Exception:
+            return AuthController._unexpected_error(400)
 
     @staticmethod
     def get_user_by_id(user_id: int, req: Request = None):
@@ -286,8 +378,8 @@ class AuthController:
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 401
-        except Exception as e:
-            return jsonify({"error": str(e)}), 404
+        except Exception:
+            return AuthController._unexpected_error(404)
 
     @staticmethod
     def update_user(user_id: int, req: Request = None):
@@ -319,8 +411,8 @@ class AuthController:
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 401
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except Exception:
+            return AuthController._unexpected_error(400)
 
     @staticmethod
     def create_user(req: Request = None):
@@ -365,7 +457,7 @@ class AuthController:
 
         except ValueError as ve:
             return jsonify({"error": str(ve)}), 401
-        except PermissionError as pe:
-            return jsonify({"error": str(pe)}), 403
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        except PermissionError:
+            return error_response("FORBIDDEN", status_code=403)
+        except Exception:
+            return AuthController._unexpected_error(400)

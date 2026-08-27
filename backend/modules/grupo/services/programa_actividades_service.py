@@ -1,4 +1,5 @@
 from extension import db
+from modules.shared.exceptions import ValidationError as ValueError
 from modules.grupo.models.programa_actividades import PlanificacionGrupo
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.shared.services.auditoria_service import AuditoriaService
