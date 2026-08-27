@@ -40,10 +40,15 @@ test("ubica las acciones de usuario en el pie del menu lateral", () => {
   assert.match(sidebarSource, /await logout\(\)/);
 });
 
-test("mantiene solo el icono de usuario en la barra superior", () => {
-  assert.match(layoutSource, /aria-label="Usuario autenticado"/);
-  assert.doesNotMatch(layoutSource, /ChevronDown|Mi perfil|Cambiar contraseña|Cerrar sesión/);
-  assert.doesNotMatch(layoutSource, /useAuth|useNavigate|useState/);
+test("despliega las opciones del perfil desde el icono superior", () => {
+  assert.match(layoutSource, /aria-label="Abrir opciones del perfil"/);
+  assert.match(layoutSource, /aria-expanded=\{isProfileOpen\}/);
+  assert.match(layoutSource, /Mi perfil/);
+  assert.match(layoutSource, /Cambiar contraseña/);
+  assert.match(layoutSource, /Cerrar sesión/);
+  assert.match(layoutSource, /closeOnOutsideClick/);
+  assert.match(layoutSource, /event\.key === "Escape"/);
+  assert.match(layoutSource, /await logout\(\)/);
 });
 
 test("presenta informacion accionable sin un contrato backend nuevo", () => {

@@ -13,9 +13,11 @@ usuarios, UCT y directivos para presentar conteos y pendientes accionables.
 - autoridad final: los endpoints backend conservan sus controles actuales
 - el menu del administrador se limita a `Inicio`, `Administracion` y `Busqueda`
 - `GESTOR` conserva su acceso directo a catalogos
-- la barra superior conserva solo el icono de usuario
+- el icono de usuario de la barra superior despliega las opciones del perfil
 - la identidad, el rol, el perfil, el cambio de contrasena y el cierre de sesion
   se concentran en el pie desplegable del menu lateral
+- las mismas acciones quedan disponibles desde el icono superior para ofrecer
+  acceso consistente en escritorio y dispositivos moviles
 
 ## Secciones
 
