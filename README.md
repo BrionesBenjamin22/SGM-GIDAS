@@ -486,9 +486,11 @@ Servicios esperados:
 - Backend expone la API internamente.
 - PostgreSQL y Redis quedan dentro de la red Docker en produccion.
 
-Para despliegues con HTTPS, se recomienda usar un proxy externo del servidor
-con certificados administrados fuera del repositorio y reenviar el trafico al
-Nginx interno del compose.
+Para despliegues con HTTPS se usa un proxy Nginx externo del servidor, con
+certificados administrados fuera del repositorio, que reenvia el trafico al Nginx
+interno de Compose enlazado a `127.0.0.1`. La plantilla comentada se encuentra en
+`nginx/gidas.external.conf.example` y el procedimiento de activacion, validacion,
+renovacion y rollback esta documentado en `docs/despliegue_produccion.md`.
 
 ---
 

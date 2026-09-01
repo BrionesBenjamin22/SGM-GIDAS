@@ -1,8 +1,27 @@
+# Plantilla para el Nginx instalado en la VM Ubuntu.
+#
+# Estado inicial: HTTP disponible para validacion controlada. Docker Compose debe
+# publicar su proxy solamente en 127.0.0.1:8080.
+#
+# Antes de habilitar HTTPS:
+# 1. Reemplazar gidas.laboratorio.example por el DNS definitivo.
+# 2. Reemplazar las rutas del certificado y la clave.
+# 3. Descomentar el servidor HTTPS completo.
+# 4. Validar con `sudo nginx -t` y recargar Nginx.
+# 5. Validar HTTPS extremo a extremo; luego descomentar la redireccion HTTP.
+#
+# La clave privada debe permanecer fuera del repositorio, con permisos minimos.
+
 server {
     listen 80;
-    server_name gidas.example.com;
+    listen [::]:80;
+    server_name gidas.laboratorio.example;
+    server_tokens off;
 
     client_max_body_size 20M;
+
+    # Activar solamente despues de validar que HTTPS responde correctamente.
+    # return 301 https://$host$request_uri;
 
     location / {
         proxy_pass http://127.0.0.1:8080;
@@ -15,3 +34,42 @@ server {
         proxy_set_header X-Request-ID $request_id;
     }
 }
+
+# Descomentar este bloque completo cuando el laboratorio entregue DNS y
+# certificado. La configuracion admite certificados institucionales o ACME.
+#
+# server {
+#     listen 443 ssl;
+#     listen [::]:443 ssl;
+#     http2 on;
+#     server_name gidas.laboratorio.example;
+#     server_tokens off;
+#
+#     ssl_certificate /etc/nginx/tls/gidas/fullchain.pem;
+#     ssl_certificate_key /etc/nginx/tls/gidas/privkey.pem;
+#     ssl_protocols TLSv1.2 TLSv1.3;
+#     ssl_session_cache shared:GIDAS_TLS:10m;
+#     ssl_session_timeout 1d;
+#     ssl_session_tickets off;
+#
+#     client_max_body_size 20M;
+#
+#     # Habilitar solo despues de validar HTTPS en todos los clientes. No agregar
+#     # includeSubDomains hasta confirmar que todos los subdominios usan HTTPS.
+#     # add_header Strict-Transport-Security "max-age=31536000" always;
+#
+#     location / {
+#         proxy_pass http://127.0.0.1:8080;
+#         proxy_http_version 1.1;
+#
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto https;
+#         proxy_set_header X-Request-ID $request_id;
+#
+#         proxy_connect_timeout 10s;
+#         proxy_send_timeout 60s;
+#         proxy_read_timeout 60s;
+#     }
+# }

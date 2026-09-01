@@ -5,6 +5,17 @@ Actualizado: 2026-08-22
 Este documento no debe contener valores reales. Su objetivo es conservar el listado
 de acciones manuales requeridas antes del despliegue.
 
+## Handoff pre-merge del 2026-08-27
+
+La evidencia de la calificacion local, el bloqueo del workflow de commits y el
+checklist de datos requeridos de la VM se encuentran en
+`docs/validacion_pre_merge_2026-08-27.md`.
+
+El gate historico se resolvio mediante una rama limpia basada en `origin/main`, sin
+reescribir `dev`. La PR fue fusionada y `main` quedo actualizado. La configuracion
+`staging` por HTTP sirve solo para calificacion: el servidor final debe demostrar
+Gunicorn con `APP_ENV=production`, HTTPS y secretos renovados.
+
 ## Variables pendientes de agregar o corregir
 
 En `backend/.env.production`:

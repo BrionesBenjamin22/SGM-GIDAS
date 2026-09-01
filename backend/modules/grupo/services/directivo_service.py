@@ -8,6 +8,8 @@ from modules.grupo.models.grupo import GrupoInvestigacionUtn
 
 class DirectivoGrupoService:
 
+    CARGOS_DIRECTIVOS = frozenset({"director", "vicedirector"})
+
     # =========================================================
     # HELPERS
     # =========================================================
@@ -20,6 +22,40 @@ class DirectivoGrupoService:
             raise ValueError(mensaje)
 
         return obj
+
+    @staticmethod
+    def _normalizar_cargo(nombre: str) -> str:
+        return nombre.strip().casefold()
+
+    @staticmethod
+    def _validar_cargo_y_cupo(
+        grupo_id: int,
+        cargo: Cargo,
+        es_periodo_activo: bool = True
+    ):
+        if cargo.deleted_at is not None:
+            raise ValueError("Cargo no encontrado.")
+
+        cargo_normalizado = DirectivoGrupoService._normalizar_cargo(cargo.nombre)
+        if cargo_normalizado not in DirectivoGrupoService.CARGOS_DIRECTIVOS:
+            raise ValueError(
+                "El equipo directivo solo admite los cargos Director y Vicedirector."
+            )
+
+        if not es_periodo_activo:
+            return
+
+        actuales = DirectivoGrupo.query.filter(
+            DirectivoGrupo.id_grupo_utn == grupo_id,
+            DirectivoGrupo.fecha_fin.is_(None),
+            DirectivoGrupo.deleted_at.is_(None)
+        ).all()
+
+        if len(actuales) >= len(DirectivoGrupoService.CARGOS_DIRECTIVOS):
+            raise ValueError("La UCT ya tiene completo su equipo directivo.")
+
+        if any(participacion.id_cargo == cargo.id for participacion in actuales):
+            raise ValueError(f"La UCT ya tiene un {cargo.nombre} activo.")
 
 
     # =========================================================
@@ -116,6 +152,12 @@ class DirectivoGrupoService:
 
             if fecha_fin < fecha_inicio:
                 raise ValueError("La fecha_fin no puede ser anterior a fecha_inicio.")
+
+        DirectivoGrupoService._validar_cargo_y_cupo(
+            grupo.id,
+            cargo,
+            es_periodo_activo=fecha_fin is None
+        )
 
         # 🔍 Validar superposición de períodos
         existentes = DirectivoGrupo.query.filter(

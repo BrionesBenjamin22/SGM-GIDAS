@@ -1,19 +1,23 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Pencil, Trash2 } from "lucide-react";
 import Button from "@/components/Button";
 import Field from "@/components/Field";
 import ErrorText from "@/components/ErrorText";
 import ConfirmDialog from "@/components/ConfirmDialog";
-import SuccessToast from "@/components/SuccessToast";
 import { getErrorMessage } from "@/lib/httpError";
 import { useUct } from "@/modules/grupo/hooks/useUct";
 import { useCargos } from "@/modules/grupo/hooks/useCargos";
 import {
   useCrearYAsignarDirectivo,
   useActualizarDirectivo,
+  useDirectivos,
   useFinalizarDirectivo,
 } from "@/modules/grupo/hooks/useDirectivos";
+import {
+  normalizarCargoDirectivo,
+  obtenerCargosDirectivosFaltantes,
+} from "@/modules/grupo/utils/directivoCargo";
 
 type DirectivoItem = {
   id?: number;
@@ -32,6 +36,10 @@ export default function UctForm() {
   const grupoId = uct?.id;
 
   const { data: cargos = [] } = useCargos();
+  const {
+    data: directivosActuales = [],
+    isLoading: isLoadingDirectivos,
+  } = useDirectivos(grupoId);
   const crearAsignar = useCrearYAsignarDirectivo(grupoId ?? 0);
   const actualizarDirectivo = useActualizarDirectivo(grupoId);
   const finalizarDirectivo = useFinalizarDirectivo(grupoId);
@@ -61,35 +69,23 @@ export default function UctForm() {
   const [directivoAFinalizar, setDirectivoAFinalizar] =
     useState<DirectivoItem | null>(null);
 
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [pendingUpdates, setPendingUpdates] = useState<Record<number, string>>({});
   const [pendingFinalizations, setPendingFinalizations] = useState<Record<number, string>>({});
 
-  const directivosActuales: DirectivoItem[] = useMemo(
-    () => (uct?.directivos ?? []) as DirectivoItem[],
-    [uct]
-  );
-
-  const directorActual = directivosActuales.find(
-    (d) => d.cargo?.toLowerCase() === "director"
-  );
-
-  const vicedirectorActual = directivosActuales.find(
-    (d) => d.cargo?.toLowerCase() === "vicedirector"
-  );
-
-  const faltaDirector = isEdit && !directorActual;
-  const faltaVicedirector = isEdit && !vicedirectorActual;
+  const cargosFaltantes = obtenerCargosDirectivosFaltantes(directivosActuales);
+  const faltaDirector =
+    isEdit && !isLoadingDirectivos && cargosFaltantes.includes("Director");
+  const faltaVicedirector =
+    isEdit && !isLoadingDirectivos && cargosFaltantes.includes("Vicedirector");
   const tieneDirectivos = directivosActuales.length > 0;
 
   const cargoDirector = cargos.find(
-    (c) => c.nombre?.toLowerCase() === "director"
+    (c) => normalizarCargoDirectivo(c.nombre) === "director"
   );
 
   const cargoVicedirector = cargos.find(
-    (c) => c.nombre?.toLowerCase() === "vicedirector"
+    (c) => normalizarCargoDirectivo(c.nombre) === "vicedirector"
   );
 
   useEffect(() => {
@@ -243,17 +239,21 @@ export default function UctForm() {
         }
 
         setMostrarAltaDirectivos(false);
-        setSuccessMessage("Equipo directivo registrado correctamente.");
-        setShowSuccess(true);
+        navigate("/inicio", {
+          replace: true,
+          state: { successMessage: "Equipo directivo registrado correctamente." },
+        });
         return;
       }
 
-      setSuccessMessage(
-        isEdit
-          ? "UCT actualizada correctamente."
-          : "UCT creada correctamente."
-      );
-      setShowSuccess(true);
+      navigate("/inicio", {
+        replace: true,
+        state: {
+          successMessage: isEdit
+            ? "UCT actualizada correctamente."
+            : "UCT creada correctamente.",
+        },
+      });
     } catch (err: unknown) {
       setSubmitError(
         getErrorMessage(
@@ -484,7 +484,7 @@ export default function UctForm() {
 
             <div className="grid md:grid-cols-2 gap-4 text-sm text-slate-700">
               {directivosActuales.map((d, index) => {
-                const directivoId = d.id_directivo ?? d.id;
+                const directivoId = d.id_directivo;
 
                 return (
                   <div
@@ -584,7 +584,17 @@ export default function UctForm() {
           </p>
         )}
 
-        {isEdit && !tieneDirectivos && !mostrarAltaDirectivos && (
+        {isEdit && isLoadingDirectivos && (
+          <div
+            className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600"
+            role="status"
+            aria-live="polite"
+          >
+            Cargando equipo directivo…
+          </div>
+        )}
+
+        {isEdit && !isLoadingDirectivos && !tieneDirectivos && !mostrarAltaDirectivos && (
           <div className="border border-slate-200 rounded-xl p-6 bg-slate-50 space-y-4">
             <div className="space-y-2">
               <h3 className="text-lg font-semibold text-slate-700">
@@ -690,11 +700,6 @@ export default function UctForm() {
         </div>
       </ConfirmDialog>
 
-      <SuccessToast
-        open={showSuccess}
-        message={successMessage}
-        onClose={() => setShowSuccess(false)}
-      />
     </section>
   );
 }
