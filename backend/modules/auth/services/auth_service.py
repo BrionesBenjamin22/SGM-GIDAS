@@ -224,15 +224,6 @@ class AuthService:
         }
 
     # -------------------------
-    # ¿Es Primer Usuario?
-    # -------------------------
-    @staticmethod
-    def es_primer_usuario() -> bool:
-        """Devuelve True si NO hay ningún usuario en la base de datos."""
-        count = Usuario.query.count()
-        return count == 0
-
-    # -------------------------
     # Registro
     # -------------------------
     @staticmethod
