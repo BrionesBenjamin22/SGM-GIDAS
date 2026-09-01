@@ -8,6 +8,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 import { useAuth } from "@/context/AuthContext";
 import DirectivosHistoryPopover from "@/modules/grupo/components/DirectivosHistoryPopover";
+import { buscarDirectivoPorCargo } from "@/modules/grupo/utils/directivoCargo";
 import { ArrowUp } from "lucide-react";
 import { getErrorMessage } from "@/lib/httpError";
 import {
@@ -61,8 +62,8 @@ export default function Home() {
     isError: dashboardError,
   } = useDashboardResumen({ anios: 5 });
 
-  const director = directivos.find((d) => d.cargo === "Director");
-  const vicedirector = directivos.find((d) => d.cargo === "Vicedirector");
+  const director = buscarDirectivoPorCargo(directivos, "Director");
+  const vicedirector = buscarDirectivoPorCargo(directivos, "Vicedirector");
   const canEditUct = isAdmin() || isGestor();
   const canDeleteUct = isAdmin();
 

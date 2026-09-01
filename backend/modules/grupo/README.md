@@ -30,6 +30,15 @@ Las relaciones entre directivo, cargo y grupo mantienen periodos de vigencia.
 El frontend acumula cambios hasta guardar la UCT; las operaciones backend
 continuan protegidas individualmente y registran historial relacional.
 
+Cada UCT puede tener activos como maximo un `Director` y un `Vicedirector`. La
+asignacion rechaza cargos diferentes, cargos inactivos, un cargo institucional ya
+ocupado o un equipo que ya tenga cubiertos ambos cargos. Los periodos finalizados
+se conservan para trazabilidad y no consumen el cupo activo.
+
+La serializacion de la UCT incluye solamente participaciones vigentes y sin baja
+logica cuyos directivo y cargo tambien permanezcan activos. El endpoint especifico
+de directivos actuales mantiene el mismo criterio para el formulario y la home.
+
 ## Permisos
 
 - lectura e historial: `ADMIN`, `GESTOR`, `LECTURA`

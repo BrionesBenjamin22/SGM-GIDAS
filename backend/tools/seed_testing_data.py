@@ -520,7 +520,7 @@ def _seed_search_coverage(grupo, catalogs, investigador, admin_user_id):
         nombre_apellido="Directiva Ficticia TEST",
         defaults={"created_by": admin_user_id},
     )
-    cargo, _ = _get_or_create(Cargo, nombre="Director TEST")
+    cargo, _ = _get_or_create(Cargo, nombre="Director")
     _get_or_create(
         DirectivoGrupo,
         id_directivo=directivo.id,

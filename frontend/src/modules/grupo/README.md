@@ -38,6 +38,16 @@ formulario de UCT. Editar una fila no persiste inmediatamente: el usuario debe
 guardar la UCT para aplicar los cambios pendientes. La pantalla informa cuando
 existen operaciones sin guardar.
 
+El equipo activo admite un unico `Director` y un unico `Vicedirector`. La home y
+el formulario comparten la misma normalizacion de cargos; si uno ya existe, el
+formulario ofrece solamente el cargo faltante. El backend vuelve a validar el
+cupo y rechaza cargos distintos de los dos cargos institucionales.
+
+El formulario consulta el equipo actual mediante `useDirectivos`, sin depender
+de relaciones historicas incluidas en la UCT. Al guardar correctamente vuelve a
+`/inicio` con `successMessage`, tanto para cambios institucionales como para
+operaciones consolidadas del equipo directivo.
+
 ## Services, hooks y tipos
 
 - los services centralizan HTTP y contratos TypeScript
