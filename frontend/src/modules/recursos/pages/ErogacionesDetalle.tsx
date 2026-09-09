@@ -11,7 +11,7 @@ import {
 } from "@/modules/recursos/services/erogacionesServices";
 import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
-import { formatFecha } from "@/utils/formatFecha";
+import { formatFecha, formatFechaHora } from "@/utils/dateTime";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,
@@ -67,11 +67,6 @@ export default function ErogacionesDetalle() {
   if (isError || !data) {
     return <p className="text-slate-500">No se encontró la erogación.</p>;
   }
-
-  const formatFechaHora = (fecha?: string | null) => {
-    if (!fecha) return "-";
-    return new Date(fecha).toLocaleString("es-AR");
-  };
 
   const nroErogacionFmt = `Erogación N.º ${String(data.numero_erogacion).padStart(6, "0")}`;
   const isDeleted = !!data.deleted_at;

@@ -11,7 +11,7 @@ import {
 } from "@/modules/transferencia/services/transferenciasServices";
 import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
-import { formatFecha } from "@/utils/formatFecha";
+import { formatFecha, formatFechaHora } from "@/utils/dateTime";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,
@@ -65,11 +65,6 @@ export default function TransferenciasDetalle() {
       });
     }
   }, [location.state, navigate, location.pathname]);
-
-  const formatFechaHora = (fecha?: string | null) => {
-    if (!fecha) return "-";
-    return new Date(fecha).toLocaleString("es-AR");
-  };
 
   if (isLoading) {
     return <p className="text-slate-500">Cargando...</p>;

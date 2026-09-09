@@ -7,6 +7,7 @@ import { useState, useMemo } from "react";
 import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
+import { parseCivilDate, toCivilDateString } from "@/utils/dateTime";
 import {
   resolveFrontendUrl,
   SEARCH_MAX_QUERY_LENGTH,
@@ -439,15 +440,15 @@ export default function SearchPage() {
 
             <Calendar
               label="Desde"
-              value={dateFrom ? new Date(dateFrom + "T12:00:00") : null}
-              onChange={(d) => setDateFrom(d ? d.toISOString().split("T")[0] : undefined)}
+              value={parseCivilDate(dateFrom)}
+              onChange={(d) => setDateFrom(toCivilDateString(d) ?? undefined)}
               placeholder="Fecha desde"
             />
 
             <Calendar
               label="Hasta"
-              value={dateTo ? new Date(dateTo + "T12:00:00") : null}
-              onChange={(d) => setDateTo(d ? d.toISOString().split("T")[0] : undefined)}
+              value={parseCivilDate(dateTo)}
+              onChange={(d) => setDateTo(toCivilDateString(d) ?? undefined)}
               placeholder="Fecha hasta"
             />
 

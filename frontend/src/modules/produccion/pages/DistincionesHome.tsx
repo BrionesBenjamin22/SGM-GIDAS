@@ -17,6 +17,7 @@ import {
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
+import { getCivilYear } from "@/utils/dateTime";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -95,7 +96,7 @@ export default function DistincionesHome() {
 
       const matchAnio =
         !filters.anio ||
-        new Date(d.fecha).getFullYear() === Number(filters.anio);
+        getCivilYear(d.fecha) === Number(filters.anio);
 
       return matchSearch && matchProyecto && matchAnio;
     });

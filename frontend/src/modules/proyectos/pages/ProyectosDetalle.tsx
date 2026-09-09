@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import Button from "@/components/Button";
 import HistorialCambiosCard from "@/components/HistorialCambiosCard";
+import { formatFechaHora } from "@/utils/dateTime";
 import SuccessToast from "@/components/SuccessToast";
 import {
   getProyectoById,
@@ -76,11 +77,6 @@ export default function ProyectoDetalle() {
     if (!fecha) return "-";
     const date = new Date(`${fecha}T00:00:00`);
     return date.toLocaleDateString("es-AR");
-  };
-
-  const formatFechaHora = (fecha?: string | null) => {
-    if (!fecha) return "-";
-    return new Date(fecha).toLocaleString("es-AR");
   };
 
   const coordinador =

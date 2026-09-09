@@ -37,6 +37,18 @@ Toda respuesta servida desde `/api/v1` debe incluir el header:
 API-Version: v1
 ```
 
+### Contrato temporal
+
+- Las columnas `Date` se serializan como fechas civiles `YYYY-MM-DD`, sin zona
+  horaria ni conversion de dia.
+- Las columnas `DateTime` de auditoria representan instantes UTC y se serializan
+  en ISO 8601 con sufijo `Z`.
+- Los datetimes historicos almacenados sin zona se interpretan como UTC al salir
+  por la API, de acuerdo con el uso de `datetime.utcnow()` del modelo.
+- La serializacion comun reside en
+  `modules.shared.services.date_time.serialize_temporal` y debe reutilizarse en
+  historiales y nuevos modelos auditables.
+
 Regla de compatibilidad:
 
 - Cambios compatibles permanecen en v1: campos opcionales, endpoints nuevos y filtros nuevos.

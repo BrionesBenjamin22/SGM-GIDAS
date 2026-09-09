@@ -7,6 +7,7 @@ import DatePicker from "@/components/Calendar";
 import SuccessToast from "@/components/SuccessToast";
 import { getErrorMessage } from "@/lib/httpError";
 import { createMemoria } from "@/modules/memorias/services/memoriasService";
+import { toCivilDateString } from "@/utils/dateTime";
 
 export default function MemoriaForm() {
   const navigate = useNavigate();
@@ -89,7 +90,7 @@ export default function MemoriaForm() {
           <DatePicker
             value={periodoInicio ? new Date(`${periodoInicio}T00:00:00`) : null}
             onChange={(date) => {
-              setPeriodoInicio(date ? date.toISOString().split("T")[0] : "");
+              setPeriodoInicio(toCivilDateString(date) ?? "");
               if (errors.periodoInicio) {
                 setErrors((prev) => ({ ...prev, periodoInicio: "" }));
               }
@@ -103,7 +104,7 @@ export default function MemoriaForm() {
           <DatePicker
             value={periodoFin ? new Date(`${periodoFin}T00:00:00`) : null}
             onChange={(date) => {
-              setPeriodoFin(date ? date.toISOString().split("T")[0] : "");
+              setPeriodoFin(toCivilDateString(date) ?? "");
               if (errors.periodoFin) {
                 setErrors((prev) => ({ ...prev, periodoFin: "" }));
               }

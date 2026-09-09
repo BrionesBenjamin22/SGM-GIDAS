@@ -18,6 +18,7 @@ import {
 } from "@/modules/produccion/services/documentacionServices";
 import { getAutores, createAutor } from "@/modules/produccion/services/autoresService";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
+import { toCivilDateString } from "@/utils/dateTime";
 
 export default function DocumentacionForm() {
   const { id } = useParams<{ id: string }>();
@@ -310,7 +311,7 @@ export default function DocumentacionForm() {
             onChange={(dt) => {
               setData((prev) => ({
                 ...prev,
-                fecha: dt ? dt.toISOString().split("T")[0] : "",
+                fecha: toCivilDateString(dt) ?? "",
               }));
               if (dt) clearError("fecha");
             }}

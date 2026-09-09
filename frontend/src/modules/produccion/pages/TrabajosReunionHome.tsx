@@ -24,6 +24,7 @@ import {
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
+import { getCivilYear } from "@/utils/dateTime";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -116,7 +117,7 @@ export default function TrabajosReunionLanding() {
 
       const matchAnio =
         !filters.anio ||
-        new Date(t.fecha_inicio).getFullYear() === Number(filters.anio);
+        getCivilYear(t.fecha_inicio) === Number(filters.anio);
 
       return (
         matchSearch &&

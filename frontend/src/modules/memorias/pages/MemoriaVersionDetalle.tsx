@@ -33,7 +33,7 @@ import {
   updatePlanificacion,
   type PlanificacionGrupo,
 } from "@/modules/grupo/services/planificacionGrupoServices";
-import { formatFecha } from "@/utils/formatFecha";
+import { formatFecha, getCivilYear } from "@/utils/dateTime";
 
 type SnapshotSection = {
   key: string;
@@ -162,7 +162,7 @@ const sections: SnapshotSection[] = [
 ];
 
 function buildMemoriaLabel(memoria: Memoria | null | undefined) {
-  const year = memoria?.periodo_fin ? new Date(memoria.periodo_fin).getFullYear() : "";
+  const year = getCivilYear(memoria?.periodo_fin) ?? "";
   return year ? `Memoria ${year}` : "Memoria";
 }
 
@@ -245,9 +245,8 @@ export default function MemoriaVersionDetalle() {
   const sectionsWithItems = sectionData.filter((section) => section.items.length > 0);
   const numeroVersionMemoria = versionActual?.numero_version ?? memoriaVersionId;
   const puedeExportarExcel = versionCerrada && (isAdmin() || isGestor());
-  const anioPrograma = memoria?.periodo_fin
-    ? new Date(`${memoria.periodo_fin}T00:00:00`).getFullYear() + 1
-    : undefined;
+  const anioFinMemoria = getCivilYear(memoria?.periodo_fin);
+  const anioPrograma = anioFinMemoria ? anioFinMemoria + 1 : undefined;
   const puedeEditarPrograma = versionCerrada && canEditRecords();
 
   const { data: planificacionesPage, isLoading: isLoadingPlanificaciones } = useQuery({

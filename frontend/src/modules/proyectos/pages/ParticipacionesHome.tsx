@@ -14,6 +14,7 @@ import {
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
+import { getCivilYear } from "@/utils/dateTime";
 
 import {
   eliminarParticipacion,
@@ -123,7 +124,7 @@ export default function ParticipacionesHome() {
 
       const matchAnio =
         !filters.anio ||
-        new Date(p.fecha).getFullYear() === Number(filters.anio);
+        getCivilYear(p.fecha) === Number(filters.anio);
 
       return (
         matchSearch &&

@@ -9,7 +9,7 @@ import {
   getRegistroPropiedadById,
   type RegistroPropiedad,
 } from "@/modules/produccion/services/registrosPropiedadServices";
-import { formatFecha } from "@/utils/formatFecha";
+import { formatFecha, formatFechaHora } from "@/utils/dateTime";
 import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import { toTitleCase } from "@/utils/format";
@@ -64,11 +64,6 @@ export default function RegistrosPropiedadDetalle() {
   }
 
   const isDeleted = !!data.deleted_at;
-
-  const formatFechaHora = (fecha?: string | null) => {
-    if (!fecha) return "-";
-    return new Date(fecha).toLocaleString("es-AR");
-  };
 
   const formatHistorialValue = (item: { campo?: string }, value: unknown) => {
     if (value === null || value === undefined || value === "") {

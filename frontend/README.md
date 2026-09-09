@@ -60,6 +60,19 @@ Los componentes reutilizables globales permanecen en `src/components`, el layout
 global en `src/layouts`, el contexto de autenticacion en `src/context` y los
 estilos base en `src/styles`.
 
+## Contrato de fechas y horas
+
+- Las fechas civiles recibidas como `YYYY-MM-DD` se parsean con
+  `src/utils/dateTime.ts` en calendario local, sin convertirlas a UTC.
+- Los formularios generan payloads de fecha civil desde sus componentes locales;
+  no deben usar `toISOString()` para campos SQL `Date`.
+- Los timestamps de API deben incluir `Z` u otro offset. El frontend los convierte
+  a la zona local del navegador para su presentacion.
+- El parser de timestamps conserva compatibilidad con respuestas antiguas sin
+  zona interpretandolas como UTC, que es la semantica con la que fueron creadas.
+- Los filtros de anio usan `getCivilYear` para evitar que `01/01` se atribuya al
+  anio anterior en zonas horarias negativas.
+
 ## Variables de entorno
 
 El frontend usa variables publicas de Vite. Los archivos de referencia son:

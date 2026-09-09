@@ -17,6 +17,7 @@ import {
   type RegistroPropiedadPayload,
 } from "@/modules/produccion/services/registrosPropiedadServices";
 import { toTitleCase } from "@/utils/format";
+import { parseCivilDate, toCivilDateString } from "@/utils/dateTime";
 
 export default function RegistrosPropiedadForm() {
   const navigate = useNavigate();
@@ -263,11 +264,11 @@ export default function RegistrosPropiedadForm() {
 
         <Field label="Fecha de registro">
           <DatePicker
-            value={data.fecha_registro ? new Date(data.fecha_registro) : null}
+            value={parseCivilDate(data.fecha_registro)}
             onChange={(dt) => {
               setData({
                 ...data,
-                fecha_registro: dt ? dt.toISOString().split("T")[0] : "",
+                fecha_registro: toCivilDateString(dt) ?? "",
               });
               if (dt) clearError("fecha_registro");
             }}

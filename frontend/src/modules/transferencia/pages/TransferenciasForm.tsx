@@ -18,6 +18,7 @@ import {
 import type { Adoptante } from "@/modules/transferencia/services/adoptantesServices";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 import { useTiposContrato } from "@/modules/transferencia/hooks/useTransferencias";
+import { toCivilDateString } from "@/utils/dateTime";
 
 export default function TransferenciasForm() {
   const navigate = useNavigate();
@@ -356,7 +357,7 @@ export default function TransferenciasForm() {
             onChange={(dt) => {
               setData((prev) => ({
                 ...prev,
-                fechaInicio: dt ? dt.toISOString().split("T")[0] : "",
+                fechaInicio: toCivilDateString(dt) ?? "",
               }));
               if (dt) clearError("fechaInicio");
             }}
@@ -371,7 +372,7 @@ export default function TransferenciasForm() {
             onChange={(dt) => {
               setData((prev) => ({
                 ...prev,
-                fechaFin: dt ? dt.toISOString().split("T")[0] : "",
+                fechaFin: toCivilDateString(dt) ?? "",
               }));
               clearError("fechaFin");
             }}

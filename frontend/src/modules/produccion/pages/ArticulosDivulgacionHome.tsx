@@ -17,6 +17,7 @@ import {
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
+import { getCivilYear } from "@/utils/dateTime";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -97,7 +98,7 @@ export default function ArticulosDivulgacionHome() {
 
       const matchAnio =
         !filters.anio ||
-        new Date(a.fecha_publicacion).getFullYear() === Number(filters.anio);
+        getCivilYear(a.fecha_publicacion) === Number(filters.anio);
 
       return matchSearch && matchGrupo && matchAnio;
     });

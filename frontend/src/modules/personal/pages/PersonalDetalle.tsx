@@ -5,6 +5,7 @@ import { ChevronDown } from "lucide-react";
 import Button from "@/components/Button";
 import SuccessToast from "@/components/SuccessToast";
 import HistorialCambiosCard from "@/components/HistorialCambiosCard";
+import { formatFechaHora } from "@/utils/dateTime";
 import {
   getHistorialPersonalByRolAndId,
   getPersonalCompletoByRolAndId,
@@ -106,11 +107,6 @@ export default function PersonalDetalle() {
       .map((v) => v.nombre_apellido || v.nombre || v.titulo || "")
       .filter(Boolean)
       .join(", ");
-  };
-
-  const formatFechaHora = (fecha?: string | null) => {
-    if (!fecha) return "-";
-    return new Date(fecha).toLocaleString("es-AR");
   };
 
   const formatFecha = (fecha?: string | null) => {

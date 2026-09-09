@@ -20,6 +20,7 @@ import {
 } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
 import { getErrorMessage } from "@/lib/httpError";
+import { toCivilDateString } from "@/utils/dateTime";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -181,7 +182,8 @@ export default function ProyectosLanding() {
   };
 
   const confirmCerrar = async (fecha: Date) => {
-    const fechaFormateada = fecha.toISOString().split("T")[0];
+    const fechaFormateada = toCivilDateString(fecha);
+    if (!fechaFormateada) return;
 
     try {
       for (const id of selectedIds) {

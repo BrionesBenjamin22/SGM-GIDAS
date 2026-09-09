@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Button from "@/components/Button";
 import HistorialCambiosCard from "@/components/HistorialCambiosCard";
 import SuccessToast from "@/components/SuccessToast";
-import { formatFecha } from "@/utils/formatFecha";
+import { formatFecha, formatFechaHora } from "@/utils/dateTime";
 import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import {
   getHistorialTrabajoReunionById,
@@ -65,11 +65,6 @@ export default function TrabajoReunionDetalle() {
   }
 
   const isDeleted = !!data.deleted_at;
-
-  const formatFechaHora = (fecha?: string | null) => {
-    if (!fecha) return "-";
-    return new Date(fecha).toLocaleString("es-AR");
-  };
 
   const formatHistorialValue = (
     item: { campo?: string },

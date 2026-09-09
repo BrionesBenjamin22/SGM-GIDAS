@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/Button";
+import { formatFechaHora } from "@/utils/dateTime";
 import {
   Collapsible,
   CollapsibleContent,
@@ -30,11 +31,6 @@ type Props = {
     kind: "anterior" | "nuevo"
   ) => string;
 };
-
-function formatFechaHora(fecha?: string | null) {
-  if (!fecha) return "-";
-  return new Date(fecha).toLocaleString("es-AR");
-}
 
 function formatValor(valor: unknown) {
   if (valor === null || valor === undefined || valor === "") return "-";

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import Button from "@/components/Button";
 import HistorialCambiosCard from "@/components/HistorialCambiosCard";
+import { formatFechaHora } from "@/utils/dateTime";
 import SuccessToast from "@/components/SuccessToast";
 import {
   getDistincionById,
@@ -81,11 +82,6 @@ export default function DistincionesDetalle() {
     }
 
     return dateStr;
-  };
-
-  const formatFechaHora = (fecha?: string | null) => {
-    if (!fecha) return "-";
-    return new Date(fecha).toLocaleString("es-AR");
   };
 
   if (isLoading) return <p className="text-slate-500">Cargando...</p>;

@@ -23,6 +23,7 @@ import {
   vincularBecarios,
   vincularInvestigadores,
 } from "@/modules/proyectos/services/proyectosServices";
+import { parseCivilDate, toCivilDateString } from "@/utils/dateTime";
 
 export default function ProyectosForm() {
   const { id } = useParams<{ id: string }>();
@@ -82,12 +83,10 @@ export default function ProyectosForm() {
     );
 
     setFechaInicio(
-      initialData.fechaInicio ? new Date(initialData.fechaInicio) : null
+      parseCivilDate(initialData.fechaInicio)
     );
     setFechaFin(
-      initialData.fechaFinalizacion
-        ? new Date(initialData.fechaFinalizacion)
-        : null
+      parseCivilDate(initialData.fechaFinalizacion)
     );
 
     setTipoProyectoId(initialData.tipoProyectoId ?? null);
@@ -194,7 +193,8 @@ export default function ProyectosForm() {
           )
         : [];
 
-      const fechaDesvinculacion = new Date().toISOString().split("T")[0];
+      const fechaDesvinculacion = toCivilDateString(new Date());
+      if (!fechaDesvinculacion) return;
 
       if (investigadoresADesvincular.length > 0) {
         await desvincularInvestigadores(
@@ -334,9 +334,9 @@ export default function ProyectosForm() {
           ? Number(montoDestinado)
           : undefined,
       grupoUtnId: uct?.id ?? undefined,
-      fechaInicio: fechaInicio?.toISOString().split("T")[0],
+      fechaInicio: toCivilDateString(fechaInicio) ?? undefined,
       fechaFinalizacion: fechaFin
-        ? fechaFin.toISOString().split("T")[0]
+        ? toCivilDateString(fechaFin)
         : undefined,
       tipoProyectoId,
       fuenteFinanciamientoId: fuenteId ?? undefined,

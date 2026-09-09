@@ -19,6 +19,7 @@ import {
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
+import { getCivilYear } from "@/utils/dateTime";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -100,7 +101,7 @@ export default function TrabajosRevistasLanding() {
 
       const matchAnio =
         !filters.anio ||
-        new Date(t.fecha).getFullYear() === Number(filters.anio);
+        getCivilYear(t.fecha) === Number(filters.anio);
 
       return matchSearch && matchRevista && matchAnio;
     });

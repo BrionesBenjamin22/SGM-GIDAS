@@ -11,7 +11,7 @@ import {
 } from "@/modules/produccion/services/documentacionServices";
 import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
-import { formatFecha } from "@/utils/formatFecha";
+import { formatFecha, formatFechaHora } from "@/utils/dateTime";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,
@@ -71,11 +71,6 @@ export default function DocumentacionDetalle() {
   const autores = data.autores?.length
     ? data.autores.map((autor) => autor.nombre_apellido).join(", ")
     : "-";
-
-  const formatFechaHora = (fecha?: string | null) => {
-    if (!fecha) return "-";
-    return new Date(fecha).toLocaleString("es-AR");
-  };
 
   const tituloFormateado = formatTitulo(data.titulo);
   const isDeleted = !!data.deleted_at;

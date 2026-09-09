@@ -13,14 +13,7 @@ import {
   type Memoria,
   type MemoriaEstado,
 } from "@/modules/memorias/services/memoriasService";
-import { formatFecha } from "@/utils/formatFecha";
-
-const formatFechaHora = (fecha?: string | null) => {
-  if (!fecha) return "-";
-  const date = new Date(fecha);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString("es-AR");
-};
+import { formatFecha, formatFechaHora, getCivilYear } from "@/utils/dateTime";
 
 export default function MemoriaDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -129,7 +122,7 @@ export default function MemoriaDetalle() {
     return <p className="text-slate-500">No se encontró la memoria.</p>;
   }
 
-  const anioMemoria = new Date(`${memoria.periodo_fin}T00:00:00`).getFullYear();
+  const anioMemoria = getCivilYear(memoria.periodo_fin) ?? "-";
   const snapshotDisponible = versionActual.estado === "cerrada";
 
   return (

@@ -19,6 +19,7 @@ import {
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
+import { getCivilYear } from "@/utils/dateTime";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -76,7 +77,8 @@ export default function ErogacionesLanding() {
   const aniosDisponibles = useMemo(() => {
     const years = scopedList
       .filter((item) => item.fecha)
-      .map((item) => new Date(item.fecha).getFullYear());
+      .map((item) => getCivilYear(item.fecha))
+      .filter((year): year is number => year !== null);
 
     return [...new Set(years)].sort((a, b) => b - a);
   }, [scopedList]);
@@ -105,7 +107,7 @@ export default function ErogacionesLanding() {
 
       const matchAnio =
         !filters.anio ||
-        new Date(item.fecha).getFullYear().toString() === filters.anio;
+        getCivilYear(item.fecha)?.toString() === filters.anio;
 
       return (
         matchSearch &&

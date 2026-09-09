@@ -9,7 +9,7 @@ import {
   getHistorialEquipamientoById,
   type Equipamiento,
 } from "@/modules/recursos/services/equipamientoServices";
-import { formatFecha } from "@/utils/formatFecha";
+import { formatFecha, formatFechaHora } from "@/utils/dateTime";
 import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -67,11 +67,6 @@ export default function EquipamientoDetalle() {
   if (isError || !data) {
     return <p className="text-slate-500">No se encontró el equipamiento.</p>;
   }
-
-  const formatFechaHora = (fecha?: string | null) => {
-    if (!fecha) return "-";
-    return new Date(fecha).toLocaleString("es-AR");
-  };
 
   const isDeleted = !!data.deleted_at;
 

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import Button from "@/components/Button";
 import DatePicker from "@/components/Calendar";
+import { toCivilDateString } from "@/utils/dateTime";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
 import { getErrorMessage } from "@/lib/httpError";
@@ -324,7 +325,7 @@ export default function ErogacionesForm() {
             onChange={(dt) => {
               setData((prev) => ({
                 ...prev,
-                fecha: dt ? dt.toISOString().split("T")[0] : "",
+                fecha: toCivilDateString(dt) ?? "",
               }));
               if (dt) clearError("fecha");
             }}

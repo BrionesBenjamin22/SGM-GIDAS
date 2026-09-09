@@ -12,19 +12,12 @@ import {
   getMemorias,
   type Memoria,
 } from "@/modules/memorias/services/memoriasService";
-import { formatFecha } from "@/utils/formatFecha";
+import { formatFecha, formatFechaHora, getCivilYear } from "@/utils/dateTime";
 
 const ITEMS_PER_PAGE = 9;
 
-const formatFechaHora = (fecha?: string | null) => {
-  if (!fecha) return "-";
-  const date = new Date(fecha);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString("es-AR");
-};
-
 const buildTitle = (memoria: Memoria) =>
-  `Memoria ${new Date(`${memoria.periodo_fin}T00:00:00`).getFullYear()}`;
+  `Memoria ${getCivilYear(memoria.periodo_fin) ?? "-"}`;
 
 const renderEstadoBadge = (estado?: string, inactiva?: boolean) => {
   if (inactiva) {
@@ -288,7 +281,7 @@ export default function MemoriasHome() {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {paginatedItems.map((memoria) => {
-              const anioMemoria = new Date(`${memoria.periodo_fin}T00:00:00`).getFullYear();
+              const anioMemoria = getCivilYear(memoria.periodo_fin);
               const snapshotListo = memoria.version_actual?.estado === "cerrada";
 
               return (

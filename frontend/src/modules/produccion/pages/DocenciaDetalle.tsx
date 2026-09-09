@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import Button from "@/components/Button";
 import HistorialCambiosCard from "@/components/HistorialCambiosCard";
+import { formatFechaHora } from "@/utils/dateTime";
 import SuccessToast from "@/components/SuccessToast";
 import {
   getActividadDocenciaById,
@@ -68,11 +69,6 @@ export default function ActividadDocenciaDetalle() {
     const mes = String(date.getMonth() + 1).padStart(2, "0");
     const anio = date.getFullYear();
     return `${dia}/${mes}/${anio}`;
-  };
-
-  const formatFechaHora = (fecha?: string | null) => {
-    if (!fecha) return "-";
-    return new Date(fecha).toLocaleString("es-AR");
   };
 
   const investigadorNombre =

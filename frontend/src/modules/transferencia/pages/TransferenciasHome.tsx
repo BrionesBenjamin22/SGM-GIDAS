@@ -20,6 +20,7 @@ import {
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
+import { getCivilYear } from "@/utils/dateTime";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -115,7 +116,7 @@ export default function TransferenciasHome() {
       const fechaBase = item.fechaInicio || item.fechaFin || "";
       const matchAnio =
         !filters.anio ||
-        (fechaBase && new Date(fechaBase).getFullYear().toString() === filters.anio);
+        (fechaBase && getCivilYear(fechaBase)?.toString() === filters.anio);
 
       return (
         matchSearch &&
@@ -151,7 +152,8 @@ export default function TransferenciasHome() {
     const years = scopedList
       .map((item) => item.fechaInicio || item.fechaFin)
       .filter(Boolean)
-      .map((fecha) => new Date(fecha as string).getFullYear())
+      .map((fecha) => getCivilYear(fecha as string))
+      .filter((year): year is number => year !== null)
       .filter((year) => !Number.isNaN(year));
 
     return [...new Set(years)].sort((a, b) => b - a);
