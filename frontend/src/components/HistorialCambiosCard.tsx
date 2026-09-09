@@ -113,7 +113,7 @@ export default function HistorialCambiosCard({
           className="rounded-xl border border-slate-200 bg-white px-4 py-3"
         >
           <div className="space-y-1 text-sm text-slate-500">
-            <p className="font-medium text-slate-700">Ultima actualizacion</p>
+            <p className="font-medium text-slate-700">Última actualización</p>
             <p>
               <span className="font-medium text-slate-700">Fecha:</span>{" "}
               {formatFechaHora(item.fecha_cambio)}
@@ -207,7 +207,7 @@ export default function HistorialCambiosCard({
                   </Button>
 
                   <span className="text-sm text-slate-500">
-                    Pagina {page} de {totalPages}
+                    Página {page} de {totalPages}
                   </span>
 
                   <Button
