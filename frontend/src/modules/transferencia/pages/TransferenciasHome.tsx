@@ -207,7 +207,7 @@ export default function TransferenciasHome() {
       setErrorMessage(
         invalidItems.length === 1
           ? "La transferencia seleccionada ya fue eliminada."
-          : "Una o mas transferencias seleccionadas ya fueron eliminadas."
+          : "Una o más transferencias seleccionadas ya fueron eliminadas."
       );
       setShowError(true);
       return;
@@ -223,8 +223,8 @@ export default function TransferenciasHome() {
 
       setSuccessMessage(
         selectedActiveTransfers.length === 1
-          ? "Transferencia eliminada con exito."
-          : "Transferencias eliminadas con exito."
+          ? "Transferencia eliminada con éxito."
+          : "Transferencias eliminadas con éxito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -233,7 +233,7 @@ export default function TransferenciasHome() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 
@@ -253,7 +253,7 @@ export default function TransferenciasHome() {
       <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h2 className="text-2xl font-semibold leading-none text-slate-800 md:text-3xl">
-            Vinculacion socio-productiva
+            Vinculación socio-productiva
           </h2>
           <p className="mt-2 text-xs text-slate-500">
             {transferenciasFiltradas.length} de {scopedList.length} resultados
@@ -302,7 +302,7 @@ export default function TransferenciasHome() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por denominacion, actividad o demandante..."
+              placeholder="Buscar por denominación, actividad o demandante..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -378,7 +378,7 @@ export default function TransferenciasHome() {
           <p className="py-10 text-center text-slate-500">Cargando...</p>
         ) : isError ? (
           <p className="py-10 text-center text-slate-500">
-            Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente.
+            Lo sentimos, no pudimos recuperar la información. Intente nuevamente.
           </p>
         ) : transferenciasFiltradas.length === 0 ? (
           <p className="py-10 text-center text-slate-500">
@@ -428,7 +428,7 @@ export default function TransferenciasHome() {
               </Button>
 
               <span className="text-sm text-slate-500">
-                Pagina {currentPage} de {totalPages}
+                Página {currentPage} de {totalPages}
               </span>
 
               <Button
@@ -458,7 +458,7 @@ export default function TransferenciasHome() {
 
       <SuccessToast
         open={showSuccess}
-        message={successMessage || "Eliminado con exito."}
+        message={successMessage || "Eliminado con éxito."}
         onClose={() => setShowSuccess(false)}
       />
 
@@ -553,7 +553,7 @@ export default function TransferenciasHome() {
 
               <div>
                 <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
-                  Ano
+                  Año
                 </label>
                 <select
                   className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"

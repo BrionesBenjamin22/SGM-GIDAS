@@ -86,16 +86,16 @@ export default function TransferenciasForm() {
     }
 
     if (!data.denominacion.trim() || data.denominacion.trim().length < 3) {
-      newErrors.denominacion = "Debe ingresar una denominacion valida";
+      newErrors.denominacion = "Debe ingresar una denominación válida";
     }
 
     if (!data.demandante.trim() || data.demandante.trim().length < 3) {
-      newErrors.demandante = "Debe ingresar un demandante valido";
+      newErrors.demandante = "Debe ingresar un demandante válido";
     }
 
     if (!data.descripcionActividad.trim() || data.descripcionActividad.trim().length < 10) {
       newErrors.descripcionActividad =
-        "La descripcion debe tener al menos 10 caracteres";
+        "La descripción debe tener al menos 10 caracteres";
     }
 
     const monto = Number(data.monto);
@@ -212,8 +212,8 @@ export default function TransferenciasForm() {
         replace: true,
         state: {
           successMessage: isEdit
-            ? "Transferencia actualizada con exito."
-            : "Transferencia creada con exito.",
+            ? "Transferencia actualizada con éxito."
+            : "Transferencia creada con éxito.",
         },
       });
     },
@@ -235,7 +235,7 @@ export default function TransferenciasForm() {
   if (isTiposError || isTransferenciaError) {
     return (
       <p className="text-slate-500">
-        Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente.
+        Lo sentimos, no pudimos recuperar la información. Intente nuevamente.
       </p>
     );
   }
@@ -259,7 +259,7 @@ export default function TransferenciasForm() {
         }}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Numero de transferencia">
+        <Field label="Número de transferencia">
           <>
             <input
               type="number"
@@ -277,12 +277,12 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <Field label="Denominacion">
+        <Field label="Denominación">
           <>
             <input
               className={inputClass("denominacion")}
               value={data.denominacion}
-              placeholder="Ej: Convenio de asistencia tecnica"
+              placeholder="Ej: Convenio de asistencia técnica"
               onChange={(e) => {
                 setData((prev) => ({ ...prev, denominacion: e.target.value }));
                 if (e.target.value.trim()) clearError("denominacion");
@@ -311,7 +311,7 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <Field label="Descripcion de la actividad">
+        <Field label="Descripción de la actividad">
           <>
             <textarea
               rows={5}
