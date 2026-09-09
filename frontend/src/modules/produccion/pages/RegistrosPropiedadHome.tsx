@@ -198,7 +198,7 @@ export default function RegistrosPropiedadLanding() {
       setErrorMessage(
         invalidItems.length === 1
           ? "El registro seleccionado ya fue eliminado."
-          : "Uno o mas registros seleccionados ya fueron eliminados."
+          : "Uno o más registros seleccionados ya fueron eliminados."
       );
       setShowError(true);
       return;
@@ -214,8 +214,8 @@ export default function RegistrosPropiedadLanding() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Registro eliminado con exito."
-          : "Registros eliminados con exito."
+          ? "Registro eliminado con éxito."
+          : "Registros eliminados con éxito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -223,7 +223,7 @@ export default function RegistrosPropiedadLanding() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 

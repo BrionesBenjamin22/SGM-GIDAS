@@ -57,7 +57,7 @@ export default function ActividadDocenciaDetalle() {
 
   if (isLoading) return <p className="text-slate-500">Cargando...</p>;
   if (!data)
-    return <p className="text-slate-500">No se encontro la actividad.</p>;
+    return <p className="text-slate-500">No se encontró la actividad.</p>;
 
   const isDeleted = !!data.deleted_at;
 
@@ -106,7 +106,7 @@ export default function ActividadDocenciaDetalle() {
       return [
         record.grado_academico ? `Grado: ${record.grado_academico}` : null,
         record.fecha_inicio || record.fecha_fin
-          ? `Periodo: ${formatFecha(record.fecha_inicio)} - ${formatFecha(
+          ? `Período: ${formatFecha(record.fecha_inicio)} - ${formatFecha(
               record.fecha_fin
             )}`
           : null,
@@ -200,7 +200,7 @@ export default function ActividadDocenciaDetalle() {
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Institucion:</span>{" "}
+            <span className="font-medium text-slate-700">Institución:</span>{" "}
             {toTitleCase(data.institucion) || "-"}
           </p>
 
@@ -215,7 +215,7 @@ export default function ActividadDocenciaDetalle() {
 
       <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-slate-700">Auditoria</h3>
+          <h3 className="text-lg font-semibold text-slate-700">Auditoría</h3>
 
           <p className="mt-1 text-xs text-slate-500">
             {toTitleCase(data.curso) || "-"} - {toTitleCase(investigadorNombre) || "-"}
@@ -230,7 +230,7 @@ export default function ActividadDocenciaDetalle() {
 
           <p>
             <span className="font-medium text-slate-700">
-              Fecha de creacion:
+              Fecha de creación:
             </span>{" "}
             {formatFechaHora(data.created_at)}
           </p>
@@ -242,7 +242,7 @@ export default function ActividadDocenciaDetalle() {
 
           <p>
             <span className="font-medium text-slate-700">
-              Fecha de eliminacion:
+              Fecha de eliminación:
             </span>{" "}
             {formatFechaHora(data.deleted_at)}
           </p>

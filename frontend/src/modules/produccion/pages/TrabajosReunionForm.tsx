@@ -93,11 +93,11 @@ export default function TrabajoReunionForm() {
     const newErrors: Record<string, string> = {};
 
     if (!titulo.trim()) {
-      newErrors.titulo = "Debe ingresar titulo";
+      newErrors.titulo = "Debe ingresar título";
     }
 
     if (!nombreReunion.trim()) {
-      newErrors.nombreReunion = "Debe ingresar nombre de reunion";
+      newErrors.nombreReunion = "Debe ingresar nombre de reunión";
     }
 
     if (!procedencia.trim()) {
@@ -105,7 +105,7 @@ export default function TrabajoReunionForm() {
     }
 
     if (!tipoId) {
-      newErrors.tipoId = "Debe seleccionar tipo de reunion";
+      newErrors.tipoId = "Debe seleccionar tipo de reunión";
     }
 
     if (!fechaInicio) {
@@ -157,8 +157,8 @@ export default function TrabajoReunionForm() {
         replace: true,
         state: {
           successMessage: isEdit
-            ? "Trabajo actualizado con exito."
-            : "Trabajo creado con exito.",
+            ? "Trabajo actualizado con éxito."
+            : "Trabajo creado con éxito.",
         },
       });
     },
@@ -197,7 +197,7 @@ export default function TrabajoReunionForm() {
       await qc.invalidateQueries({ queryKey: ["trabajo-reunion", Number(id)] });
       await qc.invalidateQueries({ queryKey: ["trabajo-reunion-historial", Number(id)] });
 
-      setSuccessMessage("Investigador desvinculado con exito.");
+      setSuccessMessage("Investigador desvinculado con éxito.");
       setShowSuccess(true);
     },
     onError: (error) => {
@@ -205,7 +205,7 @@ export default function TrabajoReunionForm() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
       setShowError(true);
@@ -286,12 +286,12 @@ export default function TrabajoReunionForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Titulo del trabajo">
+        <Field label="Título del trabajo">
           <>
             <input
               className={inputClass("titulo")}
               value={titulo}
-              placeholder="Ej: Aplicacion de modelos predictivos en sistemas complejos"
+              placeholder="Ej: Aplicación de modelos predictivos en sistemas complejos"
               onChange={(e) => {
                 setTitulo(e.target.value);
                 if (e.target.value.trim()) clearError("titulo");
@@ -306,7 +306,7 @@ export default function TrabajoReunionForm() {
           </>
         </Field>
 
-        <Field label="Nombre de la reunion">
+        <Field label="Nombre de la reunión">
           <>
             <input
               className={inputClass("nombreReunion")}
@@ -350,7 +350,7 @@ export default function TrabajoReunionForm() {
           </>
         </Field>
 
-        <Field label="Tipo de reunion">
+        <Field label="Tipo de reunión">
           <>
             <select
               className={`${inputClass("tipoId")} ${

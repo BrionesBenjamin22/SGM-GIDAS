@@ -184,7 +184,7 @@ export default function DocumentacionHome() {
       setErrorMessage(
         invalidItems.length === 1
           ? "El documento seleccionado ya fue eliminado."
-          : "Uno o mas documentos seleccionados ya fueron eliminados."
+          : "Uno o más documentos seleccionados ya fueron eliminados."
       );
       setShowError(true);
       return;
@@ -200,8 +200,8 @@ export default function DocumentacionHome() {
 
       setSuccessMessage(
         selectedActiveDocuments.length === 1
-          ? "Documentacion eliminada con exito."
-          : "Documentacion eliminada con exito."
+          ? "Documentación eliminada con éxito."
+          : "Documentación eliminada con éxito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -209,7 +209,7 @@ export default function DocumentacionHome() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 
@@ -222,7 +222,7 @@ export default function DocumentacionHome() {
       <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h2 className="text-2xl font-semibold leading-none text-slate-800 md:text-3xl">
-            Documentacion
+            Documentación
           </h2>
           <p className="mt-2 text-xs text-slate-500">
             {documentacionFiltrada.length} de {scopedList.length} resultados
@@ -271,7 +271,7 @@ export default function DocumentacionHome() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por titulo, autor, editorial o ano..."
+              placeholder="Buscar por título, autor, editorial o año..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -349,7 +349,7 @@ export default function DocumentacionHome() {
           <p className="py-10 text-center text-slate-500">Error al cargar.</p>
         ) : documentacionFiltrada.length === 0 ? (
           <p className="py-10 text-center text-slate-500">
-            No hay documentacion registrada.
+            No hay documentación registrada.
           </p>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -362,7 +362,7 @@ export default function DocumentacionHome() {
                   const autores = x.autores?.length
                     ? x.autores.map((autor) => autor.nombre_apellido).join(", ")
                     : "Sin autores";
-                  return `Autores: ${autores} · Ano: ${x.anio ?? "-"}`;
+                  return `Autores: ${autores} · Año: ${x.anio ?? "-"}`;
                 }}
                 badge={(x) => (x.deleted_at ? "INACTIVA" : "ACTIVA")}
                 selectable={puedeEliminar && selectMode}
@@ -394,7 +394,7 @@ export default function DocumentacionHome() {
               </Button>
 
               <span className="text-sm text-slate-500">
-                Pagina {currentPage} de {totalPages}
+                Página {currentPage} de {totalPages}
               </span>
 
               <Button
@@ -413,7 +413,7 @@ export default function DocumentacionHome() {
 
       <ConfirmDialog
         open={showConfirm}
-        title="Eliminar documentacion"
+        title="Eliminar documentación"
         message="Eliminar los siguientes documentos?"
         items={selectedActiveDocuments.map((item) => formatTitulo(item.titulo))}
         onCancel={cancelSelection}
@@ -422,7 +422,7 @@ export default function DocumentacionHome() {
 
       <SuccessToast
         open={showSuccess}
-        message={successMessage || "Eliminado con exito."}
+        message={successMessage || "Eliminado con éxito."}
         onClose={() => setShowSuccess(false)}
       />
 
@@ -483,7 +483,7 @@ export default function DocumentacionHome() {
 
               <div>
                 <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
-                  Ano
+                  Año
                 </label>
                 <select
                   className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"

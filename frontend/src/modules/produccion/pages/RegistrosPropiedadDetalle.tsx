@@ -60,7 +60,7 @@ export default function RegistrosPropiedadDetalle() {
 
   if (isLoading) return <p className="text-slate-500">Cargando...</p>;
   if (isError || !data) {
-    return <p className="text-slate-500">No se encontro el registro.</p>;
+    return <p className="text-slate-500">No se encontró el registro.</p>;
   }
 
   const isDeleted = !!data.deleted_at;
@@ -133,7 +133,7 @@ export default function RegistrosPropiedadDetalle() {
           <div className="space-y-2 text-sm text-slate-500 md:text-base">
             <p>
               <span className="font-medium text-slate-700">
-                Nombre del articulo:
+                Nombre del artículo:
               </span>{" "}
               {data.nombre_articulo || "-"}
             </p>
@@ -168,7 +168,7 @@ export default function RegistrosPropiedadDetalle() {
 
         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-700">Auditoria</h3>
+            <h3 className="text-lg font-semibold text-slate-700">Auditoría</h3>
             <p className="mt-1 text-xs text-slate-500">
               {data.nombre_articulo || "-"}
             </p>
@@ -182,7 +182,7 @@ export default function RegistrosPropiedadDetalle() {
 
             <p>
               <span className="font-medium text-slate-700">
-                Fecha de creacion:
+                Fecha de creación:
               </span>{" "}
               {formatFechaHora(data.created_at)}
             </p>
@@ -196,7 +196,7 @@ export default function RegistrosPropiedadDetalle() {
 
             <p>
               <span className="font-medium text-slate-700">
-                Fecha de eliminacion:
+                Fecha de eliminación:
               </span>{" "}
               {formatFechaHora(data.deleted_at)}
             </p>

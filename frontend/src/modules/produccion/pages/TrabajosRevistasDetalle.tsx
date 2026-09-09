@@ -162,7 +162,7 @@ export default function TrabajoRevistaDetalle() {
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Pais:</span>{" "}
+              <span className="font-medium text-slate-700">País:</span>{" "}
               {toTitleCase(data.pais) || "-"}
             </p>
 
@@ -185,7 +185,7 @@ export default function TrabajoRevistaDetalle() {
 
         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-700">Auditoria</h3>
+            <h3 className="text-lg font-semibold text-slate-700">Auditoría</h3>
             <p className="mt-1 text-xs text-slate-500">
               {toTitleCase(data.titulo_trabajo) || "-"}
             </p>
@@ -198,7 +198,7 @@ export default function TrabajoRevistaDetalle() {
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha de creacion:</span>{" "}
+              <span className="font-medium text-slate-700">Fecha de creación:</span>{" "}
               {formatFechaHora(data.created_at)}
             </p>
 
@@ -208,7 +208,7 @@ export default function TrabajoRevistaDetalle() {
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha de eliminacion:</span>{" "}
+              <span className="font-medium text-slate-700">Fecha de eliminación:</span>{" "}
               {formatFechaHora(data.deleted_at)}
             </p>
           </div>

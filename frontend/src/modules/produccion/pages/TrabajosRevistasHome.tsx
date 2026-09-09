@@ -183,7 +183,7 @@ export default function TrabajosRevistasLanding() {
       setErrorMessage(
         invalidItems.length === 1
           ? "El trabajo seleccionado ya fue eliminado."
-          : "Uno o mas trabajos seleccionados ya fueron eliminados."
+          : "Uno o más trabajos seleccionados ya fueron eliminados."
       );
       setShowError(true);
       return;
@@ -202,8 +202,8 @@ export default function TrabajosRevistasLanding() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Trabajo eliminado con exito."
-          : "Trabajos eliminados con exito."
+          ? "Trabajo eliminado con éxito."
+          : "Trabajos eliminados con éxito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -211,7 +211,7 @@ export default function TrabajosRevistasLanding() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 
@@ -273,7 +273,7 @@ export default function TrabajosRevistasLanding() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por titulo, revista o fecha..."
+              placeholder="Buscar por título, revista o fecha..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -404,7 +404,7 @@ export default function TrabajosRevistasLanding() {
                 </Button>
 
                 <span className="text-sm text-slate-500">
-                  Pagina {page} de {totalPages}
+                  Página {page} de {totalPages}
                 </span>
 
                 <Button

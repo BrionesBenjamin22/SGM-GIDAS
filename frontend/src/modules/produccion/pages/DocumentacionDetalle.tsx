@@ -65,7 +65,7 @@ export default function DocumentacionDetalle() {
 
   if (isLoading) return <p className="text-slate-500">Cargando...</p>;
   if (isError || !data) {
-    return <p className="text-slate-500">No se encontro el documento.</p>;
+    return <p className="text-slate-500">No se encontró el documento.</p>;
   }
 
   const autores = data.autores?.length
@@ -119,7 +119,7 @@ export default function DocumentacionDetalle() {
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Ano:</span> {data.anio || "-"}
+              <span className="font-medium text-slate-700">Año:</span> {data.anio || "-"}
             </p>
 
             <p>
@@ -131,7 +131,7 @@ export default function DocumentacionDetalle() {
 
         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-700">Auditoria</h3>
+            <h3 className="text-lg font-semibold text-slate-700">Auditoría</h3>
             <p className="mt-1 text-xs text-slate-500">{tituloFormateado}</p>
           </div>
 
@@ -142,7 +142,7 @@ export default function DocumentacionDetalle() {
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha de creacion:</span>{" "}
+              <span className="font-medium text-slate-700">Fecha de creación:</span>{" "}
               {formatFechaHora(data.created_at)}
             </p>
 
@@ -152,7 +152,7 @@ export default function DocumentacionDetalle() {
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha de eliminacion:</span>{" "}
+              <span className="font-medium text-slate-700">Fecha de eliminación:</span>{" "}
               {formatFechaHora(data.deleted_at)}
             </p>
           </div>

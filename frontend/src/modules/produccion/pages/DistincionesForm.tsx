@@ -70,11 +70,11 @@ export default function DistincionesForm() {
     }
 
     if (!descripcion.trim()) {
-      newErrors.descripcion = "Debe ingresar descripcion";
+      newErrors.descripcion = "Debe ingresar descripción";
     }
 
     if (!proyectoId) {
-      newErrors.proyecto = "Debe seleccionar un proyecto de investigacion";
+      newErrors.proyecto = "Debe seleccionar un proyecto de investigación";
     }
 
     setErrors(newErrors);
@@ -105,8 +105,8 @@ export default function DistincionesForm() {
         replace: true,
         state: {
           successMessage: isEdit
-            ? "Distincion actualizada con exito."
-            : "Distincion creada con exito.",
+            ? "Distinción actualizada con éxito."
+            : "Distinción creada con éxito.",
         },
       });
     },
@@ -172,7 +172,7 @@ export default function DistincionesForm() {
   };
 
   if (isEdit && isLoading) {
-    return <p className="text-slate-500">Cargando distincion...</p>;
+    return <p className="text-slate-500">Cargando distinción...</p>;
   }
 
   const inputClass = (field: string) =>
@@ -181,7 +181,7 @@ export default function DistincionesForm() {
   return (
     <section className="w-full">
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
-        {isEdit ? "Editar distincion" : "Nueva distincion recibida"}
+        {isEdit ? "Editar distinción" : "Nueva distinción recibida"}
       </h2>
 
       <form
@@ -201,7 +201,7 @@ export default function DistincionesForm() {
           />
         </Field>
 
-        <Field label="Descripcion">
+        <Field label="Descripción">
           <>
             <textarea
               className={`${inputClass("descripcion")} min-h-[80px]`}
@@ -218,7 +218,7 @@ export default function DistincionesForm() {
           </>
         </Field>
 
-        <Field label="Proyecto de investigacion">
+        <Field label="Proyecto de investigación">
           <>
             <select
               className={`${inputClass("proyecto")} ${

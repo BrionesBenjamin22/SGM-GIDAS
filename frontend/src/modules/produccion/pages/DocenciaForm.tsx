@@ -113,7 +113,7 @@ export default function FormDocenciaInvestigador() {
         navigate(`/docenciaInvestigador/${id}`, {
           replace: true,
           state: {
-            successMessage: "Actividad en docencia actualizada con exito.",
+            successMessage: "Actividad en docencia actualizada con éxito.",
           },
         });
         return;
@@ -121,7 +121,7 @@ export default function FormDocenciaInvestigador() {
 
       navigate("/docenciaInvestigador", {
         state: {
-          successMessage: "Actividad en docencia creada con exito.",
+          successMessage: "Actividad en docencia creada con éxito.",
         },
       });
     },
@@ -153,7 +153,7 @@ export default function FormDocenciaInvestigador() {
     }
     if (!curso.trim()) newErrors.curso = "Debe ingresar curso";
     if (!institucion.trim()) {
-      newErrors.institucion = "Debe ingresar institucion";
+      newErrors.institucion = "Debe ingresar institución";
     }
     if (!fechaInicio) {
       newErrors.fechaInicio = "Debe seleccionar fecha de inicio";
@@ -286,7 +286,7 @@ export default function FormDocenciaInvestigador() {
           </>
         </Field>
 
-        <Field label="Institucion">
+        <Field label="Institución">
           <>
             <input
               className={inputClass("institucion")}

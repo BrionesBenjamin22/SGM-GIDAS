@@ -175,7 +175,7 @@ export default function TrabajosReunionLanding() {
 
     if (item?.deleted_at) {
       setErrorMessage(
-        "No se puede eliminar un trabajo en reunion cientifica que ya fue eliminado."
+        "No se puede eliminar un trabajo en reunión científica que ya fue eliminado."
       );
       setShowError(true);
       return;
@@ -203,7 +203,7 @@ export default function TrabajosReunionLanding() {
       setErrorMessage(
         invalidItems.length === 1
           ? "El trabajo seleccionado ya fue eliminado."
-          : "Uno o mas trabajos seleccionados ya fueron eliminados."
+          : "Uno o más trabajos seleccionados ya fueron eliminados."
       );
       setShowError(true);
       return;
@@ -222,8 +222,8 @@ export default function TrabajosReunionLanding() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Trabajo eliminado con exito."
-          : "Trabajos eliminados con exito."
+          ? "Trabajo eliminado con éxito."
+          : "Trabajos eliminados con éxito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -231,7 +231,7 @@ export default function TrabajosReunionLanding() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 
@@ -293,7 +293,7 @@ export default function TrabajosReunionLanding() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por titulo, congreso, investigador..."
+              placeholder="Buscar por título, congreso, investigador..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -416,7 +416,7 @@ export default function TrabajosReunionLanding() {
                 </Button>
 
                 <span className="text-sm text-slate-500">
-                  Pagina {page} de {totalPages}
+                  Página {page} de {totalPages}
                 </span>
 
                 <Button
@@ -489,7 +489,7 @@ export default function TrabajosReunionLanding() {
 
               <div>
                 <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
-                  Tipo de reunion
+                  Tipo de reunión
                 </label>
                 <select
                   className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"

@@ -74,7 +74,7 @@ export default function RegistrosPropiedadForm() {
     const newErrors: Record<string, string> = {};
 
     if (!data.nombre_articulo.trim()) {
-      newErrors.nombre_articulo = "Debe ingresar el nombre del articulo";
+      newErrors.nombre_articulo = "Debe ingresar el nombre del artículo";
     }
 
     if (!data.organismo_registrante.trim()) {
@@ -112,7 +112,7 @@ export default function RegistrosPropiedadForm() {
         navigate(`/registros-propiedad/${savedId}`, {
           replace: true,
           state: {
-            successMessage: "Registro actualizado con exito.",
+            successMessage: "Registro actualizado con éxito.",
           },
         });
         return;
@@ -121,7 +121,7 @@ export default function RegistrosPropiedadForm() {
       navigate("/registros-propiedad", {
         replace: true,
         state: {
-          successMessage: "Registro creado con exito.",
+          successMessage: "Registro creado con éxito.",
         },
       });
     },
@@ -201,7 +201,7 @@ export default function RegistrosPropiedadForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Nombre del articulo">
+        <Field label="Nombre del artículo">
           <>
             <input
               className={inputClass("nombre_articulo")}

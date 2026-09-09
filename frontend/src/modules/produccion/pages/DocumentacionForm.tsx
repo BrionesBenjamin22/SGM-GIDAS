@@ -95,7 +95,7 @@ export default function DocumentacionForm() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!data.titulo.trim()) newErrors.titulo = "Debe ingresar titulo";
+    if (!data.titulo.trim()) newErrors.titulo = "Debe ingresar título";
     if (!data.editorial.trim()) newErrors.editorial = "Debe ingresar editorial";
     if (!data.fecha) newErrors.fecha = "Debe ingresar fecha";
 
@@ -220,8 +220,8 @@ export default function DocumentacionForm() {
         replace: true,
         state: {
           successMessage: isEdit
-            ? "Documentacion actualizada con exito."
-            : "Documentacion creada con exito.",
+            ? "Documentación actualizada con éxito."
+            : "Documentación creada con éxito.",
         },
       });
     },
@@ -244,7 +244,7 @@ export default function DocumentacionForm() {
   return (
     <section className="w-full">
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
-        {isEdit ? "Editar documentacion" : "Nueva documentacion"}
+        {isEdit ? "Editar documentación" : "Nueva documentación"}
       </h2>
 
       <form
@@ -257,7 +257,7 @@ export default function DocumentacionForm() {
         }}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Titulo">
+        <Field label="Título">
           <>
             <input
               className={inputClass("titulo")}

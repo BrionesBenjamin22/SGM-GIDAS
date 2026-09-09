@@ -60,16 +60,16 @@ export default function ArticulosDivulgacionForm() {
     const newErrors: Record<string, string> = {};
 
     if (!titulo.trim()) {
-      newErrors.titulo = "Debe ingresar titulo";
+      newErrors.titulo = "Debe ingresar título";
     } else if (titulo.trim().length < 5) {
-      newErrors.titulo = "El titulo debe tener al menos 5 caracteres";
+      newErrors.titulo = "El título debe tener al menos 5 caracteres";
     }
 
     if (!descripcion.trim()) {
-      newErrors.descripcion = "Debe ingresar descripcion";
+      newErrors.descripcion = "Debe ingresar descripción";
     } else if (descripcion.trim().length < 10) {
       newErrors.descripcion =
-        "La descripcion debe tener al menos 10 caracteres";
+        "La descripción debe tener al menos 10 caracteres";
     }
 
     if (!fechaPublicacion) {
@@ -106,8 +106,8 @@ export default function ArticulosDivulgacionForm() {
         replace: true,
         state: {
           successMessage: isEdit
-            ? "Articulo actualizado con exito."
-            : "Articulo creado con exito.",
+            ? "Artículo actualizado con éxito."
+            : "Artículo creado con éxito.",
         },
       });
     },
@@ -175,7 +175,7 @@ export default function ArticulosDivulgacionForm() {
   };
 
   if (isEdit && isLoading) {
-    return <p className="text-slate-500">Cargando articulo...</p>;
+    return <p className="text-slate-500">Cargando artículo...</p>;
   }
 
   const inputClass = (field: string) =>
@@ -185,8 +185,8 @@ export default function ArticulosDivulgacionForm() {
     <section className="w-full">
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
         {isEdit
-          ? "Editar articulo de divulgacion"
-          : "Nuevo articulo de divulgacion"}
+          ? "Editar artículo de divulgación"
+          : "Nuevo artículo de divulgación"}
       </h2>
 
       <form
@@ -194,7 +194,7 @@ export default function ArticulosDivulgacionForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Titulo">
+        <Field label="Título">
           <>
             <input
               type="text"
@@ -204,7 +204,7 @@ export default function ArticulosDivulgacionForm() {
                 setTitulo(e.target.value);
                 if (e.target.value.trim()) clearError("titulo");
               }}
-              placeholder="Ej: Impacto de la investigacion en la comunidad"
+              placeholder="Ej: Impacto de la investigación en la comunidad"
             />
             {errors.titulo && (
               <p className="mt-1 text-sm text-red-500">{errors.titulo}</p>
@@ -212,7 +212,7 @@ export default function ArticulosDivulgacionForm() {
           </>
         </Field>
 
-        <Field label="Descripcion">
+        <Field label="Descripción">
           <>
             <textarea
               className={`${inputClass("descripcion")} min-h-[100px]`}
@@ -221,7 +221,7 @@ export default function ArticulosDivulgacionForm() {
                 setDescripcion(e.target.value);
                 if (e.target.value.trim()) clearError("descripcion");
               }}
-              placeholder="Ej: Articulo orientado a la divulgacion de resultados cientificos para publico general"
+              placeholder="Ej: Artículo orientado a la divulgación de resultados científicos para público general"
             />
             {errors.descripcion && (
               <p className="mt-1 text-sm text-red-500">{errors.descripcion}</p>
@@ -229,7 +229,7 @@ export default function ArticulosDivulgacionForm() {
           </>
         </Field>
 
-        <Field label="Fecha de publicacion">
+        <Field label="Fecha de publicación">
           <Calendar
             value={fechaPublicacion}
             onChange={(date) => {

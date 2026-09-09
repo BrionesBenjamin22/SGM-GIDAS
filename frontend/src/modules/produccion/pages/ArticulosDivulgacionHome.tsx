@@ -150,7 +150,7 @@ export default function ArticulosDivulgacionHome() {
 
     if (item?.deleted_at) {
       setErrorMessage(
-        "No se puede eliminar un articulo de divulgacion que ya fue eliminado."
+        "No se puede eliminar un artículo de divulgación que ya fue eliminado."
       );
       setShowError(true);
       return;
@@ -179,8 +179,8 @@ export default function ArticulosDivulgacionHome() {
       setShowConfirm(false);
       setErrorMessage(
         invalidItems.length === 1
-          ? "El articulo seleccionado ya fue eliminado."
-          : "Uno o mas articulos seleccionados ya fueron eliminados."
+          ? "El artículo seleccionado ya fue eliminado."
+          : "Uno o más artículos seleccionados ya fueron eliminados."
       );
       setShowError(true);
       return;
@@ -197,8 +197,8 @@ export default function ArticulosDivulgacionHome() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Articulo de divulgacion eliminado con exito."
-          : "Articulos de divulgacion eliminados con exito."
+          ? "Artículo de divulgación eliminado con éxito."
+          : "Artículos de divulgación eliminados con éxito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -206,7 +206,7 @@ export default function ArticulosDivulgacionHome() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 
@@ -219,7 +219,7 @@ export default function ArticulosDivulgacionHome() {
       <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h2 className="text-2xl font-semibold leading-none text-slate-800 md:text-3xl">
-            Articulos de Divulgacion
+            Artículos de Divulgación
           </h2>
           <p className="mt-2 text-xs text-slate-500">
             {articulosFiltrados.length} de {scopedList.length} resultados
@@ -268,7 +268,7 @@ export default function ArticulosDivulgacionHome() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por titulo, descripcion o fecha..."
+              placeholder="Buscar por título, descripción o fecha..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -358,7 +358,7 @@ export default function ArticulosDivulgacionHome() {
           <p className="py-10 text-center text-slate-500">Error al cargar.</p>
         ) : articulosFiltrados.length === 0 ? (
           <p className="py-10 text-center text-slate-500">
-            No hay articulos de divulgacion registrados.
+            No hay artículos de divulgación registrados.
           </p>
         ) : (
           <>
@@ -397,7 +397,7 @@ export default function ArticulosDivulgacionHome() {
                 </Button>
 
                 <span className="text-sm text-slate-500">
-                  Pagina {page} de {totalPages}
+                  Página {page} de {totalPages}
                 </span>
 
                 <Button
@@ -417,8 +417,8 @@ export default function ArticulosDivulgacionHome() {
 
       <ConfirmDialog
         open={showConfirm}
-        title="Eliminar articulos de divulgacion"
-        message="¿Eliminar los siguientes articulos?"
+        title="Eliminar artículos de divulgación"
+        message="¿Eliminar los siguientes artículos?"
         items={selectedActiveItems.map((a) => a.titulo || "-")}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}

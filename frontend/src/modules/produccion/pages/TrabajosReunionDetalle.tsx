@@ -61,7 +61,7 @@ export default function TrabajoReunionDetalle() {
 
   if (isLoading) return <p className="text-slate-500">Cargando...</p>;
   if (isError || !data) {
-    return <p className="text-slate-500">Trabajo en reunion cientifica no encontrado.</p>;
+    return <p className="text-slate-500">Trabajo en reunión científica no encontrado.</p>;
   }
 
   const isDeleted = !!data.deleted_at;
@@ -147,12 +147,12 @@ export default function TrabajoReunionDetalle() {
         <article className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
           <div className="space-y-2 break-words text-sm text-slate-500 md:text-base">
             <p>
-              <span className="font-medium text-slate-700">Reunion:</span>{" "}
+              <span className="font-medium text-slate-700">Reunión:</span>{" "}
               {toTitleCase(data.nombre_reunion) || "-"}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Tipo de reunion:</span>{" "}
+              <span className="font-medium text-slate-700">Tipo de reunión:</span>{" "}
               {toTitleCase(data.tipo_reunion?.nombre) || "-"}
             </p>
 
@@ -175,7 +175,7 @@ export default function TrabajoReunionDetalle() {
 
         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-700">Auditoria</h3>
+            <h3 className="text-lg font-semibold text-slate-700">Auditoría</h3>
             <p className="mt-1 text-xs text-slate-500">{data.titulo_trabajo || "-"}</p>
           </div>
 
@@ -186,7 +186,7 @@ export default function TrabajoReunionDetalle() {
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha de creacion:</span>{" "}
+              <span className="font-medium text-slate-700">Fecha de creación:</span>{" "}
               {formatFechaHora(data.created_at)}
             </p>
 
@@ -196,7 +196,7 @@ export default function TrabajoReunionDetalle() {
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha de eliminacion:</span>{" "}
+              <span className="font-medium text-slate-700">Fecha de eliminación:</span>{" "}
               {formatFechaHora(data.deleted_at)}
             </p>
           </div>

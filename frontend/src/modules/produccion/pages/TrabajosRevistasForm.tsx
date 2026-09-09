@@ -87,7 +87,7 @@ export default function TrabajosRevistasForm() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!titulo.trim()) newErrors.titulo = "Debe ingresar titulo";
+    if (!titulo.trim()) newErrors.titulo = "Debe ingresar título";
 
     if (!nombreRevista.trim()) {
       newErrors.nombreRevista = "Debe ingresar nombre de revista";
@@ -102,7 +102,7 @@ export default function TrabajosRevistasForm() {
     }
 
     if (!pais.trim()) {
-      newErrors.pais = "Debe ingresar pais";
+      newErrors.pais = "Debe ingresar país";
     }
 
     if (!tipoId) {
@@ -168,8 +168,8 @@ export default function TrabajosRevistasForm() {
         replace: true,
         state: {
           successMessage: isEdit
-            ? "Trabajo actualizado con exito."
-            : "Trabajo creado con exito.",
+            ? "Trabajo actualizado con éxito."
+            : "Trabajo creado con éxito.",
         },
       });
     },
@@ -211,7 +211,7 @@ export default function TrabajosRevistasForm() {
       await qc.invalidateQueries({ queryKey: ["trabajo-revista", Number(id)] });
       await qc.invalidateQueries({ queryKey: ["trabajo-revista-historial", Number(id)] });
 
-      setSuccessMessage("Investigador desvinculado con exito.");
+      setSuccessMessage("Investigador desvinculado con éxito.");
       setShowSuccess(true);
     },
     onError: (error) => {
@@ -219,7 +219,7 @@ export default function TrabajosRevistasForm() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
       setShowError(true);
@@ -305,12 +305,12 @@ export default function TrabajosRevistasForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Titulo del trabajo">
+        <Field label="Título del trabajo">
           <>
             <input
               className={inputClass("titulo")}
               value={titulo}
-              placeholder="Ej: Modelo de optimizacion aplicado a sistemas distribuidos"
+              placeholder="Ej: Modelo de optimización aplicado a sistemas distribuidos"
               onChange={(e) => {
                 setTitulo(e.target.value);
                 if (e.target.value.trim()) clearError("titulo");
@@ -384,7 +384,7 @@ export default function TrabajosRevistasForm() {
           </>
         </Field>
 
-        <Field label="Pais">
+        <Field label="País">
           <>
             <input
               className={inputClass("pais")}

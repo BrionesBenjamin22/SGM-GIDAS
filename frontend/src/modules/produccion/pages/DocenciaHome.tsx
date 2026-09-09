@@ -221,7 +221,7 @@ export default function DocenciaLanding() {
       setErrorMessage(
         invalidItems.length === 1
           ? "La actividad seleccionada ya fue eliminada."
-          : "Una o mas actividades seleccionadas ya fueron eliminadas."
+          : "Una o más actividades seleccionadas ya fueron eliminadas."
       );
       setShowError(true);
       return;
@@ -237,8 +237,8 @@ export default function DocenciaLanding() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Actividad en docencia eliminada con exito."
-          : "Actividades en docencia eliminadas con exito."
+          ? "Actividad en docencia eliminada con éxito."
+          : "Actividades en docencia eliminadas con éxito."
       );
       setShowSuccess(true);
     } catch {
@@ -304,7 +304,7 @@ export default function DocenciaLanding() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por curso, institucion, investigador..."
+              placeholder="Buscar por curso, institución, investigador..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -515,7 +515,7 @@ export default function DocenciaLanding() {
 
               <div>
                 <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
-                  Institucion
+                  Institución
                 </label>
                 <select
                   className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"

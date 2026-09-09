@@ -148,7 +148,7 @@ export default function DistincionesHome() {
 
     if (item?.deleted_at) {
       setErrorMessage(
-        "No se puede eliminar una distincion que ya fue eliminada."
+        "No se puede eliminar una distinción que ya fue eliminada."
       );
       setShowError(true);
       return;
@@ -177,8 +177,8 @@ export default function DistincionesHome() {
       setShowConfirm(false);
       setErrorMessage(
         invalidItems.length === 1
-          ? "La distincion seleccionada ya fue eliminada."
-          : "Una o mas distinciones seleccionadas ya fueron eliminadas."
+          ? "La distinción seleccionada ya fue eliminada."
+          : "Una o más distinciones seleccionadas ya fueron eliminadas."
       );
       setShowError(true);
       return;
@@ -195,8 +195,8 @@ export default function DistincionesHome() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Distincion eliminada con exito."
-          : "Distinciones eliminadas con exito."
+          ? "Distinción eliminada con éxito."
+          : "Distinciones eliminadas con éxito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -204,7 +204,7 @@ export default function DistincionesHome() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 
@@ -266,7 +266,7 @@ export default function DistincionesHome() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por descripcion, proyecto o fecha..."
+              placeholder="Buscar por descripción, proyecto o fecha..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -397,7 +397,7 @@ export default function DistincionesHome() {
                 </Button>
 
                 <span className="text-sm text-slate-500">
-                  Pagina {page} de {totalPages}
+                  Página {page} de {totalPages}
                 </span>
 
                 <Button
