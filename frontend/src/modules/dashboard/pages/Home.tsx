@@ -93,7 +93,7 @@ export default function Home() {
     return (
       <div className="grid place-items-center min-h-[60vh] text-center space-y-4">
         <p className="text-slate-600">
-          Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente.
+          Lo sentimos, no pudimos recuperar la información. Intente nuevamente.
         </p>
       </div>
     );
@@ -527,7 +527,7 @@ export default function Home() {
               setErrorMessage(
                 getErrorMessage(
                   error,
-                  "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+                  "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
                 )
               );
               setShowError(true);
