@@ -32,7 +32,7 @@ import { getErrorMessage as getSafeErrorMessage } from "@/lib/httpError";
 type CatalogGroup =
   | "Institucionales / normativos"
   | "Operativos"
-  | "Financiamiento y administracion"
+  | "Financiamiento y administración"
   | "Propiedad intelectual";
 
 type CatalogTag =
@@ -86,7 +86,7 @@ type CatalogHistoryMap = Record<number, CatalogHistoryItem[]>;
 const CATALOG_GROUPS: CatalogGroup[] = [
   "Institucionales / normativos",
   "Operativos",
-  "Financiamiento y administracion",
+  "Financiamiento y administración",
   "Propiedad intelectual",
 ];
 
@@ -103,43 +103,43 @@ const CATALOGS: CatalogDef[] = [
     endpoint: "/tipo-personal/",
     description: "Clasifica personas dentro de la estructura del sistema.",
     helpText:
-      "Catalogo estructural. Sus valores clasifican personal; evite modificar nombres usados historicamente.",
+      "Catálogo estructural. Sus valores clasifican personal; evite modificar nombres usados históricamente.",
     group: "Institucionales / normativos",
     tags: ["Sensible", "Impacta memorias", "Institucional"],
   },
   {
-    label: "Nivel de Formacion",
+    label: "Nivel de Formación",
     endpoint: "/tipo-formacion/",
-    description: "Clasifica la formacion asociada a becarios.",
+    description: "Clasifica la formación asociada a becarios.",
     helpText:
-      "Catalogo institucional. Use la edicion solo para correcciones menores.",
+      "Catálogo institucional. Use la edición solo para correcciones menores.",
     group: "Institucionales / normativos",
     tags: ["Sensible", "Impacta memorias", "Institucional"],
   },
   {
-    label: "Categoria UTN",
+    label: "Categoría UTN",
     endpoint: "/categoria-utn/",
-    description: "Define categorias institucionales de investigadores.",
+    description: "Define categorías institucionales de investigadores.",
     helpText:
-      "Catalogo institucional sensible. Si cambia el significado, cree un nuevo valor y conserve el anterior.",
+      "Catálogo institucional sensible. Si cambia el significado, cree un nuevo valor y conserve el anterior.",
     group: "Institucionales / normativos",
     tags: ["Protegido", "Sensible", "Impacta memorias", "Institucional"],
   },
   {
-    label: "Tipo de Dedicacion",
+    label: "Tipo de Dedicación",
     endpoint: "/tipo-dedicacion/",
     description: "Define dedicaciones usadas por investigadores.",
     helpText:
-      "Catalogo estructural. Evite reutilizar valores para representar dedicaciones distintas.",
+      "Catálogo estructural. Evite reutilizar valores para representar dedicaciones distintas.",
     group: "Institucionales / normativos",
     tags: ["Sensible", "Impacta memorias", "Institucional"],
   },
   {
-    label: "Grado Academico",
+    label: "Grado Académico",
     endpoint: "/grado-academico",
-    description: "Define grados academicos usados en actividades docentes.",
+    description: "Define grados académicos usados en actividades docentes.",
     helpText:
-      "Catalogo institucional. Mantenga nombres estables para preservar visualizacion historica.",
+      "Catálogo institucional. Mantenga nombres estables para preservar visualización histórica.",
     group: "Institucionales / normativos",
     tags: ["Sensible", "Impacta memorias", "Institucional"],
   },
@@ -148,16 +148,16 @@ const CATALOGS: CatalogDef[] = [
     endpoint: "/programas-incentivos/",
     description: "Define programas asociados a investigadores.",
     helpText:
-      "Catalogo historico. No elimine programas anteriores si fueron usados; mantenga trazabilidad.",
+      "Catálogo histórico. No elimine programas anteriores si fueron usados; mantenga trazabilidad.",
     group: "Institucionales / normativos",
-    tags: ["Historico", "Sensible", "Impacta memorias"],
+    tags: ["Histórico", "Sensible", "Impacta memorias"],
   },
   {
     label: "Becas",
     endpoint: "/becas/",
     description: "Define becas y su fuente de financiamiento asociada.",
     helpText:
-      "Catalogo operativo. Revise duplicados antes de crear una nueva beca.",
+      "Catálogo operativo. Revise duplicados antes de crear una nueva beca.",
     group: "Operativos",
     tags: ["Editable", "Operativo"],
     nameField: "nombre_beca",
@@ -173,16 +173,16 @@ const CATALOGS: CatalogDef[] = [
     endpoint: "/cargos/",
     description: "Define cargos usados en autoridades y directivos del grupo.",
     helpText:
-      "Catalogo operativo. Evite renombrar cargos usados historicamente salvo correcciones menores.",
+      "Catálogo operativo. Evite renombrar cargos usados históricamente salvo correcciones menores.",
     group: "Operativos",
     tags: ["Editable", "Operativo"],
   },
   {
     label: "Tipo de Proyecto",
     endpoint: "/tipos-proyecto/",
-    description: "Clasifica proyectos de investigacion.",
+    description: "Clasifica proyectos de investigación.",
     helpText:
-      "Catalogo operativo con impacto en proyectos y memorias. Use nuevos valores ante cambios conceptuales.",
+      "Catálogo operativo con impacto en proyectos y memorias. Use nuevos valores ante cambios conceptuales.",
     group: "Operativos",
     tags: ["Editable", "Operativo", "Impacta memorias"],
   },
@@ -191,16 +191,16 @@ const CATALOGS: CatalogDef[] = [
     endpoint: "/rol-actividad",
     description: "Clasifica el rol ocupado en actividades docentes.",
     helpText:
-      "Catalogo operativo. Use la edicion para correcciones menores de nombre.",
+      "Catálogo operativo. Use la edición para correcciones menores de nombre.",
     group: "Operativos",
     tags: ["Editable", "Operativo", "Impacta memorias"],
   },
   {
-    label: "Tipo de Reunion Cientifica",
+    label: "Tipo de Reunión Científica",
     endpoint: "/tipos-reunion-cientifica/",
-    description: "Clasifica reuniones cientificas para trabajos presentados.",
+    description: "Clasifica reuniones científicas para trabajos presentados.",
     helpText:
-      "Catalogo operativo. Revise duplicados antes de crear una nueva clasificacion.",
+      "Catálogo operativo. Revise duplicados antes de crear una nueva clasificación.",
     group: "Operativos",
     tags: ["Editable", "Operativo", "Impacta memorias"],
   },
@@ -209,17 +209,17 @@ const CATALOGS: CatalogDef[] = [
     endpoint: "/fuente-financiamiento/",
     description: "Define el origen de fondos usado en becas, proyectos y erogaciones.",
     helpText:
-      "Catalogo operativo. Puede agregar nuevas fuentes cuando no existan; revise duplicados antes de crear.",
-    group: "Financiamiento y administracion",
+      "Catálogo operativo. Puede agregar nuevas fuentes cuando no existan; revise duplicados antes de crear.",
+    group: "Financiamiento y administración",
     tags: ["Editable", "Operativo", "Impacta memorias"],
   },
   {
-    label: "Tipo de Erogacion",
+    label: "Tipo de Erogación",
     endpoint: "/tipo-erogacion/",
     description: "Clasifica movimientos administrativos y erogaciones.",
     helpText:
-      "Catalogo administrativo. Evite modificar valores usados en registros contables historicos.",
-    group: "Financiamiento y administracion",
+      "Catálogo administrativo. Evite modificar valores usados en registros contables históricos.",
+    group: "Financiamiento y administración",
     tags: ["Sensible", "Operativo", "Impacta memorias"],
   },
   {
@@ -227,8 +227,8 @@ const CATALOGS: CatalogDef[] = [
     endpoint: "/tipo-contrato/",
     description: "Clasifica contratos usados en transferencias socio-productivas.",
     helpText:
-      "Catalogo operativo. Cambie nombres solo para correcciones menores.",
-    group: "Financiamiento y administracion",
+      "Catálogo operativo. Cambie nombres solo para correcciones menores.",
+    group: "Financiamiento y administración",
     tags: ["Editable", "Operativo", "Impacta memorias"],
   },
   {
@@ -236,7 +236,7 @@ const CATALOGS: CatalogDef[] = [
     endpoint: "/tipo-registro-propiedad/",
     description: "Clasifica registros de propiedad intelectual e industrial.",
     helpText:
-      "Catalogo sensible. Sus valores impactan reportes de produccion y memorias.",
+      "Catálogo sensible. Sus valores impactan reportes de producción y memorias.",
     group: "Propiedad intelectual",
     tags: ["Sensible", "Impacta memorias", "Institucional"],
   },
@@ -331,7 +331,7 @@ function formatHistoryItem(item: CatalogHistoryItem) {
   const user = item.usuario_nombre ?? "Sistema";
   if (item.campo === "accion_sistema") {
     const payload = item.valor_nuevo as { accion?: string } | null;
-    return `${date} - ${user} - ${payload?.accion ?? "accion registrada"}`;
+    return `${date} - ${user} - ${payload?.accion ?? "acción registrada"}`;
   }
 
   return `${date} - ${user} - ${item.campo ?? "campo"}: ${formatHistoryValue(
@@ -367,11 +367,11 @@ function mapBackendMessage(
   const cleanEntity = formatEntityName(entityName);
 
   if (message.includes("no encontrado")) {
-    return `No se encontro el registro de ${cleanEntity}. Es posible que haya sido eliminado o que ya no este disponible.`;
+    return `No se encontró el registro de ${cleanEntity}. Es posible que haya sido eliminado o que ya no esté disponible.`;
   }
 
   if (message.includes("es obligatorio") || message.includes("no puede estar vacio")) {
-    return `Revise la informacion ingresada para poder ${action} ${cleanEntity}.`;
+    return `Revise la información ingresada para poder ${action} ${cleanEntity}.`;
   }
 
   if (message.includes("ya existe")) {
@@ -387,7 +387,7 @@ function mapBackendMessage(
   }
 
   if (message.includes("inactivo") || message.includes("eliminado")) {
-    return `No se puede editar ${cleanEntity} porque esta inactivo.`;
+    return `No se puede editar ${cleanEntity} porque está inactivo.`;
   }
 
   return null;
@@ -502,7 +502,7 @@ function CatalogPanel({
       setErrorMessage("");
     } catch {
       setErrorMessage(
-        "Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente."
+        "Lo sentimos, no pudimos recuperar la información. Intente nuevamente."
       );
     } finally {
       setLoading(false);
@@ -618,11 +618,11 @@ function CatalogPanel({
     if (!canEdit) return;
     const item = items.find((current) => current.id === id);
     if (!item) {
-      setErrorMessage("No se encontro el registro que desea actualizar.");
+      setErrorMessage("No se encontró el registro que desea actualizar.");
       return;
     }
     if (item && isInactive(item)) {
-      const message = `No se puede editar el registro de ${def.label} porque esta inactivo.`;
+      const message = `No se puede editar el registro de ${def.label} porque está inactivo.`;
       setEditId(null);
       setErrorMessage(message);
       showToast(message, "error");
@@ -677,7 +677,7 @@ function CatalogPanel({
     if (!canDelete) return;
     if (!deleteTarget) return;
     if (isInactive(deleteTarget)) {
-      const message = `No se puede eliminar el registro de ${def.label} porque ya esta inactivo.`;
+      const message = `No se puede eliminar el registro de ${def.label} porque ya está inactivo.`;
       setDeleteTarget(null);
       setErrorMessage(message);
       showToast(message, "error");
@@ -711,7 +711,7 @@ function CatalogPanel({
           <p>{def.helpText}</p>
         </div>
         <p className="mt-2 text-xs text-slate-500">
-          Use la edicion solo para correcciones menores de nombre o descripcion.
+          Use la edición solo para correcciones menores de nombre o descripción.
           Si el significado del valor cambia, cree un nuevo valor y evite
           reutilizar el anterior.
         </p>
@@ -761,7 +761,7 @@ function CatalogPanel({
 
       {!loading && items.length > 0 && filteredItems.length === 0 && (
         <p className="text-sm text-slate-400 italic">
-          No hay valores que coincidan con la busqueda o el filtro seleccionado.
+          No hay valores que coincidan con la búsqueda o el filtro seleccionado.
         </p>
       )}
 
@@ -810,11 +810,11 @@ function CatalogPanel({
                   </Field>
 
                   {def.descField && (
-                    <Field label="Descripcion">
+                    <Field label="Descripción">
                       <input
                         className="input"
                         value={editDesc}
-                        placeholder="Descripcion"
+                        placeholder="Descripción"
                         onChange={(event) => setEditDesc(event.target.value)}
                       />
                     </Field>
@@ -913,7 +913,7 @@ function CatalogPanel({
                                 Anterior
                               </Button>
                               <span className="text-xs text-slate-500">
-                                Pagina {historyPageByItem[item.id] ?? 1} de{" "}
+                                Página {historyPageByItem[item.id] ?? 1} de{" "}
                                 {Math.ceil(
                                   (historyByItem[item.id] ?? []).length /
                                     HISTORY_ITEMS_PER_PAGE
@@ -1039,7 +1039,7 @@ function CatalogPanel({
                 </Button>
 
                 <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                  Pagina {currentPage} de {totalPages}
+                  Página {currentPage} de {totalPages}
                 </span>
 
                 <Button
@@ -1074,10 +1074,10 @@ function CatalogPanel({
           </Field>
 
           {def.descField && (
-            <Field label="Descripcion">
+            <Field label="Descripción">
               <input
                 className="input"
-                placeholder="Descripcion"
+                placeholder="Descripción"
                 value={newDesc}
                 onChange={(event) => setNewDesc(event.target.value)}
               />
@@ -1143,7 +1143,7 @@ function CatalogPanel({
         title="Eliminar registro"
         message={`Antes de eliminar "${
           deleteTarget ? getDisplayName(deleteTarget) : ""
-        }", verifique que no este asociado a registros historicos o memorias. Si esta en uso, el sistema puede bloquear la operacion.`}
+        }", verifique que no esté asociado a registros históricos o memorias. Si está en uso, el sistema puede bloquear la operación.`}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />
@@ -1208,7 +1208,7 @@ export default function CatalogosHome() {
       Todos: catalogMatchesSearchAndTag.length,
       "Institucionales / normativos": 0,
       Operativos: 0,
-      "Financiamiento y administracion": 0,
+      "Financiamiento y administración": 0,
       "Propiedad intelectual": 0,
     };
 
@@ -1238,7 +1238,7 @@ export default function CatalogosHome() {
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-6">
         <div>
           <h2 className="text-2xl font-semibold md:text-3xl">
-            Gestionar Catalogos
+            Gestionar Catálogos
           </h2>
           <p className="mt-1 text-sm text-slate-500">
             Organice valores reutilizados por formularios, reportes y memorias.
@@ -1369,10 +1369,10 @@ export default function CatalogosHome() {
                                 <Metric>usos no disponibles</Metric>
                                 {summary.latest ? (
                                   <Metric>
-                                    ultima modificacion {summary.latest}
+                                    última modificación {summary.latest}
                                   </Metric>
                                 ) : (
-                                  <Metric>ultima modificacion no disponible</Metric>
+                                  <Metric>última modificación no disponible</Metric>
                                 )}
                               </>
                             ) : (
@@ -1409,7 +1409,7 @@ export default function CatalogosHome() {
 
         {visibleCatalogs.length === 0 && (
           <div className="rounded-lg border border-slate-200 bg-white px-4 py-6 text-sm text-slate-500">
-            No hay catalogos que coincidan con la busqueda o el filtro
+            No hay catálogos que coincidan con la búsqueda o el filtro
             seleccionado.
           </div>
         )}
