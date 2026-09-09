@@ -1,7 +1,8 @@
 import unittest
-from datetime import date
+from datetime import date, timedelta
 from unittest.mock import patch
 
+import modules.models_registry  # noqa: F401
 from modules.recursos.models.equipamiento import Equipamiento
 from modules.recursos.services.equipamiento_service import EquipamientoService
 
@@ -90,6 +91,57 @@ class EquipamientoServiceTestCase(unittest.TestCase):
         self.assertIsNone(equipamiento.updated_by)
         self.mock_registrar_cambios.assert_not_called()
         self.mock_commit.assert_called_once()
+
+    def test_validar_fecha_acepta_limite_inferior(self):
+        self.assertEqual(
+            EquipamientoService._validar_fecha("2010-01-01"),
+            date(2010, 1, 1),
+        )
+
+    def test_validar_fecha_rechaza_fecha_anterior_a_2010(self):
+        with self.assertRaisesRegex(ValueError, "posterior al 01/01/2010"):
+            EquipamientoService._validar_fecha("1900-01-01")
+
+    def test_validar_fecha_acepta_fecha_actual(self):
+        hoy = date.today()
+        self.assertEqual(
+            EquipamientoService._validar_fecha(hoy.isoformat()),
+            hoy,
+        )
+
+    def test_validar_fecha_rechaza_fecha_futura(self):
+        manana = date.today() + timedelta(days=1)
+        with self.assertRaisesRegex(ValueError, "no puede ser futura"):
+            EquipamientoService._validar_fecha(manana.isoformat())
+
+    def test_update_rechaza_fecha_anterior_a_2010_sin_persistir(self):
+        self.mock_get_activo.return_value = self._make_equipamiento()
+
+        with self.assertRaisesRegex(ValueError, "posterior al 01/01/2010"):
+            EquipamientoService.update(
+                equipamiento_id=1,
+                data={"fecha_incorporacion": "1900-01-01"},
+                user_id=99,
+            )
+
+        self.mock_commit.assert_not_called()
+        self.mock_registrar_cambios.assert_not_called()
+
+    def test_create_rechaza_fecha_anterior_a_2010_sin_persistir(self):
+        with self.assertRaisesRegex(ValueError, "posterior al 01/01/2010"):
+            EquipamientoService.create(
+                data={
+                    "denominacion": "Microscopio",
+                    "descripcion_breve": "Equipo de laboratorio",
+                    "fecha_incorporacion": "1900-01-01",
+                    "monto_invertido": 1500,
+                    "grupo_utn_id": 2,
+                },
+                user_id=99,
+            )
+
+        self.mock_commit.assert_not_called()
+        self.mock_validar_grupo.assert_not_called()
 
 
 if __name__ == "__main__":

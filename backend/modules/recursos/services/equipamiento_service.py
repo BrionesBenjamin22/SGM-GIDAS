@@ -11,6 +11,8 @@ from modules.shared.exceptions import NotFoundError, ValidationError as ValueErr
 
 class EquipamientoService:
 
+    FECHA_INCORPORACION_MINIMA = date(2010, 1, 1)
+
     # ==========================================
     # HELPERS
     # ==========================================
@@ -53,6 +55,11 @@ class EquipamientoService:
 
         if fecha > date.today():
             raise ValueError("La fecha de incorporacion no puede ser futura.")
+
+        if fecha < EquipamientoService.FECHA_INCORPORACION_MINIMA:
+            raise ValueError(
+                "La fecha de incorporacion debe ser igual o posterior al 01/01/2010."
+            )
 
         return fecha
 

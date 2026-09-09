@@ -16,7 +16,11 @@ tipos explicitos. Las llamadas HTTP se concentran en services dedicados.
 
 - Las altas vuelven al home con `successMessage`.
 - Las ediciones vuelven al detalle y envian solo diferencias reales.
-- Equipamiento valida denominacion, descripcion, fecha y monto positivo finito.
+- Equipamiento valida denominacion, descripcion, monto positivo finito y una fecha
+  de incorporacion entre el `01/01/2010` y la fecha actual, ambos limites
+  inclusive. El formulario informa el rango y lo aplica al selector de fecha; la
+  funcion pura `utils/equipamientoValidation.ts` conserva la misma regla para el
+  envio.
 - Erogaciones valida numero entero positivo, catalogos, fecha e importes finitos no
   negativos; ingresos y egresos no pueden ser ambos cero.
 - En edicion de erogaciones solo se envian ingresos y egresos, conforme al backend.

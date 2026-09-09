@@ -13,6 +13,12 @@ import {
   type EquipamientoPayload,
 } from "@/modules/recursos/services/equipamientoServices";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
+import {
+  EQUIPAMIENTO_MIN_FECHA_INCORPORACION,
+  getLocalIsoDate,
+  validateFechaIncorporacion,
+} from "@/modules/recursos/utils/equipamientoValidation";
+import { parseCivilDate, toCivilDateString } from "@/utils/dateTime";
 
 export default function EquipamientoForm() {
   const { id } = useParams<{ id: string }>();
@@ -42,17 +48,11 @@ export default function EquipamientoForm() {
   useEffect(() => {
     if (!initial) return;
 
-    const formattedDate = initial.fecha_incorporacion
-      ? new Date(`${initial.fecha_incorporacion}T00:00:00`)
-          .toISOString()
-          .split("T")[0]
-      : "";
-
     setData({
       denominacion: initial.denominacion ?? "",
       descripcion_breve: initial.descripcion_breve ?? "",
       monto_invertido: initial.monto_invertido ?? undefined,
-      fecha_incorporacion: formattedDate,
+      fecha_incorporacion: initial.fecha_incorporacion ?? "",
     });
   }, [initial]);
 
@@ -75,9 +75,8 @@ export default function EquipamientoForm() {
       newErrors.descripcion = "La descripción es obligatoria";
     }
 
-    if (!data.fecha_incorporacion) {
-      newErrors.fecha_incorporacion = "La fecha es obligatoria";
-    }
+    const fechaError = validateFechaIncorporacion(data.fecha_incorporacion);
+    if (fechaError) newErrors.fecha_incorporacion = fechaError;
 
     if (
       data.monto_invertido === undefined ||
@@ -183,6 +182,8 @@ export default function EquipamientoForm() {
 
   if (isLoading) return <p className="text-slate-500">Cargando...</p>;
 
+  const maxFechaIncorporacion = getLocalIsoDate();
+
   const inputClass = (field: string) =>
     `input ${errors[field] ? "!border-red-500 !ring-2 !ring-red-500" : ""}`;
 
@@ -270,15 +271,20 @@ export default function EquipamientoForm() {
                 ? new Date(`${data.fecha_incorporacion}T00:00:00`)
                 : null
             }
+            minDate={parseCivilDate(EQUIPAMIENTO_MIN_FECHA_INCORPORACION) ?? undefined}
+            maxDate={parseCivilDate(maxFechaIncorporacion) ?? undefined}
             onChange={(dt) => {
               setData((d) => ({
                 ...d,
-                fecha_incorporacion: dt ? dt.toISOString().split("T")[0] : "",
+                fecha_incorporacion: toCivilDateString(dt) ?? "",
               }));
 
               if (dt) clearError("fecha_incorporacion");
             }}
-            helperText={errors.fecha_incorporacion ?? "DD/MM/AAAA"}
+            helperText={
+              errors.fecha_incorporacion ??
+              "Ingrese una fecha entre el 01/01/2010 y la fecha actual"
+            }
             className={inputClass("fecha_incorporacion")}
           />
         </Field>
