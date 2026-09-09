@@ -175,7 +175,7 @@ export default function UsuariosHome() {
     } else if (nombreUsuario.length < 3) {
       errors.nombre_usuario = "El nombre debe tener al menos 3 caracteres";
     } else if (!isValidUsername(nombreUsuario)) {
-      errors.nombre_usuario = "Solo letras, numeros, puntos, guiones y guiones bajos";
+      errors.nombre_usuario = "Solo letras, números, puntos, guiones y guiones bajos";
     }
 
     if (!mail) {
