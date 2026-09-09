@@ -180,7 +180,7 @@ export default function EquipamientoLanding() {
       setErrorMessage(
         invalidItems.length === 1
           ? "El equipamiento seleccionado ya fue eliminado."
-          : "Uno o mas equipamientos seleccionados ya fueron eliminados."
+          : "Uno o más equipamientos seleccionados ya fueron eliminados."
       );
       setShowError(true);
       return;
@@ -196,8 +196,8 @@ export default function EquipamientoLanding() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Equipamiento eliminado con exito."
-          : "Equipamientos eliminados con exito."
+          ? "Equipamiento eliminado con éxito."
+          : "Equipamientos eliminados con éxito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -205,7 +205,7 @@ export default function EquipamientoLanding() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 
@@ -267,7 +267,7 @@ export default function EquipamientoLanding() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por denominacion o descripcion..."
+              placeholder="Buscar por denominación o descripción..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -366,7 +366,7 @@ export default function EquipamientoLanding() {
                 key={e.id}
                 item={e}
                 title={(x) => x.denominacion || "-"}
-                subtitle={(x) => x.descripcion_breve || "Sin descripcion"}
+                subtitle={(x) => x.descripcion_breve || "Sin descripción"}
                 badge={(x) => (x.deleted_at ? "INACTIVO" : "ACTIVO")}
                 selectable={puedeEliminar && selectMode}
                 selectDisabled={!!e.deleted_at}
@@ -397,7 +397,7 @@ export default function EquipamientoLanding() {
               </Button>
 
               <span className="text-sm text-slate-500">
-                Pagina {currentPage} de {totalPages}
+                Página {currentPage} de {totalPages}
               </span>
 
               <Button
@@ -419,7 +419,7 @@ export default function EquipamientoLanding() {
       <ConfirmDialog
         open={showConfirm}
         title="Eliminar equipamiento"
-        message="¿Eliminar los siguientes items?"
+        message="¿Eliminar los siguientes ítems?"
         items={selectedActiveItems.map((e) => e.denominacion || "-")}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
@@ -427,7 +427,7 @@ export default function EquipamientoLanding() {
 
       <SuccessToast
         open={showSuccess}
-        message={successMessage || "Eliminado con exito."}
+        message={successMessage || "Eliminado con éxito."}
         onClose={() => setShowSuccess(false)}
       />
 
@@ -471,7 +471,7 @@ export default function EquipamientoLanding() {
 
               <div>
                 <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
-                  Monto minimo
+                  Monto mínimo
                 </label>
                 <input
                   type="number"
@@ -489,7 +489,7 @@ export default function EquipamientoLanding() {
 
               <div>
                 <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
-                  Monto maximo
+                  Monto máximo
                 </label>
                 <input
                   type="number"
@@ -507,7 +507,7 @@ export default function EquipamientoLanding() {
 
               <div>
                 <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
-                  Ano de incorporacion
+                  Año de incorporación
                 </label>
                 <select
                   className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"

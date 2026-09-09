@@ -68,11 +68,11 @@ export default function EquipamientoForm() {
     const newErrors: Record<string, string> = {};
 
     if (!data.denominacion.trim()) {
-      newErrors.denominacion = "La denominacion es obligatoria";
+      newErrors.denominacion = "La denominación es obligatoria";
     }
 
     if (!data.descripcion_breve.trim()) {
-      newErrors.descripcion = "La descripcion es obligatoria";
+      newErrors.descripcion = "La descripción es obligatoria";
     }
 
     if (!data.fecha_incorporacion) {
@@ -109,8 +109,8 @@ export default function EquipamientoForm() {
         replace: true,
         state: {
           successMessage: isEdit
-            ? "Equipamiento actualizado con exito."
-            : "Equipamiento creado con exito.",
+            ? "Equipamiento actualizado con éxito."
+            : "Equipamiento creado con éxito.",
         },
       });
     },
@@ -197,7 +197,7 @@ export default function EquipamientoForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Denominacion">
+        <Field label="Denominación">
           <>
             <input
               className={inputClass("denominacion")}
@@ -217,7 +217,7 @@ export default function EquipamientoForm() {
           </>
         </Field>
 
-        <Field label="Descripcion breve">
+        <Field label="Descripción breve">
           <>
             <input
               className={inputClass("descripcion")}
@@ -263,7 +263,7 @@ export default function EquipamientoForm() {
           </>
         </Field>
 
-        <Field label="Fecha de incorporacion">
+        <Field label="Fecha de incorporación">
           <DatePicker
             value={
               data.fecha_incorporacion

@@ -75,11 +75,11 @@ export default function ErogacionesForm() {
     const egresos = Number(data.egresos);
 
     if (!Number.isInteger(numeroErogacion) || numeroErogacion <= 0) {
-      newErrors.numero = "Debe ingresar numero de erogacion";
+      newErrors.numero = "Debe ingresar número de erogación";
     }
 
     if (!data.tipoErogacionId) {
-      newErrors.tipo = "Debe seleccionar tipo de erogacion";
+      newErrors.tipo = "Debe seleccionar tipo de erogación";
     }
 
     if (!data.fuenteFinanciamientoId) {
@@ -130,8 +130,8 @@ export default function ErogacionesForm() {
         replace: true,
         state: {
           successMessage: isEdit
-            ? "Erogacion actualizada con exito."
-            : "Erogacion creada con exito.",
+            ? "Erogación actualizada con éxito."
+            : "Erogación creada con éxito.",
         },
       });
     },
@@ -211,7 +211,7 @@ export default function ErogacionesForm() {
   };
 
   if (isEdit && loadingErogacion) {
-    return <p className="text-slate-500">Cargando erogacion...</p>;
+    return <p className="text-slate-500">Cargando erogación...</p>;
   }
 
   const inputClass = (field: string) =>
@@ -220,7 +220,7 @@ export default function ErogacionesForm() {
   return (
     <section className="w-full">
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
-        {isEdit ? "Editar erogacion" : "Nueva erogacion"}
+        {isEdit ? "Editar erogación" : "Nueva erogación"}
       </h2>
 
       <form
@@ -230,11 +230,11 @@ export default function ErogacionesForm() {
       >
         {isEdit && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            En edicion, el backend solo permite actualizar ingresos y egresos.
+            En edición, el backend solo permite actualizar ingresos y egresos.
           </div>
         )}
 
-        <Field label="Numero de erogacion">
+        <Field label="Número de erogación">
           <>
             <input
               type="number"
@@ -256,7 +256,7 @@ export default function ErogacionesForm() {
           </>
         </Field>
 
-        <Field label="Tipo de erogacion">
+        <Field label="Tipo de erogación">
           <>
             <select
               className={`${inputClass("tipo")} ${
@@ -273,7 +273,7 @@ export default function ErogacionesForm() {
               }}
             >
               <option value="" disabled>
-                Seleccionar tipo de erogacion
+                Seleccionar tipo de erogación
               </option>
               {tipos.map((tipo) => (
                 <option key={tipo.id} value={tipo.id}>
