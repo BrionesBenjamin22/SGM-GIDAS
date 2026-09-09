@@ -117,8 +117,8 @@ export default function VisitantesForm() {
         replace: true,
         state: {
           successMessage: isEdit
-            ? "Visitante actualizado con exito."
-            : "Visitante creado con exito.",
+            ? "Visitante actualizado con éxito."
+            : "Visitante creado con éxito.",
         },
       });
     },
@@ -212,7 +212,7 @@ export default function VisitantesForm() {
   return (
     <section className="w-full">
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
-        {isEdit ? "Editar visitante" : "Nueva visita academica"}
+        {isEdit ? "Editar visitante" : "Nueva visita académica"}
       </h2>
 
       <form

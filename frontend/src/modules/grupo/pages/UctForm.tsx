@@ -504,7 +504,7 @@ export default function UctForm() {
                         </p>
                         {directivoId && pendingFinalizations[directivoId] && (
                           <p className="text-amber-700">
-                            Finalizacion pendiente: {pendingFinalizations[directivoId]}
+                            Finalización pendiente: {pendingFinalizations[directivoId]}
                           </p>
                         )}
                       </div>

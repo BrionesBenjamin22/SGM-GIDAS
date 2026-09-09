@@ -182,7 +182,7 @@ export default function VisitantesHome() {
       setErrorMessage(
         invalidItems.length === 1
           ? "El visitante ya fue eliminado."
-          : "Uno o mas visitantes ya fueron eliminados."
+          : "Uno o más visitantes ya fueron eliminados."
       );
       setShowError(true);
       return;
@@ -199,8 +199,8 @@ export default function VisitantesHome() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Visitante eliminado con exito."
-          : "Visitantes eliminados con exito."
+          ? "Visitante eliminado con éxito."
+          : "Visitantes eliminados con éxito."
       );
       setShowSuccess(true);
     } catch (error: unknown) {
@@ -209,7 +209,7 @@ export default function VisitantesHome() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 
@@ -222,7 +222,7 @@ export default function VisitantesHome() {
       <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h2 className="text-2xl font-semibold leading-none text-slate-800 md:text-3xl">
-            Visitantes del pais y del extranjero
+            Visitantes del país y del extranjero
           </h2>
           <p className="mt-2 text-xs text-slate-500">
             {visitantesFiltrados.length} de {scopedList.length} resultados
@@ -402,7 +402,7 @@ export default function VisitantesHome() {
                 </Button>
 
                 <span className="text-sm text-slate-500">
-                  Pagina {page} de {totalPages}
+                  Página {page} de {totalPages}
                 </span>
 
                 <Button

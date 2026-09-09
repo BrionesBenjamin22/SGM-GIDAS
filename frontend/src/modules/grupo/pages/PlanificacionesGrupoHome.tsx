@@ -103,7 +103,7 @@ export default function PlanificacionGrupoLanding() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 
@@ -251,7 +251,7 @@ export default function PlanificacionGrupoLanding() {
             Anterior
           </Button>
           <span className="text-sm text-slate-600">
-            Pagina {page} de {meta.total_pages}
+            Página {page} de {meta.total_pages}
           </span>
           <Button
             variant="secondary"
