@@ -23,16 +23,16 @@ export default function MemoriaForm() {
     const nextErrors: Record<string, string> = {};
 
     if (!periodoInicio) {
-      nextErrors.periodoInicio = "Debe ingresar el inicio del periodo.";
+      nextErrors.periodoInicio = "Debe ingresar el inicio del período.";
     }
 
     if (!periodoFin) {
-      nextErrors.periodoFin = "Debe ingresar el fin del periodo.";
+      nextErrors.periodoFin = "Debe ingresar el fin del período.";
     }
 
     if (periodoInicio && periodoFin && periodoFin < periodoInicio) {
       nextErrors.periodoFin =
-        "La fecha de fin no puede ser anterior al inicio del periodo.";
+        "La fecha de fin no puede ser anterior al inicio del período.";
     }
 
     setErrors(nextErrors);
@@ -52,7 +52,7 @@ export default function MemoriaForm() {
 
       navigate("/memorias", {
         replace: true,
-        state: { successMessage: "Memoria creada con exito." },
+        state: { successMessage: "Memoria creada con éxito." },
       });
     },
     onError: (error) => {
@@ -85,7 +85,7 @@ export default function MemoriaForm() {
           await mutateAsync();
         }}
       >
-        <Field label="Periodo de inicio">
+        <Field label="Período de inicio">
           <DatePicker
             value={periodoInicio ? new Date(`${periodoInicio}T00:00:00`) : null}
             onChange={(date) => {
@@ -99,7 +99,7 @@ export default function MemoriaForm() {
           />
         </Field>
 
-        <Field label="Periodo de fin">
+        <Field label="Período de fin">
           <DatePicker
             value={periodoFin ? new Date(`${periodoFin}T00:00:00`) : null}
             onChange={(date) => {

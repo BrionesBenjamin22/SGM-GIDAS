@@ -146,7 +146,7 @@ export default function MemoriasHome() {
     mutationFn: (memoriaId: number) => deleteMemoria(memoriaId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["memorias"] });
-      setSuccessMessage("Memoria eliminada con exito.");
+      setSuccessMessage("Memoria eliminada con éxito.");
       setShowSuccess(true);
       setSelectedIds([]);
       setSelectMode(false);
@@ -156,7 +156,7 @@ export default function MemoriasHome() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 
@@ -233,7 +233,7 @@ export default function MemoriasHome() {
           <div className="relative w-full sm:w-72">
             <input
               type="text"
-              placeholder="Buscar por estado o periodo..."
+              placeholder="Buscar por estado o período..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
@@ -298,10 +298,10 @@ export default function MemoriasHome() {
                   title={() => `Memoria ${anioMemoria}`}
                   subtitle={(item) =>
                     [
-                      `Periodo: ${formatFecha(item.periodo_inicio)} - ${formatFecha(
+                      `Período: ${formatFecha(item.periodo_inicio)} - ${formatFecha(
                         item.periodo_fin
                       )}`,
-                      `Version actual: ${item.version_actual?.numero_version ?? "-"}`,
+                      `Versión actual: ${item.version_actual?.numero_version ?? "-"}`,
                       `Elementos: ${
                         snapshotListo
                           ? item.cantidad_elementos ?? 0
@@ -335,7 +335,7 @@ export default function MemoriasHome() {
               </Button>
 
               <span className="text-sm text-slate-500">
-                Pagina {currentPage} de {totalPages}
+                Página {currentPage} de {totalPages}
               </span>
 
               <Button
@@ -356,7 +356,7 @@ export default function MemoriasHome() {
       <ConfirmDialog
         open={showConfirm}
         title="Eliminar memoria"
-        message="Eliminar las memorias seleccionadas?"
+        message="¿Eliminar las memorias seleccionadas?"
         items={selectedMemorias.map((memoria) => buildTitle(memoria))}
         onCancel={cancelSelection}
         onConfirm={async () => {

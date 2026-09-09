@@ -91,7 +91,7 @@ const sections: SnapshotSection[] = [
   },
   {
     key: "documentacion-bibliografica",
-    label: "Documentacion bibliografica",
+    label: "Documentación bibliográfica",
     queryKey: "memoria-snapshot-documentacion",
     queryFn: getDocumentacionBibliograficaSnapshot,
     homePath: "/documentacion",
@@ -119,7 +119,7 @@ const sections: SnapshotSection[] = [
   },
   {
     key: "trabajos-reunion-cientifica",
-    label: "Trabajos en reunion cientifica",
+    label: "Trabajos en reunión científica",
     queryKey: "memoria-snapshot-reunion",
     queryFn: getTrabajosReunionCientificaSnapshot,
     homePath: "/trabajos-reunion",
@@ -147,14 +147,14 @@ const sections: SnapshotSection[] = [
   },
   {
     key: "articulos-divulgacion",
-    label: "Articulos de divulgacion",
+    label: "Artículos de divulgación",
     queryKey: "memoria-snapshot-articulos",
     queryFn: getArticulosDivulgacionSnapshot,
     homePath: "/articulos-divulgacion",
   },
   {
     key: "visitas-academicas",
-    label: "Visitas academicas",
+    label: "Visitas académicas",
     queryKey: "memoria-snapshot-visitas",
     queryFn: getVisitasAcademicasSnapshot,
     homePath: "/visitantes",
@@ -274,7 +274,7 @@ export default function MemoriaVersionDetalle() {
   const { mutate: descargarExcel, isPending: isExportingExcel } = useMutation({
     mutationFn: () => exportarExcelMemoria(memoriaId, memoriaVersionId),
     onSuccess: (result) => {
-      setMessage(`Excel generado con exito: ${result.filename}`);
+      setMessage(`Excel generado con éxito: ${result.filename}`);
       setShowSuccess(true);
     },
     onError: (error) => {
@@ -291,10 +291,10 @@ export default function MemoriaVersionDetalle() {
     mutationFn: async () => {
       const descripcion = programaDescripcion.trim();
       if (!descripcion) {
-        throw new Error("Debe ingresar una descripcion para el programa de actividades.");
+        throw new Error("Debe ingresar una descripción para el programa de actividades.");
       }
       if (!anioPrograma || !uct?.id) {
-        throw new Error("No se pudo resolver el anio o el grupo de investigacion.");
+        throw new Error("No se pudo resolver el año o el grupo de investigación.");
       }
 
       if (planificacionActual) {
@@ -317,8 +317,8 @@ export default function MemoriaVersionDetalle() {
       setProgramaError("");
       setMessage(
         planificacionActual
-          ? "Programa de actividades actualizado con exito."
-          : "Programa de actividades guardado con exito."
+          ? "Programa de actividades actualizado con éxito."
+          : "Programa de actividades guardado con éxito."
       );
       setShowSuccess(true);
     },
@@ -357,7 +357,7 @@ export default function MemoriaVersionDetalle() {
   const abrirProgramaActividades = () => {
     if (isLoadingUct) return;
     if (!uct?.id) {
-      setMessage("No hay un grupo de investigacion configurado para guardar la planificacion.");
+      setMessage("No hay un grupo de investigación configurado para guardar la planificación.");
       setShowError(true);
       return;
     }
@@ -366,7 +366,7 @@ export default function MemoriaVersionDetalle() {
 
   const handleGuardarPrograma = () => {
     if (!programaDescripcion.trim()) {
-      setProgramaError("Debe ingresar una descripcion para el programa de actividades.");
+      setProgramaError("Debe ingresar una descripción para el programa de actividades.");
       return;
     }
     guardarPrograma();
@@ -377,7 +377,7 @@ export default function MemoriaVersionDetalle() {
   }
 
   if (!memoria) {
-    return <p className="text-slate-500">No se encontro la memoria.</p>;
+    return <p className="text-slate-500">No se encontró la memoria.</p>;
   }
 
   return (
@@ -390,7 +390,7 @@ export default function MemoriaVersionDetalle() {
           <p className="mt-2 text-sm text-slate-500">
             Memoria {formatFecha(memoria.periodo_inicio)} - {formatFecha(memoria.periodo_fin)}
           </p>
-          <p className="mt-1 text-xs text-slate-500">Version {numeroVersionMemoria}</p>
+          <p className="mt-1 text-xs text-slate-500">Versión {numeroVersionMemoria}</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -426,7 +426,7 @@ export default function MemoriaVersionDetalle() {
       ) : !versionCerrada ? (
         <div className="flex flex-col gap-6">
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-            Esta version aun no fue cerrada. Los elementos registrados estaran
+            Esta versión aún no fue cerrada. Los elementos registrados estarán
             disponibles una vez generado el snapshot al cerrar la memoria.
           </div>
 
@@ -443,7 +443,7 @@ export default function MemoriaVersionDetalle() {
       ) : sectionsWithItems.length === 0 ? (
         <div className="flex flex-col gap-6">
           <div className="rounded-2xl border border-slate-200 bg-white/90 px-5 py-6 text-sm text-slate-500 shadow-sm">
-            Esta version no contiene elementos registrados.
+            Esta versión no contiene elementos registrados.
           </div>
 
           <div className="flex justify-start">
@@ -494,9 +494,9 @@ export default function MemoriaVersionDetalle() {
                       {section.items.length}
                     </p>
                     <p className="mt-2 text-sm text-slate-500">
-                      Esta seccion aporta {section.items.length} elemento
+                      Esta sección aporta {section.items.length} elemento
                       {section.items.length === 1 ? "" : "s"} al snapshot de esta
-                      version.
+                      versión.
                     </p>
                   </div>
                 </div>
@@ -507,7 +507,7 @@ export default function MemoriaVersionDetalle() {
                     onClick={() => handleNavigateToSection(section)}
                     className="mt-3 text-xs font-semibold uppercase tracking-wider text-slate-500 transition-colors hover:text-slate-700"
                   >
-                    Ver registros en el modulo
+                    Ver registros en el módulo
                   </button>
                 )}
               </article>
@@ -563,12 +563,12 @@ export default function MemoriaVersionDetalle() {
             </div>
 
             <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              <span className="font-medium text-slate-700">Periodo:</span>{" "}
+              <span className="font-medium text-slate-700">Período:</span>{" "}
               {anioPrograma ?? "-"}
             </div>
 
             <label className="block text-sm font-medium text-slate-700">
-              Descripcion
+              Descripción
             </label>
             <textarea
               rows={10}
@@ -578,7 +578,7 @@ export default function MemoriaVersionDetalle() {
                   : "border-slate-200 focus:border-slate-400"
               }`}
               value={programaDescripcion}
-              placeholder="Ej: objetivos, actividades previstas, lineas de trabajo, cronograma y metas del grupo para el proximo periodo."
+              placeholder="Ej: objetivos, actividades previstas, líneas de trabajo, cronograma y metas del grupo para el próximo período."
               onChange={(e) => {
                 setProgramaDescripcion(e.target.value);
                 if (programaError) setProgramaError("");
