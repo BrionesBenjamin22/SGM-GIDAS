@@ -143,7 +143,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
     }
 
     if (!tipoFormacionId) {
-      newErrors.tipoFormacion = "Debe seleccionar tipo de formacion";
+      newErrors.tipoFormacion = "Debe seleccionar tipo de formación";
     }
 
     if (!fechaAltaGrupo) {
@@ -238,7 +238,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
 
       navigate(`/personal/becario/${initialData.id}`, {
         replace: true,
-        state: { successMessage: "Actualizado con exito!" },
+        state: { successMessage: "¡Actualizado con éxito!" },
       });
 
       return;
@@ -251,7 +251,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
     qc.invalidateQueries({ queryKey: ["becarios"] });
 
     navigate("/personal", {
-      state: { successMessage: "Creado con exito!" },
+      state: { successMessage: "¡Creado con éxito!" },
     });
   };
 
@@ -299,7 +299,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
         </>
       </Field>
 
-      <Field label="Tipo de formacion">
+      <Field label="Tipo de formación">
         <>
           <select
             className={`input ${
@@ -313,7 +313,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
             }}
           >
             <option value="" disabled>
-              Seleccionar tipo de formacion
+              Seleccionar tipo de formación
             </option>
             {tiposFormacion.map((t) => (
               <option key={t.id} value={t.id}>
@@ -348,8 +348,8 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
           <h4 className="font-semibold text-slate-800">Becas</h4>
 
           <p className="text-sm text-slate-600">
-            Si el becario no percibe una beca, deja esta seccion sin seleccionar.
-            Actvala solo cuando quieras registrar una o mas becas.
+            Si el becario no percibe una beca, deja esta sección sin seleccionar.
+            Actívala solo cuando quieras registrar una o más becas.
           </p>
 
           <div className="flex items-center gap-2">

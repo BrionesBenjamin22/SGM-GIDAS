@@ -87,7 +87,7 @@ export default function FormPTAAProfesional({
 
     if (!requiereSeleccionTipoPersonal && !tipoProfesional?.id) {
       newErrors.tipoPersonal =
-        "No se encontro configurado el tipo de personal Profesional";
+        "No se encontró configurado el tipo de personal Profesional";
     }
 
     if (!fechaAltaGrupo) {
@@ -172,7 +172,7 @@ export default function FormPTAAProfesional({
         `/personal/${tipo === "PROFESIONAL" ? "profesional" : "personal"}/${initialData.id}`,
         {
           replace: true,
-          state: { successMessage: "Actualizado con exito!" },
+          state: { successMessage: "¡Actualizado con éxito!" },
         }
       );
 
@@ -187,7 +187,7 @@ export default function FormPTAAProfesional({
     });
 
     navigate("/personal", {
-      state: { successMessage: "Creado con exito!" },
+      state: { successMessage: "¡Creado con éxito!" },
     });
   };
 
@@ -202,7 +202,7 @@ export default function FormPTAAProfesional({
           role="alert"
           className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
         >
-          {errors.tipoPersonal}. Revise el catalogo de tipos de personal e intente nuevamente.
+          {errors.tipoPersonal}. Revise el catálogo de tipos de personal e intente nuevamente.
         </div>
       )}
 

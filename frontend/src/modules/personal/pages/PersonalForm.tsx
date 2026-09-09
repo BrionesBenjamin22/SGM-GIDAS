@@ -88,7 +88,7 @@ export default function PersonalForm() {
   if (isEdit && isError) {
     return (
       <p className="text-slate-500">
-        Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente.
+        Lo sentimos, no pudimos recuperar la información. Intente nuevamente.
       </p>
     );
   }

@@ -106,11 +106,11 @@ export default function FormInvestigador({
     }
 
     if (!dedicacionId) {
-      newErrors.dedicacion = "Debe seleccionar dedicacion";
+      newErrors.dedicacion = "Debe seleccionar dedicación";
     }
 
     if (!categoriaId) {
-      newErrors.categoria = "Debe seleccionar categoria UTN";
+      newErrors.categoria = "Debe seleccionar categoría UTN";
     }
 
     if (!programaId) {
@@ -175,7 +175,7 @@ export default function FormInvestigador({
 
       navigate(`/personal/investigador/${initialData.id}`, {
         replace: true,
-        state: { successMessage: "Actualizado con exito!" },
+        state: { successMessage: "¡Actualizado con éxito!" },
       });
 
       return;
@@ -185,7 +185,7 @@ export default function FormInvestigador({
     if (!created) return;
 
     navigate("/personal", {
-      state: { successMessage: "Creado con exito!" },
+      state: { successMessage: "¡Creado con éxito!" },
     });
   };
 
@@ -247,7 +247,7 @@ export default function FormInvestigador({
             }}
           >
             <option value="" disabled>
-              Seleccionar dedicacion
+              Seleccionar dedicación
             </option>
             {dedicaciones.map((d) => (
               <option key={d.id} value={d.id}>
@@ -261,7 +261,7 @@ export default function FormInvestigador({
         </>
       </Field>
 
-      <Field label="Categoria UTN">
+      <Field label="Categoría UTN">
         <>
           <select
             className={`input ${
@@ -275,7 +275,7 @@ export default function FormInvestigador({
             }}
           >
             <option value="" disabled>
-              Seleccionar categoria
+              Seleccionar categoría
             </option>
             {categorias.map((c) => (
               <option key={c.id} value={c.id}>

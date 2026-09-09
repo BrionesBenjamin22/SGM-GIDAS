@@ -199,7 +199,7 @@ export default function PersonalLanding() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
       setShowError(true);
@@ -313,7 +313,7 @@ export default function PersonalLanding() {
         {isLoading && <p className="text-slate-500">Cargando…</p>}
         {isError && (
           <p className="text-slate-500">
-            Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente.
+            Lo sentimos, no pudimos recuperar la información. Intente nuevamente.
           </p>
         )}
 
