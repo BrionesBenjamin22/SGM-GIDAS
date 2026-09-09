@@ -243,7 +243,7 @@ export default function ProyectosForm() {
         navigate(`/proyectos/${id}`, {
           replace: true,
           state: {
-            successMessage: "Proyecto actualizado con exito.",
+            successMessage: "Proyecto actualizado con éxito.",
           },
         });
         return;
@@ -251,7 +251,7 @@ export default function ProyectosForm() {
 
       navigate("/proyectos", {
         state: {
-          successMessage: "Proyecto creado con exito.",
+          successMessage: "Proyecto creado con éxito.",
         },
       });
     },
@@ -278,7 +278,7 @@ export default function ProyectosForm() {
     const newErrors: Record<string, string> = {};
 
     if (!codigoProyecto.trim()) {
-      newErrors.codigoProyecto = "Debe ingresar codigo de proyecto";
+      newErrors.codigoProyecto = "Debe ingresar código de proyecto";
     }
 
     if (!nombreProyecto.trim()) {
@@ -438,7 +438,7 @@ export default function ProyectosForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Codigo del proyecto">
+        <Field label="Código del proyecto">
           <>
             <input
               className={inputClass("codigoProyecto")}
@@ -478,12 +478,12 @@ export default function ProyectosForm() {
           </>
         </Field>
 
-        <Field label="Descripcion del proyecto">
+        <Field label="Descripción del proyecto">
           <textarea
             className="input min-h-[100px]"
             value={descripcionProyecto}
             onChange={(e) => setDescripcionProyecto(e.target.value)}
-            placeholder="Describe detalladamente los objetivos, metodologia y alcance del proyecto."
+            placeholder="Describe detalladamente los objetivos, metodología y alcance del proyecto."
             required
             disabled={proyectoCerrado}
           />

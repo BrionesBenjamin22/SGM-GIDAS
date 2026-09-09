@@ -184,7 +184,7 @@ export default function ParticipacionesHome() {
 
     if (item?.deleted_at) {
       setErrorMessage(
-        "No se puede eliminar una participacion que ya fue eliminada."
+        "No se puede eliminar una participación que ya fue eliminada."
       );
       setShowError(true);
       return;
@@ -213,8 +213,8 @@ export default function ParticipacionesHome() {
       setShowConfirm(false);
       setErrorMessage(
         invalidItems.length === 1
-          ? "La participacion seleccionada ya fue eliminada."
-          : "Una o mas participaciones seleccionadas ya fueron eliminadas."
+          ? "La participación seleccionada ya fue eliminada."
+          : "Una o más participaciones seleccionadas ya fueron eliminadas."
       );
       setShowError(true);
       return;
@@ -231,8 +231,8 @@ export default function ParticipacionesHome() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Participacion eliminada con exito."
-          : "Participaciones eliminadas con exito."
+          ? "Participación eliminada con éxito."
+          : "Participaciones eliminadas con éxito."
       );
       setShowSuccess(true);
     } catch (error: unknown) {
@@ -241,7 +241,7 @@ export default function ParticipacionesHome() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 
@@ -436,7 +436,7 @@ export default function ParticipacionesHome() {
                 </Button>
 
                 <span className="text-sm text-slate-500">
-                  Pagina {page} de {totalPages}
+                  Página {page} de {totalPages}
                 </span>
 
                 <Button
@@ -526,7 +526,7 @@ export default function ParticipacionesHome() {
 
               <div>
                 <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
-                  Forma de participacion
+                  Forma de participación
                 </label>
                 <input
                   className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
@@ -543,7 +543,7 @@ export default function ParticipacionesHome() {
 
               <div>
                 <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
-                  Ano
+                  Año
                 </label>
                 <input
                   type="number"

@@ -73,7 +73,7 @@ export default function ParticipacionesForm() {
     }
 
     if (!formaParticipacion) {
-      newErrors.formaParticipacion = "Debe seleccionar una forma de participacion";
+      newErrors.formaParticipacion = "Debe seleccionar una forma de participación";
     }
 
     if (!fecha) {
@@ -114,15 +114,15 @@ export default function ParticipacionesForm() {
         replace: true,
         state: {
           successMessage: isEdit
-            ? "Participacion actualizada con exito."
-            : "Participacion creada con exito.",
+            ? "Participación actualizada con éxito."
+            : "Participación creada con éxito.",
         },
       });
     },
     onError: (error) => {
       const defaultMessage = isEdit
-        ? "No se pudo actualizar la participacion."
-        : "No se pudo crear la participacion.";
+        ? "No se pudo actualizar la participación."
+        : "No se pudo crear la participación.";
 
       const backendMessage = getErrorMessage(error, defaultMessage);
       const lowerMessage = backendMessage.toLowerCase();
@@ -200,7 +200,7 @@ export default function ParticipacionesForm() {
   };
 
   if (isEdit && isLoading) {
-    return <p className="text-slate-500">Cargando participacion...</p>;
+    return <p className="text-slate-500">Cargando participación...</p>;
   }
 
   const inputClass = (field: string) =>
@@ -209,7 +209,7 @@ export default function ParticipacionesForm() {
   return (
     <section className="w-full">
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
-        {isEdit ? "Editar participacion" : "Nueva participacion relevante"}
+        {isEdit ? "Editar participación" : "Nueva participación relevante"}
       </h2>
 
       <form
@@ -256,7 +256,7 @@ export default function ParticipacionesForm() {
                 setNombreEvento(e.target.value);
                 if (e.target.value.trim()) clearError("nombreEvento");
               }}
-              placeholder="Ej: Congreso Argentino de Ingenieria"
+              placeholder="Ej: Congreso Argentino de Ingeniería"
             />
             {errors.nombreEvento && (
               <p className="mt-1 text-sm text-red-500">{errors.nombreEvento}</p>
@@ -264,7 +264,7 @@ export default function ParticipacionesForm() {
           </>
         </Field>
 
-        <Field label="Forma de participacion">
+        <Field label="Forma de participación">
           <>
             <select
               className={`${inputClass("formaParticipacion")} ${
@@ -277,7 +277,7 @@ export default function ParticipacionesForm() {
               }}
             >
               <option value="" disabled>
-                Seleccionar forma de participacion
+                Seleccionar forma de participación
               </option>
               {FORMAS_PARTICIPACION.map((f) => (
                 <option key={f.value} value={f.value}>

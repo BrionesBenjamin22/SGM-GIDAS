@@ -190,14 +190,14 @@ export default function ProyectosLanding() {
 
       await qc.invalidateQueries({ queryKey: ["proyectos"] });
       cancelSelection();
-      setSuccessMessage("Proyectos cerrados con exito");
+      setSuccessMessage("Proyectos cerrados con éxito");
       setShowSuccess(true);
     } catch (error: unknown) {
       setShowCerrarDialog(false);
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
     }
@@ -211,13 +211,13 @@ export default function ProyectosLanding() {
 
       await qc.invalidateQueries({ queryKey: ["proyectos"] });
       cancelSelection();
-      setSuccessMessage("Proyectos reabiertos con exito");
+      setSuccessMessage("Proyectos reabiertos con éxito");
       setShowSuccess(true);
     } catch (error: unknown) {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
     }
@@ -364,13 +364,13 @@ export default function ProyectosLanding() {
             <div className="flex gap-2">
               {selectedIds.length > 0 && haySeleccionablesActivos && puedeEliminar && (
                 <Button size="sm" onClick={() => setShowCerrarDialog(true)}>
-                  Cerrar seleccion
+                  Cerrar selección
                 </Button>
               )}
 
               {selectedIds.length > 0 && haySeleccionablesCerrados && puedeEliminar && (
                 <Button size="sm" onClick={handleReabrirSeleccion}>
-                  Reabrir seleccion
+                  Reabrir selección
                 </Button>
               )}
 
@@ -389,7 +389,7 @@ export default function ProyectosLanding() {
           <p className="py-10 text-center text-slate-500">Cargando...</p>
         ) : isError ? (
           <p className="py-10 text-center text-red-600">
-            Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente.
+            Lo sentimos, no pudimos recuperar la información. Intente nuevamente.
           </p>
         ) : proyectosFiltrados.length === 0 ? (
           <p className="py-10 text-center text-slate-500">
@@ -628,7 +628,7 @@ export default function ProyectosLanding() {
 
       <SuccessToast
         open={showSuccess}
-        message={successMessage || "Cambios aplicados con exito"}
+        message={successMessage || "Cambios aplicados con éxito"}
         onClose={() => setShowSuccess(false)}
       />
 
