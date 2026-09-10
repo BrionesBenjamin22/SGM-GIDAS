@@ -92,7 +92,7 @@ class ProyectoInvestigacion(db.Model, AuditMixin):
     __tablename__ = 'proyecto_investigacion'
 
     id = db.Column(db.Integer, primary_key=True)
-    codigo_proyecto = db.Column(db.Integer, nullable=False)
+    codigo_proyecto = db.Column(db.String(50), nullable=False)
     nombre_proyecto = db.Column(db.Text, nullable=False)
     descripcion_proyecto = db.Column(db.Text, nullable=False)
     fecha_inicio = db.Column(db.Date, nullable=False) 
@@ -206,7 +206,7 @@ class ProyectoInvestigacionMemoriaVersion(db.Model, AuditMixin):
         nullable=False
     )
 
-    codigo_proyecto = db.Column(db.Integer, nullable=False)
+    codigo_proyecto = db.Column(db.String(50), nullable=False)
     nombre_proyecto = db.Column(db.Text, nullable=False)
     descripcion_proyecto = db.Column(db.Text, nullable=False)
     fecha_inicio = db.Column(db.Date, nullable=False)

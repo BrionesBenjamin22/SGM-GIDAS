@@ -66,7 +66,7 @@ export type Proyecto = {
 
 export type ProyectoPayload = {
   id?: string;
-  codigoProyecto?: string | number;
+  codigoProyecto?: string;
   nombreProyecto?: string;
   fechaInicio?: string;
   fechaFinalizacion?: string | null;
@@ -91,7 +91,7 @@ type ProyectoApiResponse = {
   deleted_at?: string | null;
   activo?: boolean;
   cerrado?: boolean;
-  codigo_proyecto: string | number;
+  codigo_proyecto: string;
   nombre_proyecto: string;
   descripcion_proyecto?: string | null;
   dificultades_proyecto?: string | null;

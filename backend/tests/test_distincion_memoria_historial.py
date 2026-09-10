@@ -41,7 +41,7 @@ class DistincionMemoriaHistorialTestCase(unittest.TestCase):
             descripcion="Premio a la innovacion",
             proyecto_investigacion_id=8,
             proyecto_investigacion=SimpleNamespace(
-                codigo_proyecto=2026,
+                codigo_proyecto="LPSIEC1347",
                 nombre_proyecto="Sistema GIDAS"
             )
         )
@@ -64,7 +64,7 @@ class DistincionMemoriaHistorialTestCase(unittest.TestCase):
 
         self.assertEqual(len(snapshots), 1)
         self.assertEqual(snapshots[0].distincion_id, 4)
-        self.assertEqual(snapshots[0].proyecto_codigo, 2026)
+        self.assertEqual(snapshots[0].proyecto_codigo, "LPSIEC1347")
         self.assertEqual(snapshots[0].proyecto_nombre, "Sistema GIDAS")
         self.assertEqual(snapshots[0].created_by, 25)
         self.mock_add.assert_called()

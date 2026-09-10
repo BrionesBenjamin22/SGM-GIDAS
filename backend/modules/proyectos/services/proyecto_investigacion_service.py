@@ -1,5 +1,6 @@
 ﻿from datetime import datetime, date
 import builtins
+import re
 
 from extension import db
 from sqlalchemy import func, or_
@@ -21,6 +22,32 @@ from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_p
 
 
 class ProyectoInvestigacionService:
+
+    CODIGO_PROYECTO_MAX_LENGTH = 50
+    CODIGO_PROYECTO_PATTERN = re.compile(r"^[A-Za-z0-9]+$")
+
+    @staticmethod
+    def _validar_codigo_proyecto(valor):
+        campo = "codigo_proyecto"
+
+        if not isinstance(valor, str):
+            mensaje = "El código del proyecto debe ser una cadena alfanumérica."
+            raise ValueError(mensaje, details={"fields": {campo: mensaje}})
+
+        codigo = valor.strip()
+        if not codigo:
+            mensaje = "El código del proyecto es obligatorio."
+            raise ValueError(mensaje, details={"fields": {campo: mensaje}})
+
+        if len(codigo) > ProyectoInvestigacionService.CODIGO_PROYECTO_MAX_LENGTH:
+            mensaje = "El código del proyecto no puede superar los 50 caracteres."
+            raise ValueError(mensaje, details={"fields": {campo: mensaje}})
+
+        if not ProyectoInvestigacionService.CODIGO_PROYECTO_PATTERN.fullmatch(codigo):
+            mensaje = "El código del proyecto solo puede contener letras y números."
+            raise ValueError(mensaje, details={"fields": {campo: mensaje}})
+
+        return codigo
 
     @staticmethod
     def _validar_id(valor, campo: str):
@@ -220,9 +247,9 @@ class ProyectoInvestigacionService:
     # =========================
     @staticmethod
     def create(data: dict, user_id: int):
-
-        if not isinstance(data.get("codigo_proyecto"), int):
-            raise ValueError("codigo_proyecto debe ser entero")
+        codigo_proyecto = ProyectoInvestigacionService._validar_codigo_proyecto(
+            data.get("codigo_proyecto")
+        )
 
         fecha_inicio = datetime.strptime(
             data["fecha_inicio"], "%Y-%m-%d"
@@ -255,7 +282,7 @@ class ProyectoInvestigacionService:
                 raise ValueError("Tipo de proyecto inválido")
 
         proyecto = ProyectoInvestigacion(
-            codigo_proyecto=data["codigo_proyecto"],
+            codigo_proyecto=codigo_proyecto,
             nombre_proyecto=data["nombre_proyecto"],
             descripcion_proyecto=data["descripcion_proyecto"],
             fecha_inicio=fecha_inicio,
@@ -297,8 +324,19 @@ class ProyectoInvestigacionService:
             data.get("fecha_fin")
         )
 
+        if "codigo_proyecto" in data:
+            codigo_proyecto = ProyectoInvestigacionService._validar_codigo_proyecto(
+                data["codigo_proyecto"]
+            )
+            cambio = AuditoriaService.construir_cambio(
+                proyecto.codigo_proyecto,
+                codigo_proyecto
+            )
+            if cambio:
+                cambios["codigo_proyecto"] = cambio
+                proyecto.codigo_proyecto = codigo_proyecto
+
         for field in [
-            "codigo_proyecto",
             "nombre_proyecto",
             "descripcion_proyecto",
             "dificultades_proyecto",

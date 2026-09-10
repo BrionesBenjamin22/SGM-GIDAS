@@ -37,7 +37,7 @@ class ProyectoMemoriaHistorialTestCase(unittest.TestCase):
         )
         proyecto = SimpleNamespace(
             id=4,
-            codigo_proyecto=1001,
+            codigo_proyecto="LPSIEC1347",
             nombre_proyecto="Proyecto A",
             descripcion_proyecto="Descripcion",
             fecha_inicio=date(2026, 1, 1),
@@ -70,6 +70,7 @@ class ProyectoMemoriaHistorialTestCase(unittest.TestCase):
 
         self.assertEqual(len(snapshots), 1)
         self.assertEqual(snapshots[0].proyecto_investigacion_id, 4)
+        self.assertEqual(snapshots[0].codigo_proyecto, "LPSIEC1347")
         self.assertEqual(snapshots[0].tipo_proyecto_nombre, "PID")
         self.assertEqual(snapshots[0].grupo_utn_nombre, "GIDAS")
         self.assertEqual(snapshots[0].created_by, 41)

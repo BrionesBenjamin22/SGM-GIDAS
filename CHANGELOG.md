@@ -8,7 +8,54 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### Documentado
+
+#### ISS-05 a ISS-16 — Normalizar documentos de tareas pendientes
+
+- Se normalizó `ISS-05.md` con el frontmatter utilizado por las tareas del
+  proyecto; su definición y resolución funcional se registran en la entrada
+  específica de ISS-05.
+- Se dividió el documento agregado de ISS-06 a ISS-16 en once archivos
+  independientes, cada uno con metadata, alcance, criterios de aceptación,
+  pruebas mínimas y mensaje de commit sugerido.
+- ISS-06 a ISS-16 permanecen pendientes; esta reorganización no representa su
+  implementación funcional.
+
+Validaciones:
+
+- presencia de un archivo independiente por cada issue entre ISS-06 e ISS-16;
+- verificación de identificadores, secciones y listas de tareas por documento;
+- codificación UTF-8 y ausencia del archivo agregado original;
+- `git diff --check`: correcto.
+
 ### Corregido
+
+#### ISS-05 — Permitir códigos de proyecto alfanuméricos
+
+- `codigo_proyecto` ahora se persiste y expone como texto alfanumérico de hasta 50
+  caracteres, tanto en proyectos como en los snapshots de proyectos y
+  distinciones utilizados por memorias.
+- El alta y la edición comparten la misma validación backend, conservan el código
+  real y devuelven errores accionables asociados al campo.
+- El formulario dejó de convertir el código con `Number(...)`, valida el contrato
+  antes de guardar y mantiene feedback accesible junto al input.
+- Se agregó una migración Alembic para convertir las tres columnas involucradas y
+  pruebas de contrato, snapshots, migración y validación frontend.
+
+Validaciones:
+
+- backend focalizado: 29 de 29 pruebas correctas;
+- frontend: 56 de 56 pruebas correctas;
+- build productivo frontend: correcto;
+- API con SQLite: alta, edición, listado y snapshot conservan códigos
+  alfanuméricos;
+- Alembic: una única cabeza activa, `c6e8a1f4b2d9`;
+- migración y reversión verificadas en SQLite; DDL PostgreSQL validado offline;
+- `git diff --check`: correcto;
+- no se ejecutó integración PostgreSQL ni prueba manual en navegador porque el
+  stack Docker no estaba activo;
+- el typecheck conserva una incidencia preexistente ajena en `CatalogosHome.tsx`
+  por la diferencia entre `Histórico` y `Historico`.
 
 #### ISS-04 — Clarificar permisos de sesión y unificar el rol lector
 

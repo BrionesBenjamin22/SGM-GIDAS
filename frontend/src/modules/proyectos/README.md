@@ -10,6 +10,8 @@ por permisos y estado activo.
 ## Proyectos
 
 - el service transforma el contrato `snake_case` del backend al modelo de interfaz
+- el código de proyecto se maneja como texto alfanumérico, conserva mayúsculas y
+  minúsculas y admite hasta 50 caracteres sin conversiones numéricas
 - el formulario valida campos obligatorios, coordinador y montos no negativos
 - en edicion solo se envian diferencias reales
 - altas y bajas de investigadores y becarios se consolidan al guardar
@@ -30,6 +32,11 @@ Los services concentran HTTP, conversion de datos y payloads tipados. Los hooks
 encapsulan React Query e invalidan listas, detalles e historiales despues de cada
 mutacion. No existen fallbacks mock ante errores: los fallos de permisos, sesion o
 conectividad se propagan para mostrar feedback real y accionable.
+
+`ProyectoPayload.codigoProyecto` y `ProyectoApiResponse.codigo_proyecto` utilizan
+`string`. La validación compartida del código exige un valor no vacío, con máximo
+50 caracteres y patrón `[A-Za-z0-9]+`; el formulario envía el valor recortado y
+muestra el error junto al campo.
 
 ## Seguridad y permisos
 

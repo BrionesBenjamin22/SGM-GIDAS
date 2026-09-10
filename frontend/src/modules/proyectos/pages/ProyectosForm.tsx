@@ -23,6 +23,10 @@ import {
   vincularBecarios,
   vincularInvestigadores,
 } from "@/modules/proyectos/services/proyectosServices";
+import {
+  PROYECTO_CODIGO_MAX_LENGTH,
+  validateCodigoProyecto,
+} from "@/modules/proyectos/utils/proyectoValidation";
 import { parseCivilDate, toCivilDateString } from "@/utils/dateTime";
 
 export default function ProyectosForm() {
@@ -277,8 +281,9 @@ export default function ProyectosForm() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!codigoProyecto.trim()) {
-      newErrors.codigoProyecto = "Debe ingresar código de proyecto";
+    const codigoProyectoError = validateCodigoProyecto(codigoProyecto);
+    if (codigoProyectoError) {
+      newErrors.codigoProyecto = codigoProyectoError;
     }
 
     if (!nombreProyecto.trim()) {
@@ -326,7 +331,7 @@ export default function ProyectosForm() {
     const payload = {
       id: id ?? undefined,
       nombreProyecto,
-      codigoProyecto: Number(codigoProyecto),
+      codigoProyecto: codigoProyecto.trim(),
       descripcionProyecto,
       dificultadesProyecto,
       montoDestinado:
@@ -349,7 +354,7 @@ export default function ProyectosForm() {
 
     const initialPayload = {
       nombreProyecto: initialData?.nombreProyecto ?? "",
-      codigoProyecto: Number(initialData?.codigoProyecto ?? 0),
+      codigoProyecto: initialData?.codigoProyecto ?? "",
       descripcionProyecto: initialData?.descripcionProyecto ?? "",
       dificultadesProyecto: initialData?.dificultadesProyecto ?? "",
       montoDestinado:
@@ -441,17 +446,28 @@ export default function ProyectosForm() {
         <Field label="Código del proyecto">
           <>
             <input
+              id="codigo-proyecto"
               className={inputClass("codigoProyecto")}
               value={codigoProyecto}
               onChange={(e) => {
                 setCodigoProyecto(e.target.value);
-                if (e.target.value.trim()) clearError("codigoProyecto");
+                clearError("codigoProyecto");
               }}
-              placeholder="Ej: 1234"
+              placeholder="Ej: LPSIEC1347"
+              maxLength={PROYECTO_CODIGO_MAX_LENGTH}
+              aria-label="Código del proyecto"
+              aria-invalid={Boolean(errors.codigoProyecto)}
+              aria-describedby={
+                errors.codigoProyecto ? "codigo-proyecto-error" : undefined
+              }
               disabled={proyectoCerrado}
             />
             {errors.codigoProyecto && (
-              <p className="mt-1 text-sm text-red-500">
+              <p
+                id="codigo-proyecto-error"
+                role="alert"
+                className="mt-1 text-sm text-red-500"
+              >
                 {errors.codigoProyecto}
               </p>
             )}
