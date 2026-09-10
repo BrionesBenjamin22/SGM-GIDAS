@@ -13,18 +13,24 @@ El módulo implementa la landing pública, inicio y cierre de sesión, recuperac
 - `hooks/useSystemSetup.ts`: consulta reutilizable y condicionable del estado de configuración.
 - `utils/landingAccessState.ts`: decisión pura del estado de acceso visible en la landing.
 - `utils/password.ts`: generación criptográfica de contraseñas temporales.
+- `utils/roleCapabilities.ts`: descripción reutilizable de las capacidades y
+  restricciones visibles para cada rol.
 
 ## Permisos y navegación
 
 - `ADMIN`: administra usuarios y accede a las operaciones reservadas.
 - `ADMIN` y `GESTOR`: acceden a altas y ediciones de entidades mediante rutas protegidas.
 - `LECTURA`: accede a homes y detalles, pero no a rutas mutables.
+- `MiPerfil` muestra una tarjeta de permisos de la sesión con las acciones
+  disponibles y restringidas del rol activo.
 - Todo usuario con `primer_login` debe cambiar su contraseña antes de ingresar al resto del sistema.
 - Durante el refresh inicial se muestra un estado de verificación y no se redirige prematuramente al login.
 - La landing dirige a `/registro` cuando falta el administrador inicial, a `/inicio` cuando existe sesión y a `/login` cuando el sistema ya está configurado.
 - La consulta del administrador inicial solo se habilita después de restaurar la sesión y cuando no existe un usuario autenticado.
 
 El backend mantiene la autorización definitiva. Las restricciones del router son defensa en profundidad y prevención de errores de uso.
+El contrato frontend utiliza exclusivamente `ADMIN`, `GESTOR` y `LECTURA`; el
+alias heredado `LECTOR` no forma parte de los tipos ni de las vistas nuevas.
 
 ## Validaciones y errores
 

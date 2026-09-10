@@ -27,7 +27,7 @@ import {
 import { useState } from "react";
 
 function normalizeRolForForm(rol: UsuarioRol): Rol {
-  return rol === "LECTOR" ? "LECTURA" : rol;
+  return rol;
 }
 
 function isSameRol(a: UsuarioRol, b: Rol) {
@@ -45,7 +45,6 @@ function getRolConfig(rol: string) {
       };
 
     case "LECTURA":
-    case "LECTOR":
       return {
         label: "Lector",
         icon: BookOpen,
@@ -239,8 +238,7 @@ export default function UsuariosHome() {
   const total = usuarios?.length || 0;
   const admins = usuarios?.filter((u) => u.rol === "ADMIN").length || 0;
   const gestores = usuarios?.filter((u) => u.rol === "GESTOR").length || 0;
-  const lectores =
-    usuarios?.filter((u) => u.rol === "LECTURA" || u.rol === "LECTOR").length || 0;
+  const lectores = usuarios?.filter((u) => u.rol === "LECTURA").length || 0;
 
   return (
     <section className="w-full">

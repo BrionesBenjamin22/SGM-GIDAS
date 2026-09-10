@@ -82,7 +82,7 @@ def _get_or_create(model, defaults=None, **filters):
 
 def _seed_roles():
     roles = {}
-    for nombre in ["ADMIN", "GESTOR", "LECTOR"]:
+    for nombre in ["ADMIN", "GESTOR", "LECTURA"]:
         rol, _ = _get_or_create(RolUsuario, nombre=nombre)
         roles[nombre] = rol
     return roles
@@ -772,7 +772,7 @@ def seed_testing_data():
         "lector.testing@example.com",
         "Lector Testing",
         99000003,
-        roles["LECTOR"],
+        roles["LECTURA"],
     )
 
     catalogs = _seed_catalogs()

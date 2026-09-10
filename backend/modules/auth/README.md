@@ -4,6 +4,10 @@
 
 El módulo concentra rutas, controladores, servicios y modelos de identidad. Gestiona usuarios, roles, contraseñas, access tokens de corta duración, sesiones de refresh revocables y el alta controlada del primer administrador.
 
+Los nombres canonicos de rol son `ADMIN`, `GESTOR` y `LECTURA`. La migracion
+`d7e4a2c9f1b6` renombra el valor heredado `LECTOR`, reasigna sus usuarios si ambos
+valores coexistieran y conserva un unico rol lector.
+
 ## Endpoints
 
 Todos los endpoints se publican bajo `/auth`.
@@ -24,6 +28,7 @@ Todos los endpoints se publican bajo `/auth`.
 ## Controles de seguridad
 
 - La autorización se valida en controller/service; no depende del frontend.
+- Los seeds generales y de testing crean exclusivamente los tres roles canonicos.
 - Las credenciales se validan y almacenan mediante hash, nunca en texto plano.
 - La cookie de refresh usa las opciones seguras configuradas por entorno y las operaciones con cookie validan origen.
 - Las respuestas de autenticación se marcan `no-store`.

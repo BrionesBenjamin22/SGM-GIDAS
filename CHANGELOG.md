@@ -10,6 +10,37 @@ semántico cuando se publica una entrega.
 
 ### Corregido
 
+#### ISS-04 — Clarificar permisos de sesión y unificar el rol lector
+
+- Se unificó `LECTURA` como identificador canónico del rol lector en base de
+  datos, API y frontend, y se actualizaron los datos iniciales generales y de
+  testing para no volver a crear el alias `LECTOR`.
+- Se agregó una migración reversible que renombra el rol heredado o, si ambos
+  nombres existen, reasigna sus usuarios y elimina el duplicado sin dejar
+  referencias huérfanas.
+- `Mi perfil` ahora muestra una tarjeta transversal con el rol de la sesión, las
+  acciones permitidas y sus restricciones. Para `LECTURA` se aclara que puede
+  consultar información, pero no agregar, modificar ni eliminar registros.
+- Se verificó y documentó que el borrado de equipamiento está habilitado para
+  `ADMIN` y `GESTOR`, devuelve `403 FORBIDDEN` para roles de lectura y mantiene
+  el soft delete con su trazabilidad.
+
+Validaciones:
+
+- frontend: 49 de 49 pruebas correctas;
+- backend focalizado: 19 de 19 pruebas correctas, incluida la normalización de
+  roles, los permisos del endpoint y el soft delete de equipamiento;
+- build productivo frontend: correcto, con 2650 módulos procesados;
+- Alembic: una única cabeza activa, `d7e4a2c9f1b6`;
+- suite backend completa: 345 de 346 pruebas correctas; el único error corresponde
+  al bloqueo conocido de un archivo temporal SQLite en Windows en la prueba de
+  refresh concurrente;
+- `git diff --check`: correcto;
+- prueba manual y ejecución de la migración contra PostgreSQL no realizadas
+  porque Docker no tenía servicios activos;
+- el typecheck mantiene una incidencia preexistente en `CatalogosHome.tsx` por la
+  diferencia entre los literales `Histórico` y `Historico`.
+
 #### ISSUE-02 — Validar el rango de fecha de incorporación de equipamiento
 
 - Se definió como rango válido desde el `01/01/2010` hasta la fecha actual,

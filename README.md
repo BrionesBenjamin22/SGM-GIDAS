@@ -388,9 +388,22 @@ Reglas:
 
 Permisos generales:
 
-- `ADMIN`: crea memorias, cambia estados, reabre y exporta.
-- `GESTOR`: gestiona contenido y puede exportar cuando corresponde.
-- `LECTURA`: consulta informacion disponible.
+- `ADMIN`: administra usuarios; consulta, agrega, edita y elimina registros; crea
+  memorias, cambia estados, reabre y exporta.
+- `GESTOR`: consulta, agrega, edita y elimina contenido operativo; puede exportar
+  cuando corresponde, pero no administra usuarios ni sus roles.
+- `LECTURA`: consulta listados, detalles, auditorias e historiales disponibles. No
+  puede agregar, editar ni eliminar registros, administrar usuarios o ejecutar
+  exportaciones reservadas.
+
+`LECTURA` es el identificador canonico del rol lector en base de datos, API y
+frontend. El nombre heredado `LECTOR` se normaliza mediante migracion y no debe
+utilizarse en seeds ni contratos nuevos.
+
+Cada usuario puede consultar en `Mi perfil` una tarjeta con el rol de la sesion
+activa, sus acciones disponibles y sus restricciones. La ausencia de botones en
+una pantalla previene errores de uso, pero el backend siempre conserva la
+autorizacion definitiva.
 
 ---
 

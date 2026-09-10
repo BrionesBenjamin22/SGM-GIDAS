@@ -92,6 +92,21 @@ class EquipamientoServiceTestCase(unittest.TestCase):
         self.mock_registrar_cambios.assert_not_called()
         self.mock_commit.assert_called_once()
 
+    def test_delete_aplica_baja_logica_y_auditoria(self):
+        equipamiento = self._make_equipamiento()
+        self.mock_get_activo.return_value = equipamiento
+
+        resultado = EquipamientoService.delete(
+            equipamiento_id=1,
+            user_id=99,
+        )
+
+        self.assertFalse(equipamiento.activo)
+        self.assertIsNotNone(equipamiento.deleted_at)
+        self.assertEqual(equipamiento.deleted_by, 99)
+        self.assertEqual(resultado["message"], "Equipamiento eliminado correctamente")
+        self.mock_commit.assert_called_once()
+
     def test_validar_fecha_acepta_limite_inferior(self):
         self.assertEqual(
             EquipamientoService._validar_fecha("2010-01-01"),
