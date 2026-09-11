@@ -43,13 +43,17 @@ Validaciones:
 - Proyectos y configuración de UCT conservan borradores versionados por usuario,
   módulo y registro, con recuperación confirmada, descarte explícito y limpieza al
   guardar. Las claves sensibles se excluyen antes de persistir.
+- El guardado pendiente del borrador se fuerza al abandonar o desmontar el
+  formulario, evitando perder los últimos campos ingresados dentro del debounce.
+- La recuperación se presenta como un diálogo modal obligatorio que inhabilita el
+  resto de la pantalla hasta recuperar o descartar el borrador existente.
 - Se documentaron `JWT_EXPIRATION_MINUTES`,
   `REFRESH_TOKEN_EXPIRATION_MINUTES` y `SESSION_WARNING_SECONDS` junto con el nuevo
   contrato de temporización.
 
 Validaciones:
 
-- frontend: 63 de 63 pruebas correctas;
+- frontend: 65 de 65 pruebas correctas;
 - build productivo frontend: correcto, con 2659 módulos procesados;
 - typecheck frontend: correcto;
 - backend focalizado de autenticación ejecutado dentro de Docker: 27 de 27 pruebas

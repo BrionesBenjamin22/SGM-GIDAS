@@ -36,9 +36,15 @@ export function useFormDraft<T>({
   const valueRef = useRef(value);
   const restoreRef = useRef(onRestore);
   const hasContentRef = useRef(hasContent);
+  const keyRef = useRef(key);
+  const readyRef = useRef(ready);
+  const canSaveRef = useRef(canSave);
   restoreRef.current = onRestore;
   hasContentRef.current = hasContent;
   valueRef.current = value;
+  keyRef.current = key;
+  readyRef.current = ready;
+  canSaveRef.current = canSave;
 
   const serializedValue = useMemo(
     () => JSON.stringify(sanitizeDraftValue(value)),
@@ -48,31 +54,51 @@ export function useFormDraft<T>({
   useEffect(() => {
     setAvailableDraft(null);
     setCanSave(false);
+    canSaveRef.current = false;
     if (!key || !ready) return;
 
     baseline.current = serializedValue;
     const draft = readFormDraft<T>(localStorage, key);
     setAvailableDraft(draft);
     setCanSave(!draft);
+    canSaveRef.current = !draft;
   }, [key, ready]);
+
+  const flushDraft = useCallback(() => {
+    const activeKey = keyRef.current;
+    if (!activeKey || !readyRef.current || !canSaveRef.current) return;
+
+    const currentValue = valueRef.current;
+    const currentSerializedValue = JSON.stringify(sanitizeDraftValue(currentValue));
+    if (currentSerializedValue === baseline.current) return;
+
+    if (hasContentRef.current(currentValue)) {
+      saveFormDraft(localStorage, activeKey, currentValue);
+    }
+    else localStorage.removeItem(activeKey);
+    baseline.current = currentSerializedValue;
+  }, []);
 
   useEffect(() => {
     if (!key || !ready || !canSave || serializedValue === baseline.current) return;
-    const timer = window.setTimeout(() => {
-      if (hasContentRef.current(valueRef.current)) {
-        saveFormDraft(localStorage, key, valueRef.current);
-      }
-      else localStorage.removeItem(key);
-      baseline.current = serializedValue;
-    }, 600);
+    const timer = window.setTimeout(flushDraft, 600);
     return () => window.clearTimeout(timer);
-  }, [canSave, key, ready, serializedValue]);
+  }, [canSave, flushDraft, key, ready, serializedValue]);
+
+  useEffect(() => {
+    window.addEventListener("pagehide", flushDraft);
+    return () => {
+      window.removeEventListener("pagehide", flushDraft);
+      flushDraft();
+    };
+  }, [flushDraft]);
 
   const restoreDraft = useCallback(() => {
     if (!availableDraft) return;
     restoreRef.current(availableDraft.data);
     setAvailableDraft(null);
     setCanSave(true);
+    canSaveRef.current = true;
   }, [availableDraft]);
 
   const discardDraft = useCallback(() => {
@@ -80,6 +106,7 @@ export function useFormDraft<T>({
     baseline.current = serializedValue;
     setAvailableDraft(null);
     setCanSave(true);
+    canSaveRef.current = true;
   }, [key, serializedValue]);
 
   const clearDraft = useCallback(() => {

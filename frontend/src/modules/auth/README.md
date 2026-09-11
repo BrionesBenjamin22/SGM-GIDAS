@@ -52,6 +52,10 @@ alias heredado `LECTOR` no forma parte de los tipos ni de las vistas nuevas.
 
 - Los borradores usan claves por usuario, modulo y registro. El sanitizador excluye
   claves de tokens, contrasenas, secretos, credenciales y autorizacion.
+- Los cambios pendientes se escriben con debounce durante la edición y se fuerzan
+  al abandonar o desmontar el formulario para no perder los últimos campos.
+- Cuando existe un borrador previo, un diálogo modal inhabilita el resto de la
+  pantalla hasta que el usuario decida recuperarlo o descartarlo.
 
 ## Verificación
 

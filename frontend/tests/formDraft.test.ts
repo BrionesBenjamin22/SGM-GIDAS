@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   buildDraftKey,
@@ -6,6 +7,15 @@ import {
   removeFormDraft,
   saveFormDraft,
 } from "../src/modules/shared/utils/formDraft.ts";
+
+const hookSource = readFileSync(
+  new URL("../src/modules/shared/hooks/useFormDraft.ts", import.meta.url),
+  "utf8"
+);
+const recoveryNoticeSource = readFileSync(
+  new URL("../src/modules/shared/components/DraftRecoveryNotice.tsx", import.meta.url),
+  "utf8"
+);
 
 class MemoryStorage implements Storage {
   private values = new Map<string, string>();
@@ -48,4 +58,21 @@ test("el descarte o guardado exitoso elimina el borrador", () => {
   saveFormDraft(storage, key, { nombre: "Temporal" });
   removeFormDraft(storage, key);
   assert.equal(readFormDraft(storage, key), null);
+});
+
+test("fuerza el guardado pendiente al abandonar o desmontar el formulario", () => {
+  assert.match(hookSource, /window\.addEventListener\("pagehide", flushDraft\)/);
+  assert.match(
+    hookSource,
+    /window\.removeEventListener\("pagehide", flushDraft\);\s+flushDraft\(\);/
+  );
+  assert.match(hookSource, /window\.setTimeout\(flushDraft, 600\)/);
+});
+
+test("exige resolver el borrador antes de interactuar con el formulario", () => {
+  assert.match(recoveryNoticeSource, /<dialog/);
+  assert.match(recoveryNoticeSource, /dialog\.showModal\(\)/);
+  assert.match(recoveryNoticeSource, /role="alertdialog"/);
+  assert.match(recoveryNoticeSource, /aria-modal="true"/);
+  assert.match(recoveryNoticeSource, /event\.preventDefault\(\)/);
 });
