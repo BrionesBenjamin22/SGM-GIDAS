@@ -8,3 +8,7 @@ skills-lock.json
 /docs/agents-tasks/
 /tasks
 .kombai/*
+.codegraph/
+.vscode/
+.gemini/
+.codex/
