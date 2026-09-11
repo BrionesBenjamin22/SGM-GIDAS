@@ -78,12 +78,16 @@ class AuthService:
         return user
 
     @staticmethod
-    def _generate_access_token(user: Usuario) -> str:
+    def _generate_access_token(
+        user: Usuario,
+        expires_at: datetime.datetime | None = None,
+    ) -> str:
+        expires_at = expires_at or AuthService._access_token_expires_at()
         access_payload = AuthService._with_optional_audience({
             "sub": str(user.id),
             "nombre_usuario": user.nombre_usuario,
             "rol": user.rol.nombre,   
-            "exp": AuthService._access_token_expires_at(),
+            "exp": expires_at,
             "iss": Config.JWT_ISSUER
         })
 
@@ -157,7 +161,8 @@ class AuthService:
         persist_refresh: bool = False,
         metadata: dict | None = None,
     ) -> dict:
-        access_token = AuthService._generate_access_token(user)
+        access_expires_at = AuthService._access_token_expires_at()
+        access_token = AuthService._generate_access_token(user, access_expires_at)
         refresh_token, jti, expires_at = AuthService._generate_refresh_token(user)
 
         if persist_refresh:
@@ -176,7 +181,10 @@ class AuthService:
 
         return {
             "access_token": access_token,
-            "refresh_token": refresh_token
+            "refresh_token": refresh_token,
+            "access_expires_at": access_expires_at.isoformat() + "Z",
+            "session_expires_at": expires_at.isoformat() + "Z",
+            "session_warning_seconds": Config.SESSION_WARNING_SECONDS,
         }
 
     # -------------------------
@@ -214,6 +222,9 @@ class AuthService:
         return {
             "access_token": tokens["access_token"],
             "refresh_token": tokens["refresh_token"],
+            "access_expires_at": tokens["access_expires_at"],
+            "session_expires_at": tokens["session_expires_at"],
+            "session_warning_seconds": tokens["session_warning_seconds"],
             "user": {
                 "id": user.id,
                 "nombre_usuario": user.nombre_usuario,
@@ -326,7 +337,8 @@ class AuthService:
                 db.session.rollback()
                 raise Exception("Refresh token revocado")
 
-            access_token = AuthService._generate_access_token(user)
+            access_expires_at = AuthService._access_token_expires_at()
+            access_token = AuthService._generate_access_token(user, access_expires_at)
             new_refresh_token, new_jti, expires_at = AuthService._generate_refresh_token(user)
             new_session = AuthService._store_refresh_session(
                 user,
@@ -342,6 +354,9 @@ class AuthService:
             return {
                 "access_token": access_token,
                 "refresh_token": new_refresh_token,
+                "access_expires_at": access_expires_at.isoformat() + "Z",
+                "session_expires_at": expires_at.isoformat() + "Z",
+                "session_warning_seconds": Config.SESSION_WARNING_SECONDS,
                 "user": {
                     "id": user.id,
                     "nombre_usuario": user.nombre_usuario,

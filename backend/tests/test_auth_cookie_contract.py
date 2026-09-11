@@ -30,6 +30,9 @@ class AuthCookieContractTestCase(unittest.TestCase):
         login.return_value = {
             "access_token": "access-value",
             "refresh_token": "refresh-value",
+            "access_expires_at": "2026-09-10T12:15:00Z",
+            "session_expires_at": "2026-09-17T12:00:00Z",
+            "session_warning_seconds": 300,
             "user": {"id": 1},
         }
 
@@ -53,6 +56,9 @@ class AuthCookieContractTestCase(unittest.TestCase):
         refresh.return_value = {
             "access_token": "new-access",
             "refresh_token": "new-refresh",
+            "access_expires_at": "2026-09-10T12:15:00Z",
+            "session_expires_at": "2026-09-17T12:00:00Z",
+            "session_warning_seconds": 300,
             "user": {"id": 1, "nombre_usuario": "user"},
         }
         self.client.set_cookie("gidas_refresh", "old-refresh", path="/api/v1/auth")
@@ -65,6 +71,9 @@ class AuthCookieContractTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), {
             "access_token": "new-access",
+            "access_expires_at": "2026-09-10T12:15:00Z",
+            "session_expires_at": "2026-09-17T12:00:00Z",
+            "session_warning_seconds": 300,
             "user": {"id": 1, "nombre_usuario": "user"},
         })
         refresh.assert_called_once_with("old-refresh", metadata=unittest.mock.ANY)
@@ -86,6 +95,9 @@ class AuthCookieContractTestCase(unittest.TestCase):
         refresh.return_value = {
             "access_token": "a",
             "refresh_token": "r2",
+            "access_expires_at": "2026-09-10T12:15:00Z",
+            "session_expires_at": "2026-09-17T12:00:00Z",
+            "session_warning_seconds": 300,
             "user": {"id": 1},
         }
         self.client.set_cookie("gidas_refresh", "r1", path="/api/v1/auth")

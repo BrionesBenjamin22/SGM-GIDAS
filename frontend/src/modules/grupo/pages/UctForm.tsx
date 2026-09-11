@@ -18,6 +18,9 @@ import {
   normalizarCargoDirectivo,
   obtenerCargosDirectivosFaltantes,
 } from "@/modules/grupo/utils/directivoCargo";
+import { useAuth } from "@/context/AuthContext";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
 
 type DirectivoItem = {
   id?: number;
@@ -29,13 +32,14 @@ type DirectivoItem = {
 };
 
 export default function UctForm() {
-  const { uct, save, saving } = useUct();
+  const { uct, save, saving, isLoading: isLoadingUct } = useUct();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const isEdit = !!uct;
   const grupoId = uct?.id;
 
-  const { data: cargos = [] } = useCargos();
+  const { data: cargos = [], isLoading: isLoadingCargos } = useCargos();
   const {
     data: directivosActuales = [],
     isLoading: isLoadingDirectivos,
@@ -72,6 +76,7 @@ export default function UctForm() {
   const [submitError, setSubmitError] = useState("");
   const [pendingUpdates, setPendingUpdates] = useState<Record<number, string>>({});
   const [pendingFinalizations, setPendingFinalizations] = useState<Record<number, string>>({});
+  const [formInitialized, setFormInitialized] = useState(false);
 
   const cargosFaltantes = obtenerCargosDirectivosFaltantes(directivosActuales);
   const faltaDirector =
@@ -89,14 +94,14 @@ export default function UctForm() {
   );
 
   useEffect(() => {
-    if (!uct) return;
+    if (isLoadingUct || isLoadingCargos) return;
 
     setData((prev) => ({
       ...prev,
-      facultadRegional: uct.facultadRegional ?? "",
-      nombreSigla: uct.nombreSigla ?? "",
-      correo: uct.correo ?? "",
-      objetivos: uct.objetivos ?? "",
+      facultadRegional: uct?.facultadRegional ?? "",
+      nombreSigla: uct?.nombreSigla ?? "",
+      correo: uct?.correo ?? "",
+      objetivos: uct?.objetivos ?? "",
       nombre1: "",
       fecha1: "",
       cargo1: cargoDirector ? String(cargoDirector.id) : "",
@@ -104,7 +109,34 @@ export default function UctForm() {
       fecha2: "",
       cargo2: cargoVicedirector ? String(cargoVicedirector.id) : "",
     }));
-  }, [uct, cargoDirector, cargoVicedirector]);
+    setFormInitialized(true);
+  }, [uct, cargoDirector, cargoVicedirector, isLoadingCargos, isLoadingUct]);
+
+  const draftValue = {
+    data,
+    pendingUpdates,
+    pendingFinalizations,
+    mostrarAltaDirectivos,
+  };
+  const { availableDraft, restoreDraft, discardDraft, clearDraft } = useFormDraft({
+    userId: user?.id,
+    module: "grupo-uct",
+    recordId: grupoId,
+    value: draftValue,
+    ready: formInitialized,
+    hasContent: (draft) => Boolean(
+      draft.data.facultadRegional || draft.data.nombreSigla || draft.data.correo ||
+      draft.data.objetivos || draft.data.nombre1 || draft.data.nombre2 ||
+      Object.keys(draft.pendingUpdates).length ||
+      Object.keys(draft.pendingFinalizations).length
+    ),
+    onRestore: (draft) => {
+      setData(draft.data);
+      setPendingUpdates(draft.pendingUpdates);
+      setPendingFinalizations(draft.pendingFinalizations);
+      setMostrarAltaDirectivos(draft.mostrarAltaDirectivos);
+    },
+  });
 
   useEffect(() => {
     if (!faltaDirector && !faltaVicedirector) {
@@ -239,6 +271,7 @@ export default function UctForm() {
         }
 
         setMostrarAltaDirectivos(false);
+        clearDraft();
         navigate("/inicio", {
           replace: true,
           state: { successMessage: "Equipo directivo registrado correctamente." },
@@ -246,6 +279,7 @@ export default function UctForm() {
         return;
       }
 
+      clearDraft();
       navigate("/inicio", {
         replace: true,
         state: {
@@ -304,6 +338,14 @@ export default function UctForm() {
   return (
     <section className="w-full">
       <h2 className="text-3xl font-semibold mb-6">Configuración de la UCT</h2>
+
+      {availableDraft && (
+        <DraftRecoveryNotice
+          savedAt={availableDraft.savedAt}
+          onRestore={restoreDraft}
+          onDiscard={discardDraft}
+        />
+      )}
 
       <form
         noValidate

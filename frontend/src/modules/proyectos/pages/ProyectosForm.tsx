@@ -28,11 +28,30 @@ import {
   validateCodigoProyecto,
 } from "@/modules/proyectos/utils/proyectoValidation";
 import { parseCivilDate, toCivilDateString } from "@/utils/dateTime";
+import { useAuth } from "@/context/AuthContext";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+
+type ProyectoDraft = {
+  nombreProyecto: string;
+  codigoProyecto: string;
+  descripcionProyecto: string;
+  dificultadesProyecto: string;
+  montoDestinado: string;
+  fechaInicio: string | null;
+  fechaFin: string | null;
+  tipoProyectoId: number | null;
+  fuenteId: number | null;
+  investigadoresIds: number[];
+  coordinadorId: number | null;
+  becariosIds: number[];
+};
 
 export default function ProyectosForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { user } = useAuth();
   const isEdit = Boolean(id);
 
   const tiposQuery = useTiposProyecto();
@@ -69,6 +88,7 @@ export default function ProyectosForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [formInitialized, setFormInitialized] = useState(!isEdit);
 
   const proyectoCerrado = initialData?.cerrado === true;
 
@@ -107,6 +127,7 @@ export default function ProyectosForm() {
     setCoordinadorId(coordinadorInicial);
 
     setBecariosIds(initialData.becarios?.map((becario) => becario.id) ?? []);
+    setFormInitialized(true);
   }, [initialData]);
 
   useEffect(() => {
@@ -114,6 +135,53 @@ export default function ProyectosForm() {
       setCoordinadorId(null);
     }
   }, [coordinadorId, investigadoresIds]);
+
+  const draftValue = useMemo<ProyectoDraft>(() => ({
+    nombreProyecto,
+    codigoProyecto,
+    descripcionProyecto,
+    dificultadesProyecto,
+    montoDestinado,
+    fechaInicio: toCivilDateString(fechaInicio),
+    fechaFin: toCivilDateString(fechaFin),
+    tipoProyectoId,
+    fuenteId,
+    investigadoresIds,
+    coordinadorId,
+    becariosIds,
+  }), [
+    becariosIds, codigoProyecto, coordinadorId, descripcionProyecto,
+    dificultadesProyecto, fechaFin, fechaInicio, fuenteId, investigadoresIds,
+    montoDestinado, nombreProyecto, tipoProyectoId,
+  ]);
+
+  const { availableDraft, restoreDraft, discardDraft, clearDraft } = useFormDraft({
+    userId: user?.id,
+    module: "proyectos",
+    recordId: id,
+    value: draftValue,
+    ready: formInitialized,
+    hasContent: (draft) => Boolean(
+      draft.nombreProyecto || draft.codigoProyecto || draft.descripcionProyecto ||
+      draft.dificultadesProyecto || draft.montoDestinado || draft.fechaInicio ||
+      draft.fechaFin || draft.tipoProyectoId || draft.fuenteId ||
+      draft.investigadoresIds.length || draft.becariosIds.length
+    ),
+    onRestore: (draft) => {
+      setNombreProyecto(draft.nombreProyecto);
+      setCodigoProyecto(draft.codigoProyecto);
+      setDescripcionProyecto(draft.descripcionProyecto);
+      setDificultadesProyecto(draft.dificultadesProyecto);
+      setMontoDestinado(draft.montoDestinado);
+      setFechaInicio(parseCivilDate(draft.fechaInicio));
+      setFechaFin(parseCivilDate(draft.fechaFin));
+      setTipoProyectoId(draft.tipoProyectoId);
+      setFuenteId(draft.fuenteId);
+      setInvestigadoresIds(draft.investigadoresIds);
+      setCoordinadorId(draft.coordinadorId);
+      setBecariosIds(draft.becariosIds);
+    },
+  });
 
   const investigadoresSeleccionados = useMemo(() => {
     return investigadores.filter((investigador) =>
@@ -239,6 +307,7 @@ export default function ProyectosForm() {
       return { id: proyectoId };
     },
     onSuccess: () => {
+      clearDraft();
       qc.invalidateQueries({ queryKey: ["proyectos"] });
       qc.invalidateQueries({ queryKey: ["proyecto", id] });
       qc.invalidateQueries({ queryKey: ["proyecto-historial", id] });
@@ -398,6 +467,7 @@ export default function ProyectosForm() {
       !hayBecariosDesvinculados &&
       !cambioCoordinador
     ) {
+      clearDraft();
       navigate(`/proyectos/${id}`, {
         replace: true,
         state: {
@@ -436,6 +506,14 @@ export default function ProyectosForm() {
           becarios o volver a editarlo, primero debes reabrirlo desde el
           detalle.
         </div>
+      )}
+
+      {availableDraft && (
+        <DraftRecoveryNotice
+          savedAt={availableDraft.savedAt}
+          onRestore={restoreDraft}
+          onDiscard={discardDraft}
+        />
       )}
 
       <form

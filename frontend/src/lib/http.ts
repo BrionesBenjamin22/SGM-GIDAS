@@ -1,4 +1,5 @@
 import { allowsNotFound, type HttpRequestInit } from "./httpPolicy";
+import { createSingleFlight } from "@/modules/auth/utils/singleFlight";
 
 const RAW_BASE =
   import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL ?? "";
@@ -101,11 +102,12 @@ export class HttpError extends Error {
 
 export type RefreshSessionResponse<TUser = unknown> = {
   access_token: string;
+  access_expires_at: string;
+  session_expires_at: string;
+  session_warning_seconds: number;
   user?: TUser;
   usuario?: TUser;
 };
-
-let refreshPromise: Promise<RefreshSessionResponse | null> | null = null;
 
 export async function withAuthCookieLock<T>(
   operation: () => Promise<T>
@@ -117,16 +119,10 @@ export async function withAuthCookieLock<T>(
   return operation();
 }
 
-export async function refreshSession<TUser = unknown>(): Promise<
-  RefreshSessionResponse<TUser> | null
-> {
-  if (refreshPromise) {
-    return refreshPromise as Promise<RefreshSessionResponse<TUser> | null>;
-  }
-
-  const generationAtStart = sessionGeneration;
-  const performRefresh = async (): Promise<RefreshSessionResponse<TUser> | null> => {
-    if (generationAtStart !== sessionGeneration) return null;
+const runRefreshSingleFlight = createSingleFlight(
+  async (generationAtStart: number): Promise<RefreshSessionResponse | null> => {
+    const performRefresh = async (): Promise<RefreshSessionResponse | null> => {
+      if (generationAtStart !== sessionGeneration) return null;
 
     try {
       const res = await fetch(`${BASE}/auth/refresh`, {
@@ -142,7 +138,7 @@ export async function refreshSession<TUser = unknown>(): Promise<
         return null;
       }
 
-      const data = (await res.json()) as RefreshSessionResponse<TUser>;
+      const data = (await res.json()) as RefreshSessionResponse;
       if (generationAtStart !== sessionGeneration) return null;
 
       if (typeof data.access_token === "string" && data.access_token) {
@@ -156,17 +152,18 @@ export async function refreshSession<TUser = unknown>(): Promise<
       if (generationAtStart === sessionGeneration) accessToken = null;
       return null;
     }
-  };
+    };
 
-  refreshPromise = (async () => {
-    try {
-      return await withAuthCookieLock(performRefresh);
-    } finally {
-      refreshPromise = null;
-    }
-  })();
+    return withAuthCookieLock(performRefresh);
+  }
+);
 
-  return refreshPromise as Promise<RefreshSessionResponse<TUser> | null>;
+export async function refreshSession<TUser = unknown>(): Promise<
+  RefreshSessionResponse<TUser> | null
+> {
+  return runRefreshSingleFlight(sessionGeneration) as Promise<
+    RefreshSessionResponse<TUser> | null
+  >;
 }
 
 function buildHeaders(init?: RequestInit) {

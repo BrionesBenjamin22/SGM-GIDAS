@@ -3,13 +3,25 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AlertCircle, ArrowLeft, Eye, EyeOff, LoaderCircle, LogIn } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useSystemSetup } from "@/modules/auth/hooks/useSystemSetup";
+import {
+  consumeSessionPath,
+  isSafeInternalPath,
+} from "@/modules/auth/utils/sessionNavigation";
 
 export default function LoginPage() {
   const { login, user, loading: sessionLoading } = useAuth();
   const { data: needsInitialAdmin, isFetching: setupFetching } = useSystemSetup();
   const nav = useNavigate();
-  const location = useLocation() as { state?: { from?: { pathname?: string } } };
-  const from = location.state?.from?.pathname || "/inicio";
+  const location = useLocation() as {
+    state?: { from?: { pathname?: string; search?: string; hash?: string } };
+  };
+  const [from] = useState(() => {
+    const statePath = location.state?.from
+      ? `${location.state.from.pathname ?? ""}${location.state.from.search ?? ""}${location.state.from.hash ?? ""}`
+      : "";
+    if (statePath && isSafeInternalPath(statePath)) return statePath;
+    return consumeSessionPath() ?? "/inicio";
+  });
 
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");

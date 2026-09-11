@@ -175,7 +175,10 @@ class AuthController:
                     "rol": user.rol.nombre,
                     "primer_login": user.primer_login
                 },
-                "access_token": tokens["access_token"]
+                "access_token": tokens["access_token"],
+                "access_expires_at": tokens["access_expires_at"],
+                "session_expires_at": tokens["session_expires_at"],
+                "session_warning_seconds": tokens["session_warning_seconds"],
             })
             AuthController._set_refresh_cookie(response, tokens["refresh_token"])
             return response, 201
@@ -196,6 +199,9 @@ class AuthController:
 
             response = jsonify({
                 "access_token": result["access_token"],
+                "access_expires_at": result["access_expires_at"],
+                "session_expires_at": result["session_expires_at"],
+                "session_warning_seconds": result["session_warning_seconds"],
                 "user": result["user"]
             })
             AuthController._set_refresh_cookie(response, result["refresh_token"])
@@ -241,6 +247,9 @@ class AuthController:
             )
             response = jsonify({
                 "access_token": tokens["access_token"],
+                "access_expires_at": tokens["access_expires_at"],
+                "session_expires_at": tokens["session_expires_at"],
+                "session_warning_seconds": tokens["session_warning_seconds"],
                 "user": tokens["user"],
             })
             AuthController._set_refresh_cookie(response, tokens["refresh_token"])

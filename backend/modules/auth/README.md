@@ -39,6 +39,18 @@ Todos los endpoints se publican bajo `/auth`.
   definido por `REFRESH_SESSION_RETENTION_DAYS`.
 - Los errores inesperados devuelven mensajes genéricos y no exponen detalles internos.
 
+## Duracion y contrato de sesion
+
+- `JWT_EXPIRATION_MINUTES` define la vigencia del access token (15 minutos por defecto).
+- `REFRESH_TOKEN_EXPIRATION_MINUTES` define la vigencia renovable de la sesion (10080 minutos, siete dias, por defecto).
+- `SESSION_WARNING_SECONDS` define con cuanta anticipacion el frontend muestra el aviso de vencimiento (300 segundos por defecto).
+- Login, registro y refresh devuelven `access_expires_at`, `session_expires_at` y
+  `session_warning_seconds`. Son metadatos de temporizacion; los tokens siguen sin
+  persistirse en el navegador y el refresh permanece exclusivamente en cookie `HttpOnly`.
+- Cada refresh valido rota el token, extiende el vencimiento renovable y rechaza el
+  token anterior, por lo que la actividad del usuario puede sostener la sesion sin
+  enviar una renovacion por cada evento del navegador.
+
 ## Despliegue
 
 En servidores se deben definir secretos y orígenes permitidos mediante variables de entorno, habilitar cookies seguras detrás de HTTPS y conservar la misma topología de proxy para frontend y API. No se deben usar valores de desarrollo en producción.

@@ -18,6 +18,8 @@ por permisos y estado activo.
 - los cambios de coordinador actualizan las relaciones involucradas en el guardado
 - un proyecto cerrado no admite edicion hasta que sea reabierto
 - las altas vuelven al home y las ediciones al detalle con `successMessage`
+- el formulario conserva un borrador local por usuario y proyecto, solicita
+  confirmacion antes de recuperarlo y lo elimina al guardar o descartar
 
 ## Participaciones relevantes
 

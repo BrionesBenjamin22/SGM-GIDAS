@@ -20,6 +20,8 @@ detalles consumen auditoria e historial cuando existe endpoint.
 - el contrato de la UCT se transforma desde los nombres del backend en el service
 - las actualizaciones envian solo campos modificados
 - las altas, cambios y finalizaciones de directivos se consolidan antes de guardar
+- la configuracion institucional y las operaciones pendientes del equipo directivo
+  se conservan en un borrador local por usuario y UCT hasta guardar o descartar
 - la exportacion valida que la respuesta no este vacia y que su tipo sea compatible
   con Excel; los errores del servidor se normalizan antes de mostrarse
 

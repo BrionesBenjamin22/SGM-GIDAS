@@ -30,6 +30,35 @@ Validaciones:
 
 ### Corregido
 
+#### ISS-06 — Evitar el cierre intempestivo de la sesión
+
+- El backend informa la expiración del access token, la sesión renovable y el
+  umbral configurable de advertencia sin exponer el refresh token fuera de su
+  cookie `HttpOnly`.
+- El frontend comparte una única renovación concurrente, reintenta cada solicitud
+  original una sola vez y renueva por actividad únicamente cuando el access token
+  está próximo a vencer.
+- Se agregó un aviso accesible con acciones para continuar o cerrar la sesión, y
+  el vencimiento conserva una ruta interna completa para restaurarla tras el login.
+- Proyectos y configuración de UCT conservan borradores versionados por usuario,
+  módulo y registro, con recuperación confirmada, descarte explícito y limpieza al
+  guardar. Las claves sensibles se excluyen antes de persistir.
+- Se documentaron `JWT_EXPIRATION_MINUTES`,
+  `REFRESH_TOKEN_EXPIRATION_MINUTES` y `SESSION_WARNING_SECONDS` junto con el nuevo
+  contrato de temporización.
+
+Validaciones:
+
+- frontend: 63 de 63 pruebas correctas;
+- build productivo frontend: correcto, con 2659 módulos procesados;
+- typecheck frontend: correcto;
+- backend focalizado de autenticación ejecutado dentro de Docker: 27 de 27 pruebas
+  correctas, incluida la renovación concurrente;
+- `git diff --check`: correcto;
+- stack Docker de desarrollo saludable para frontend, backend, PostgreSQL y Redis;
+- la validación manual de comportamiento y pantallas queda reservada para la
+  revisión del usuario al finalizar el flujo de tareas.
+
 #### ISS-05 — Permitir códigos de proyecto alfanuméricos
 
 - `codigo_proyecto` ahora se persiste y expone como texto alfanumérico de hasta 50

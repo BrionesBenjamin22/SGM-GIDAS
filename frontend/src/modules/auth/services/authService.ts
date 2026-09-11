@@ -7,6 +7,7 @@ import {
   withAuthCookieLock,
 } from "@/lib/http";
 import { getErrorMessage } from "@/lib/httpError";
+import type { SessionTiming } from "@/modules/auth/utils/sessionTiming";
 
 export type Rol = "ADMIN" | "GESTOR" | "LECTURA";
 
@@ -22,10 +23,14 @@ export type User = {
 export type AuthResponse = {
   user: User;
   token: string;
+  sessionTiming: SessionTiming;
 };
 
 type BackendLoginResponse = {
   access_token: string;
+  access_expires_at: string;
+  session_expires_at: string;
+  session_warning_seconds: number;
   user?: User;
   usuario?: User;
 };
@@ -45,7 +50,7 @@ export async function restoreSession(): Promise<AuthResponse | null> {
   const user = response?.user ?? response?.usuario;
   if (!response?.access_token || !user) return null;
 
-  return { user, token: response.access_token };
+  return toAuthResponse(response, user);
 }
 
 export async function login(
@@ -70,10 +75,7 @@ export async function login(
     throw new Error(CONNECTION_ERROR_MESSAGE);
   }
 
-  const auth: AuthResponse = {
-    user: responseBack.user ?? responseBack.usuario!,
-    token: responseBack.access_token,
-  };
+  const auth = toAuthResponse(responseBack, responseBack.user ?? responseBack.usuario!);
 
   if (!auth.user || !auth.token) {
     clearAccessToken();
@@ -82,6 +84,28 @@ export async function login(
 
   setAccessToken(auth.token);
   return auth;
+}
+
+export async function renewSession(): Promise<AuthResponse | null> {
+  const response = await refreshSession<User>();
+  const user = response?.user ?? response?.usuario;
+  if (!response?.access_token || !user) return null;
+  return toAuthResponse(response, user);
+}
+
+function toAuthResponse(
+  response: BackendLoginResponse,
+  user: User
+): AuthResponse {
+  return {
+    user,
+    token: response.access_token,
+    sessionTiming: {
+      accessExpiresAt: response.access_expires_at,
+      sessionExpiresAt: response.session_expires_at,
+      warningSeconds: response.session_warning_seconds,
+    },
+  };
 }
 
 export async function register(

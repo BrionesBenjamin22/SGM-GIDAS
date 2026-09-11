@@ -1,4 +1,5 @@
 import concurrent.futures
+import datetime
 import os
 import tempfile
 import threading
@@ -106,6 +107,19 @@ class AuthRefreshTokenTestCase(unittest.TestCase):
 
             with self.assertRaisesRegex(Exception, "Usuario no encontrado"):
                 AuthService.refresh_tokens(tokens["refresh_token"])
+
+    def test_refresh_rechaza_sesion_vencida_aunque_el_jwt_siga_vigente(self):
+        with self.app.app_context():
+            tokens = self._login()
+            session = RefreshTokenSession.query.one()
+            session.expires_at = datetime.datetime.utcnow() - datetime.timedelta(seconds=1)
+            db.session.commit()
+
+            with self.assertRaisesRegex(Exception, "expirado"):
+                AuthService.refresh_tokens(tokens["refresh_token"])
+
+            db.session.refresh(session)
+            self.assertEqual(session.revoked_reason, "expired")
 
     def test_cambio_password_revoca_sesiones_activas(self):
         with self.app.app_context():

@@ -32,6 +32,14 @@ El backend mantiene la autorización definitiva. Las restricciones del router so
 El contrato frontend utiliza exclusivamente `ADMIN`, `GESTOR` y `LECTURA`; el
 alias heredado `LECTOR` no forma parte de los tipos ni de las vistas nuevas.
 
+- Las respuestas de autenticacion informan el vencimiento del access token y de la
+  sesion renovable. La actividad solo dispara refresh cuando el access token esta
+  proximo a vencer y las solicitudes concurrentes comparten una unica renovacion.
+- Antes del vencimiento definitivo se muestra un dialogo accesible con las acciones
+  `Continuar sesion` y `Cerrar sesion`.
+- Si la sesion vence, se conserva una ruta interna con `pathname`, busqueda y hash;
+  el login la restaura sin aceptar redirecciones externas.
+
 ## Validaciones y errores
 
 - Los formularios validan usuario, email y contraseña antes de enviar.
@@ -41,6 +49,9 @@ alias heredado `LECTOR` no forma parte de los tipos ni de las vistas nuevas.
 - Un refetch conserva la última acción válida cuando existen datos en cache; solo un error inicial sin datos muestra el bloque de recuperación.
 - El error de configuración ofrece reintento y contacto institucional con feedback accesible.
 - Las contraseñas temporales tienen 16 caracteres, incluyen las clases requeridas y se generan con Web Crypto sin sesgo por módulo.
+
+- Los borradores usan claves por usuario, modulo y registro. El sanitizador excluye
+  claves de tokens, contrasenas, secretos, credenciales y autorizacion.
 
 ## Verificación
 
