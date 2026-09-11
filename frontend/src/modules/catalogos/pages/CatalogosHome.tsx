@@ -150,7 +150,7 @@ const CATALOGS: CatalogDef[] = [
     helpText:
       "Catálogo histórico. No elimine programas anteriores si fueron usados; mantenga trazabilidad.",
     group: "Institucionales / normativos",
-    tags: ["Histórico", "Sensible", "Impacta memorias"],
+    tags: ["Historico", "Sensible", "Impacta memorias"],
   },
   {
     label: "Becas",
@@ -248,6 +248,10 @@ function normalizeText(text: string) {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
+}
+
+function formatCatalogTag(tag: CatalogTag) {
+  return tag === "Historico" ? "Histórico" : tag;
 }
 
 function formatEntityName(entityName: string) {
@@ -1303,7 +1307,7 @@ export default function CatalogosHome() {
                     : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                 }`}
               >
-                {tag}
+                {tag === "Todos" ? tag : formatCatalogTag(tag)}
               </button>
             ))}
           </div>
@@ -1353,7 +1357,7 @@ export default function CatalogosHome() {
                           <div className="flex flex-wrap gap-2">
                             {summary?.hasInactive && <Badge>Con inactivos</Badge>}
                             {catalog.tags.map((tag) => (
-                              <Badge key={tag}>{tag}</Badge>
+                              <Badge key={tag}>{formatCatalogTag(tag)}</Badge>
                             ))}
                           </div>
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
