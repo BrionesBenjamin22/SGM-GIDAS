@@ -18,6 +18,7 @@ from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
 from modules.personal.models.personal import Becario, Investigador
 from modules.shared.services.auditoria_service import AuditoriaService
+from modules.shared.services.date_time import validate_institutional_date
 from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 
 
@@ -75,7 +76,9 @@ class ProyectoInvestigacionService:
             return None
 
         try:
-            return datetime.strptime(fecha_str, "%Y-%m-%d").date()
+            return validate_institutional_date(
+                datetime.strptime(fecha_str, "%Y-%m-%d").date(), campo
+            )
         except (TypeError, builtins.ValueError):
             raise ValueError(
                 f"El campo '{campo}' debe tener formato YYYY-MM-DD"
@@ -254,12 +257,14 @@ class ProyectoInvestigacionService:
         fecha_inicio = datetime.strptime(
             data["fecha_inicio"], "%Y-%m-%d"
         ).date()
+        validate_institutional_date(fecha_inicio, "fecha_inicio")
 
         fecha_fin = None
         if data.get("fecha_fin"):
             fecha_fin = datetime.strptime(
                 data["fecha_fin"], "%Y-%m-%d"
             ).date()
+            validate_institutional_date(fecha_fin, "fecha_fin")
             if fecha_fin < fecha_inicio:
                 raise ValueError("La fecha fin no puede ser anterior a la fecha inicio")
 
@@ -424,6 +429,7 @@ class ProyectoInvestigacionService:
             nueva_fecha = datetime.strptime(
                 data["fecha_inicio"], "%Y-%m-%d"
             ).date()
+            validate_institutional_date(nueva_fecha, "fecha_inicio")
             cambio = AuditoriaService.construir_cambio(
                 proyecto.fecha_inicio,
                 nueva_fecha
@@ -438,6 +444,8 @@ class ProyectoInvestigacionService:
                 if data["fecha_fin"]
                 else None
             )
+            if nueva_fecha_fin:
+                validate_institutional_date(nueva_fecha_fin, "fecha_fin")
             cambio = AuditoriaService.construir_cambio(
                 proyecto.fecha_fin,
                 nueva_fecha_fin
@@ -622,6 +630,16 @@ class ProyectoInvestigacionService:
         for item in participaciones:
 
             becario_id = item.get("id_becario")
+            fecha_inicio = ProyectoInvestigacionService._validar_fecha_participacion(
+                item.get("fecha_inicio"), "fecha_inicio"
+            )
+            fecha_fin = ProyectoInvestigacionService._validar_fecha_participacion(
+                item.get("fecha_fin"), "fecha_fin", permitir_none=True
+            )
+            if fecha_fin and fecha_fin < fecha_inicio:
+                raise ValueError(
+                    "La fecha fin no puede ser anterior a la fecha inicio"
+                )
 
             existente = BecarioProyecto.query.filter_by(
                 id_proyecto=proyecto_id,
@@ -635,12 +653,8 @@ class ProyectoInvestigacionService:
             nueva = BecarioProyecto(
                 id_becario=becario_id,
                 id_proyecto=proyecto_id,
-                fecha_inicio=datetime.strptime(
-                    item["fecha_inicio"], "%Y-%m-%d"
-                ).date(),
-                fecha_fin=datetime.strptime(
-                    item["fecha_fin"], "%Y-%m-%d"
-                ).date() if item.get("fecha_fin") else None
+                fecha_inicio=fecha_inicio,
+                fecha_fin=fecha_fin,
             )
 
             db.session.add(nueva)

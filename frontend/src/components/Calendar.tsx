@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { getInstitutionalMinDate } from "@/utils/dateTime";
 
 type DatePickerProps = {
   label?: string;
@@ -10,6 +11,7 @@ type DatePickerProps = {
   className?: string; // para pasar "input" o estilos propios
   helperText?: string; // ej: "DD/MM/YYYY"
   disabled?: boolean;
+  institutionalRange?: boolean;
 };
 
 const MONTHS_ES = [
@@ -80,14 +82,18 @@ export default function DatePicker({
   maxDate,
   placeholder = "DD/MM/AAAA",
   className = "input",
-  helperText = "DD/MM/AAAA",
+  helperText,
   disabled = false,
+  institutionalRange = true,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<Date>(() => value ?? new Date());
   const [temp, setTemp] = useState<Date | null>(value ?? null);
   const [inputValue, setInputValue] = useState(() => fmt(value));
   const rootRef = useRef<HTMLDivElement>(null);
+  const resolvedHelperText =
+    helperText ??
+    (institutionalRange ? "Desde 01/01/2010 · DD/MM/AAAA" : "DD/MM/AAAA");
 
   // cerrar al click fuera
   useEffect(() => {
@@ -124,8 +130,17 @@ export default function DatePicker({
     return cells;
   }, [view]);
 
+  const effectiveMinDate = useMemo(() => {
+    if (!institutionalRange) return minDate;
+    const institutionalMinDate = getInstitutionalMinDate();
+    return minDate && minDate > institutionalMinDate
+      ? minDate
+      : institutionalMinDate;
+  }, [institutionalRange, minDate]);
+
   const isDateDisabled = (d: Date) =>
-    (minDate && d < stripTime(minDate)) || (maxDate && d > stripTime(maxDate));
+    (effectiveMinDate && d < stripTime(effectiveMinDate)) ||
+    (maxDate && d > stripTime(maxDate));
 
   function commitTypedValue(nextValue: string) {
     const maskedValue = maskDateInput(nextValue);
@@ -206,7 +221,9 @@ export default function DatePicker({
           </svg>
         </button>
       </div>
-      {helperText && <p className="mt-1 text-xs text-slate-500">{helperText}</p>}
+      {resolvedHelperText && (
+        <p className="mt-1 text-xs text-slate-500">{resolvedHelperText}</p>
+      )}
 
       {/* Popover calendario */}
       {open && (

@@ -440,6 +440,7 @@ export default function SearchPage() {
 
             <Calendar
               label="Desde"
+              institutionalRange={false}
               value={parseCivilDate(dateFrom)}
               onChange={(d) => setDateFrom(toCivilDateString(d) ?? undefined)}
               placeholder="Fecha desde"
@@ -447,6 +448,7 @@ export default function SearchPage() {
 
             <Calendar
               label="Hasta"
+              institutionalRange={false}
               value={parseCivilDate(dateTo)}
               onChange={(d) => setDateTo(toCivilDateString(d) ?? undefined)}
               placeholder="Fecha hasta"

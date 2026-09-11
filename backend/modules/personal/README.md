@@ -1,5 +1,10 @@
 # Modulo backend de personal
 
+## Contrato de fechas
+
+`fecha_alta_grupo` y los períodos de relaciones se validan desde el 01/01/2010.
+El límite no corresponde a datos biográficos ajenos a la actividad del grupo.
+
 ## Responsabilidad
 
 Gestiona investigadores, becarios, PTAA, profesionales, tipos asociados,

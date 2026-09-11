@@ -1,5 +1,10 @@
 # Modulo backend de proyectos
 
+## Contrato de fechas
+
+Los proyectos y sus relaciones se validan desde el 01/01/2010. Los services
+mantienen el orden inicio-fin y la prohibición de cierres futuros.
+
 ## Responsabilidad
 
 Gestiona proyectos de investigacion, sus tipos, participaciones relevantes y

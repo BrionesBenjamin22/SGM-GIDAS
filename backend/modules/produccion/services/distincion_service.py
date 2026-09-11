@@ -11,6 +11,7 @@ from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
+from modules.shared.services.date_time import validate_institutional_date
 
 
 class DistincionRecibidaService:
@@ -72,7 +73,7 @@ class DistincionRecibidaService:
         if fecha > date.today():
             raise ValidationError("La fecha no puede ser futura")
 
-        return fecha
+        return validate_institutional_date(fecha, "fecha")
 
     @staticmethod
     def _validar_proyecto(proyecto_id):

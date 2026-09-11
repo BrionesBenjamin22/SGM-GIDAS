@@ -1,5 +1,10 @@
 # Recursos
 
+## Contrato de fechas
+
+Equipamiento, erogaciones, becas y sus relaciones se validan desde el
+01/01/2010, conservando los límites futuros específicos de cada entidad.
+
 ## Funcionalidad
 
 El modulo administra equipamiento, becas, erogaciones y tipos de erogacion. Cada

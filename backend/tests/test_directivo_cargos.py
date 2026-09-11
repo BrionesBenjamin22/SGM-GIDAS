@@ -1,5 +1,5 @@
 import unittest
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -38,6 +38,20 @@ class DirectivoCargosTestCase(unittest.TestCase):
             "solo admite los cargos Director y Vicedirector"
         ):
             DirectivoGrupoService._validar_cargo_y_cupo(1, cargo)
+
+    def test_fechas_de_directivos_respetan_rango_institucional(self):
+        with self.assertRaisesRegex(ValidationError, "posterior al 01/01/2010"):
+            DirectivoGrupoService._validar_fecha("2009-12-31", "fecha_inicio")
+
+        self.assertEqual(
+            DirectivoGrupoService._validar_fecha("2010-01-01", "fecha_inicio"),
+            date(2010, 1, 1),
+        )
+
+    def test_fechas_de_directivos_no_admiten_futuro(self):
+        future = (date.today() + timedelta(days=1)).isoformat()
+        with self.assertRaisesRegex(ValidationError, "no puede ser futuro"):
+            DirectivoGrupoService._validar_fecha(future, "fecha_inicio")
 
     def test_con_un_director_permite_asignar_el_vicedirector(self):
         cargo = self._cargo(2, "Vicedirector")

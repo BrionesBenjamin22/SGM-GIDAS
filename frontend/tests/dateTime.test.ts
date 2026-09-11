@@ -4,6 +4,8 @@ import {
   formatFecha,
   formatFechaHora,
   getCivilYear,
+  getInstitutionalMinDate,
+  isInstitutionalDate,
   parseApiTimestamp,
   parseCivilDate,
   toCivilDateString,
@@ -24,6 +26,12 @@ test("mantiene una fecha civil de fin de año en Argentina", () => {
 test("rechaza fechas civiles inexistentes", () => {
   assert.equal(parseCivilDate("2026-02-31"), null);
   assert.equal(formatFecha("2026-02-31"), "—");
+});
+
+test("aplica el inicio del rango institucional en 2010", () => {
+  assert.equal(toCivilDateString(getInstitutionalMinDate()), "2010-01-01");
+  assert.equal(isInstitutionalDate("2009-12-31"), false);
+  assert.equal(isInstitutionalDate("2010-01-01"), true);
 });
 
 test("interpreta timestamps sin zona del contrato heredado como UTC", () => {

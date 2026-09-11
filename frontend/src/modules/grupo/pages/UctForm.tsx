@@ -21,6 +21,11 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
 import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import {
+  getLocalTodayIso,
+  INSTITUTIONAL_MIN_DATE_ISO,
+  isInstitutionalDate,
+} from "@/utils/dateTime";
 
 type DirectivoItem = {
   id?: number;
@@ -32,6 +37,7 @@ type DirectivoItem = {
 };
 
 export default function UctForm() {
+  const todayIso = getLocalTodayIso();
   const { uct, save, saving, isLoading: isLoadingUct } = useUct();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -191,6 +197,10 @@ export default function UctForm() {
       }
       if (!data.fecha1) {
         e.fecha1 = "Ingrese fecha";
+      } else if (!isInstitutionalDate(data.fecha1)) {
+        e.fecha1 = "La fecha debe ser igual o posterior al 01/01/2010";
+      } else if (data.fecha1 > todayIso) {
+        e.fecha1 = "La fecha no puede ser futura";
       }
     }
 
@@ -203,6 +213,10 @@ export default function UctForm() {
       }
       if (!data.fecha2) {
         e.fecha2 = "Ingrese fecha";
+      } else if (!isInstitutionalDate(data.fecha2)) {
+        e.fecha2 = "La fecha debe ser igual o posterior al 01/01/2010";
+      } else if (data.fecha2 > todayIso) {
+        e.fecha2 = "La fecha no puede ser futura";
       }
     }
 
@@ -327,6 +341,11 @@ export default function UctForm() {
       directivoAFinalizar?.id_directivo ?? directivoAFinalizar?.id;
 
     if (!directivoId || !fechaFin) return;
+    if (!isInstitutionalDate(fechaFin) || fechaFin > todayIso) return;
+    if (
+      directivoAFinalizar?.fecha_inicio &&
+      fechaFin < directivoAFinalizar.fecha_inicio
+    ) return;
 
     setPendingFinalizations((current) => ({ ...current, [directivoId]: fechaFin }));
     cerrarConfirmFinalizar();
@@ -432,6 +451,8 @@ export default function UctForm() {
                     <>
                       <input
                         type="date"
+                        min={INSTITUTIONAL_MIN_DATE_ISO}
+                        max={todayIso}
                         className={inputClass("fecha1")}
                         value={data.fecha1}
                         onChange={change("fecha1")}
@@ -478,6 +499,8 @@ export default function UctForm() {
                     <>
                       <input
                         type="date"
+                        min={INSTITUTIONAL_MIN_DATE_ISO}
+                        max={todayIso}
                         className={inputClass("fecha2")}
                         value={data.fecha2}
                         onChange={change("fecha2")}
@@ -720,7 +743,16 @@ export default function UctForm() {
         confirmText={
           finalizarDirectivo.isPending ? "Finalizando..." : "Aceptar"
         }
-        confirmDisabled={!fechaFin || finalizarDirectivo.isPending}
+        confirmDisabled={
+          !fechaFin ||
+          !isInstitutionalDate(fechaFin) ||
+          fechaFin > todayIso ||
+          Boolean(
+            directivoAFinalizar?.fecha_inicio &&
+            fechaFin < directivoAFinalizar.fecha_inicio
+          ) ||
+          finalizarDirectivo.isPending
+        }
         onCancel={cerrarConfirmFinalizar}
         onConfirm={handleFinalizarDirectivo}
       >
@@ -730,6 +762,8 @@ export default function UctForm() {
           </label>
           <input
             type="date"
+            min={directivoAFinalizar?.fecha_inicio ?? INSTITUTIONAL_MIN_DATE_ISO}
+            max={todayIso}
             className="input"
             value={fechaFin}
             onChange={(e) => setFechaFin(e.target.value)}
@@ -739,6 +773,22 @@ export default function UctForm() {
               Debe ingresar una fecha de finalización.
             </p>
           )}
+          {fechaFin && !isInstitutionalDate(fechaFin) && (
+            <p className="text-sm text-red-600">
+              La fecha debe ser igual o posterior al 01/01/2010.
+            </p>
+          )}
+          {fechaFin && fechaFin > todayIso && (
+            <p className="text-sm text-red-600">
+              La fecha no puede ser futura.
+            </p>
+          )}
+          {fechaFin && directivoAFinalizar?.fecha_inicio &&
+            fechaFin < directivoAFinalizar.fecha_inicio && (
+              <p className="text-sm text-red-600">
+                La fecha de finalización no puede ser anterior al inicio.
+              </p>
+            )}
         </div>
       </ConfirmDialog>
 

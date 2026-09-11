@@ -1,5 +1,10 @@
 # Modulo backend de grupo
 
+## Contrato de fechas
+
+Visitas y mandatos directivos se validan desde el 01/01/2010. Los mandatos no
+admiten fechas futuras y su finalización debe ser igual o posterior al inicio.
+
 ## Responsabilidad
 
 Gestiona la UCT, directivos, cargos, programas, planificaciones y visitas

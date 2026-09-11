@@ -4,6 +4,7 @@ from modules.recursos.models.erogacion import Erogacion, TipoErogacion, Erogacio
 from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.shared.services.auditoria_service import AuditoriaService
+from modules.shared.services.date_time import validate_institutional_date
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
@@ -138,6 +139,7 @@ class ErogacionService:
             datetime.strptime(data.get("fecha"), "%Y-%m-%d").date()
             if data.get("fecha") else datetime.today().date()
         )
+        validate_institutional_date(fecha, "fecha", allow_future=False)
 
         erogacion = Erogacion(
             numero_erogacion=numero,

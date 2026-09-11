@@ -1,5 +1,11 @@
 # Modulo frontend de personal
 
+## Fechas
+
+Las altas al grupo y los períodos de sus relaciones admiten fechas desde el
+01/01/2010. Esta regla describe actividad institucional y no debe extenderse a
+fechas biográficas o de identidad.
+
 ## Vistas
 
 - `PersonalHome`: listado con hasta 9 elementos por pagina.

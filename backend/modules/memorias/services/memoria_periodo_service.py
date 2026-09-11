@@ -1,6 +1,7 @@
 from datetime import date, datetime
 
 from modules.shared.exceptions import ValidationError
+from modules.shared.services.date_time import validate_institutional_date
 
 
 def validar_fecha_alta_grupo(
@@ -16,11 +17,13 @@ def validar_fecha_alta_grupo(
         )
 
     if isinstance(valor, date) and not isinstance(valor, datetime):
-        return valor
+        return validate_institutional_date(valor, campo)
 
     if isinstance(valor, str):
         try:
-            return datetime.strptime(valor.strip(), "%Y-%m-%d").date()
+            return validate_institutional_date(
+                datetime.strptime(valor.strip(), "%Y-%m-%d").date(), campo
+            )
         except ValueError:
             pass
 

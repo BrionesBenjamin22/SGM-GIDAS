@@ -1,5 +1,10 @@
 # Modulo backend de transferencia
 
+## Contrato de fechas
+
+Los períodos de transferencia se validan desde el 01/01/2010 y el fin no puede
+ser anterior al inicio, tanto en alta como en edición.
+
 ## Responsabilidad
 
 Gestiona transferencias socio-productivas, tipos de contrato, adoptantes y sus

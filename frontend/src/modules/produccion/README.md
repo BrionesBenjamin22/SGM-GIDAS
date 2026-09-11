@@ -1,5 +1,11 @@
 # Produccion
 
+## Fechas
+
+Las fechas de publicaciones, reuniones, docencia, distinciones, documentación
+y registros de propiedad admiten valores desde el 01/01/2010. Cada formulario
+mantiene además sus restricciones vigentes sobre fechas futuras y períodos.
+
 ## Funcionalidad
 
 El modulo administra actividades de docencia, articulos de divulgacion,

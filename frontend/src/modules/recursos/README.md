@@ -1,5 +1,11 @@
 # Recursos
 
+## Fechas
+
+Equipamiento, erogaciones, becas y vinculaciones institucionales admiten fechas
+desde el 01/01/2010. Se mantienen las reglas particulares que impiden fechas
+futuras en incorporaciones y erogaciones.
+
 ## Funcionalidad
 
 El modulo administra equipamiento e infraestructura y el resumen de ingresos y

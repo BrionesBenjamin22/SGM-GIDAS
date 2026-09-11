@@ -11,6 +11,7 @@ from modules.personal.models.personal import Becario, TipoFormacion, BecarioHora
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.proyectos.models.proyecto_investigacion import ProyectoInvestigacion
 from modules.shared.services.auditoria_service import AuditoriaService
+from modules.shared.services.date_time import validate_institutional_date
 from modules.recursos.models.becas import Beca, Beca_Becario
 from modules.memorias.services.memoria_periodo_service import (
     validar_fecha_alta_grupo,
@@ -186,7 +187,9 @@ def _parsear_fecha_relacion(valor, campo, permitir_none=False):
     if not isinstance(valor, str):
         raise ValueError(f"El campo '{campo}' debe tener formato YYYY-MM-DD.")
     try:
-        return datetime.strptime(valor, "%Y-%m-%d").date()
+        return validate_institutional_date(
+            datetime.strptime(valor, "%Y-%m-%d").date(), campo
+        )
     except builtins.ValueError as exc:
         raise ValueError(f"El campo '{campo}' debe tener formato YYYY-MM-DD.") from exc
 

@@ -11,6 +11,7 @@ from modules.produccion.models.registro_patente import (
 )
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.shared.services.auditoria_service import AuditoriaService
+from modules.shared.services.date_time import validate_institutional_date
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 
 
@@ -54,7 +55,7 @@ class RegistrosPropiedadService:
         if fecha > date.today():
             raise ValidationError("fecha_registro no puede ser futura")
 
-        return fecha
+        return validate_institutional_date(fecha, "fecha_registro")
 
     @staticmethod
     def _get_or_404(registro_id: int):
@@ -236,7 +237,10 @@ class RegistrosPropiedadService:
 
         if "fecha_registro" in data:
             try:
-                nuevo_valor = datetime.strptime(data["fecha_registro"], "%Y-%m-%d").date()
+                nuevo_valor = validate_institutional_date(
+                    datetime.strptime(data["fecha_registro"], "%Y-%m-%d").date(),
+                    "fecha_registro",
+                )
             except (TypeError, ValueError):
                 raise ValidationError("fecha_registro debe tener formato YYYY-MM-DD")
 

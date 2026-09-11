@@ -1,5 +1,11 @@
 # Modulo frontend de proyectos
 
+## Fechas
+
+Los períodos de proyectos y de sus participaciones admiten fechas desde el
+01/01/2010. Una fecha de finalización no puede preceder a su fecha de inicio;
+los cierres conservan la prohibición de utilizar una fecha futura.
+
 ## Vistas
 
 El modulo administra proyectos de investigacion y participaciones relevantes.

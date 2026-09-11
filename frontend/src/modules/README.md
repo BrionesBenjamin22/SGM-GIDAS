@@ -1,5 +1,12 @@
 # Frontend modular
 
+## Contrato transversal de fechas institucionales
+
+Los formularios de entidades usan `Calendar`, que aplica `2010-01-01` como
+límite inferior predeterminado. Cada módulo conserva su propia regla sobre
+fechas futuras y sobre el orden de los períodos. Los calendarios destinados a
+filtrar búsquedas declaran `institutionalRange={false}` porque no crean ítems.
+
 Este directorio organiza la aplicacion React como monolito modular. Cada modulo
 agrupa la implementacion real de sus vistas, hooks y services por dominio.
 

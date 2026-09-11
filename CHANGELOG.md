@@ -30,6 +30,32 @@ Validaciones:
 
 ### Corregido
 
+#### Rango institucional de fechas — Validar ítems desde 2010
+
+- Se centralizó `2010-01-01` como límite inferior de las fechas vinculadas con
+  la actividad del grupo en frontend y backend.
+- El calendario reutilizable aplica el rango por defecto en Grupo, Personal,
+  Producción, Proyectos, Recursos, Transferencia y Memorias; los filtros de
+  búsqueda quedan excluidos porque no crean ni modifican ítems.
+- Los services rechazan payloads anteriores al rango institucional y conservan
+  las reglas particulares sobre fechas futuras y orden de períodos.
+- El equipo directivo impide además inicios o finalizaciones futuras y exige que
+  la finalización no preceda al inicio.
+- Se documentó el contrato transversal y su aplicación en cada módulo afectado.
+
+Validaciones:
+
+- frontend: typecheck correcto y 66 de 66 pruebas correctas en el host;
+- build productivo frontend dentro de Docker: correcto, con 2659 módulos;
+- backend focalizado dentro de Docker: 11 de 11 pruebas correctas;
+- compilación de módulos y tests backend dentro de Docker: correcta;
+- regresión backend dentro de Docker: 352 pruebas correctas y 3 incidencias
+  ajenas por archivos de infraestructura del repositorio no montados en `/app`;
+- la suite frontend no inicia dentro de su contenedor porque la versión de Node
+  de esa imagen no admite `--experimental-strip-types`; la misma suite pasa en
+  el host;
+- la validación manual de pantallas queda reservada para el usuario.
+
 #### ISS-06 — Evitar el cierre intempestivo de la sesión
 
 - El backend informa la expiración del access token, la sesión renovable y el

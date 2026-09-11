@@ -8,6 +8,7 @@ from modules.produccion.models.articulo_divulgacion import (
 )
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.shared.services.auditoria_service import AuditoriaService
+from modules.shared.services.date_time import validate_institutional_date
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 
 
@@ -56,6 +57,7 @@ class ArticuloDivulgacionService:
 
     @staticmethod
     def _validar_fecha(fecha_publicacion):
+        validate_institutional_date(fecha_publicacion, "fecha_publicacion")
         if fecha_publicacion > date.today():
             raise ValidationError("La fecha de publicacion no puede ser futura")
 

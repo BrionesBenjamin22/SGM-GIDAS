@@ -12,6 +12,7 @@ from modules.transferencia.models.transferencia_socio import (
 )
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.shared.services.auditoria_service import AuditoriaService
+from modules.shared.services.date_time import validate_institutional_date
 from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
 
@@ -157,6 +158,7 @@ class TransferenciaSocioProductivaService:
             data["fecha_inicio"],
             "%Y-%m-%d"
         ).date()
+        validate_institutional_date(fecha_inicio, "fecha_inicio")
 
         fecha_fin = None
         if data.get("fecha_fin"):
@@ -164,6 +166,7 @@ class TransferenciaSocioProductivaService:
                 data["fecha_fin"],
                 "%Y-%m-%d"
             ).date()
+            validate_institutional_date(fecha_fin, "fecha_fin")
 
             if fecha_fin < fecha_inicio:
                 raise ValueError("La fecha_fin no puede ser anterior a fecha_inicio")
@@ -271,6 +274,7 @@ class TransferenciaSocioProductivaService:
                 data["fecha_inicio"],
                 "%Y-%m-%d"
             ).date()
+            validate_institutional_date(nuevo_valor, "fecha_inicio")
             cambio = AuditoriaService.construir_cambio(
                 transferencia.fecha_inicio,
                 nuevo_valor
@@ -284,6 +288,8 @@ class TransferenciaSocioProductivaService:
                 datetime.strptime(data["fecha_fin"], "%Y-%m-%d").date()
                 if data["fecha_fin"] else None
             )
+            if nuevo_valor:
+                validate_institutional_date(nuevo_valor, "fecha_fin")
             cambio = AuditoriaService.construir_cambio(
                 transferencia.fecha_fin,
                 nuevo_valor
@@ -291,6 +297,12 @@ class TransferenciaSocioProductivaService:
             if cambio:
                 cambios["fecha_fin"] = cambio
                 transferencia.fecha_fin = nuevo_valor
+
+        if (
+            transferencia.fecha_fin
+            and transferencia.fecha_fin < transferencia.fecha_inicio
+        ):
+            raise ValueError("La fecha_fin no puede ser anterior a fecha_inicio")
 
         if cambios:
             transferencia.mark_updated(user_id)

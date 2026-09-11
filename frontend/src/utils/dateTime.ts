@@ -2,6 +2,8 @@ const CIVIL_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const ISO_TIMESTAMP_WITHOUT_ZONE =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/;
 
+export const INSTITUTIONAL_MIN_DATE_ISO = "2010-01-01";
+
 function isValidDate(value: Date) {
   return !Number.isNaN(value.getTime());
 }
@@ -36,6 +38,19 @@ export function toCivilDateString(value?: Date | null): string | null {
   const month = String(value.getMonth() + 1).padStart(2, "0");
   const day = String(value.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+export function getInstitutionalMinDate(): Date {
+  return new Date(2010, 0, 1);
+}
+
+export function getLocalTodayIso(): string {
+  return toCivilDateString(new Date()) ?? "";
+}
+
+export function isInstitutionalDate(value?: string | Date | null): boolean {
+  const parsed = parseCivilDate(value);
+  return parsed !== null && parsed >= getInstitutionalMinDate();
 }
 
 export function getCivilYear(value?: string | Date | null): number | null {

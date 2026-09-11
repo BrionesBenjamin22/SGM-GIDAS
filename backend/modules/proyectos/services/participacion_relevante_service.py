@@ -11,6 +11,7 @@ from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
+from modules.shared.services.date_time import validate_institutional_date
 
 
 def normalizar_texto(texto: str) -> str:
@@ -80,7 +81,7 @@ class ParticipacionRelevanteService:
         if fecha > date.today():
             raise ValueError("La fecha no puede ser futura")
 
-        return fecha
+        return validate_institutional_date(fecha, "fecha")
 
     @staticmethod
     def _validar_investigador(investigador_id):

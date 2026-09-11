@@ -3,6 +3,7 @@ from datetime import datetime
 from extension import db
 from modules.memorias.models.memorias import Memoria, MemoriaVersion, EstadoMemoria
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
+from modules.shared.services.date_time import validate_institutional_date
 from modules.personal.services.investigador_service import (
     obtener_snapshots_investigadores_por_memoria_version,
     snapshot_investigadores_para_memoria_version,
@@ -85,7 +86,9 @@ class MemoriaService:
         valor = MemoriaService._validar_texto(fecha_str, campo)
 
         try:
-            return datetime.strptime(valor, "%Y-%m-%d").date()
+            return validate_institutional_date(
+                datetime.strptime(valor, "%Y-%m-%d").date(), campo
+            )
         except ValueError:
             raise ValidationError(
                 f"El campo '{campo}' debe tener formato YYYY-MM-DD"

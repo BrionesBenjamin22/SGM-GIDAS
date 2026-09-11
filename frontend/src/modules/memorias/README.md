@@ -1,5 +1,10 @@
 # Memorias
 
+## Fechas
+
+Los períodos informados por las memorias admiten fechas desde el 01/01/2010 y
+mantienen la coherencia cronológica y anual definida por el módulo.
+
 ## Funcionalidad
 
 El modulo administra memorias, sus versiones, cambios de estado, reaperturas,

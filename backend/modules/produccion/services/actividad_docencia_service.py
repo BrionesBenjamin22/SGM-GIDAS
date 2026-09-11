@@ -13,6 +13,7 @@ from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
+from modules.shared.services.date_time import validate_institutional_date
 
 
 class ActividadDocenciaService:
@@ -62,7 +63,9 @@ class ActividadDocenciaService:
     @staticmethod
     def _parse_fecha(valor, campo):
         try:
-            return datetime.strptime(valor, "%Y-%m-%d").date()
+            return validate_institutional_date(
+                datetime.strptime(valor, "%Y-%m-%d").date(), campo
+            )
         except (TypeError, ValueError):
             raise ValidationError(
                 f"El campo '{campo}' es obligatorio y debe tener formato YYYY-MM-DD"

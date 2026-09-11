@@ -1,5 +1,12 @@
 # Backend modular
 
+## Contrato transversal de fechas institucionales
+
+`modules.shared.services.date_time.validate_institutional_date` establece el
+01/01/2010 como límite inferior de los hechos vinculados con la vida del grupo.
+Los services deben invocarlo después de parsear el payload y pueden conservar o
+restringir fechas futuras según la regla de negocio del dominio.
+
 Este directorio organiza el backend como monolito modular. Cada modulo agrupa
 archivos por responsabilidad tecnica interna:
 

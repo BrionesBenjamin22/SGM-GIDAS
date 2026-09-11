@@ -10,6 +10,7 @@ from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.produccion.models.trabajo_reunion import TipoReunion
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
+from modules.shared.services.date_time import validate_institutional_date
 
 
 def _validar_payload(data: dict):
@@ -47,7 +48,7 @@ def _validar_fecha(fecha_str: str):
     if fecha > date.today():
         raise ValueError("La fecha no puede ser futura.")
 
-    return fecha
+    return validate_institutional_date(fecha, "fecha")
 
 
 def _validar_tipo_visita(tipo_visita_id):

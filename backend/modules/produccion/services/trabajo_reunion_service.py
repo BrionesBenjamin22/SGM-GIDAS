@@ -12,6 +12,7 @@ from modules.produccion.models.trabajo_reunion import (
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
+from modules.shared.services.date_time import validate_institutional_date
 from extension import db
 
 
@@ -71,7 +72,7 @@ class TrabajoReunionCientificaService:
         if fecha > date.today():
             raise ValidationError("La fecha de inicio no puede ser futura")
 
-        return fecha
+        return validate_institutional_date(fecha, "fecha_inicio")
 
     @staticmethod
     def _normalizar_activos(activos):

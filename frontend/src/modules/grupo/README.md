@@ -1,5 +1,11 @@
 # Modulo frontend de grupo
 
+## Fechas
+
+Visitas y mandatos directivos admiten fechas desde el 01/01/2010. Las fechas de
+inicio y finalización de directivos tampoco pueden ser futuras, y una
+finalización no puede preceder al inicio del mandato.
+
 ## Vistas
 
 El modulo contiene configuracion de UCT, directivos, programas,

@@ -1,5 +1,10 @@
 # Transferencia frontend
 
+## Fechas
+
+Los períodos de transferencias socio-productivas admiten fechas desde el
+01/01/2010 y la fecha de fin no puede ser anterior a la fecha de inicio.
+
 ## Alcance
 
 El modulo administra transferencias socio-productivas, sus adoptantes y los tipos

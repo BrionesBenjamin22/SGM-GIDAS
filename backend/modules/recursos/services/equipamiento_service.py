@@ -4,14 +4,13 @@ from datetime import datetime, date
 from modules.recursos.models.equipamiento import Equipamiento, EquipamientoMemoriaVersion
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.shared.services.auditoria_service import AuditoriaService
+from modules.shared.services.date_time import validate_institutional_date
 from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
 from modules.shared.exceptions import NotFoundError, ValidationError as ValueError
 
 
 class EquipamientoService:
-
-    FECHA_INCORPORACION_MINIMA = date(2010, 1, 1)
 
     # ==========================================
     # HELPERS
@@ -56,12 +55,7 @@ class EquipamientoService:
         if fecha > date.today():
             raise ValueError("La fecha de incorporacion no puede ser futura.")
 
-        if fecha < EquipamientoService.FECHA_INCORPORACION_MINIMA:
-            raise ValueError(
-                "La fecha de incorporacion debe ser igual o posterior al 01/01/2010."
-            )
-
-        return fecha
+        return validate_institutional_date(fecha, "fecha_incorporacion")
 
     @staticmethod
     def _validar_grupo(grupo_id):

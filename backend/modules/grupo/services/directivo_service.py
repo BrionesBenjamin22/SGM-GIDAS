@@ -1,9 +1,11 @@
+import builtins
 from datetime import datetime
 from extension import db
 from modules.shared.exceptions import ValidationError as ValueError
 from sqlalchemy.orm import joinedload
 from modules.grupo.models.directivos import Directivo, DirectivoGrupo, Cargo
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.shared.services.date_time import validate_institutional_date
 
 
 class DirectivoGrupoService:
@@ -26,6 +28,17 @@ class DirectivoGrupoService:
     @staticmethod
     def _normalizar_cargo(nombre: str) -> str:
         return nombre.strip().casefold()
+
+    @staticmethod
+    def _validar_fecha(valor, campo: str):
+        try:
+            fecha = datetime.strptime(valor, "%Y-%m-%d").date()
+        except (TypeError, builtins.ValueError) as exc:
+            raise ValueError(
+                f"El campo '{campo}' debe tener formato YYYY-MM-DD."
+            ) from exc
+
+        return validate_institutional_date(fecha, campo, allow_future=False)
 
     @staticmethod
     def _validar_cargo_y_cupo(
@@ -140,15 +153,15 @@ class DirectivoGrupoService:
         if not cargo:
             raise ValueError("Cargo no encontrado.")
 
-        fecha_inicio = datetime.strptime(
-            data["fecha_inicio"], "%Y-%m-%d"
-        ).date()
+        fecha_inicio = DirectivoGrupoService._validar_fecha(
+            data["fecha_inicio"], "fecha_inicio"
+        )
 
         fecha_fin = None
         if data.get("fecha_fin"):
-            fecha_fin = datetime.strptime(
-                data["fecha_fin"], "%Y-%m-%d"
-            ).date()
+            fecha_fin = DirectivoGrupoService._validar_fecha(
+                data["fecha_fin"], "fecha_fin"
+            )
 
             if fecha_fin < fecha_inicio:
                 raise ValueError("La fecha_fin no puede ser anterior a fecha_inicio.")
@@ -213,9 +226,9 @@ class DirectivoGrupoService:
         if not participacion:
             raise ValueError("No hay cargo activo para finalizar.")
 
-        fecha_fin = datetime.strptime(
-            data["fecha_fin"], "%Y-%m-%d"
-        ).date()
+        fecha_fin = DirectivoGrupoService._validar_fecha(
+            data["fecha_fin"], "fecha_fin"
+        )
 
         if fecha_fin < participacion.fecha_inicio:
             raise ValueError("La fecha_fin no puede ser anterior a fecha_inicio.")
