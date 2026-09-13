@@ -1,3 +1,4 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "@/components/Button";
@@ -132,6 +133,7 @@ export default function FormInvestigador({
       await operation();
       return true;
     } catch (error) {
+      if (applyFieldErrors(error, setErrors, ["nombre","horas","dedicacion","categoria","programa","fechaAltaGrupo"])) return false;
       const fieldErrors = personalFieldErrors(error);
       if (fieldErrors.horas) {
         setErrors((prev) => ({ ...prev, horas: fieldErrors.horas }));
@@ -203,7 +205,7 @@ export default function FormInvestigador({
       onSubmit={submit}
       className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
     >
-      <Field label="Nombre y apellido">
+      <Field label="Nombre y apellido" name="nombre" error={errors.nombre}>
         <>
           <input
             className={`input ${
@@ -221,7 +223,7 @@ export default function FormInvestigador({
         </>
       </Field>
 
-      <Field label="Horas semanales">
+      <Field label="Horas semanales" name="horas" error={errors.horas}>
         <>
           <input
             type="number"
@@ -248,7 +250,7 @@ export default function FormInvestigador({
         </>
       </Field>
 
-      <Field label="Dedicacion">
+      <Field label="Dedicacion" name="dedicacion" error={errors.dedicacion}>
         <>
           <select
             className={`input ${
@@ -276,7 +278,7 @@ export default function FormInvestigador({
         </>
       </Field>
 
-      <Field label="Categoría UTN">
+      <Field label="Categoría UTN" name="categoria" error={errors.categoria}>
         <>
           <select
             className={`input ${
@@ -304,7 +306,7 @@ export default function FormInvestigador({
         </>
       </Field>
 
-      <Field label="Programa de incentivos">
+      <Field label="Programa de incentivos" name="programa" error={errors.programa}>
         <>
           <select
             className={`input ${
@@ -332,7 +334,7 @@ export default function FormInvestigador({
         </>
       </Field>
 
-      <Field label="Fecha de alta en el grupo">
+      <Field label="Fecha de alta en el grupo" name="fechaAltaGrupo" error={errors.fechaAltaGrupo}>
         <Calendar
           value={fechaAltaGrupo}
           onChange={(date) => {

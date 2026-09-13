@@ -1,3 +1,4 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "@/components/Button";
@@ -110,6 +111,7 @@ export default function FormPTAAProfesional({
       await operation();
       return true;
     } catch (error) {
+      if (applyFieldErrors(error, setErrors, ["nombre","horas","tipoPersonal","fechaAltaGrupo","grupo"])) return false;
       const fieldErrors = personalFieldErrors(error);
       if (Object.keys(fieldErrors).length) {
         setErrors(fieldErrors);
@@ -196,7 +198,7 @@ export default function FormPTAAProfesional({
     >
       {errors.grupo && <p id="personal-grupo" tabIndex={-1} role="alert">{errors.grupo}</p>}
 
-      <Field label="Nombre y apellido" required error={errors.nombre}>
+      <Field label="Nombre y apellido" required error={errors.nombre} name="nombre">
         <input
           id="personal-nombre"
           aria-label="Nombre y apellido"
@@ -213,7 +215,7 @@ export default function FormPTAAProfesional({
         />
       </Field>
 
-      <Field label="Horas semanales" required error={errors.horas}>
+      <Field label="Horas semanales" required error={errors.horas} name="horas">
         <input
           id="personal-horas"
           aria-label="Horas semanales"
@@ -236,7 +238,7 @@ export default function FormPTAAProfesional({
       </Field>
 
       <div id="personal-fechaAltaGrupo" tabIndex={-1}>
-      <Field label="Fecha de alta en el grupo" required error={errors.fechaAltaGrupo}>
+      <Field label="Fecha de alta en el grupo" required error={errors.fechaAltaGrupo} name="fechaAltaGrupo">
         <Calendar
           value={fechaAltaGrupo}
           onChange={(date) => {
@@ -258,7 +260,7 @@ export default function FormPTAAProfesional({
           <Button type="button" variant="secondary" onClick={() => void refetchTipos()}>Reintentar</Button>
         </div>}
         {!tiposLoading && !tiposError && !tiposPersonal.length && <p role="alert">No hay tipos de personal disponibles. Agregue un tipo en el catálogo e intente nuevamente.</p>}
-        <Field label="Tipo de personal" required error={errors.tipoPersonal}>
+        <Field label="Tipo de personal" required error={errors.tipoPersonal} name="tipoPersonal">
           <select
             id="personal-tipoPersonal"
             aria-label="Tipo de personal"

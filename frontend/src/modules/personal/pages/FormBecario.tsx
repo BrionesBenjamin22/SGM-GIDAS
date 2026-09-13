@@ -1,3 +1,4 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { MAX_HORAS_SEMANALES, validWeeklyHours, WEEKLY_HOURS_ERROR } from "@/modules/personal/utils/weeklyHours";
 import { personalFieldErrors } from "@/modules/personal/utils/personalFieldErrors";
@@ -178,6 +179,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
       await operation();
       return true;
     } catch (error) {
+      if (applyFieldErrors(error, setErrors, ["nombre","horas","tipoFormacion","fechaAltaGrupo","becaGlobal"])) return false;
       const fieldErrors = personalFieldErrors(error);
       if (fieldErrors.horas) {
         setErrors((prev) => ({ ...prev, horas: fieldErrors.horas }));
@@ -269,7 +271,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
       onSubmit={submit}
       className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
     >
-      <Field label="Nombre y apellido">
+      <Field label="Nombre y apellido" name="nombre" error={errors.nombre}>
         <>
           <input
             className={`input ${
@@ -287,7 +289,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
         </>
       </Field>
 
-      <Field label="Horas semanales">
+      <Field label="Horas semanales" name="horas" error={errors.horas}>
         <>
           <input
             type="number"
@@ -314,7 +316,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
         </>
       </Field>
 
-      <Field label="Tipo de formación">
+      <Field label="Tipo de formación" name="tipoFormacion" error={errors.tipoFormacion}>
         <>
           <select
             className={`input ${
@@ -344,7 +346,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
         </>
       </Field>
 
-      <Field label="Fecha de alta en el grupo">
+      <Field label="Fecha de alta en el grupo" name="fechaAltaGrupo" error={errors.fechaAltaGrupo}>
         <Calendar
           value={fechaAltaGrupo}
           onChange={(date) => {
@@ -430,7 +432,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
                 </h5>
 
                 <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
-                  <Field label="Tipo de beca">
+                  <Field label="Tipo de beca" name={`beca_${index}_id`} error={errors[`beca_${index}_id`]}>
                     <>
                       <select
                         className={`input py-2 text-sm text-slate-900 ${
@@ -488,7 +490,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
                     />
                   </Field>
 
-                  <Field label="Fecha inicio">
+                  <Field label="Fecha inicio" name={`beca_${index}_fechaInicio`} error={errors[`beca_${index}_fechaInicio`]}>
                     <Calendar
                       value={beca.fechaInicio}
                       onChange={(date) => {

@@ -30,7 +30,7 @@ test("formulario real muestra catálogo arbitrario, envía su ID y bloquea 220 h
     jsx: ts.JsxEmit.React, jsxFactory: "globalThis.__personalJsx",
   } }).outputText;
   js = js.replace(/from "([^"]+)"/g, (_match, path: string) => {
-    const url = path.startsWith("@/modules/personal/utils/")
+    const url = path === "@/lib/httpError" || path.startsWith("@/modules/personal/utils/")
       ? new URL(`../src/${path.slice(2)}.ts`, import.meta.url).href : mockUrl;
     return `from ${JSON.stringify(url)}`;
   });
