@@ -1,3 +1,4 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -112,6 +113,7 @@ export default function ArticulosDivulgacionForm() {
       });
     },
     onError: (error) => {
+      if (applyFieldErrors(error, setErrors, ["titulo","descripcion","fecha"])) return;
       const backendMessage = getErrorMessage(
         error,
         "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
@@ -194,7 +196,7 @@ export default function ArticulosDivulgacionForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Título">
+        <Field label="Título" name="titulo" error={errors.titulo}>
           <>
             <input
               type="text"
@@ -212,7 +214,7 @@ export default function ArticulosDivulgacionForm() {
           </>
         </Field>
 
-        <Field label="Descripción">
+        <Field label="Descripción" name="descripcion" error={errors.descripcion}>
           <>
             <textarea
               className={`${inputClass("descripcion")} min-h-[100px]`}
@@ -229,7 +231,7 @@ export default function ArticulosDivulgacionForm() {
           </>
         </Field>
 
-        <Field label="Fecha de publicación">
+        <Field label="Fecha de publicación" name="fecha" error={errors.fecha}>
           <Calendar
             value={fechaPublicacion}
             onChange={(date) => {

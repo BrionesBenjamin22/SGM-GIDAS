@@ -1,3 +1,4 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState, useEffect } from "react";
@@ -227,6 +228,7 @@ export default function DocumentacionForm() {
       });
     },
     onError: (error) => {
+      if (applyFieldErrors(error, setErrors, ["titulo","editorial","fecha","autores"])) return;
       setErrorMessage(
         getErrorMessage(
           error,
@@ -258,7 +260,7 @@ export default function DocumentacionForm() {
         }}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Título">
+        <Field label="Título" name="titulo" error={errors.titulo}>
           <>
             <input
               className={inputClass("titulo")}
@@ -289,7 +291,7 @@ export default function DocumentacionForm() {
           )}
         </div>
 
-        <Field label="Editorial">
+        <Field label="Editorial" name="editorial" error={errors.editorial}>
           <>
             <input
               className={inputClass("editorial")}
@@ -305,7 +307,7 @@ export default function DocumentacionForm() {
           </>
         </Field>
 
-        <Field label="Fecha">
+        <Field label="Fecha" name="fecha" error={errors.fecha}>
           <DatePicker
             value={data.fecha ? new Date(`${data.fecha}T00:00:00`) : null}
             onChange={(dt) => {

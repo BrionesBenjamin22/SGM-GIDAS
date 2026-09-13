@@ -1,3 +1,4 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -163,6 +164,7 @@ export default function TrabajoReunionForm() {
       });
     },
     onError: (error) => {
+      if (applyFieldErrors(error, setErrors, ["titulo","nombreReunion","procedencia","tipoId","fechaInicio","investigadores"])) return;
       const backendMessage = getErrorMessage(
         error,
         "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
@@ -201,6 +203,7 @@ export default function TrabajoReunionForm() {
       setShowSuccess(true);
     },
     onError: (error) => {
+      if (applyFieldErrors(error, setErrors, ["titulo","nombreReunion","procedencia","tipoId","fechaInicio","investigadores"])) return;
       setInvestigadorAEliminar(null);
       setErrorMessage(
         getErrorMessage(
@@ -286,7 +289,7 @@ export default function TrabajoReunionForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Título del trabajo">
+        <Field label="Título del trabajo" name="titulo" error={errors.titulo}>
           <>
             <input
               className={inputClass("titulo")}
@@ -306,7 +309,7 @@ export default function TrabajoReunionForm() {
           </>
         </Field>
 
-        <Field label="Nombre de la reunión">
+        <Field label="Nombre de la reunión" name="nombreReunion" error={errors.nombreReunion}>
           <>
             <input
               className={inputClass("nombreReunion")}
@@ -328,7 +331,7 @@ export default function TrabajoReunionForm() {
           </>
         </Field>
 
-        <Field label="Procedencia">
+        <Field label="Procedencia" name="procedencia" error={errors.procedencia}>
           <>
             <input
               className={inputClass("procedencia")}
@@ -350,7 +353,7 @@ export default function TrabajoReunionForm() {
           </>
         </Field>
 
-        <Field label="Tipo de reunión">
+        <Field label="Tipo de reunión" name="tipoId" error={errors.tipoId}>
           <>
             <select
               className={`${inputClass("tipoId")} ${
@@ -378,7 +381,7 @@ export default function TrabajoReunionForm() {
           </>
         </Field>
 
-        <Field label="Investigadores">
+        <Field label="Investigadores" name="investigadores" error={errors.investigadores}>
           <>
             <PersonalProyectoField
               value={investigadoresIds}
@@ -405,7 +408,7 @@ export default function TrabajoReunionForm() {
           </>
         </Field>
 
-        <Field label="Fecha de inicio">
+        <Field label="Fecha de inicio" name="fechaInicio" error={errors.fechaInicio}>
           <Calendar
             value={fechaInicio}
             onChange={(date) => {

@@ -1,3 +1,4 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -126,6 +127,7 @@ export default function FormDocenciaInvestigador() {
       });
     },
     onError: (error) => {
+      if (applyFieldErrors(error, setErrors, ["investigador","curso","institucion","fechaInicio","fechaFin","gradoAcademico","rolActividad"])) return;
       setErrorMessage(
         getErrorMessage(
           error,
@@ -241,7 +243,7 @@ export default function FormDocenciaInvestigador() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Investigador">
+        <Field label="Investigador" name="investigador" error={errors.investigador}>
           <>
             <select
               className={`${inputClass("investigador")} ${
@@ -269,7 +271,7 @@ export default function FormDocenciaInvestigador() {
           </>
         </Field>
 
-        <Field label="Curso">
+        <Field label="Curso" name="curso" error={errors.curso}>
           <>
             <input
               className={inputClass("curso")}
@@ -286,7 +288,7 @@ export default function FormDocenciaInvestigador() {
           </>
         </Field>
 
-        <Field label="Institución">
+        <Field label="Institución" name="institucion" error={errors.institucion}>
           <>
             <input
               className={inputClass("institucion")}
@@ -304,7 +306,7 @@ export default function FormDocenciaInvestigador() {
         </Field>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Field label="Fecha inicio">
+          <Field label="Fecha inicio" name="fechaInicio" error={errors.fechaInicio}>
             <>
               <Calendar
                 value={fechaInicio}
@@ -321,7 +323,7 @@ export default function FormDocenciaInvestigador() {
             </>
           </Field>
 
-          <Field label="Fecha fin">
+          <Field label="Fecha fin" name="fechaFin" error={errors.fechaFin}>
             <>
               <Calendar
                 value={fechaFin}
@@ -340,7 +342,7 @@ export default function FormDocenciaInvestigador() {
           </Field>
         </div>
 
-        <Field label="Grado academico">
+        <Field label="Grado academico" name="gradoAcademico" error={errors.gradoAcademico}>
           <>
             <select
               className={`${inputClass("gradoAcademico")} ${
@@ -370,7 +372,7 @@ export default function FormDocenciaInvestigador() {
           </>
         </Field>
 
-        <Field label="Rol en la actividad">
+        <Field label="Rol en la actividad" name="rolActividad" error={errors.rolActividad}>
           <>
             <select
               className={`${inputClass("rolActividad")} ${

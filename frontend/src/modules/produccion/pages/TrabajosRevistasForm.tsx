@@ -1,3 +1,4 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -174,6 +175,7 @@ export default function TrabajosRevistasForm() {
       });
     },
     onError: (error) => {
+      if (applyFieldErrors(error, setErrors, ["titulo","nombreRevista","editorial","issn","pais","tipoId","fecha","investigadores"])) return;
       const backendMessage = getErrorMessage(
         error,
         "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
@@ -215,6 +217,7 @@ export default function TrabajosRevistasForm() {
       setShowSuccess(true);
     },
     onError: (error) => {
+      if (applyFieldErrors(error, setErrors, ["titulo","nombreRevista","editorial","issn","pais","tipoId","fecha","investigadores"])) return;
       setInvestigadorAEliminar(null);
       setErrorMessage(
         getErrorMessage(
@@ -305,7 +308,7 @@ export default function TrabajosRevistasForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Título del trabajo">
+        <Field label="Título del trabajo" name="titulo" error={errors.titulo}>
           <>
             <input
               className={inputClass("titulo")}
@@ -325,7 +328,7 @@ export default function TrabajosRevistasForm() {
           </>
         </Field>
 
-        <Field label="Nombre de la revista">
+        <Field label="Nombre de la revista" name="nombreRevista" error={errors.nombreRevista}>
           <>
             <input
               className={inputClass("nombreRevista")}
@@ -347,7 +350,7 @@ export default function TrabajosRevistasForm() {
           </>
         </Field>
 
-        <Field label="Editorial">
+        <Field label="Editorial" name="editorial" error={errors.editorial}>
           <>
             <input
               className={inputClass("editorial")}
@@ -367,7 +370,7 @@ export default function TrabajosRevistasForm() {
           </>
         </Field>
 
-        <Field label="ISSN">
+        <Field label="ISSN" name="issn" error={errors.issn}>
           <>
             <input
               className={inputClass("issn")}
@@ -384,7 +387,7 @@ export default function TrabajosRevistasForm() {
           </>
         </Field>
 
-        <Field label="País">
+        <Field label="País" name="pais" error={errors.pais}>
           <>
             <input
               className={inputClass("pais")}
@@ -404,7 +407,7 @@ export default function TrabajosRevistasForm() {
           </>
         </Field>
 
-        <Field label="Tipo">
+        <Field label="Tipo" name="tipoId" error={errors.tipoId}>
           <>
             <select
               className={`${inputClass("tipoId")} ${
@@ -432,7 +435,7 @@ export default function TrabajosRevistasForm() {
           </>
         </Field>
 
-        <Field label="Investigadores">
+        <Field label="Investigadores" name="investigadores" error={errors.investigadores}>
           <>
             <PersonalProyectoField
               value={investigadoresIds}
@@ -458,7 +461,7 @@ export default function TrabajosRevistasForm() {
           </>
         </Field>
 
-        <Field label="Fecha">
+        <Field label="Fecha" name="fecha" error={errors.fecha}>
           <Calendar
             value={fecha}
             onChange={(date) => {

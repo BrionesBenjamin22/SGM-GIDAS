@@ -1,3 +1,4 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -111,6 +112,7 @@ export default function DistincionesForm() {
       });
     },
     onError: (error) => {
+      if (applyFieldErrors(error, setErrors, ["fecha","descripcion","proyecto"])) return;
       const backendMessage = getErrorMessage(
         error,
         "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
@@ -189,7 +191,7 @@ export default function DistincionesForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Fecha">
+        <Field label="Fecha" name="fecha" error={errors.fecha}>
           <Calendar
             value={fecha}
             onChange={(date) => {
@@ -201,7 +203,7 @@ export default function DistincionesForm() {
           />
         </Field>
 
-        <Field label="Descripción">
+        <Field label="Descripción" name="descripcion" error={errors.descripcion}>
           <>
             <textarea
               className={`${inputClass("descripcion")} min-h-[80px]`}
@@ -218,7 +220,7 @@ export default function DistincionesForm() {
           </>
         </Field>
 
-        <Field label="Proyecto de investigación">
+        <Field label="Proyecto de investigación" name="proyecto" error={errors.proyecto}>
           <>
             <select
               className={`${inputClass("proyecto")} ${
