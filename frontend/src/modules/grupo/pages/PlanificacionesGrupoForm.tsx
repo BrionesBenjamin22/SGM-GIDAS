@@ -1,3 +1,4 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -105,6 +106,7 @@ export default function PlanificacionGrupoForm() {
       try {
         await mutateAsync({ mode: "edit", payload: changedPayload });
       } catch (error: unknown) {
+      if (applyFieldErrors(error, setErrors, ["descripcion","anio"])) return;
         setErrorMessage(
           getErrorMessage(
             error,
@@ -117,6 +119,7 @@ export default function PlanificacionGrupoForm() {
       try {
         await mutateAsync({ mode: "create", payload });
       } catch (error: unknown) {
+      if (applyFieldErrors(error, setErrors, ["descripcion","anio"])) return;
         setErrorMessage(
           getErrorMessage(
             error,
@@ -160,7 +163,7 @@ export default function PlanificacionGrupoForm() {
         onSubmit={submit}
         className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 space-y-6"
       >
-        <Field label="Año">
+        <Field label="Año" name="anio" error={errors.anio}>
           <>
             <input
               type="number"
@@ -182,7 +185,7 @@ export default function PlanificacionGrupoForm() {
           </>
         </Field>
 
-        <Field label="Descripción">
+        <Field label="Descripción" name="descripcion" error={errors.descripcion}>
           <>
             <textarea
               rows={8}
