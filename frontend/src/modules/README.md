@@ -1,5 +1,20 @@
 # Frontend modular
 
+## Errores accionables (ISS-09)
+
+`src/lib/httpError.ts` interpreta el contrato vigente `error.code`, `error.message`
+y `error.details.fields/request_id`, con compatibilidad para respuestas heredadas.
+`mapFieldErrors` adapta las claves API a los nombres de los controles del formulario.
+`applyFieldErrors` muestra los errores junto a los campos y enfoca el primero en
+orden visual; devuelve `false` si quedan campos desconocidos para conservar el aviso
+general. `Field` asocia etiqueta, `aria-invalid`, descripción y mensaje accesible,
+sin duplicar los errores que ya aparecen dentro del control.
+
+Los errores generales usan `getErrorMessage`, que descarta detalles técnicos y
+agrega una referencia de seguimiento segura cuando existe. Los mensajes de éxito,
+las reglas de validación y el momento de validación existentes se conservan.
+No se incorporan validaciones en tiempo real ni indicadores verdes.
+
 ## Contrato transversal de fechas institucionales
 
 Seguimiento ISS-08: Calendar informa fechas imposibles, incompletas al salir del
