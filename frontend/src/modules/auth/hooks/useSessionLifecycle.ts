@@ -31,8 +31,15 @@ export function useSessionLifecycle({ timing, onRefresh, onExpire }: Params) {
   const extendSession = useCallback(async () => {
     setExtending(true);
     setExtensionError("");
-    const refreshed = await refreshRef.current();
-    setExtending(false);
+    let refreshed: boolean;
+    try {
+      refreshed = await refreshRef.current();
+    } catch {
+      setExtensionError("Lo sentimos, no pudimos renovar la sesión. Verifique la conexión e intente nuevamente.");
+      return;
+    } finally {
+      setExtending(false);
+    }
     if (!refreshed) {
       setExtensionError(
         "Lo sentimos, no pudimos extender la sesión. Inicie sesión nuevamente para continuar."
@@ -87,6 +94,9 @@ export function useSessionLifecycle({ timing, onRefresh, onExpire }: Params) {
       if (shouldRefreshAfterActivity(timing, now)) {
         void refreshRef.current().then((refreshed) => {
           if (!refreshed) expireRef.current();
+        }).catch(() => {
+          setExtensionError("Lo sentimos, no pudimos renovar la sesión. Verifique la conexión e intente nuevamente.");
+          setWarningOpen(true);
         });
       }
     };

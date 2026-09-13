@@ -42,6 +42,13 @@ alias heredado `LECTOR` no forma parte de los tipos ni de las vistas nuevas.
 
 ## Validaciones y errores
 
+Seguimiento ISS-08: la renovación distingue HTTP 401 (sesión inválida) de
+errores de red, 403, 429, 5xx y respuestas malformadas (renovación no verificable).
+Estos últimos conservan el token existente, no habilitan operaciones sin permiso
+y ofrecen reintento en el diálogo. El vencimiento definitivo sigue vigente.
+Las consultas y descargas propagan el error temporal sin emitir expiración.
+`tests/sessionRefreshFailure.test.ts` ejecuta el cliente HTTP con fetch simulado.
+
 - Los formularios validan usuario, email y contraseña antes de enviar.
 - El perfil envía únicamente campos modificados y no llama al backend si no existen cambios.
 - Los mensajes HTTP se obtienen mediante `getErrorMessage`, que solo consume contratos conocidos y utiliza mensajes accionables como fallback.

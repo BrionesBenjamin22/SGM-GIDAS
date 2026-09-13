@@ -134,8 +134,11 @@ const runRefreshSingleFlight = createSingleFlight(
       if (generationAtStart !== sessionGeneration) return null;
 
       if (!res.ok) {
-        accessToken = null;
-        return null;
+        if (res.status === 401) {
+          accessToken = null;
+          return null;
+        }
+        throw new HttpError(res.status, "No pudimos renovar la sesión. Intente nuevamente.");
       }
 
       const data = (await res.json()) as RefreshSessionResponse;
@@ -146,11 +149,10 @@ const runRefreshSingleFlight = createSingleFlight(
         return data;
       }
 
-      accessToken = null;
-      return null;
-    } catch {
-      if (generationAtStart === sessionGeneration) accessToken = null;
-      return null;
+      throw new HttpError(502, "No pudimos verificar la respuesta de sesión. Intente nuevamente.");
+    } catch (error) {
+      if (generationAtStart !== sessionGeneration) return null;
+      throw error;
     }
     };
 
