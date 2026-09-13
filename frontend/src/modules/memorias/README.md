@@ -1,5 +1,16 @@
 # Memorias
 
+## Errores por campo (ISS-09)
+
+Los formularios del módulo consumen `error.details.fields` mediante
+`applyFieldErrors` de `src/lib/httpError.ts`, muestran el mensaje junto al control
+y enfocan el primer campo inválido. Los nombres locales de los controles se
+vinculan con las claves API, sin cambiar el payload del service ni los permisos.
+Los errores sin campo o con campos desconocidos conservan el aviso general;
+los errores inesperados muestran una referencia de seguimiento cuando existe.
+Se conservan las reglas y el momento de validación existentes. Véase el contrato
+transversal en `../README.md`.
+
 ## Fechas
 
 Los períodos informados por las memorias admiten fechas desde el 01/01/2010 y

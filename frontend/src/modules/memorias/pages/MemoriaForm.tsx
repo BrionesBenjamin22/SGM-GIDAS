@@ -1,3 +1,4 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -57,6 +58,7 @@ export default function MemoriaForm() {
       });
     },
     onError: (error) => {
+      if (applyFieldErrors(error, setErrors, ["periodoInicio","periodoFin"])) return;
       setErrorMessage(
         getErrorMessage(
           error,
@@ -86,7 +88,7 @@ export default function MemoriaForm() {
           await mutateAsync();
         }}
       >
-        <Field label="Período de inicio">
+        <Field label="Período de inicio" name="periodoInicio" error={errors.periodoInicio}>
           <DatePicker
             value={periodoInicio ? new Date(`${periodoInicio}T00:00:00`) : null}
             onChange={(date) => {
@@ -100,7 +102,7 @@ export default function MemoriaForm() {
           />
         </Field>
 
-        <Field label="Período de fin">
+        <Field label="Período de fin" name="periodoFin" error={errors.periodoFin}>
           <DatePicker
             value={periodoFin ? new Date(`${periodoFin}T00:00:00`) : null}
             onChange={(date) => {
