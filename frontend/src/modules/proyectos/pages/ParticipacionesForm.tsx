@@ -1,3 +1,4 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -120,6 +121,7 @@ export default function ParticipacionesForm() {
       });
     },
     onError: (error) => {
+      if (applyFieldErrors(error, setErrors, ["investigador","nombreEvento","formaParticipacion","fecha"])) return;
       const defaultMessage = isEdit
         ? "No se pudo actualizar la participación."
         : "No se pudo crear la participación.";
@@ -217,7 +219,7 @@ export default function ParticipacionesForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Investigador">
+        <Field label="Investigador" name="investigador" error={errors.investigador}>
           <>
             <select
               className={`${inputClass("investigador")} ${
@@ -246,7 +248,7 @@ export default function ParticipacionesForm() {
           </>
         </Field>
 
-        <Field label="Nombre del evento">
+        <Field label="Nombre del evento" name="nombreEvento" error={errors.nombreEvento}>
           <>
             <input
               type="text"
@@ -264,7 +266,7 @@ export default function ParticipacionesForm() {
           </>
         </Field>
 
-        <Field label="Forma de participación">
+        <Field label="Forma de participación" name="formaParticipacion" error={errors.formaParticipacion}>
           <>
             <select
               className={`${inputClass("formaParticipacion")} ${
@@ -294,7 +296,7 @@ export default function ParticipacionesForm() {
           </>
         </Field>
 
-        <Field label="Fecha">
+        <Field label="Fecha" name="fecha" error={errors.fecha}>
           <Calendar
             value={fecha}
             onChange={(date) => {

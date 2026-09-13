@@ -1,3 +1,4 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -329,6 +330,7 @@ export default function ProyectosForm() {
       });
     },
     onError: (error) => {
+      if (applyFieldErrors(error, setErrors, ["codigoProyecto","nombreProyecto","tipoProyectoId","fechaInicio","montoDestinado","coordinadorId","investigadoresIds","descripcionProyecto","dificultadesProyecto","fuenteId","becariosIds","fechaFin"])) return;
       const defaultMessage = isEdit
         ? "No se pudo actualizar el proyecto."
         : "No se pudo crear el proyecto.";
@@ -521,7 +523,7 @@ export default function ProyectosForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Código del proyecto">
+        <Field label="Código del proyecto" name="codigoProyecto" error={errors.codigoProyecto}>
           <>
             <input
               id="codigo-proyecto"
@@ -552,7 +554,7 @@ export default function ProyectosForm() {
           </>
         </Field>
 
-        <Field label="Nombre del proyecto">
+        <Field label="Nombre del proyecto" name="nombreProyecto" error={errors.nombreProyecto}>
           <>
             <input
               className={inputClass("nombreProyecto")}
@@ -572,7 +574,7 @@ export default function ProyectosForm() {
           </>
         </Field>
 
-        <Field label="Descripción del proyecto">
+        <Field label="Descripción del proyecto" name="descripcionProyecto" error={errors.descripcionProyecto}>
           <textarea
             className="input min-h-[100px]"
             value={descripcionProyecto}
@@ -583,7 +585,7 @@ export default function ProyectosForm() {
           />
         </Field>
 
-        <Field label="Dificultades del proyecto">
+        <Field label="Dificultades del proyecto" name="dificultadesProyecto" error={errors.dificultadesProyecto}>
           <textarea
             className="input min-h-[100px]"
             value={dificultadesProyecto}
@@ -594,7 +596,7 @@ export default function ProyectosForm() {
         </Field>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Field label="Tipo de proyecto">
+          <Field label="Tipo de proyecto" name="tipoProyectoId" error={errors.tipoProyectoId}>
             <>
               <select
                 className={inputClass("tipoProyectoId")}
@@ -623,7 +625,7 @@ export default function ProyectosForm() {
             </>
           </Field>
 
-          <Field label="Fuente de financiamiento">
+          <Field label="Fuente de financiamiento" name="fuenteId" error={errors.fuenteId}>
             <select
               className="input"
               value={fuenteId ?? ""}
@@ -643,7 +645,7 @@ export default function ProyectosForm() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Field label="Monto destinado">
+          <Field label="Monto destinado" name="montoDestinado" error={errors.montoDestinado}>
             <>
               <input
                 type="number"
@@ -667,14 +669,15 @@ export default function ProyectosForm() {
           </Field>
         </div>
 
-        <Field label="Investigadores">
-          <div className="space-y-4">
+        <Field label="Investigadores" name="investigadoresIds" error={errors.investigadoresIds}>
+          <div className="space-y-4" data-error-field="coordinadorId" tabIndex={-1}>
             <PersonalProyectoField
               value={investigadoresIds}
               options={investigadores}
               onChange={(ids) => {
                 if (proyectoCerrado) return;
                 setInvestigadoresIds(ids);
+                clearError("investigadoresIds");
                 clearError("coordinadorId");
               }}
             />
@@ -727,7 +730,7 @@ export default function ProyectosForm() {
           </div>
         </Field>
 
-        <Field label="Becarios">
+        <Field label="Becarios" name="becariosIds" error={errors.becariosIds}>
           <PersonalProyectoField
             value={becariosIds}
             options={becarios}
@@ -739,7 +742,7 @@ export default function ProyectosForm() {
         </Field>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Field label="Fecha inicio">
+          <Field label="Fecha inicio" name="fechaInicio" error={errors.fechaInicio}>
             <Calendar
               value={fechaInicio}
               onChange={(date) => {
@@ -752,7 +755,7 @@ export default function ProyectosForm() {
             />
           </Field>
 
-          <Field label="Fecha fin">
+          <Field label="Fecha fin" name="fechaFin" error={errors.fechaFin}>
             <Calendar
               value={fechaFin}
               onChange={(date) => {
