@@ -1,5 +1,16 @@
 # Autenticación y usuarios en backend
 
+## Errores de autenticación (ISS-09)
+
+Las credenciales inválidas y los tokens no utilizables responden `AUTH_REQUIRED`
+(401); los diagnósticos internos de token no se reflejan en la respuesta.
+Usuario inexistente: 404; conflictos de usuario/correo o protección del último
+administrador: 409; permisos: 403; fallas inesperadas: 500.
+Los campos requeridos, contraseña y rol usan `error.details.fields` con las
+claves del payload. Se conservan las cookies, protección de origen y reglas de
+contraseña existentes. El logout mantiene la limpieza de cookies aunque falle
+la revocación. Véase el contrato transversal en `../README.md`.
+
 ## Responsabilidades
 
 El módulo concentra rutas, controladores, servicios y modelos de identidad. Gestiona usuarios, roles, contraseñas, access tokens de corta duración, sesiones de refresh revocables y el alta controlada del primer administrador.

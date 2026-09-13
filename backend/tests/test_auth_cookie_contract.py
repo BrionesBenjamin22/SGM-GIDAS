@@ -4,6 +4,7 @@ from unittest.mock import patch
 from flask import Flask
 
 from modules.auth.controllers.auth_controller import AuthController
+from modules.shared.exceptions import AuthenticationError
 
 
 class AuthCookieContractTestCase(unittest.TestCase):
@@ -24,6 +25,27 @@ class AuthCookieContractTestCase(unittest.TestCase):
         self.app.add_url_rule("/api/v1/auth/refresh", view_func=AuthController.refresh, methods=["POST"])
         self.app.add_url_rule("/api/v1/auth/logout", view_func=AuthController.logout, methods=["POST"])
         self.client = self.app.test_client()
+
+    @patch("modules.auth.controllers.auth_controller.AuthService.login")
+    def test_login_identifica_campos_faltantes_sin_llamar_al_service(self, login):
+        response = self.client.post("/api/v1/auth/login", json={})
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(set(response.get_json()["error"]["details"]["fields"]), {"nombre_usuario", "password"})
+        login.assert_not_called()
+
+    @patch("modules.auth.controllers.auth_controller.AuthService.login")
+    def test_login_separa_credenciales_invalidas_de_fallas_inesperadas(self, login):
+        for error, status, code in [
+            (AuthenticationError("Verifique su usuario y contraseña."), 401, "AUTH_REQUIRED"),
+            (RuntimeError("SELECT password FROM users"), 500, "INTERNAL_ERROR"),
+        ]:
+            with self.subTest(status=status):
+                login.side_effect = error
+                response = self.client.post("/api/v1/auth/login", json={"nombre_usuario": "user", "password": "secret"})
+                self.assertEqual(response.status_code, status)
+                self.assertEqual(response.get_json()["error"]["code"], code)
+                self.assertNotIn("SELECT", response.get_data(as_text=True))
+                self.assertEqual(response.headers["Cache-Control"], "no-store")
 
     @patch("modules.auth.controllers.auth_controller.AuthService.login")
     def test_login_emite_cookie_segura_y_no_expone_refresh_en_json(self, login):

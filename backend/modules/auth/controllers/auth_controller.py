@@ -1,11 +1,12 @@
-﻿from flask import Request, Response, g, jsonify, request
+from flask import Request, Response, g, jsonify, request
 
 from urllib.parse import urlsplit
 
 from flask import current_app
 
 from modules.auth.services.auth_service import AuthService
-from modules.shared.controllers.responses import error_response
+from modules.shared.controllers.responses import error_response, exception_response
+from modules.shared.exceptions import DomainError, ValidationError
 from modules.shared.services.logging_config import get_logger
 
 
@@ -13,6 +14,17 @@ logger = get_logger(__name__)
 
 
 class AuthController:
+
+    @staticmethod
+    def _require_fields(data, keys):
+        if not isinstance(data, dict):
+            raise ValidationError("Envíe los datos del formulario e intente nuevamente.")
+        labels = {"nombre_usuario": "nombre de usuario", "mail": "correo electrónico", "password": "contraseña"}
+        fields = {key: f"Ingrese su {labels[key]}." for key in keys
+                  if not isinstance(data.get(key), str) or not data[key].strip()}
+        if fields:
+            raise ValidationError("Revise los campos indicados.", details={"fields": fields})
+
 
     @staticmethod
     def _cookie_options() -> dict:
@@ -84,8 +96,8 @@ class AuthController:
 
     @staticmethod
     def _unexpected_error(status_code: int = 500):
-        logger.exception("Error interno en operacion de autenticacion")
-        return error_response("INTERNAL_ERROR", status_code=status_code)
+        logger.exception("Error interno en operación de autenticación request_id=%s", getattr(g, "request_id", None))
+        return error_response("INTERNAL_ERROR", status_code=500)
 
     @staticmethod
     def _get_token_from_request(req: Request = None) -> str:
@@ -128,6 +140,8 @@ class AuthController:
         try:
             existe = AuthService.existe_primer_usuario()
             return jsonify({"existe": existe}), 200
+        except DomainError as error:
+            return AuthController._no_store(exception_response(error, operation="autenticación"))
         except Exception:
             return AuthController._unexpected_error(500)
 
@@ -143,13 +157,14 @@ class AuthController:
                 try:
                     payload = AuthController._get_payload_from_request(req)
                     AuthController._require_admin(payload)
+                except DomainError as error:
+                    return AuthController._no_store(exception_response(error, operation="autenticación"))
                 except ValueError:
-                    return jsonify({
-                        "error": "Token requerido. El sistema ya tiene usuarios registrados."
-                    }), 403
+                    return error_response("FORBIDDEN", status_code=403)
                 except PermissionError:
                     return error_response("FORBIDDEN", status_code=403)
 
+            AuthController._require_fields(data, ("nombre_usuario", "mail", "password"))
             user = AuthService.register(
                 nombre_usuario=data["nombre_usuario"],
                 mail=data["mail"],
@@ -183,6 +198,8 @@ class AuthController:
             AuthController._set_refresh_cookie(response, tokens["refresh_token"])
             return response, 201
 
+        except DomainError as error:
+            return AuthController._no_store(exception_response(error, operation="autenticación"))
         except Exception:
             return AuthController._no_store(AuthController._unexpected_error(400))
 
@@ -191,6 +208,7 @@ class AuthController:
         data = request.get_json()
 
         try:
+            AuthController._require_fields(data, ("nombre_usuario", "password"))
             result = AuthService.login(
                 nombre_usuario=data["nombre_usuario"],
                 password=data["password"],
@@ -207,6 +225,8 @@ class AuthController:
             AuthController._set_refresh_cookie(response, result["refresh_token"])
             return response, 200
 
+        except DomainError as error:
+            return AuthController._no_store(exception_response(error, operation="autenticación"))
         except Exception:
             return AuthController._no_store(AuthController._unexpected_error(401))
 
@@ -220,8 +240,10 @@ class AuthController:
 
             return jsonify(user.serialize()), 200
 
+        except DomainError as error:
+            return AuthController._no_store(exception_response(error, operation="autenticación"))
         except ValueError as ve:
-            return jsonify({"error": str(ve)}), 401
+            return error_response("AUTH_REQUIRED", status_code=401)
         except Exception:
             return AuthController._unexpected_error(401)
 
@@ -237,7 +259,7 @@ class AuthController:
 
         if not refresh_token:
             return AuthController._no_store(
-                (jsonify({"error": "Refresh token requerido"}), 401)
+                error_response("AUTH_REQUIRED", status_code=401)
             )
 
         try:
@@ -255,6 +277,8 @@ class AuthController:
             AuthController._set_refresh_cookie(response, tokens["refresh_token"])
             return response, 200
 
+        except DomainError as error:
+            return AuthController._no_store(exception_response(error, operation="autenticación"))
         except Exception:
             return AuthController._no_store(AuthController._unexpected_error(401))
 
@@ -286,30 +310,26 @@ class AuthController:
             user_id = int(payload["sub"])
 
             data = req.get_json()
+            if not isinstance(data, dict):
+                raise ValidationError("Envíe los datos del formulario e intente nuevamente.")
             password_actual = data.get("password_actual")
             password_nueva = data.get("password_nueva")
             password_confirmacion = data.get("password_confirmacion")
 
             if not password_nueva or not password_confirmacion:
-                return jsonify({
-                    "error": "password_nueva y password_confirmacion son requeridos"
-                }), 400
+                return error_response("VALIDATION_ERROR", details={"fields": {"password_nueva": "Ingrese la nueva contraseña.", "password_confirmacion": "Confirme la nueva contraseña."}}, status_code=400)
 
             if password_nueva != password_confirmacion:
-                return jsonify({
-                    "error": "La nueva contrasena y la confirmacion no coinciden"
-                }), 400
+                return error_response("VALIDATION_ERROR", details={"fields": {"password_confirmacion": "La confirmación debe coincidir con la nueva contraseña."}}, status_code=400)
 
             if len(password_nueva) < 6:
-                return jsonify({
-                    "error": "La contrasena debe tener al menos 6 caracteres"
-                }), 400
+                return error_response("VALIDATION_ERROR", details={"fields": {"password_nueva": "La contraseña debe tener al menos 6 caracteres."}}, status_code=400)
 
             user = AuthService.get_user_by_id(user_id)
             es_primer_cambio = user.primer_login
 
             if not es_primer_cambio and not password_actual:
-                return jsonify({"error": "password_actual es requerido"}), 400
+                return error_response("VALIDATION_ERROR", details={"fields": {"password_actual": "Ingrese su contraseña actual."}}, status_code=400)
 
             AuthService.change_password(
                 user_id=user_id,
@@ -320,8 +340,10 @@ class AuthController:
 
             return jsonify({"mensaje": "Contrasena actualizada exitosamente"}), 200
 
+        except DomainError as error:
+            return AuthController._no_store(exception_response(error, operation="autenticación"))
         except ValueError as ve:
-            return jsonify({"error": str(ve)}), 401
+            return error_response("AUTH_REQUIRED", status_code=401)
         except Exception:
             return AuthController._unexpected_error(400)
 
@@ -339,8 +361,10 @@ class AuthController:
 
             return jsonify({"mensaje": "Usuario eliminado exitosamente"}), 200
 
+        except DomainError as error:
+            return AuthController._no_store(exception_response(error, operation="autenticación"))
         except ValueError as ve:
-            return jsonify({"error": str(ve)}), 401
+            return error_response("AUTH_REQUIRED", status_code=401)
         except Exception:
             return AuthController._unexpected_error(400)
 
@@ -354,8 +378,10 @@ class AuthController:
             users = AuthService.get_all_users()
             return jsonify([user.serialize() for user in users]), 200
 
+        except DomainError as error:
+            return AuthController._no_store(exception_response(error, operation="autenticación"))
         except ValueError as ve:
-            return jsonify({"error": str(ve)}), 401
+            return error_response("AUTH_REQUIRED", status_code=401)
         except PermissionError:
             return error_response("FORBIDDEN", status_code=403)
         except Exception:
@@ -367,15 +393,15 @@ class AuthController:
         try:
             payload = AuthController._get_payload_from_request(req)
             if payload.get("rol") != "ADMIN" and int(payload["sub"]) != user_id:
-                return jsonify({
-                    "error": "Acceso denegado. Se requiere rol de administrador."
-                }), 403
+                return error_response("FORBIDDEN", status_code=403)
 
             user = AuthService.get_user_by_id(user_id)
             return jsonify(user.serialize()), 200
 
+        except DomainError as error:
+            return AuthController._no_store(exception_response(error, operation="autenticación"))
         except ValueError as ve:
-            return jsonify({"error": str(ve)}), 401
+            return error_response("AUTH_REQUIRED", status_code=401)
         except Exception:
             return AuthController._unexpected_error(404)
 
@@ -387,18 +413,16 @@ class AuthController:
             current_user_id = int(payload["sub"])
 
             if payload.get("rol") != "ADMIN" and current_user_id != user_id:
-                return jsonify({
-                    "error": "Acceso denegado. Se requiere rol de administrador."
-                }), 403
+                return error_response("FORBIDDEN", status_code=403)
 
             data = req.get_json()
+            if not isinstance(data, dict):
+                raise ValidationError("Envíe los datos del formulario e intente nuevamente.")
 
             if payload.get("rol") != "ADMIN" and (
                 "rol_id" in data or "activo" in data
             ):
-                return jsonify({
-                    "error": "No tiene permisos para cambiar rol o estado activo"
-                }), 403
+                return error_response("FORBIDDEN", status_code=403)
 
             user = AuthService.update_user(user_id, data, current_user_id)
 
@@ -407,8 +431,10 @@ class AuthController:
                 "usuario": user.serialize()
             }), 200
 
+        except DomainError as error:
+            return AuthController._no_store(exception_response(error, operation="autenticación"))
         except ValueError as ve:
-            return jsonify({"error": str(ve)}), 401
+            return error_response("AUTH_REQUIRED", status_code=401)
         except Exception:
             return AuthController._unexpected_error(400)
 
@@ -420,23 +446,20 @@ class AuthController:
             AuthController._require_admin(payload)
 
             data = req.get_json()
+            if not isinstance(data, dict):
+                raise ValidationError("Envíe los datos del formulario e intente nuevamente.")
 
-            if not data.get("nombre_usuario") or not data.get("mail") or not data.get("password"):
-                return jsonify({
-                    "error": "nombre_usuario, mail y password son requeridos"
-                }), 400
+            AuthController._require_fields(data, ("nombre_usuario", "mail", "password"))
 
             if not data.get("rol_id"):
-                return jsonify({"error": "rol_id es requerido"}), 400
+                return error_response("VALIDATION_ERROR", details={"fields": {"rol_id": "Seleccione un rol disponible."}}, status_code=400)
 
             if len(data.get("password", "")) < 6:
-                return jsonify({
-                    "error": "La contrasena debe tener al menos 6 caracteres"
-                }), 400
+                return error_response("VALIDATION_ERROR", details={"fields": {"password": "La contraseña debe tener al menos 6 caracteres."}}, status_code=400)
 
             rol = AuthService.get_rol_by_id(data["rol_id"])
             if not rol:
-                return jsonify({"error": "Rol no encontrado"}), 400
+                return error_response("VALIDATION_ERROR", details={"fields": {"rol_id": "Seleccione un rol disponible."}}, status_code=400)
 
             user = AuthService.register(
                 nombre_usuario=data["nombre_usuario"],
@@ -453,8 +476,10 @@ class AuthController:
                 "usuario": user.serialize()
             }), 201
 
+        except DomainError as error:
+            return AuthController._no_store(exception_response(error, operation="autenticación"))
         except ValueError as ve:
-            return jsonify({"error": str(ve)}), 401
+            return error_response("AUTH_REQUIRED", status_code=401)
         except PermissionError:
             return error_response("FORBIDDEN", status_code=403)
         except Exception:
