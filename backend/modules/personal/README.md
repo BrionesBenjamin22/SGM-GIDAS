@@ -19,6 +19,32 @@ pertenencia al grupo, carga horaria, proyectos y relaciones con becas.
 
 ## Contratos modificados
 
+### Alta de PTAA y profesional (ISS-08)
+
+`POST /api/v1/personal` sin barra final crea una entidad `Personal` para ambas
+categorías. El catálogo `tipo_personal_id` determina el tipo; no se requieren
+formación, dedicación, categoría UTN ni incentivos de otros subtipos.
+
+Payload obligatorio: `nombre_apellido` (hasta 120 caracteres),
+`horas_semanales` (entero entre 1 y 168), `tipo_personal_id`, `grupo_utn_id` y
+`fecha_alta_grupo` (`YYYY-MM-DD`, desde 2010-01-01). Tipo y grupo deben existir
+y estar activos. El alta establece `activo=true` y registra `created_by`.
+
+Devuelve 201 con la entidad serializada y su historial inicial de horas.
+Inserción, flush, historial y commit se protegen con rollback completo.
+Validaciones y referencias inválidas devuelven 400 con
+`error.details.fields` (mapa de campo de payload a mensaje seguro).
+Errores inesperados conservan el contrato compartido 500.
+
+Listado: `/api/v1/personal/all`; detalle e historial:
+`/api/v1/personal/personal/{id}` y su sufijo `/historial`. La búsqueda de
+personal enlaza a `/personal/personal/{id}`. Profesional se persiste en la
+misma tabla y utiliza el rol técnico `personal` para actualizarlo.
+
+Pruebas: `tests/test_personal_alta_ptaa.py`, con SQLite aislado y autenticación
+simulada; cubre alta, referencias, obligatorios, rollback, consulta, búsqueda,
+permisos y regresión de los otros tipos.
+
 ### Actualizar becario
 
 ```http
@@ -47,6 +73,17 @@ misma transaccion que los campos del becario. No realiza commits intermedios.
 Una lista vacia desvincula todas las relaciones activas.
 
 ## Reglas y validaciones
+
+Seguimiento ISS-08: `services/horas_validation.py` centraliza `horas_semanales`
+como entero de 1 a 168 inclusive (7 días por 24 horas). Rechaza booleanos,
+fracciones y cadenas sin coerción. Se aplica al crear/editar Personal, Becario e
+Investigador, incluida la ruta genérica de actualización por rol. En edición
+se valida antes de mutar campos o historiales. Una carga parcial sin horas no
+reescribe valores históricos; no hay migración/corrección masiva de datos.
+Devuelve HTTP 400 con `error.details.fields.horas_semanales`.
+
+Personal acepta cualquier ID activo de TipoPersonal, sin exigir nombres
+prefijados. El catálogo disponible excluye tipos con `activo=false` o soft delete.
 
 - IDs positivos y sin duplicados.
 - Fechas en formato `YYYY-MM-DD` y fin no anterior al inicio.

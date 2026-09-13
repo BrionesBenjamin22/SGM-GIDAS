@@ -3,6 +3,7 @@ from datetime import date
 from sqlalchemy.exc import IntegrityError
 
 from extension import db
+from modules.personal.services.horas_validation import validar_horas_semanales as _validar_horas
 from modules.shared.exceptions import (
     ConflictError,
     NotFoundError,
@@ -56,13 +57,6 @@ def _validar_nombre(nombre: str):
         raise ValueError("El nombre y apellido no puede superar los 120 caracteres.")
 
     return nombre
-
-
-def _validar_horas(horas):
-    if not isinstance(horas, int) or horas <= 0:
-        raise ValueError("Las horas semanales deben ser un numero positivo.")
-
-    return horas
 
 
 def _obtener_historiales_activos(investigador):
@@ -203,6 +197,8 @@ def crear_investigador(data, user_id):
 def actualizar_investigador(id, data, user_id):
     _validar_payload(data)
     _validar_user_id(user_id)
+    if "horas_semanales" in data:
+        _validar_horas(data["horas_semanales"])
 
     investigador = _obtener_investigador_activo(id)
     cambios = {}

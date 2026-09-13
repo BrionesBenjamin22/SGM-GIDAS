@@ -93,7 +93,7 @@ def eliminar_tipo_personal(id, user_id=None):
 def listar_tipos(activos="true"):
     query = TipoPersonal.query
     if activos == "true":
-        query = query.filter(TipoPersonal.deleted_at.is_(None))
+        query = query.filter(TipoPersonal.deleted_at.is_(None), TipoPersonal.activo.is_(True))
     elif activos == "false":
         query = query.filter(TipoPersonal.deleted_at.isnot(None))
     return query.order_by(TipoPersonal.nombre.asc()).all()

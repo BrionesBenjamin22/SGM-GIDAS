@@ -45,7 +45,7 @@ export function getPersonal(
 
 // 👉 POST / PUT PTAA + Profesional
 export function upsertPersonal(payload: PersonalPayload) {
-  return http<PersonalItem>("/personal/", {
+  return http<PersonalItem>("/personal", {
     method: "POST",
     body: JSON.stringify(payload),
   });

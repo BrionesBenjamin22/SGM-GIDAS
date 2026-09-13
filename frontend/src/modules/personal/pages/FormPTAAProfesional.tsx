@@ -11,32 +11,25 @@ import {
 } from "@/modules/personal/services/personalServices";
 import { useQueryClient } from "@tanstack/react-query";
 import type { PersonalCompleto } from "@/modules/personal/services/personalCompletoServices";
+import { personalFieldErrors } from "@/modules/personal/utils/personalFieldErrors";
+import { MAX_HORAS_SEMANALES, validWeeklyHours, WEEKLY_HOURS_ERROR } from "@/modules/personal/utils/weeklyHours";
 
 interface Props {
-  tipo: "PTAA" | "PROFESIONAL";
   initialData?: PersonalCompleto;
   onCancel: () => void;
   onError: (error: unknown) => void;
 }
 
 export default function FormPTAAProfesional({
-  tipo,
   initialData,
   onCancel,
   onError,
 }: Props) {
   const navigate = useNavigate();
   const { uct } = useUct();
-  const { data: tiposPersonal = [] } = useTiposPersonal();
+  const { data: tiposPersonal = [], isLoading: tiposLoading, isError: tiposError, refetch: refetchTipos } = useTiposPersonal();
   const qc = useQueryClient();
   const isEdit = Boolean(initialData);
-  const requiereSeleccionTipoPersonal = tipo === "PTAA";
-  const tipoProfesional = tiposPersonal.find((t) =>
-    t.nombre?.trim().toLowerCase().includes("profesional")
-  );
-  const tiposPersonalParaPTAA = tiposPersonal.filter(
-    (t) => !t.nombre?.trim().toLowerCase().includes("profesional")
-  );
 
   const [nombreApellido, setNombre] = useState("");
   const [horasSemanales, setHoras] = useState<number | "">("");
@@ -77,23 +70,21 @@ export default function FormPTAAProfesional({
       newErrors.nombre = "Debe ingresar nombre y apellido";
     }
 
-    if (!horasSemanales || Number(horasSemanales) <= 0) {
-      newErrors.horas = "Debe ingresar horas validas";
+    if (!validWeeklyHours(horasSemanales)) {
+      newErrors.horas = WEEKLY_HOURS_ERROR;
     }
 
-    if (requiereSeleccionTipoPersonal && !tipoPersonalId) {
+    if (!tipoPersonalId || !tiposPersonal.some((t) => t.id === tipoPersonalId)) {
       newErrors.tipoPersonal = "Debe seleccionar tipo de personal";
-    }
-
-    if (!requiereSeleccionTipoPersonal && !tipoProfesional?.id) {
-      newErrors.tipoPersonal =
-        "No se encontró configurado el tipo de personal Profesional";
     }
 
     if (!fechaAltaGrupo) {
       newErrors.fechaAltaGrupo = "Debe ingresar la fecha de alta en el grupo";
     }
 
+    if (!uct?.id) {
+      newErrors.grupo = "Lo sentimos, no pudimos recuperar el grupo. Intente nuevamente.";
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -119,7 +110,15 @@ export default function FormPTAAProfesional({
       await operation();
       return true;
     } catch (error) {
-      onError(error);
+      const fieldErrors = personalFieldErrors(error);
+      if (Object.keys(fieldErrors).length) {
+        setErrors(fieldErrors);
+        requestAnimationFrame(() => {
+          document.getElementById(`personal-${Object.keys(fieldErrors)[0]}`)?.focus();
+        });
+      } else {
+        onError(error);
+      }
       return false;
     }
   };
@@ -131,9 +130,7 @@ export default function FormPTAAProfesional({
     const payload = {
       nombre_apellido: nombreApellido,
       horas_semanales: Number(horasSemanales),
-      tipo_personal_id: requiereSeleccionTipoPersonal
-        ? Number(tipoPersonalId)
-        : Number(tipoProfesional!.id),
+      tipo_personal_id: Number(tipoPersonalId),
       fecha_alta_grupo: formatDateStr(fechaAltaGrupo),
       grupo_utn_id: uct!.id,
       activo,
@@ -158,7 +155,7 @@ export default function FormPTAAProfesional({
           actualizarPersonal(
             initialData.id,
             changedPayload,
-            tipo === "PROFESIONAL" ? "profesional" : "personal"
+            "personal"
           )
         );
         if (!updated) return;
@@ -169,7 +166,7 @@ export default function FormPTAAProfesional({
       });
 
       navigate(
-        `/personal/${tipo === "PROFESIONAL" ? "profesional" : "personal"}/${initialData.id}`,
+        `/personal/personal/${initialData.id}`,
         {
           replace: true,
           state: { successMessage: "¡Actualizado con éxito!" },
@@ -197,17 +194,13 @@ export default function FormPTAAProfesional({
       noValidate
       className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
     >
-      {errors.tipoPersonal && !requiereSeleccionTipoPersonal && (
-        <div
-          role="alert"
-          className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
-        >
-          {errors.tipoPersonal}. Revise el catálogo de tipos de personal e intente nuevamente.
-        </div>
-      )}
+      {errors.grupo && <p id="personal-grupo" tabIndex={-1} role="alert">{errors.grupo}</p>}
 
       <Field label="Nombre y apellido" required error={errors.nombre}>
         <input
+          id="personal-nombre"
+          aria-label="Nombre y apellido"
+          placeholder="Ingrese nombre y apellido"
           className={`input ${
             errors.nombre ? "border-red-500 ring-2 ring-red-500" : ""
           }`}
@@ -222,8 +215,13 @@ export default function FormPTAAProfesional({
 
       <Field label="Horas semanales" required error={errors.horas}>
         <input
+          id="personal-horas"
+          aria-label="Horas semanales"
+          placeholder="Ingrese horas semanales"
           type="number"
           min="1"
+          max={MAX_HORAS_SEMANALES}
+          step="1"
           className={`input ${
             errors.horas ? "border-red-500 ring-2 ring-red-500" : ""
           }`}
@@ -232,11 +230,12 @@ export default function FormPTAAProfesional({
           onChange={(e) => {
             const value = e.target.value === "" ? "" : +e.target.value;
             setHoras(value);
-            if (value) clearError("horas");
+            if (validWeeklyHours(value)) clearError("horas");
           }}
         />
       </Field>
 
+      <div id="personal-fechaAltaGrupo" tabIndex={-1}>
       <Field label="Fecha de alta en el grupo" required error={errors.fechaAltaGrupo}>
         <Calendar
           value={fechaAltaGrupo}
@@ -250,14 +249,24 @@ export default function FormPTAAProfesional({
           helperText={errors.fechaAltaGrupo ? undefined : "DD/MM/AAAA"}
         />
       </Field>
+      </div>
 
-      {requiereSeleccionTipoPersonal && (
+      <div>
+        {tiposLoading && <p role="status">Cargando tipos de personal…</p>}
+        {tiposError && <div role="alert">
+          <p>Lo sentimos, no pudimos recuperar los tipos de personal. Intente nuevamente.</p>
+          <Button type="button" variant="secondary" onClick={() => void refetchTipos()}>Reintentar</Button>
+        </div>}
+        {!tiposLoading && !tiposError && !tiposPersonal.length && <p role="alert">No hay tipos de personal disponibles. Agregue un tipo en el catálogo e intente nuevamente.</p>}
         <Field label="Tipo de personal" required error={errors.tipoPersonal}>
           <select
+            id="personal-tipoPersonal"
+            aria-label="Tipo de personal"
             className={`input ${
               errors.tipoPersonal ? "border-red-500 ring-2 ring-red-500" : ""
             }`}
             value={tipoPersonalId}
+            disabled={tiposLoading || tiposError || !tiposPersonal.length}
             aria-invalid={Boolean(errors.tipoPersonal)}
             onChange={(e) => {
               const value = e.target.value ? +e.target.value : "";
@@ -268,14 +277,17 @@ export default function FormPTAAProfesional({
             <option value="" disabled>
               Seleccionar tipo de personal
             </option>
-            {tiposPersonalParaPTAA.map((t) => (
+            {isEdit && tipoPersonalId && !tiposPersonal.some((t) => t.id === tipoPersonalId) && (
+              <option value={tipoPersonalId} disabled>{initialData?.relaciones?.tipo_personal?.nombre ?? "Tipo actual"} (no disponible)</option>
+            )}
+            {tiposPersonal.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.nombre}
               </option>
             ))}
           </select>
         </Field>
-      )}
+      </div>
 
       <div className="flex justify-between pt-6">
         <Button

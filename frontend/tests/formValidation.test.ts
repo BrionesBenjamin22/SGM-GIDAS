@@ -39,13 +39,15 @@ test("detecta formularios dentro de pages en Windows y Linux", () => {
   assert.equal(isPagesPath("src/modules/personal/components/PersonalForm.tsx"), false);
 });
 
-test("personal muestra etiquetas claras y el error de catalogo profesional", () => {
+test("personal separa clase de registro de tipo real de catálogo", () => {
   const pages = join(process.cwd(), "src", "modules", "personal", "pages");
   const selector = readFileSync(join(pages, "PersonalForm.tsx"), "utf8");
   const professionalForm = readFileSync(join(pages, "FormPTAAProfesional.tsx"), "utf8");
 
-  assert.match(selector, /Técnico administrativo y de apoyo/);
+  assert.match(selector, /Clase de registro/);
+  assert.match(selector, /<option value="PERSONAL">Personal<\/option>/);
   assert.doesNotMatch(selector, />PTAA</);
-  assert.match(professionalForm, /errors\.tipoPersonal && !requiereSeleccionTipoPersonal/);
+  assert.doesNotMatch(selector, /<option value="PROFESIONAL"/);
+  assert.match(professionalForm, /tiposPersonal\.map/);
   assert.match(professionalForm, /role="alert"/);
 });

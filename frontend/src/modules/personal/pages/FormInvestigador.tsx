@@ -12,6 +12,8 @@ import {
   actualizarInvestigador,
 } from "@/modules/personal/services/investigadorServices";
 import type { PersonalCompleto } from "@/modules/personal/services/personalCompletoServices";
+import { MAX_HORAS_SEMANALES, validWeeklyHours, WEEKLY_HOURS_ERROR } from "@/modules/personal/utils/weeklyHours";
+import { personalFieldErrors } from "@/modules/personal/utils/personalFieldErrors";
 
 interface Props {
   initialData?: PersonalCompleto;
@@ -101,8 +103,8 @@ export default function FormInvestigador({
       newErrors.nombre = "Debe ingresar nombre y apellido";
     }
 
-    if (!horasSemanales || Number(horasSemanales) <= 0) {
-      newErrors.horas = "Debe ingresar horas validas";
+    if (!validWeeklyHours(horasSemanales)) {
+      newErrors.horas = WEEKLY_HOURS_ERROR;
     }
 
     if (!dedicacionId) {
@@ -130,7 +132,13 @@ export default function FormInvestigador({
       await operation();
       return true;
     } catch (error) {
-      onError(error);
+      const fieldErrors = personalFieldErrors(error);
+      if (fieldErrors.horas) {
+        setErrors((prev) => ({ ...prev, horas: fieldErrors.horas }));
+        document.getElementById("investigador-horas")?.focus();
+      } else {
+        onError(error);
+      }
       return false;
     }
   };
@@ -217,6 +225,13 @@ export default function FormInvestigador({
         <>
           <input
             type="number"
+            min="1"
+            max={MAX_HORAS_SEMANALES}
+            step="1"
+            aria-label="Horas semanales"
+            id="investigador-horas"
+            aria-describedby={errors.horas ? "investigador-horas-error" : undefined}
+            aria-invalid={Boolean(errors.horas)}
             className={`input ${
               errors.horas ? "!border-red-500 !ring-2 !ring-red-500" : ""
             }`}
@@ -224,11 +239,11 @@ export default function FormInvestigador({
             onChange={(e) => {
               const value = e.target.value === "" ? "" : +e.target.value;
               setHoras(value);
-              if (value) clearError("horas");
+              if (validWeeklyHours(value)) clearError("horas");
             }}
           />
           {errors.horas && (
-            <p className="mt-1 text-sm text-red-500">{errors.horas}</p>
+            <p id="investigador-horas-error" role="alert" className="mt-1 text-sm text-red-500">{errors.horas}</p>
           )}
         </>
       </Field>

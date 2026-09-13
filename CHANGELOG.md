@@ -30,6 +30,57 @@ Validaciones:
 
 ### Corregido
 
+#### ISS-08 (seguimiento) — Validar horas semanales y usar tipos reales del catálogo
+
+- Horas enteras de 1 a 168 en alta/edición de Personal, Becario e Investigador,
+  con validación compartida de dominio frontend/backend y error de campo 400.
+- Se unificaron PTAA/Profesional bajo clase Personal; el tipo se selecciona desde
+  IDs/nombres reales del catálogo activo, sin filtrar ni asumir "Profesional".
+  Se conservan clases especializadas de Becario/Investigador y rutas existentes.
+- Catálogo con refresh al montar, feedback de carga/error/vacío y reintento;
+  tipos anteriores no disponibles visibles pero deshabilitados en edición.
+- Pruebas: 76 frontend (incluido formulario real con catálogo arbitrario y límites),
+  31 backend de Personal/auditoría/permisos; TypeScript y build producción correctos.
+- Manual Docker pendiente del usuario. No se alteran datos existentes ni historial;
+  se exige corregir horas inválidas en el formulario antes de guardar. Advertencias
+  ajenas SQLite/launcher venv ya documentadas. Se preservaron textos nuevos del
+  calendario y se adecuaron sus tests sin cambiar esos textos.
+
+#### ISS-08 (seguimiento) — Feedback de fechas y renovación de sesión
+
+- Calendar muestra errores de formato y rango, resalta y asocia accesiblemente
+  el mensaje al campo; conserva la fecha confirmada al rechazar el valor.
+- La renovación mantiene la sesión ante fallos de red, errores HTTP distintos
+  de 401 y respuestas malformadas; ofrece diálogo con reintento. Mantiene el
+  vencimiento definitivo y la invalidación por 401, sin eludir permisos backend.
+- Se documentaron los comportamientos en frontend Personal, auth y módulos.
+- Validaciones: 73 tests frontend, TypeScript, build producción y 17 tests backend
+  correctos. Test concurrente adicional falla en limpieza SQLite por WinError 32;
+  advertencia ajena de ciclos SQLite y launcher venv antiguo sin modificar.
+- Prueba visual/Docker pendiente del usuario; no se confirmó el status HTTP del
+  deslogueo original. La corrección cubre el fallo temporal identificado en código.
+
+#### ISS-08 — Corregir el alta de personal técnico administrativo y de apoyo
+
+- Se corrigió la ruta del alta: `POST /api/v1/personal` sin barra final;
+  la ruta anterior devolvía 404 antes de llegar al service.
+- Se protegieron inserción, flush e historial de horas con rollback completo.
+- Referencias a tipo y grupo deben existir y estar activas; errores 400
+  incluyen campos para feedback local. Las horas requieren enteros positivos.
+- El formulario conserva datos ante fallos, muestra errores por campo y mueve
+  el foco; PTAA y Profesional usan el rol persistido `personal` en edición.
+- La búsqueda enlaza al detalle de personal con la ruta completa.
+- Se documentaron los contratos en frontend y backend y se agregaron pruebas.
+
+Validaciones: 28 pruebas backend del bloque Personal y 69 frontend correctas;
+TypeScript y build de producción correctos. Las integraciones de alta,
+consultas y rollback se ejecutaron sobre SQLite aislado.
+
+Limitaciones: prueba manual y validación contra PostgreSQL pendientes del
+usuario, quien levantará Docker. `agent-browser` no está disponible. SQLite
+advierte ciclos de claves foráneas al limpiar tablas globales, sin fallos.
+ISS-09 conserva pendiente su alcance transversal. No se ejecutó commit.
+
 #### Rango institucional de fechas — Validar ítems desde 2010
 
 - Se centralizó `2010-01-01` como límite inferior de las fechas vinculadas con

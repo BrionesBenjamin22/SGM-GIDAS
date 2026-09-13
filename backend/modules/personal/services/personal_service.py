@@ -1,6 +1,7 @@
 from datetime import date
 
 from extension import db
+from modules.personal.services.horas_validation import validar_horas_semanales as _validar_horas
 from modules.shared.exceptions import (
     ConflictError,
     NotFoundError,
@@ -40,8 +41,9 @@ def _validar_id_positivo(valor, campo: str, permitir_none: bool = False):
     if valor is None and permitir_none:
         return valor
 
-    if not isinstance(valor, int) or valor <= 0:
-        raise ValueError(f"El campo '{campo}' debe ser un entero positivo.")
+    if isinstance(valor, bool) or not isinstance(valor, int) or valor <= 0:
+        message = "Debe seleccionar una referencia válida."
+        raise ValueError(message, details={"fields": {campo: message}})
 
     return valor
 
@@ -64,13 +66,6 @@ def _validar_nombre(nombre: str):
         raise ValueError("El nombre y apellido no puede superar los 120 caracteres.")
 
     return nombre
-
-
-def _validar_horas(horas):
-    if not isinstance(horas, int) or horas <= 0:
-        raise ValueError("Las horas semanales deben ser un numero positivo.")
-
-    return horas
 
 
 def _obtener_historiales_activos(entidad):
@@ -125,8 +120,10 @@ def _resolver_entidad_por_rol(id, rol):
 def _validar_tipo_personal(tipo_personal_id):
     tipo_personal_id = _validar_id_positivo(tipo_personal_id, "tipo_personal_id")
 
-    if not TipoPersonal.query.get(tipo_personal_id):
-        raise ValueError("Tipo de personal invalido.")
+    tipo = db.session.get(TipoPersonal, tipo_personal_id)
+    if not tipo or tipo.deleted_at is not None or not tipo.activo:
+        message = "El tipo de personal seleccionado no existe o está inactivo. Seleccione otro tipo."
+        raise ValueError(message, details={"fields": {"tipo_personal_id": message}})
 
     return tipo_personal_id
 
@@ -159,8 +156,10 @@ def _validar_grupo_utn(grupo_utn_id, obligatorio=False):
     if grupo_utn_id is None:
         return None
 
-    if not GrupoInvestigacionUtn.query.get(grupo_utn_id):
-        raise ValueError("Grupo UTN invalido.")
+    grupo = db.session.get(GrupoInvestigacionUtn, grupo_utn_id)
+    if not grupo or grupo.deleted_at is not None or not grupo.activo:
+        message = "El grupo seleccionado no existe o está inactivo. Revise el grupo e intente nuevamente."
+        raise ValueError(message, details={"fields": {"grupo_utn_id": message}})
 
     return grupo_utn_id
 
@@ -195,37 +194,41 @@ def crear_personal(data, user_id):
     _validar_payload(data)
     _validar_user_id(user_id)
 
-    nombre = _validar_nombre(data.get("nombre_apellido"))
+    try:
+        nombre = _validar_nombre(data.get("nombre_apellido"))
+    except ValueError as error:
+        raise ValueError(str(error), details={"fields": {"nombre_apellido": str(error)}}) from error
     horas = _validar_horas(data.get("horas_semanales"))
     tipo_personal_id = _validar_tipo_personal(data.get("tipo_personal_id"))
     grupo_utn_id = _validar_grupo_utn(data.get("grupo_utn_id"), obligatorio=True)
 
+    try:
+        fecha_alta = validar_fecha_alta_grupo(data.get("fecha_alta_grupo"))
+    except ValueError as error:
+        message = "Ingrese una fecha de alta válida desde el 01/01/2010."
+        raise ValueError(message, details={"fields": {"fecha_alta_grupo": message}}) from error
+
     nuevo = Personal(
         nombre_apellido=nombre,
         horas_semanales=horas,
-        fecha_alta_grupo=validar_fecha_alta_grupo(
-            data.get("fecha_alta_grupo")
-        ),
+        fecha_alta_grupo=fecha_alta,
         tipo_personal_id=tipo_personal_id,
         grupo_utn_id=grupo_utn_id,
         activo=True,
         created_by=user_id
     )
 
-    db.session.add(nuevo)
-    db.session.flush()
-
-    historial = PersonalHorasHistorial(
-        personal_id=nuevo.id,
-        horas_semanales=horas,
-        fecha_inicio=date.today(),
-        fecha_fin=None,
-        created_by=user_id
-    )
-
-    db.session.add(historial)
-
     try:
+        db.session.add(nuevo)
+        db.session.flush()
+        historial = PersonalHorasHistorial(
+            personal_id=nuevo.id,
+            horas_semanales=horas,
+            fecha_inicio=date.today(),
+            fecha_fin=None,
+            created_by=user_id
+        )
+        db.session.add(historial)
         db.session.commit()
     except Exception:
         db.session.rollback()
@@ -241,6 +244,8 @@ def crear_personal(data, user_id):
 def actualizar_personal(id, data, rol, user_id: int):
     _validar_payload(data)
     _validar_user_id(user_id)
+    if "horas_semanales" in data:
+        _validar_horas(data["horas_semanales"])
 
     entidad, historial_model, fk_field = _resolver_entidad_por_rol(id, rol)
     cambios = {}

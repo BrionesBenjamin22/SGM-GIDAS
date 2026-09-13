@@ -2,6 +2,7 @@ import builtins
 from datetime import date, datetime
 
 from extension import db
+from modules.personal.services.horas_validation import validar_horas_semanales as _validar_horas
 from modules.shared.exceptions import (
     ConflictError,
     NotFoundError,
@@ -56,13 +57,6 @@ def _validar_nombre(nombre: str):
         raise ValueError("El nombre y apellido no puede superar los 120 caracteres.")
 
     return nombre
-
-
-def _validar_horas(horas):
-    if not isinstance(horas, int) or horas <= 0:
-        raise ValueError("Las horas semanales deben ser un numero positivo.")
-
-    return horas
 
 
 def _validar_proyectos_ids(proyectos_ids):
@@ -338,6 +332,8 @@ def crear_becario(data: dict, user_id: int):
 def actualizar_becario(id: int, data: dict, user_id: int):
     _validar_payload(data)
     _validar_user_id(user_id)
+    if "horas_semanales" in data:
+        _validar_horas(data["horas_semanales"])
 
     becario = _get_activo_or_404(id)
     cambios = {}

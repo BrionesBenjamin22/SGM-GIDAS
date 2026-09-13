@@ -12,7 +12,7 @@ import FormInvestigador from "./FormInvestigador";
 
 import { getPersonalCompletoByRolAndId } from "@/modules/personal/services/personalCompletoServices";
 
-type Tipo = "" | "PTAA" | "PROFESIONAL" | "BECARIO" | "INVESTIGADOR";
+type Tipo = "" | "PERSONAL" | "BECARIO" | "INVESTIGADOR";
 
 export default function PersonalForm() {
   const { rol: paramRol, id } = useParams<{ rol?: string; id?: string }>();
@@ -74,8 +74,8 @@ export default function PersonalForm() {
     if (!r) return;
 
     const rolMap: Record<string, Tipo> = {
-      personal: "PTAA",
-      profesional: "PROFESIONAL",
+      personal: "PERSONAL",
+      profesional: "PERSONAL",
       becario: "BECARIO",
       investigador: "INVESTIGADOR",
     };
@@ -108,11 +108,13 @@ export default function PersonalForm() {
 
         {!isEdit && (
           <div>
-            <label className="block text-sm font-medium mb-2">
-              Tipo de personal
+            <label htmlFor="personal-clase" className="block text-sm font-medium mb-2">
+              Clase de registro
             </label>
 
             <select
+              id="personal-clase"
+              aria-invalid={errorTipo}
               className={`input ${errorTipo ? "border-red-500 ring-2 ring-red-500 bg-red-50" : ""
                 }`}
               value={tipo}
@@ -124,8 +126,7 @@ export default function PersonalForm() {
               <option value="">
                 Selecciona el rol del personal
               </option>
-              <option value="PTAA">Técnico administrativo y de apoyo</option>
-              <option value="PROFESIONAL">Personal Profesional</option>
+              <option value="PERSONAL">Personal</option>
               <option value="BECARIO">Becario</option>
               <option value="INVESTIGADOR">Investigador</option>
             </select>
@@ -152,10 +153,9 @@ export default function PersonalForm() {
           </div>
         )}
 
-        {(tipo === "PTAA" || tipo === "PROFESIONAL") && (
+        {tipo === "PERSONAL" && (
           <FormPTAAProfesional
             key={`${tipo}-${id ?? "new"}`}
-            tipo={tipo}
             initialData={initialData}
             onCancel={() => navigate(-1)}
             onError={handleFormError}

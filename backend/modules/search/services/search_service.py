@@ -118,7 +118,7 @@ class SearchService:
                     "titulo": p.nombre_apellido,
                     "subtitulo": p.tipo_personal.nombre if p.tipo_personal else None,
                     "fecha": None,
-                    "url": f"/personal/{p.id}"
+                    "url": f"/personal/personal/{p.id}"
                 }))
 
         # ==================================================
