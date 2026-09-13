@@ -1,3 +1,4 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -219,6 +220,7 @@ export default function TransferenciasForm() {
       });
     },
     onError: (error) => {
+      if (applyFieldErrors(error, setErrors, ["numeroTransferencia","denominacion","demandante","descripcionActividad","monto","fechaInicio","fechaFin","tipoContratoId"])) return;
       setErrorMessage(
         getErrorMessage(
           error,
@@ -260,7 +262,7 @@ export default function TransferenciasForm() {
         }}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Número de transferencia">
+        <Field label="Número de transferencia" name="numeroTransferencia" error={errors.numeroTransferencia}>
           <>
             <input
               type="number"
@@ -278,7 +280,7 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <Field label="Denominación">
+        <Field label="Denominación" name="denominacion" error={errors.denominacion}>
           <>
             <input
               className={inputClass("denominacion")}
@@ -295,7 +297,7 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <Field label="Demandante">
+        <Field label="Demandante" name="demandante" error={errors.demandante}>
           <>
             <input
               className={inputClass("demandante")}
@@ -312,7 +314,7 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <Field label="Descripción de la actividad">
+        <Field label="Descripción de la actividad" name="descripcionActividad" error={errors.descripcionActividad}>
           <>
             <textarea
               rows={5}
@@ -333,7 +335,7 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <Field label="Monto">
+        <Field label="Monto" name="monto" error={errors.monto}>
           <>
             <input
               type="number"
@@ -351,7 +353,7 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <Field label="Fecha de inicio">
+        <Field label="Fecha de inicio" name="fechaInicio" error={errors.fechaInicio}>
           <DatePicker
             value={data.fechaInicio ? new Date(`${data.fechaInicio}T00:00:00`) : null}
             onChange={(dt) => {
@@ -366,7 +368,7 @@ export default function TransferenciasForm() {
           />
         </Field>
 
-        <Field label="Fecha de fin">
+        <Field label="Fecha de fin" name="fechaFin" error={errors.fechaFin}>
           <DatePicker
             value={data.fechaFin ? new Date(`${data.fechaFin}T00:00:00`) : null}
             onChange={(dt) => {
@@ -381,7 +383,7 @@ export default function TransferenciasForm() {
           />
         </Field>
 
-        <Field label="Tipo de contrato">
+        <Field label="Tipo de contrato" name="tipoContratoId" error={errors.tipoContratoId}>
           <>
             <select
               className={`${inputClass("tipoContratoId")} ${
