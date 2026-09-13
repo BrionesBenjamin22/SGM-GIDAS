@@ -1,4 +1,4 @@
-﻿from datetime import datetime, date
+from datetime import datetime, date
 import builtins
 import re
 
@@ -91,7 +91,7 @@ class ProyectoInvestigacionService:
         )
         investigador = db.session.get(Investigador, investigador_id)
         if not investigador or investigador.deleted_at is not None:
-            raise ValueError("Investigador invalido")
+            raise ValueError('Seleccione un investigador disponible e intente nuevamente.', details={"fields": {'id_investigador': 'Seleccione un investigador disponible e intente nuevamente.'}})
         return investigador_id
 
     @staticmethod
@@ -269,22 +269,22 @@ class ProyectoInvestigacionService:
                 raise ValueError("La fecha fin no puede ser anterior a la fecha inicio")
 
         if not TipoProyecto.query.get(data.get("tipo_proyecto_id")):
-            raise NotFoundError("Tipo de proyecto inválido")
+            raise ValueError('Seleccione un tipo de proyecto disponible e intente nuevamente.', details={"fields": {'tipo_proyecto_id': 'Seleccione un tipo de proyecto disponible e intente nuevamente.'}})
         
         if data.get("fuente_financiamiento_id"):
             fuente = FuenteFinanciamiento.query.get(data["fuente_financiamiento_id"])
             if not fuente:
-                raise ValueError("Fuente de financiamiento inválida")
+                raise ValueError('Seleccione una fuente de financiamiento disponible e intente nuevamente.', details={"fields": {'fuente_financiamiento_id': 'Seleccione una fuente de financiamiento disponible e intente nuevamente.'}})
             
         if data.get("grupo_utn_id"):
             grupo = GrupoInvestigacionUtn.query.get(data["grupo_utn_id"])
             if not grupo:
-                raise ValueError("Grupo UTN inválido")
+                raise ValueError('Seleccione un grupo disponible e intente nuevamente.', details={"fields": {'grupo_utn_id': 'Seleccione un grupo disponible e intente nuevamente.'}})
             
         if data.get("tipo_proyecto_id"):
             tipo = TipoProyecto.query.get(data["tipo_proyecto_id"])
             if not tipo:
-                raise ValueError("Tipo de proyecto inválido")
+                raise ValueError('Seleccione un tipo de proyecto disponible e intente nuevamente.', details={"fields": {'tipo_proyecto_id': 'Seleccione un tipo de proyecto disponible e intente nuevamente.'}})
 
         proyecto = ProyectoInvestigacion(
             codigo_proyecto=codigo_proyecto,
@@ -359,10 +359,10 @@ class ProyectoInvestigacionService:
         if "tipo_proyecto_id" in data:
             tipo_proyecto_id = data["tipo_proyecto_id"]
             if not isinstance(tipo_proyecto_id, int) or tipo_proyecto_id <= 0:
-                raise ValueError("Tipo de proyecto inválido")
+                raise ValueError('Seleccione un tipo de proyecto disponible e intente nuevamente.', details={"fields": {'tipo_proyecto_id': 'Seleccione un tipo de proyecto disponible e intente nuevamente.'}})
 
             if not TipoProyecto.query.get(tipo_proyecto_id):
-                raise ValueError("Tipo de proyecto inválido")
+                raise ValueError('Seleccione un tipo de proyecto disponible e intente nuevamente.', details={"fields": {'tipo_proyecto_id': 'Seleccione un tipo de proyecto disponible e intente nuevamente.'}})
 
             cambio = AuditoriaService.construir_cambio(
                 proyecto.tipo_proyecto_id,
@@ -384,10 +384,10 @@ class ProyectoInvestigacionService:
                     proyecto.grupo_utn_id = None
             else:
                 if not isinstance(grupo_utn_id, int) or grupo_utn_id <= 0:
-                    raise ValueError("Grupo UTN inválido")
+                    raise ValueError('Seleccione un grupo disponible e intente nuevamente.', details={"fields": {'grupo_utn_id': 'Seleccione un grupo disponible e intente nuevamente.'}})
 
                 if not GrupoInvestigacionUtn.query.get(grupo_utn_id):
-                    raise ValueError("Grupo UTN inválido")
+                    raise ValueError('Seleccione un grupo disponible e intente nuevamente.', details={"fields": {'grupo_utn_id': 'Seleccione un grupo disponible e intente nuevamente.'}})
 
                 cambio = AuditoriaService.construir_cambio(
                     proyecto.grupo_utn_id,
@@ -412,10 +412,10 @@ class ProyectoInvestigacionService:
                     not isinstance(fuente_financiamiento_id, int)
                     or fuente_financiamiento_id <= 0
                 ):
-                    raise ValueError("Fuente de financiamiento inválida")
+                    raise ValueError('Seleccione una fuente de financiamiento disponible e intente nuevamente.', details={"fields": {'fuente_financiamiento_id': 'Seleccione una fuente de financiamiento disponible e intente nuevamente.'}})
 
                 if not FuenteFinanciamiento.query.get(fuente_financiamiento_id):
-                    raise ValueError("Fuente de financiamiento inválida")
+                    raise ValueError('Seleccione una fuente de financiamiento disponible e intente nuevamente.', details={"fields": {'fuente_financiamiento_id': 'Seleccione una fuente de financiamiento disponible e intente nuevamente.'}})
 
                 cambio = AuditoriaService.construir_cambio(
                     proyecto.fuente_financiamiento_id,

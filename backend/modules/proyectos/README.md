@@ -1,5 +1,14 @@
 # Modulo backend de proyectos
 
+## Errores accionables (ISS-09)
+
+Las selecciones inexistentes de tipo de proyecto, fuente de financiamiento,
+grupo e investigador se informan mediante `VALIDATION_ERROR` (400) y
+`error.details.fields`, indicando la selección que debe corregirse.
+El código de proyecto conserva su regla vigente: texto alfanumérico de hasta
+50 caracteres; ISS-09 no modifica esa regla. Los errores inesperados incluyen
+`details.request_id` correlacionable con los logs y un mensaje seguro.
+
 ## Contrato de fechas
 
 Los proyectos y sus relaciones se validan desde el 01/01/2010. Los services
