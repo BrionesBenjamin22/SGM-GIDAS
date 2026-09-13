@@ -1,3 +1,4 @@
+import { applyFieldErrors, getApiFieldErrors, mapFieldErrors } from "@/lib/httpError";
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -58,8 +59,8 @@ export default function UsuariosForm() {
       setCreado(true);
       setUsuarioCreado({ nombre, password, rol });
     },
-    onError: () => {
-      setErrors((prev) => ({ ...prev }));
+    onError: (error) => {
+      applyFieldErrors(error, setErrors, ["nombre","email","password","rol"]);
     },
   });
 
@@ -154,6 +155,7 @@ export default function UsuariosForm() {
       setPassword(generateTemporaryPassword());
       setCopyError(null);
     } catch (error) {
+      if (applyFieldErrors(error, setErrors, ["nombre","email","password","rol"])) return;
       setErrors((prev) => ({
         ...prev,
         password: getErrorMessage(error, "No pudimos generar una contraseña segura. Intente nuevamente."),
@@ -251,7 +253,7 @@ export default function UsuariosForm() {
 
       <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
         <form onSubmit={handleSubmit} noValidate className="space-y-6">
-          <Field label="Nombre de Usuario" required error={errors.nombre}>
+          <Field label="Nombre de Usuario" required error={errors.nombre} name="nombre">
             <input
               type="text"
               className={`input ${errors.nombre ? "border-rose-300" : ""}`}
@@ -262,7 +264,7 @@ export default function UsuariosForm() {
             />
           </Field>
 
-          <Field label="Email" required error={errors.email}>
+          <Field label="Email" required error={errors.email} name="email">
             <input
               type="email"
               className={`input ${errors.email ? "border-rose-300" : ""}`}
@@ -273,7 +275,7 @@ export default function UsuariosForm() {
             />
           </Field>
 
-          <Field label="Contraseña Temporal" required error={errors.password}>
+          <Field label="Contraseña Temporal" required error={errors.password} name="password">
             <div className="space-y-2">
               <div className="relative">
                 <input
@@ -312,7 +314,7 @@ export default function UsuariosForm() {
             </div>
           </Field>
 
-          <Field label="Rol" required error={errors.rol}>
+          <Field label="Rol" required error={errors.rol} name="rol">
             <div className="grid gap-3 md:grid-cols-2">
               <button
                 type="button"
@@ -377,7 +379,8 @@ export default function UsuariosForm() {
             </p>
           </Field>
 
-          {crearMutation.isError && (
+          {crearMutation.isError && (Object.keys(getApiFieldErrors(crearMutation.error)).length === 0 ||
+            Object.keys(mapFieldErrors(crearMutation.error, ["nombre", "email", "password", "rol"])).length < Object.keys(getApiFieldErrors(crearMutation.error)).length) && (
             <div className="bg-rose-50 text-rose-600 text-sm px-4 py-3 rounded-lg border border-rose-200">
               {getErrorMessage(
                 crearMutation.error,

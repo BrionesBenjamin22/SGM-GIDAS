@@ -14,7 +14,8 @@ import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { actualizarUsuario } from "@/modules/auth/services/usuariosService";
 import { getRoleCapabilities } from "@/modules/auth/utils/roleCapabilities";
-import { getErrorMessage } from "@/lib/httpError";
+import { applyFieldErrors, getErrorMessage } from "@/lib/httpError";
+import Field from "@/components/Field";
 import Button from "@/components/Button";
 
 function isValidEmail(email: string): boolean {
@@ -40,6 +41,7 @@ export default function MiPerfil() {
   const [nombreUsuario, setNombreUsuario] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [guardado, setGuardado] = useState(false);
 
   useEffect(() => {
@@ -73,6 +75,7 @@ export default function MiPerfil() {
       setTimeout(() => setGuardado(false), 2000);
     },
     onError: (err) => {
+      if (applyFieldErrors(err, setFieldErrors, ["nombreUsuario", "email"])) return;
       setError(getErrorMessage(err, "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."));
     },
   });
@@ -171,12 +174,14 @@ export default function MiPerfil() {
             <p className="text-sm text-slate-500 mb-1">Nombre de usuario</p>
 
             {editando ? (
+              <Field label="Nombre de usuario" name="nombreUsuario" error={fieldErrors.nombreUsuario}>
               <input
                 className="input"
                 value={nombreUsuario}
-                onChange={(e) => setNombreUsuario(e.target.value)}
+                onChange={(e) => { setNombreUsuario(e.target.value); setFieldErrors(previous => ({ ...previous, nombreUsuario: "" })); }}
                 placeholder="Nombre de usuario"
               />
+              </Field>
             ) : (
               <p className="font-medium text-slate-900">{user.nombre_usuario}</p>
             )}
@@ -195,13 +200,15 @@ export default function MiPerfil() {
             <p className="text-sm text-slate-500 mb-1">Email</p>
 
             {editando ? (
+              <Field label="Correo electrónico" name="email" error={fieldErrors.email}>
               <input
                 className="input"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); setFieldErrors(previous => ({ ...previous, email: "" })); }}
                 placeholder="Email"
               />
+              </Field>
             ) : (
               <p className="font-medium text-slate-900">{user.mail}</p>
             )}

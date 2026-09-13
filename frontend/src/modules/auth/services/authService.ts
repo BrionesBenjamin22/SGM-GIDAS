@@ -6,7 +6,6 @@ import {
   setAccessToken,
   withAuthCookieLock,
 } from "@/lib/http";
-import { getErrorMessage } from "@/lib/httpError";
 import type { SessionTiming } from "@/modules/auth/utils/sessionTiming";
 
 export type Rol = "ADMIN" | "GESTOR" | "LECTURA";
@@ -37,12 +36,8 @@ type BackendLoginResponse = {
 
 const AUTH_CHANNEL = "gidas_auth_events";
 const LEGACY_AUTH_KEY = "gidas_auth_current_session";
-const LOGIN_ERROR_MESSAGE =
-  "Lo sentimos, no pudimos iniciar sesión. Verifique su usuario y contraseña e intente nuevamente.";
 const CONNECTION_ERROR_MESSAGE =
   "Lo sentimos, no pudimos conectar con el servidor. Intente nuevamente en unos minutos.";
-const CHANGE_PASSWORD_ERROR_MESSAGE =
-  "Lo sentimos, no pudimos cambiar la contraseña. Verifique los datos e intente nuevamente.";
 
 export async function restoreSession(): Promise<AuthResponse | null> {
   removeLegacyAuthStorage();
@@ -68,10 +63,7 @@ export async function login(
       }),
     }, true);
   } catch (error) {
-    if (error instanceof HttpError && error.status === 401) {
-      throw new Error(LOGIN_ERROR_MESSAGE);
-    }
-
+    if (error instanceof HttpError) throw error;
     throw new Error(CONNECTION_ERROR_MESSAGE);
   }
 
@@ -155,7 +147,7 @@ export async function cambiarPassword({
     });
   } catch (error) {
     if (error instanceof HttpError) {
-      throw new Error(getErrorMessage(error, CHANGE_PASSWORD_ERROR_MESSAGE));
+      throw error;
     }
 
     throw new Error(CONNECTION_ERROR_MESSAGE);
