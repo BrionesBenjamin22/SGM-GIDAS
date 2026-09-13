@@ -2,6 +2,11 @@
 
 ## Contrato transversal de fechas institucionales
 
+Seguimiento ISS-08: Calendar informa fechas imposibles, incompletas al salir del
+campo y límites mínimo/máximo; resalta el input y anuncia el error accesiblemente.
+Al rechazar conserva la fecha confirmada anterior. El error se limpia al ingresar
+una fecha válida, vaciar, cancelar con Escape o confirmar desde el calendario.
+
 Los formularios de entidades usan `Calendar`, que aplica `2010-01-01` como
 límite inferior predeterminado. Cada módulo conserva su propia regla sobre
 fechas futuras y sobre el orden de los períodos. Los calendarios destinados a

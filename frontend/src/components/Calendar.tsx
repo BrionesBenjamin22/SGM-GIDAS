@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { getInstitutionalMinDate } from "@/utils/dateTime";
+import { calendarValidationMessage } from "@/utils/calendarValidation";
 
 type DatePickerProps = {
   label?: string;
@@ -90,6 +91,8 @@ export default function DatePicker({
   const [view, setView] = useState<Date>(() => value ?? new Date());
   const [temp, setTemp] = useState<Date | null>(value ?? null);
   const [inputValue, setInputValue] = useState(() => fmt(value));
+  const [inputError, setInputError] = useState("");
+  const inputId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const resolvedHelperText =
     helperText ??
@@ -147,6 +150,7 @@ export default function DatePicker({
     setInputValue(maskedValue);
 
     if (!maskedValue) {
+      setInputError("");
       setTemp(null);
       onChange(null);
       return;
@@ -155,7 +159,9 @@ export default function DatePicker({
     if (maskedValue.length < 10) return;
 
     const parsed = parseDateInput(maskedValue);
-    if (!parsed || isDateDisabled(parsed)) return;
+    const message = calendarValidationMessage(maskedValue, parsed, effectiveMinDate, maxDate);
+    setInputError(message);
+    if (!parsed || message) return;
 
     const normalized = stripTime(parsed);
     setTemp(normalized);
@@ -165,12 +171,16 @@ export default function DatePicker({
 
   return (
     <div ref={rootRef} className="relative w-full">
-      {label && <label className="block text-sm font-medium mb-2">{label}</label>}
+      {label && <label htmlFor={inputId} className="block text-sm font-medium mb-2">{label}</label>}
 
       <div className="relative">
         <input
           type="text"
-          className={className}
+          id={inputId}
+          aria-label={label ?? "Fecha"}
+          aria-invalid={Boolean(inputError)}
+          aria-describedby={`${inputId}-feedback`}
+          className={`${className} ${inputError ? "!border-red-500 !ring-2 !ring-red-500" : ""}`}
           value={inputValue}
           placeholder={placeholder}
           autoComplete="off"
@@ -179,6 +189,7 @@ export default function DatePicker({
           onChange={(event) => commitTypedValue(event.target.value)}
           onBlur={(event) => {
             const parsed = parseDateInput(event.currentTarget.value);
+            setInputError(calendarValidationMessage(event.currentTarget.value, parsed, effectiveMinDate, maxDate));
             if (parsed && !isDateDisabled(parsed)) {
               const normalized = stripTime(parsed);
               setInputValue(fmt(normalized));
@@ -197,11 +208,13 @@ export default function DatePicker({
             }
 
             if (event.key === "Enter") {
+              event.preventDefault();
               event.currentTarget.blur();
               setOpen(false);
             }
 
             if (event.key === "Escape") {
+              setInputError("");
               setInputValue(fmt(value));
               setOpen(false);
             }
@@ -221,8 +234,10 @@ export default function DatePicker({
           </svg>
         </button>
       </div>
-      {resolvedHelperText && (
-        <p className="mt-1 text-xs text-slate-500">{resolvedHelperText}</p>
+      {(inputError || resolvedHelperText) && (
+        <p id={`${inputId}-feedback`} role={inputError ? "alert" : undefined} className={`mt-1 text-xs ${inputError ? "text-red-600" : "text-slate-500"}`}>
+          {inputError || resolvedHelperText}
+        </p>
       )}
 
       {/* Popover calendario */}
@@ -293,6 +308,7 @@ export default function DatePicker({
               type="button"
               className="px-3 py-1.5 text-sm rounded bg-black text-white hover:opacity-90"
               onClick={() => {
+                setInputError("");
                 onChange(temp ?? null);
                 setInputValue(fmt(temp ?? null));
                 setOpen(false);
