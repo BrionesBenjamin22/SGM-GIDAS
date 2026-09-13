@@ -26,3 +26,8 @@ class ConflictError(DomainError):
 class ForbiddenError(DomainError):
     code = "FORBIDDEN"
     status_code = 403
+
+
+class AuthenticationError(DomainError):
+    code = "AUTH_REQUIRED"
+    status_code = 401

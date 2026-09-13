@@ -1,5 +1,23 @@
 # Backend modular
 
+## Errores accionables (ISS-09)
+
+Se mantiene el contrato `{data: null, error: {code, message, details}}`.
+Los manejadores globales y `exception_response` convierten las excepciones de
+dominio en 400/401/403/404/409 y las fallas inesperadas en 500. Los errores HTTP
+400/422, 401, 403, 404, 409 y 500 usan el mismo sobre seguro.
+
+`details.fields` conserva las claves estables del contrato API con mensajes
+públicos en español. `shared/services/error_messages.py` traduce los nombres
+internos conocidos de las validaciones heredadas; no infiere campos desde SQL,
+claves desconocidas o palabras ambiguas. Los validadores nuevos deben declarar
+`details.fields` explícitamente. Se eliminan detalles internos no documentados.
+El estado público de dependencias del healthcheck conserva su contrato.
+
+`details.request_id` coincide con `X-Request-ID` y con el identificador registrado
+en los logs de petición y error. Una excepción inesperada siempre muestra el
+mensaje seguro, sin SQL, trazas ni información de conexión.
+
 ## Contrato transversal de fechas institucionales
 
 `modules.shared.services.date_time.validate_institutional_date` establece el
