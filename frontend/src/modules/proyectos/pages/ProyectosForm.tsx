@@ -751,7 +751,7 @@ export default function ProyectosForm() {
                 if (date) clearError("fechaInicio");
               }}
               className={inputClass("fechaInicio")}
-              helperText={errors.fechaInicio ?? "DD/MM/AAAA"}
+              helperText="DD/MM/AAAA"
             />
           </Field>
 
