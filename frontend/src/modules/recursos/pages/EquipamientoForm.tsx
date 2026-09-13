@@ -1,3 +1,4 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
@@ -114,6 +115,7 @@ export default function EquipamientoForm() {
       });
     },
     onError: (error) => {
+      if (applyFieldErrors(error, setErrors, ["denominacion","descripcion","fecha_incorporacion","monto"])) return;
       const backendMessage = getErrorMessage(
         error,
         "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
@@ -198,7 +200,7 @@ export default function EquipamientoForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Denominación">
+        <Field label="Denominación" name="denominacion" error={errors.denominacion}>
           <>
             <input
               className={inputClass("denominacion")}
@@ -218,7 +220,7 @@ export default function EquipamientoForm() {
           </>
         </Field>
 
-        <Field label="Descripción breve">
+        <Field label="Descripción breve" name="descripcion" error={errors.descripcion}>
           <>
             <input
               className={inputClass("descripcion")}
@@ -238,7 +240,7 @@ export default function EquipamientoForm() {
           </>
         </Field>
 
-        <Field label="Monto invertido">
+        <Field label="Monto invertido" name="monto" error={errors.monto}>
           <>
             <input
               type="number"
@@ -264,7 +266,7 @@ export default function EquipamientoForm() {
           </>
         </Field>
 
-        <Field label="Fecha de incorporación">
+        <Field label="Fecha de incorporación" name="fecha_incorporacion" error={errors.fecha_incorporacion}>
           <DatePicker
             value={
               data.fecha_incorporacion

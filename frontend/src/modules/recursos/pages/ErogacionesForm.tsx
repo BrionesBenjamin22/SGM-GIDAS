@@ -1,3 +1,4 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -137,6 +138,7 @@ export default function ErogacionesForm() {
       });
     },
     onError: (error) => {
+      if (applyFieldErrors(error, setErrors, ["numero","tipo","fuente","fecha","ingresos","egresos"])) return;
       const backendMessage = getErrorMessage(
         error,
         "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
@@ -235,7 +237,7 @@ export default function ErogacionesForm() {
           </div>
         )}
 
-        <Field label="Número de erogación">
+        <Field label="Número de erogación" name="numero" error={errors.numero}>
           <>
             <input
               type="number"
@@ -257,7 +259,7 @@ export default function ErogacionesForm() {
           </>
         </Field>
 
-        <Field label="Tipo de erogación">
+        <Field label="Tipo de erogación" name="tipo" error={errors.tipo}>
           <>
             <select
               className={`${inputClass("tipo")} ${
@@ -288,7 +290,7 @@ export default function ErogacionesForm() {
           </>
         </Field>
 
-        <Field label="Fuente de financiamiento">
+        <Field label="Fuente de financiamiento" name="fuente" error={errors.fuente}>
           <>
             <select
               className={`${inputClass("fuente")} ${
@@ -319,7 +321,7 @@ export default function ErogacionesForm() {
           </>
         </Field>
 
-        <Field label="Fecha">
+        <Field label="Fecha" name="fecha" error={errors.fecha}>
           <DatePicker
             value={data.fecha ? new Date(`${data.fecha}T00:00:00`) : null}
             onChange={(dt) => {
@@ -335,7 +337,7 @@ export default function ErogacionesForm() {
           />
         </Field>
 
-        <Field label="Ingresos">
+        <Field label="Ingresos" name="ingresos" error={errors.ingresos}>
           <>
             <input
               type="number"
@@ -358,7 +360,7 @@ export default function ErogacionesForm() {
           </>
         </Field>
 
-        <Field label="Egresos">
+        <Field label="Egresos" name="egresos" error={errors.egresos}>
           <>
             <input
               type="number"
