@@ -30,6 +30,27 @@ Validaciones:
 
 ### Corregido
 
+#### ISS-09 — Implementar mensajes de error accionables (pendiente prueba manual)
+
+- Se conserva el contrato existente de errores y se normalizan mensajes públicos,
+  campos inválidos y códigos HTTP de dominio/autenticación.
+- Los errores inesperados incluyen una referencia correlacionable con los logs,
+  sin reflejar SQL, trazas ni información de conexión.
+- Los formularios muestran los errores del servidor junto al control y enfocan
+  el primer campo inválido; los campos desconocidos conservan el aviso general.
+- Se mantiene la regla alfanumérica del código de proyecto y las validaciones
+  existentes. No se incorpora validación en tiempo real.
+- Se actualizan los README transversales y de los módulos afectados.
+
+Validaciones: 81 pruebas frontend, typecheck, build de producción y comprobación
+de whitespace correctos. 89 pruebas backend de errores, proyectos, autenticación,
+cookies, refresh no concurrente, permisos, personal, grupo, recursos, producción,
+transferencia, catálogos y logs. Pendiente comprobación manual en navegador.
+La prueba concurrente de refresh presenta una incidencia previa de limpieza
+SQLite en Windows, ajena a ISS-09; no se declara validada la suite backend completa.
+Los cambios se separan en commits por módulo a petición del usuario.
+No se crearon herramientas auxiliares en esta continuación.
+
 #### ISS-08 (seguimiento) — Validar horas semanales y usar tipos reales del catálogo
 
 - Horas enteras de 1 a 168 en alta/edición de Personal, Becario e Investigador,
