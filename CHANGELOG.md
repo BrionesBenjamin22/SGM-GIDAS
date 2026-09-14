@@ -8,6 +8,25 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-13: sustituir Fecha de inicio por Fecha de presentación
+
+- Trabajos en congresos/reuniones y snapshots usan fecha_presentacion.
+  Actualizados formulario, detalle, home, historial, filtro anual, búsqueda,
+  exportaciones, seed y contratos; revistas mantiene su contrato.
+- Compatibilidad temporal de entrada con fecha_inicio; valores contradictorios
+  se rechazan sin escritura. Nuevas respuestas/eventos usan el nombre nuevo;
+  historial antiguo conservado y presentado con la nueva etiqueta.
+- Migración reversible c13d7e9a2b40 aplicada a PostgreSQL local de testing.
+  Las trece fechas existentes se conservaron exactamente, sin regenerar datos.
+- Pertenencia anual inclusiva por fecha de presentación, verificada para
+  31 de diciembre y 1 de enero y en exportación XLSX.
+
+Validaciones: 62 tests backend, 96 frontend, typecheck, build:production y
+git diff --check correctos. Migración/downgrade con preservación de valores
+probados en SQLite; consultas Docker autenticadas HTTP 200 y módulos Vite
+actualizados. Revisión de navegador a cargo del usuario. El primer test XLSX
+asumía otro formato de fecha; expectativa ajustada al contrato ISO existente.
+
 ### Agregado
 
 #### ISS-12: investigadores y becarios como autores de trabajos
