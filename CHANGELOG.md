@@ -8,6 +8,32 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### Agregado
+
+#### ISS-12: investigadores y becarios como autores de trabajos
+
+- Autoría común `autores` en congresos y revistas, identificada por rol/id.
+  Únicamente investigadores y becarios; Personal y externos se rechazan.
+- Backend con integridad referencial, permisos, transacciones atómicas,
+  auditoría y snapshots de autores congelados. Formularios con altas/bajas
+  locales, guardado consolidado y envío de diferencias reales.
+- Buscador por nombre, apellido o iniciales sin tildes, filtro por categoría,
+  nueve resultados y Ver más. Añadir requiere un botón explícito; escribir,
+  perder foco o Enter en búsqueda no incorpora autores ni envía el formulario.
+- Detalles, búsqueda global y exportaciones XLSX muestran autores.
+  Corregida la ruta de la plantilla de memorias; contratos documentados.
+- Revisiones de esquema aplicadas en PostgreSQL local hasta `b12c8d5e7f90`.
+  Seed idempotente: 13 trabajos y 26 asociaciones por tipo. Entorno regenerable
+  por decisión del usuario; downgrade estructural sin recuperación de datos.
+- Frontend Docker actualizado y módulos servidos comprobados por HTTP.
+
+Validaciones: 95 tests frontend, 18 backend de autores/historial y regresión
+previa de 85 tests backend; typecheck, build:production y git diff --check
+correctos. SQL PostgreSQL upgrade/downgrade y único head verificados. HTTP real:
+consultas 200 y Personal rechazado con 400 sin cambios parciales. Revisión
+de navegador a cargo del usuario. Incidencia ajena conservada: un test de
+búsqueda espera `numerico` mientras la API devuelve `numérico`.
+
 ### Corregido
 
 #### ISS-09: feedback visible durante acciones asincronas
