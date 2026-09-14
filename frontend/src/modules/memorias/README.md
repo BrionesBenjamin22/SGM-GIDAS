@@ -64,3 +64,9 @@ confirmaciones bloquean además cancelar, el fondo y los campos del diálogo.
 El estado se libera al resolver o fallar, conservando errores y mensajes de
 éxito existentes. Los callbacks basados en React Query deben devolver
 mutateAsync para que el diálogo cubra toda la operación.
+
+## ISS-12: autoría de integrantes
+
+Los snapshots de trabajos reciben autores congelados (id, rol, nombre_apellido, tipo, activo), y el Excel de la versión incluye investigadores y becarios. La navegación hacia homes y detalles mantiene el contexto de memoria y el contrato de las secciones.
+
+Corrección de alcance ISS-12: los autores de trabajos son únicamente investigadores y becarios. Personal (PTAA/profesional) no puede vincularse como autor. Se mantiene la etiqueta Autores.

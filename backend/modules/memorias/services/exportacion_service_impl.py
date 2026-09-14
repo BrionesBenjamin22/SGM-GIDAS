@@ -34,7 +34,7 @@ from modules.shared.exceptions import ConflictError, NotFoundError
 
 
 class ExportService:
-    MEMORIA_TEMPLATE_PATH = Path(__file__).resolve().parents[2] / "assets" / "DS2025 - UTN - PLANTILLA MEMORIAS.xlsx"
+    MEMORIA_TEMPLATE_PATH = Path(__file__).resolve().parents[3] / "assets" / "DS2025 - UTN - PLANTILLA MEMORIAS.xlsx"
     TITLE_FILL = PatternFill(fill_type="solid", fgColor="FBE4D5")
     SECTION_FILL = PatternFill(fill_type="solid", fgColor="FBE4D5")
     SUBSECTION_FILL = PatternFill(fill_type="solid", fgColor="FFFF00")
@@ -408,9 +408,13 @@ class ExportService:
         )
 
     @staticmethod
+    def _autores_texto(autores):
+        return ", ".join(f"{a['nombre_apellido']} ({a['tipo']})" for a in autores) or "-"
+
+    @staticmethod
     def _get_trabajos_reunion(grupo_id: int):
         return (
-            TrabajoReunionCientifica.query.options(joinedload(TrabajoReunionCientifica.tipo_reunion_cientifica), selectinload(TrabajoReunionCientifica.investigadores))
+            TrabajoReunionCientifica.query.options(joinedload(TrabajoReunionCientifica.tipo_reunion_cientifica), selectinload(TrabajoReunionCientifica.autorias))
             .filter(TrabajoReunionCientifica.grupo_utn_id == grupo_id, TrabajoReunionCientifica.deleted_at.is_(None))
             .order_by(TrabajoReunionCientifica.fecha_inicio.desc(), TrabajoReunionCientifica.id.desc())
             .all()
@@ -419,7 +423,7 @@ class ExportService:
     @staticmethod
     def _get_trabajos_revista(grupo_id: int):
         return (
-            TrabajosRevistasReferato.query.options(joinedload(TrabajosRevistasReferato.tipo_reunion), selectinload(TrabajosRevistasReferato.investigadores))
+            TrabajosRevistasReferato.query.options(joinedload(TrabajosRevistasReferato.tipo_reunion), selectinload(TrabajosRevistasReferato.autorias))
             .filter(TrabajosRevistasReferato.grupo_utn_id == grupo_id, TrabajosRevistasReferato.deleted_at.is_(None))
             .order_by(TrabajosRevistasReferato.fecha.desc(), TrabajosRevistasReferato.id.desc())
             .all()
@@ -1366,7 +1370,7 @@ class ExportService:
                 item.get("nombre_reunion") or "-",
                 item.get("procedencia") or "-",
                 cls._format_date(item.get("fecha_inicio")),
-                item.get("investigadores_participantes") or "-",
+                cls._autores_texto(item.get("autores", [])),
                 item.get("titulo_trabajo") or "-",
             ]
             if cls._clasificar_trabajo_reunion(item.get("tipo_reunion_nombre")) == "internacional":
@@ -1384,7 +1388,7 @@ class ExportService:
             reuniones_nacionales_header_row,
             reuniones_nacionales_end_row,
             "7.1.- Reunion Cientifica Nacional con Referato",
-            ["Nro.", "Nombre reunion", "Ciudad / Pais", "Fecha inicio", "Expositor", "Titulo trabajo"],
+            ["Nro.", "Nombre reunion", "Ciudad / Pais", "Fecha inicio", "Autores", "Titulo trabajo"],
             reuniones_nacionales,
             chars_per_line=32,
         )
@@ -1399,7 +1403,7 @@ class ExportService:
             reuniones_internacionales_header_row,
             reuniones_internacionales_end_row,
             "7.2.- Reunion Cientifica Internacional",
-            ["Nro.", "Nombre reunion", "Ciudad / Pais", "Fecha inicio", "Expositor", "Titulo trabajo"],
+            ["Nro.", "Nombre reunion", "Ciudad / Pais", "Fecha inicio", "Autores", "Titulo trabajo"],
             reuniones_internacionales,
             chars_per_line=32,
         )
@@ -1417,7 +1421,7 @@ class ExportService:
                 item.get("pais") or "-",
                 item.get("editorial") or "-",
                 item.get("issn") or "-",
-                item.get("titulo_trabajo") or "-",
+                (item.get("titulo_trabajo") or "-") + "\nAutores: " + cls._autores_texto(item.get("autores", [])),
             ]
             for idx, item in enumerate(snapshot_sources["trabajos_revista"], start=1)
         ]
@@ -1431,7 +1435,7 @@ class ExportService:
             trabajos_revista_header_row,
             trabajos_revista_end_row,
             "8.1.- Trabajos publicados en revistas con referato",
-            ["Nro.", "Revista", "Pais", "Editorial", "ISSN", "Titulo trabajo"],
+            ["Nro.", "Revista", "Pais", "Editorial", "ISSN", "Titulo trabajo / Autores"],
             trabajos_revista_rows,
             chars_per_line=34,
         )
@@ -1813,12 +1817,12 @@ class ExportService:
         reuniones_grouped = {}
         for trabajo in trabajos_reunion:
             tipo = trabajo.tipo_reunion_cientifica.nombre if trabajo.tipo_reunion_cientifica else "Sin tipo definido"
-            reuniones_grouped.setdefault(tipo, []).append([len(reuniones_grouped.get(tipo, [])) + 1, trabajo.titulo_trabajo, trabajo.nombre_reunion, trabajo.procedencia, trabajo.fecha_inicio, cls._join_names(trabajo.investigadores)])
-        row = cls._write_grouped_tables(ws, row, "7", "TRABAJOS PRESENTADOS EN CONGRESOS Y REUNIONES CIENTIFICAS CON REFERATO", list(reuniones_grouped.items()), ["Nro.", "Titulo del trabajo", "Reunion cientifica", "Institucion de procedencia", "Fecha de presentacion", "Investigadores participantes"], merge_span=10, date_cols={5})
+            reuniones_grouped.setdefault(tipo, []).append([len(reuniones_grouped.get(tipo, [])) + 1, trabajo.titulo_trabajo, trabajo.nombre_reunion, trabajo.procedencia, trabajo.fecha_inicio, cls._autores_texto([a.serialize() for a in trabajo.autorias])])
+        row = cls._write_grouped_tables(ws, row, "7", "TRABAJOS PRESENTADOS EN CONGRESOS Y REUNIONES CIENTIFICAS CON REFERATO", list(reuniones_grouped.items()), ["Nro.", "Titulo del trabajo", "Reunion cientifica", "Institucion de procedencia", "Fecha de presentacion", "Autores"], merge_span=10, date_cols={5})
         articulos_rows = [[idx, articulo.titulo, articulo.descripcion, articulo.fecha_publicacion] for idx, articulo in enumerate(articulos, start=1)]
         row = cls._write_table(ws, row, "8.- TRABAJOS REALIZADOS Y PUBLICADOS", ["Nro.", "Titulo del articulo", "Descripcion o sintesis", "Fecha de publicacion"], articulos_rows, merge_span=8, date_cols={4})
-        revistas_rows = [[idx, trabajo.titulo_trabajo, trabajo.nombre_revista, trabajo.editorial, trabajo.issn, trabajo.pais, trabajo.tipo_reunion.nombre if trabajo.tipo_reunion else "-", trabajo.fecha, cls._join_names(trabajo.investigadores)] for idx, trabajo in enumerate(trabajos_revista, start=1)]
-        row = cls._write_table(ws, row, "8.1.- Trabajos en revistas con referato", ["Nro.", "Titulo del trabajo", "Revista", "Editorial", "ISSN", "Pais", "Tipo de publicacion", "Fecha", "Investigadores participantes"], revistas_rows, merge_span=10, date_cols={8})
+        revistas_rows = [[idx, trabajo.titulo_trabajo, trabajo.nombre_revista, trabajo.editorial, trabajo.issn, trabajo.pais, trabajo.tipo_reunion.nombre if trabajo.tipo_reunion else "-", trabajo.fecha, cls._autores_texto([a.serialize() for a in trabajo.autorias])] for idx, trabajo in enumerate(trabajos_revista, start=1)]
+        row = cls._write_table(ws, row, "8.1.- Trabajos en revistas con referato", ["Nro.", "Titulo del trabajo", "Revista", "Editorial", "ISSN", "Pais", "Tipo de publicacion", "Fecha", "Autores"], revistas_rows, merge_span=10, date_cols={8})
         registros_grouped = {}
         for registro in registros:
             tipo = registro.tipo_registro.nombre if registro.tipo_registro else "Sin tipo definido"
