@@ -50,7 +50,7 @@ export default function TrabajoReunionForm() {
   const [titulo, setTitulo] = useState("");
   const [nombreReunion, setNombreReunion] = useState("");
   const [procedencia, setProcedencia] = useState("");
-  const [fechaInicio, setFechaInicio] = useState<Date | null>(null);
+  const [fechaPresentacion, setFechaPresentacion] = useState<Date | null>(null);
   const [tipoId, setTipoId] = useState<number | null>(null);
   const [autores, setAutores] = useState<IntegranteAutor[]>([]);
 
@@ -65,8 +65,8 @@ export default function TrabajoReunionForm() {
     setTitulo(initialData.titulo_trabajo ?? "");
     setNombreReunion(initialData.nombre_reunion ?? "");
     setProcedencia(initialData.procedencia ?? "");
-    setFechaInicio(
-      initialData.fecha_inicio ? new Date(`${initialData.fecha_inicio}T00:00:00`) : null
+    setFechaPresentacion(
+      initialData.fecha_presentacion ? new Date(`${initialData.fecha_presentacion}T00:00:00`) : null
     );
     setTipoId(initialData.tipo_reunion?.id ?? null);
     setAutores(initialData.autores ?? []);
@@ -107,8 +107,8 @@ export default function TrabajoReunionForm() {
       newErrors.tipoId = "Debe seleccionar tipo de reunión";
     }
 
-    if (!fechaInicio) {
-      newErrors.fechaInicio = "Debe seleccionar fecha";
+    if (!fechaPresentacion) {
+      newErrors.fechaPresentacion = "Debe seleccionar la fecha de presentación";
     }
 
     if (autores.length === 0) {
@@ -140,7 +140,7 @@ export default function TrabajoReunionForm() {
       });
     },
     onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["titulo","nombreReunion","procedencia","tipoId","fechaInicio","autores"])) return;
+      if (applyFieldErrors(error, setErrors, ["titulo","nombreReunion","procedencia","tipoId","fechaPresentacion","autores"])) return;
       const backendMessage = getErrorMessage(
         error,
         "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
@@ -156,7 +156,7 @@ export default function TrabajoReunionForm() {
       } else if (lowerMessage.includes("tipo")) {
         setErrors((prev) => ({ ...prev, tipoId: backendMessage }));
       } else if (lowerMessage.includes("fecha")) {
-        setErrors((prev) => ({ ...prev, fechaInicio: backendMessage }));
+        setErrors((prev) => ({ ...prev, fechaPresentacion: backendMessage }));
       }
 
       setErrorMessage(backendMessage);
@@ -177,7 +177,7 @@ export default function TrabajoReunionForm() {
       titulo_trabajo: toTitleCase(titulo.trim()),
       nombre_reunion: toTitleCase(nombreReunion.trim()),
       procedencia: toTitleCase(procedencia.trim()),
-      fecha_inicio: formatDateStr(fechaInicio)!,
+      fecha_presentacion: formatDateStr(fechaPresentacion)!,
       tipo_reunion_id: tipoId!,
       grupo_utn_id: uct.id,
     };
@@ -192,7 +192,7 @@ export default function TrabajoReunionForm() {
       titulo_trabajo: initialData?.titulo_trabajo ?? "",
       nombre_reunion: initialData?.nombre_reunion ?? "",
       procedencia: initialData?.procedencia ?? "",
-      fecha_inicio: initialData?.fecha_inicio ?? null,
+      fecha_presentacion: initialData?.fecha_presentacion ?? null,
       tipo_reunion_id: initialData?.tipo_reunion?.id ?? null,
       grupo_utn_id: uct.id,
     };
@@ -341,14 +341,14 @@ export default function TrabajoReunionForm() {
           </>
         </Field>
 
-        <Field label="Fecha de inicio" name="fechaInicio" error={errors.fechaInicio}>
+        <Field label="Fecha de presentación" name="fechaPresentacion" error={errors.fechaPresentacion}>
           <Calendar
-            value={fechaInicio}
+            value={fechaPresentacion}
             onChange={(date) => {
-              setFechaInicio(date);
-              if (date) clearError("fechaInicio");
+              setFechaPresentacion(date);
+              if (date) clearError("fechaPresentacion");
             }}
-            className={inputClass("fechaInicio")}
+            className={inputClass("fechaPresentacion")}
             helperText="DD/MM/AAAA"
           />
         </Field>

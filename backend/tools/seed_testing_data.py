@@ -495,7 +495,7 @@ def _seed_search_coverage(grupo, catalogs, investigador, admin_user_id):
         defaults={
             "nombre_reunion": "Jornada Ficticia",
             "procedencia": "Universidad de Prueba",
-            "fecha_inicio": date(2024, 9, 1),
+            "fecha_presentacion": date(2024, 9, 1),
             "tipo_reunion_id": tipo_reunion.id,
             "grupo_utn_id": grupo.id,
             "created_by": admin_user_id,
@@ -707,7 +707,7 @@ def _seed_manual_testing_dataset(grupo, catalogs, investigador, admin_user_id):
             defaults={
                 "nombre_reunion": f"{tipos_reunion[tipo_index].nombre} {year}",
                 "procedencia": instituciones[tipo_index],
-                "fecha_inicio": date(year, month, 18),
+                "fecha_presentacion": date(year, month, 18),
                 "tipo_reunion_id": tipos_reunion[tipo_index].id,
                 "grupo_utn_id": grupo.id,
                 "created_by": admin_user_id,

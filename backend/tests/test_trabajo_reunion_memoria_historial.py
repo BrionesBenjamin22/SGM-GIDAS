@@ -40,7 +40,7 @@ class TrabajoReunionMemoriaHistorialTestCase(unittest.TestCase):
             titulo_trabajo="Arquitectura institucional",
             nombre_reunion="Congreso Nacional",
             procedencia="UTN",
-            fecha_inicio=date(2026, 3, 20),
+            fecha_presentacion=date(2026, 3, 20),
             tipo_reunion_id=2,
             tipo_reunion_cientifica=SimpleNamespace(nombre="Congreso"),
             grupo_utn_id=4,
@@ -201,7 +201,7 @@ class TrabajoReunionMemoriaHistorialTestCase(unittest.TestCase):
                 query=fake_query,
                 memoria_version_id=None,
                 deleted_at=SimpleNamespace(is_=lambda *_: None),
-                fecha_inicio=SimpleNamespace(desc=lambda: None),
+                fecha_presentacion=SimpleNamespace(desc=lambda: None),
                 id=SimpleNamespace(desc=lambda: None)
             )
         ):

@@ -179,3 +179,16 @@ se bloquean durante guardado según el formulario. Etiquetas asociadas, botones
 con type=button y estado de resultados anunciado. Sin cambio de API: se reutiliza
 la consulta cacheada de integrantes; la búsqueda y ampliación son locales,
 no paginación de servidor. La validación visual queda a cargo del usuario.
+
+## ISS-13: fecha de presentación
+
+TrabajosReunionForm, Detalle y Home consumen fecha_presentacion. El formulario
+usa Fecha de presentación, mantiene Calendar institucional y envía solo
+diferencias; alta vuelve al home y edición al detalle con successMessage.
+El service tipa la fecha nueva y admite fecha_inicio únicamente al normalizar
+respuestas antiguas; no envía ese nombre anterior. Home filtra el año civil
+y muestra la fecha de presentación. Detalle etiqueta la fecha y adapta
+eventos históricos fecha_inicio/fecha_presentacion a Fecha de presentación
+con valores formateados, conservando paginación de tres y permisos de edición.
+No se modifica el flujo de revistas, cuya fecha ya tiene otro contrato.
+No se modifican hooks compartidos ni componentes globales.

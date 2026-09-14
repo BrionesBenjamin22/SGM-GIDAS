@@ -117,7 +117,7 @@ export default function TrabajosReunionLanding() {
 
       const matchAnio =
         !filters.anio ||
-        getCivilYear(t.fecha_inicio) === Number(filters.anio);
+        getCivilYear(t.fecha_presentacion) === Number(filters.anio);
 
       return (
         matchSearch &&
@@ -387,7 +387,7 @@ export default function TrabajosReunionLanding() {
                   item={t}
                   title={(x) => x.titulo_trabajo || "-"}
                   subtitle={(x) =>
-                    `${x.nombre_reunion || "-"} · ${formatFecha(x.fecha_inicio)}`
+                    `${x.nombre_reunion || "-"} · ${formatFecha(x.fecha_presentacion)}`
                   }
                   badge={(x) => (x.deleted_at ? "INACTIVO" : "ACTIVO")}
                   selectable={puedeEliminar && selectMode}

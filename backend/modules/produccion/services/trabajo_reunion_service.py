@@ -27,6 +27,18 @@ class TrabajoReunionCientificaService:
             raise ValidationError("Los datos no pueden estar vacios")
 
     @staticmethod
+    def _normalizar_fecha_payload(data):
+        # Compatibilidad temporal con consumidores que aún envían fecha_inicio.
+        if "fecha_inicio" not in data:
+            return data
+        if "fecha_presentacion" in data and data["fecha_presentacion"] != data["fecha_inicio"]:
+            raise ValidationError("Las fechas enviadas no coinciden", details={"fields": {
+                "fecha_presentacion": "Envíe una única fecha de presentación."}})
+        resultado = dict(data)
+        resultado["fecha_presentacion"] = resultado.pop("fecha_inicio")
+        return resultado
+
+    @staticmethod
     def _validar_id(valor, campo: str, permitir_none: bool = False):
         if valor is None and permitir_none:
             return None
@@ -73,9 +85,9 @@ class TrabajoReunionCientificaService:
             raise ValidationError("La fecha debe tener formato YYYY-MM-DD")
 
         if fecha > date.today():
-            raise ValidationError("La fecha de inicio no puede ser futura")
+            raise ValidationError("La fecha de presentación no puede ser futura")
 
-        return validate_institutional_date(fecha, "fecha_inicio")
+        return validate_institutional_date(fecha, "fecha_presentacion")
 
     @staticmethod
     def _normalizar_activos(activos):
@@ -148,7 +160,7 @@ class TrabajoReunionCientificaService:
         titulo_trabajo: str,
         nombre_reunion: str,
         procedencia: str,
-        fecha_inicio,
+        fecha_presentacion,
         trabajo_id: int = None
     ):
         query = TrabajoReunionCientifica.query.filter(
@@ -156,7 +168,7 @@ class TrabajoReunionCientificaService:
             TrabajoReunionCientifica.titulo_trabajo == titulo_trabajo,
             TrabajoReunionCientifica.nombre_reunion == nombre_reunion,
             TrabajoReunionCientifica.procedencia == procedencia,
-            TrabajoReunionCientifica.fecha_inicio == fecha_inicio,
+            TrabajoReunionCientifica.fecha_presentacion == fecha_presentacion,
         )
 
         if trabajo_id is not None:
@@ -203,9 +215,9 @@ class TrabajoReunionCientificaService:
             filters.get("orden")
         )
         if orden == "asc":
-            query = query.order_by(TrabajoReunionCientifica.fecha_inicio.asc())
+            query = query.order_by(TrabajoReunionCientifica.fecha_presentacion.asc())
         else:
-            query = query.order_by(TrabajoReunionCientifica.fecha_inicio.desc())
+            query = query.order_by(TrabajoReunionCientifica.fecha_presentacion.desc())
 
         return [t.serialize() for t in query.all()]
 
@@ -224,10 +236,11 @@ class TrabajoReunionCientificaService:
     @staticmethod
     def create(data: dict, user_id: int):
         TrabajoReunionCientificaService._validar_payload(data)
+        data = TrabajoReunionCientificaService._normalizar_fecha_payload(data)
         TrabajoReunionCientificaService._validar_user_id(user_id)
 
-        fecha_inicio = TrabajoReunionCientificaService._validar_fecha(
-            data.get("fecha_inicio")
+        fecha_presentacion = TrabajoReunionCientificaService._validar_fecha(
+            data.get("fecha_presentacion")
         )
         titulo = TrabajoReunionCientificaService._validar_texto(
             data.get("titulo_trabajo"), "titulo_trabajo", 5, 300
@@ -249,7 +262,7 @@ class TrabajoReunionCientificaService:
             titulo,
             nombre_reunion,
             procedencia,
-            fecha_inicio,
+            fecha_presentacion,
         )
 
         autores = validar_autores(data.get("autores", []))
@@ -258,7 +271,7 @@ class TrabajoReunionCientificaService:
             titulo_trabajo=titulo,
             nombre_reunion=nombre_reunion,
             procedencia=procedencia,
-            fecha_inicio=fecha_inicio,
+            fecha_presentacion=fecha_presentacion,
             tipo_reunion_id=tipo_reunion_id,
             grupo_utn_id=grupo_utn_id,
             created_by=user_id
@@ -278,15 +291,16 @@ class TrabajoReunionCientificaService:
     @staticmethod
     def update(trabajo_id: int, data: dict, user_id: int):
         TrabajoReunionCientificaService._validar_payload(data)
+        data = TrabajoReunionCientificaService._normalizar_fecha_payload(data)
         TrabajoReunionCientificaService._validar_user_id(user_id)
         trabajo = TrabajoReunionCientificaService._get_activo_or_404(trabajo_id)
         autores = validar_autores(data["autores"], trabajo.autorias) if "autores" in data else None
         cambios = {}
 
-        fecha_inicio = trabajo.fecha_inicio
-        if "fecha_inicio" in data:
-            fecha_inicio = TrabajoReunionCientificaService._validar_fecha(
-                data["fecha_inicio"]
+        fecha_presentacion = trabajo.fecha_presentacion
+        if "fecha_presentacion" in data:
+            fecha_presentacion = TrabajoReunionCientificaService._validar_fecha(
+                data["fecha_presentacion"]
             )
 
         titulo = trabajo.titulo_trabajo
@@ -323,18 +337,18 @@ class TrabajoReunionCientificaService:
             titulo,
             nombre_reunion,
             procedencia,
-            fecha_inicio,
+            fecha_presentacion,
             trabajo.id,
         )
 
         try:
             cambio = AuditoriaService.construir_cambio(
-                trabajo.fecha_inicio,
-                fecha_inicio
+                trabajo.fecha_presentacion,
+                fecha_presentacion
             )
             if cambio:
-                cambios["fecha_inicio"] = cambio
-                trabajo.fecha_inicio = fecha_inicio
+                cambios["fecha_presentacion"] = cambio
+                trabajo.fecha_presentacion = fecha_presentacion
 
             cambio = AuditoriaService.construir_cambio(
                 trabajo.titulo_trabajo,
@@ -441,7 +455,7 @@ class TrabajoReunionCientificaService:
 
         snapshots = []
         for trabajo in trabajos:
-            if not esta_en_periodo_memoria(memoria_version, trabajo.fecha_inicio):
+            if not esta_en_periodo_memoria(memoria_version, trabajo.fecha_presentacion):
                 continue
             autores = [autor.serialize() for autor in trabajo.autorias]
 
@@ -451,7 +465,7 @@ class TrabajoReunionCientificaService:
                 titulo_trabajo=trabajo.titulo_trabajo,
                 nombre_reunion=trabajo.nombre_reunion,
                 procedencia=trabajo.procedencia,
-                fecha_inicio=trabajo.fecha_inicio,
+                fecha_presentacion=trabajo.fecha_presentacion,
                 tipo_reunion_id=trabajo.tipo_reunion_id,
                 tipo_reunion_nombre=(
                     trabajo.tipo_reunion_cientifica.nombre
@@ -479,7 +493,7 @@ class TrabajoReunionCientificaService:
                 TrabajoReunionCientificaMemoriaVersion.deleted_at.is_(None)
             )
             .order_by(
-                TrabajoReunionCientificaMemoriaVersion.fecha_inicio.desc(),
+                TrabajoReunionCientificaMemoriaVersion.fecha_presentacion.desc(),
                 TrabajoReunionCientificaMemoriaVersion.id.desc()
             )
             .all()

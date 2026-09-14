@@ -21,7 +21,7 @@ export interface TrabajoReunion {
   titulo_trabajo: string;
   nombre_reunion: string;
   procedencia: string;
-  fecha_inicio: string;
+  fecha_presentacion: string;
   tipo_reunion: TipoReunion | null;
   autores: IntegranteAutor[];
   grupo_utn: string | null;
@@ -42,7 +42,7 @@ export interface TrabajoReunionPayload {
   titulo_trabajo: string;
   nombre_reunion: string;
   procedencia: string;
-  fecha_inicio: string;
+  fecha_presentacion: string;
   tipo_reunion_id: number;
   grupo_utn_id: number;
 }
@@ -52,7 +52,7 @@ type GetTrabajosReunionOptions = {
   orden?: "asc" | "desc";
 };
 
-type TrabajoReunionBackend = Partial<TrabajoReunion> & { id: number };
+type TrabajoReunionBackend = Partial<TrabajoReunion> & { id: number; fecha_inicio?: string };
 type ApiListResponse<T> = T[] | { data?: T[] };
 
 const normalizeTrabajoReunion = (item: TrabajoReunionBackend): TrabajoReunion => ({
@@ -70,7 +70,7 @@ const normalizeTrabajoReunion = (item: TrabajoReunionBackend): TrabajoReunion =>
   titulo_trabajo: item.titulo_trabajo ?? "",
   nombre_reunion: item.nombre_reunion ?? "",
   procedencia: item.procedencia ?? "",
-  fecha_inicio: item.fecha_inicio ?? "",
+  fecha_presentacion: item.fecha_presentacion ?? item.fecha_inicio ?? "",
   tipo_reunion: item.tipo_reunion ?? null,
   autores: Array.isArray(item.autores) ? item.autores : [],
   grupo_utn: item.grupo_utn ?? null,
@@ -156,7 +156,7 @@ export const updateTrabajoReunion = async (
   if ("titulo_trabajo" in data) body.titulo_trabajo = data.titulo_trabajo;
   if ("nombre_reunion" in data) body.nombre_reunion = data.nombre_reunion;
   if ("procedencia" in data) body.procedencia = data.procedencia;
-  if ("fecha_inicio" in data) body.fecha_inicio = data.fecha_inicio;
+  if ("fecha_presentacion" in data) body.fecha_presentacion = data.fecha_presentacion;
   if ("tipo_reunion_id" in data) body.tipo_reunion_id = data.tipo_reunion_id;
   if ("grupo_utn_id" in data) body.grupo_utn_id = data.grupo_utn_id;
 

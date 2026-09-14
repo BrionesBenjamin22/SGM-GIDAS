@@ -116,7 +116,7 @@ for (const [page, route] of [
   test(`${page}: muestra investigador y becario y abre la edición común de autores`, () => {
     const navigations: string[] = [];
     const Detail = load(`src/modules/produccion/pages/${page}.tsx`, {
-      react: { useEffect() {}, useState: (initial: unknown) => [initial, () => {}] },
+      react: { useMemo: (factory: any) => factory(), useEffect() {}, useState: (initial: unknown) => [initial, () => {}] },
       "react-router-dom": { useParams: () => ({ id: "8" }), useLocation: () => ({ state: null }),
         useNavigate: () => (path: string) => navigations.push(path) },
       "@tanstack/react-query": { useQuery: (options: any) => ({ data: options.queryKey[0].includes("historial") ? [] : {
@@ -132,6 +132,7 @@ for (const [page, route] of [
     const nodes = walk(Detail());
     const text = nodes.filter(node => node.type === "p").map(node => JSON.stringify(node.props.children)).join(" ");
     assert.match(text, /Autores/);
+    if (page === "TrabajosReunionDetalle") assert.match(text, /Fecha de presentación/);
     assert.match(text, /Ana \(Investigador\), Luis \(Becario\)/);
     const edit = nodes.find(node => node.type === "Button" && node.props.children === "Editar");
     assert.ok(edit);
@@ -149,7 +150,7 @@ for (const [page, serviceFile, getName, updateName, createName, route] of [
     const states: any[] = [], refs: any[] = [], effects: Array<() => void> = [];
     let initialData: any = { id: 8, titulo_trabajo: "Estudio", nombre_reunion: "Congreso", nombre_revista: "Revista",
       procedencia: "Argentina", editorial: "Editorial", issn: "1234-5678", pais: "Argentina",
-      fecha_inicio: "2026-03-20", fecha: "2026-03-20", tipo_reunion: { id: 1 }, autores: [investigador], activo: true };
+      fecha_presentacion: "2026-03-20", fecha: "2026-03-20", tipo_reunion: { id: 1 }, autores: [investigador], activo: true };
     let params: any = { id: "8" };
     let mutation: any;
     let calls = 0;
@@ -181,6 +182,7 @@ for (const [page, serviceFile, getName, updateName, createName, route] of [
     const selector = () => render().find(node => node.type === "IntegrantesAutoresField");
     const submit = () => render().find(node => node.type === "form").props.onSubmit({ preventDefault() {} });
     render(); render();
+    if (page === "TrabajosReunionForm") assert.ok(render().some(node => node.props.label === "Fecha de presentación"));
     await submit();
     assert.equal(calls, 0);
     assert.equal(navigations.at(-1)[0], `${route}/8`);
@@ -206,3 +208,19 @@ for (const [page, serviceFile, getName, updateName, createName, route] of [
     assert.equal(saved.autores[0].rol, "becario");
   });
 }
+
+
+test("ISS-13: service normaliza fechas antiguas y envía únicamente fecha_presentacion", async () => {
+  let saved: any;
+  const service = load("src/modules/produccion/services/trabajosReunionServices.ts", {
+    "@/lib/http": { http: async (_path: string, options: any) => {
+      if (options?.body) saved = JSON.parse(options.body);
+      return { id: 8, fecha_inicio: "2025-12-31" };
+    } },
+  });
+  const trabajo = await service.getTrabajoReunionById(8);
+  assert.equal(trabajo.fecha_presentacion, "2025-12-31");
+  assert.equal(trabajo.fecha_inicio, undefined);
+  await service.updateTrabajoReunion(8, { fecha_presentacion: "2026-01-01" });
+  assert.equal(JSON.stringify(saved), '{"fecha_presentacion":"2026-01-01"}');
+});

@@ -87,3 +87,22 @@ un investigador o becario. También elimina Personal de los snapshots de testing
 conserva los autores habilitados y la auditoría previa. El downgrade solo
 restaura la estructura anterior, sin recuperar esas asociaciones. El seed
 genera exclusivamente investigadores y becarios como autores para ambos trabajos.
+
+## ISS-13: fecha de presentación de trabajos en reuniones
+
+TrabajoReunionCientifica y TrabajoReunionCientificaMemoriaVersion usan
+fecha_presentacion (Date no nula). POST/PUT y respuestas GET/snapshots usan
+fecha_presentacion en YYYY-MM-DD. Solicitudes antiguas pueden enviar
+fecha_inicio temporalmente; se normaliza a fecha_presentacion sin alterar
+el payload original. Ambos campos iguales se aceptan; distintos se rechazan
+con 400 y error de campo, sin cambios persistidos. La respuesta solo expone
+el nombre nuevo. Se mantienen permisos y auditoría, fecha mínima 2010-01-01
+y prohibición de fecha futura. Duplicados y orden asc/desc usan la nueva fecha.
+La pertenencia a memoria usa su período inclusivo sobre fecha_presentacion:
+31/12 corresponde al año que termina y 01/01 al siguiente. El snapshot congela
+la fecha. La revisión c13d7e9a2b40 renombra las columnas de trabajos y snapshots,
+conserva valores y admite downgrade que restaura los nombres anteriores.
+Los eventos históricos conservan su campo original; nuevos eventos usan
+fecha_presentacion. Tests reales: test_trabajo_fecha_presentacion.py verifica
+API, alias, rechazo de conflictos, fechas inválidas, auditoría, orden, límites
+anuales, XLSX y migración/downgrade preservando filas.

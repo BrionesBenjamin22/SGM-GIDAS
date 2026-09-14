@@ -1,7 +1,7 @@
 import { autorEtiqueta } from "@/modules/produccion/services/trabajoAutoresServices";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Button from "@/components/Button";
 import HistorialCambiosCard from "@/components/HistorialCambiosCard";
 import SuccessToast from "@/components/SuccessToast";
@@ -47,6 +47,10 @@ export default function TrabajoReunionDetalle() {
     refetchOnMount: "always",
   });
 
+  const historialVisible = useMemo(() => historialCambios.map(item => ({ ...item,
+    campo: ["fecha_inicio", "fecha_presentacion"].includes(item.campo ?? "") ? "Fecha de presentación" : item.campo,
+  })), [historialCambios]);
+
   const auditoria = useAuditoria(data);
 
   useEffect(() => {
@@ -82,6 +86,8 @@ export default function TrabajoReunionDetalle() {
         : typeof value === "string" && value.trim() !== ""
           ? Number(value)
           : NaN;
+
+    if (item.campo === "Fecha de presentación" && typeof value === "string") return formatFecha(value);
 
     if (item.campo === "tipo_reunion_id") {
       return tipos.find((tipo) => tipo.id === asNumber)?.nombre ?? String(value);
@@ -157,8 +163,8 @@ export default function TrabajoReunionDetalle() {
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha:</span>{" "}
-              {formatFecha(data.fecha_inicio)}
+              <span className="font-medium text-slate-700">Fecha de presentación:</span>{" "}
+              {formatFecha(data.fecha_presentacion)}
             </p>
 
             <p>
@@ -199,7 +205,7 @@ export default function TrabajoReunionDetalle() {
 
         <HistorialCambiosCard
           subtitle={data.titulo_trabajo || "-"}
-          items={historialCambios}
+          items={historialVisible}
           isLoading={isLoadingHistorial}
           updatedAt={data.updated_at}
           updatedByName={data.updated_by_nombre}

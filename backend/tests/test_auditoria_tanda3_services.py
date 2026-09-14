@@ -197,7 +197,7 @@ class AuditoriaTanda3ServicesTestCase(unittest.TestCase):
             titulo_trabajo="Trabajo inicial",
             nombre_reunion="Reunion inicial",
             procedencia="Nacional",
-            fecha_inicio=date(2024, 3, 1),
+            fecha_presentacion=date(2024, 3, 1),
             tipo_reunion_id=1,
             grupo_utn_id=2,
             created_by=1
