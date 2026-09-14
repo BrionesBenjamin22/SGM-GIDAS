@@ -93,7 +93,8 @@ def listar_personal_completo(activos: str = "true", tipo: str | None = None):
                 "rol": "investigador"
             })
 
-    return resultado
+    # Mostrar primero las altas recientes, también al combinar los tres subtipos.
+    return sorted(resultado, key=lambda item: (item.get("created_at") or "", item["id"], item["rol"]), reverse=True)
 
 
 # =====================================================

@@ -35,6 +35,26 @@ fechas biográficas o de identidad.
 
 ## Formularios
 
+### Seguimiento ISS-08: listado actualizado y feedback de guardado
+
+Las altas y ediciones de Investigador invalidan las consultas `personal`,
+`investigadores` y `proyecto-candidatos` antes de navegar; la edición también
+invalida su detalle y datos iniciales. Los tres formularios especializados
+mantienen `isSaving` durante el envío y la actualización de consultas,
+deshabilitan Guardar/Actualizar y muestran un icono de carga y `Guardando...`.
+Un error libera el botón y conserva los datos para corregir o reintentar.
+
+Las validaciones locales y los errores del servidor producen un aviso general
+visible mediante la notificación existente. Los campos inválidos conservan
+sus mensajes y se enfoca el primero con `focusFieldErrors`, haciendo visible
+el problema aunque el usuario esté al final de un formulario extenso. Una
+validación local no envía una petición al servidor.
+
+El listado combinado de Personal muestra primero las altas más recientes,
+sin cambiar el máximo de nueve elementos por página. Pruebas de formulario,
+estado de carga, errores y actualización con React Query real:
+`tests/personalGuardarFeedback.test.ts` y `tests/personalCatalogForm.test.ts`.
+
 En edicion, investigador, becario, PTAA y profesional comparan el estado
 normalizado con los datos iniciales y envian solo las diferencias reales. Si no
 hay cambios no ejecutan el `PUT`, pero conservan la navegacion al detalle.

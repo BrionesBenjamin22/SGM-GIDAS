@@ -1,4 +1,5 @@
-import { applyFieldErrors } from "@/lib/httpError";
+import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
+import { LoaderCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "@/components/Button";
@@ -38,6 +39,7 @@ export default function FormPTAAProfesional({
   const [fechaAltaGrupo, setFechaAltaGrupo] = useState<Date | null>(null);
   const [activo, setActivo] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!initialData) {
@@ -87,6 +89,10 @@ export default function FormPTAAProfesional({
       newErrors.grupo = "Lo sentimos, no pudimos recuperar el grupo. Intente nuevamente.";
     }
     setErrors(newErrors);
+    if (Object.keys(newErrors).length) {
+      focusFieldErrors(newErrors);
+      onError(new Error("No pudimos guardar el registro. Complete o corrija los campos indicados e intente nuevamente."));
+    }
     return Object.keys(newErrors).length === 0;
   };
 
@@ -111,6 +117,7 @@ export default function FormPTAAProfesional({
       await operation();
       return true;
     } catch (error) {
+      onError(error);
       if (applyFieldErrors(error, setErrors, ["nombre","horas","tipoPersonal","fechaAltaGrupo","grupo"])) return false;
       const fieldErrors = personalFieldErrors(error);
       if (Object.keys(fieldErrors).length) {
@@ -118,8 +125,6 @@ export default function FormPTAAProfesional({
         requestAnimationFrame(() => {
           document.getElementById(`personal-${Object.keys(fieldErrors)[0]}`)?.focus();
         });
-      } else {
-        onError(error);
       }
       return false;
     }
@@ -127,67 +132,73 @@ export default function FormPTAAProfesional({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     if (!validate()) return;
+    setIsSaving(true);
+    try {
 
-    const payload = {
-      nombre_apellido: nombreApellido,
-      horas_semanales: Number(horasSemanales),
-      tipo_personal_id: Number(tipoPersonalId),
-      fecha_alta_grupo: formatDateStr(fechaAltaGrupo),
-      grupo_utn_id: uct!.id,
-      activo,
-    };
-
-    if (isEdit && initialData?.id) {
-      const original = {
-        nombre_apellido: initialData.nombre_apellido,
-        horas_semanales: Number(initialData.horas_semanales),
-        tipo_personal_id: Number(initialData.relaciones?.tipo_personal?.id ?? initialData.tipo_personal_id),
-        fecha_alta_grupo: initialData.fecha_alta_grupo,
-        grupo_utn_id: Number(initialData.grupo_utn_id ?? uct!.id),
-        activo: initialData.activo ?? true,
+      const payload = {
+        nombre_apellido: nombreApellido,
+        horas_semanales: Number(horasSemanales),
+        tipo_personal_id: Number(tipoPersonalId),
+        fecha_alta_grupo: formatDateStr(fechaAltaGrupo),
+        grupo_utn_id: uct!.id,
+        activo,
       };
-      const changedPayload = Object.fromEntries(
-        Object.entries(payload).filter(
-          ([key, value]) => value !== original[key as keyof typeof original]
-        )
-      );
-      if (Object.keys(changedPayload).length > 0) {
-        const updated = await executeSafely(() =>
-          actualizarPersonal(
-            initialData.id,
-            changedPayload,
-            "personal"
+
+      if (isEdit && initialData?.id) {
+        const original = {
+          nombre_apellido: initialData.nombre_apellido,
+          horas_semanales: Number(initialData.horas_semanales),
+          tipo_personal_id: Number(initialData.relaciones?.tipo_personal?.id ?? initialData.tipo_personal_id),
+          fecha_alta_grupo: initialData.fecha_alta_grupo,
+          grupo_utn_id: Number(initialData.grupo_utn_id ?? uct!.id),
+          activo: initialData.activo ?? true,
+        };
+        const changedPayload = Object.fromEntries(
+          Object.entries(payload).filter(
+            ([key, value]) => value !== original[key as keyof typeof original]
           )
         );
-        if (!updated) return;
+        if (Object.keys(changedPayload).length > 0) {
+          const updated = await executeSafely(() =>
+            actualizarPersonal(
+              initialData.id,
+              changedPayload,
+              "personal"
+            )
+          );
+          if (!updated) return;
+        }
+
+        await qc.invalidateQueries({
+          queryKey: ["personal"],
+        });
+
+        navigate(
+          `/personal/personal/${initialData.id}`,
+          {
+            replace: true,
+            state: { successMessage: "¡Actualizado con éxito!" },
+          }
+        );
+
+        return;
       }
+
+      const created = await executeSafely(() => upsertPersonal(payload));
+      if (!created) return;
 
       await qc.invalidateQueries({
         queryKey: ["personal"],
       });
 
-      navigate(
-        `/personal/personal/${initialData.id}`,
-        {
-          replace: true,
-          state: { successMessage: "¡Actualizado con éxito!" },
-        }
-      );
-
-      return;
+      navigate("/personal", {
+        state: { successMessage: "¡Creado con éxito!" },
+      });
+    } finally {
+      setIsSaving(false);
     }
-
-    const created = await executeSafely(() => upsertPersonal(payload));
-    if (!created) return;
-
-    await qc.invalidateQueries({
-      queryKey: ["personal"],
-    });
-
-    navigate("/personal", {
-      state: { successMessage: "¡Creado con éxito!" },
-    });
   };
 
   return (
@@ -301,8 +312,9 @@ export default function FormPTAAProfesional({
           Volver
         </Button>
 
-        <Button type="submit" size="sm">
-          {isEdit ? "Actualizar" : "Guardar"}
+        <Button type="submit" size="sm" disabled={isSaving} aria-busy={isSaving}>
+          {isSaving && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />}
+          {isSaving ? "Guardando..." : isEdit ? "Actualizar" : "Guardar"}
         </Button>
       </div>
     </form>

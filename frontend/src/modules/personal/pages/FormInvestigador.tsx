@@ -1,4 +1,6 @@
-import { applyFieldErrors } from "@/lib/httpError";
+import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
+import { LoaderCircle } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "@/components/Button";
@@ -28,6 +30,7 @@ export default function FormInvestigador({
   onError,
 }: Props) {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { uct } = useUct();
   const { data: dedicaciones = [] } = useDedicaciones();
   const { data: categorias = [] } = useCategoriasUtn();
@@ -43,6 +46,7 @@ export default function FormInvestigador({
   const [fechaAltaGrupo, setFechaAltaGrupo] = useState<Date | null>(null);
   const [activo, setActivo] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!initialData) {
@@ -123,8 +127,13 @@ export default function FormInvestigador({
     if (!fechaAltaGrupo) {
       newErrors.fechaAltaGrupo = "Debe ingresar la fecha de alta en el grupo";
     }
+    if (!uct?.id) newErrors.grupo = "Lo sentimos, no pudimos recuperar el grupo. Intente nuevamente.";
 
     setErrors(newErrors);
+    if (Object.keys(newErrors).length) {
+      focusFieldErrors(newErrors);
+      onError(new Error("No pudimos guardar el registro. Complete o corrija los campos indicados e intente nuevamente."));
+    }
     return Object.keys(newErrors).length === 0;
   };
 
@@ -133,13 +142,12 @@ export default function FormInvestigador({
       await operation();
       return true;
     } catch (error) {
+      onError(error);
       if (applyFieldErrors(error, setErrors, ["nombre","horas","dedicacion","categoria","programa","fechaAltaGrupo"])) return false;
       const fieldErrors = personalFieldErrors(error);
       if (fieldErrors.horas) {
         setErrors((prev) => ({ ...prev, horas: fieldErrors.horas }));
         document.getElementById("investigador-horas")?.focus();
-      } else {
-        onError(error);
       }
       return false;
     }
@@ -147,56 +155,74 @@ export default function FormInvestigador({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     if (!validate()) return;
+    setIsSaving(true);
+    try {
 
-    const payload = {
-      nombre_apellido: nombreApellido,
-      horas_semanales: Number(horasSemanales),
-      tipo_dedicacion_id: Number(dedicacionId),
-      categoria_utn_id: Number(categoriaId),
-      programa_incentivos_id: Number(programaId),
-      fecha_alta_grupo: formatDateStr(fechaAltaGrupo),
-      grupo_utn_id: uct!.id,
-      activo,
-    };
-
-    if (isEdit && initialData?.id) {
-      const original = {
-        nombre_apellido: initialData.nombre_apellido,
-        horas_semanales: Number(initialData.horas_semanales),
-        tipo_dedicacion_id: Number(initialData.relaciones?.tipo_dedicacion?.id ?? initialData.tipo_dedicacion_id),
-        categoria_utn_id: Number(initialData.relaciones?.categoria_utn?.id ?? initialData.categoria_utn_id),
-        programa_incentivos_id: Number(initialData.relaciones?.programa_incentivos?.id ?? initialData.programa_incentivos_id),
-        fecha_alta_grupo: initialData.fecha_alta_grupo,
-        grupo_utn_id: Number(initialData.grupo_utn_id ?? uct!.id),
-        activo: initialData.activo ?? true,
+      const payload = {
+        nombre_apellido: nombreApellido,
+        horas_semanales: Number(horasSemanales),
+        tipo_dedicacion_id: Number(dedicacionId),
+        categoria_utn_id: Number(categoriaId),
+        programa_incentivos_id: Number(programaId),
+        fecha_alta_grupo: formatDateStr(fechaAltaGrupo),
+        grupo_utn_id: uct!.id,
+        activo,
       };
-      const changedPayload = Object.fromEntries(
-        Object.entries(payload).filter(
-          ([key, value]) => value !== original[key as keyof typeof original]
-        )
-      );
-      if (Object.keys(changedPayload).length > 0) {
-        const updated = await executeSafely(() =>
-          actualizarInvestigador(initialData.id, changedPayload, "investigador")
+
+      if (isEdit && initialData?.id) {
+        const original = {
+          nombre_apellido: initialData.nombre_apellido,
+          horas_semanales: Number(initialData.horas_semanales),
+          tipo_dedicacion_id: Number(initialData.relaciones?.tipo_dedicacion?.id ?? initialData.tipo_dedicacion_id),
+          categoria_utn_id: Number(initialData.relaciones?.categoria_utn?.id ?? initialData.categoria_utn_id),
+          programa_incentivos_id: Number(initialData.relaciones?.programa_incentivos?.id ?? initialData.programa_incentivos_id),
+          fecha_alta_grupo: initialData.fecha_alta_grupo,
+          grupo_utn_id: Number(initialData.grupo_utn_id ?? uct!.id),
+          activo: initialData.activo ?? true,
+        };
+        const changedPayload = Object.fromEntries(
+          Object.entries(payload).filter(
+            ([key, value]) => value !== original[key as keyof typeof original]
+          )
         );
-        if (!updated) return;
+        if (Object.keys(changedPayload).length > 0) {
+          const updated = await executeSafely(() =>
+            actualizarInvestigador(initialData.id, changedPayload, "investigador")
+          );
+          if (!updated) return;
+        }
+
+        await Promise.all([
+          qc.invalidateQueries({ queryKey: ["personal"] }),
+          qc.invalidateQueries({ queryKey: ["investigadores"] }),
+          qc.invalidateQueries({ queryKey: ["proyecto-candidatos"] }),
+          qc.invalidateQueries({ queryKey: ["personal-edit", "investigador", String(initialData.id)] }),
+          qc.invalidateQueries({ queryKey: ["personal-detalle", "investigador", String(initialData.id)] }),
+        ]);
+        navigate(`/personal/investigador/${initialData.id}`, {
+          replace: true,
+          state: { successMessage: "¡Actualizado con éxito!" },
+        });
+
+        return;
       }
 
-      navigate(`/personal/investigador/${initialData.id}`, {
-        replace: true,
-        state: { successMessage: "¡Actualizado con éxito!" },
+      const created = await executeSafely(() => crearInvestigador(payload));
+      if (!created) return;
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["personal"] }),
+        qc.invalidateQueries({ queryKey: ["investigadores"] }),
+        qc.invalidateQueries({ queryKey: ["proyecto-candidatos"] }),
+      ]);
+
+      navigate("/personal", {
+        state: { successMessage: "¡Creado con éxito!" },
       });
-
-      return;
+    } finally {
+      setIsSaving(false);
     }
-
-    const created = await executeSafely(() => crearInvestigador(payload));
-    if (!created) return;
-
-    navigate("/personal", {
-      state: { successMessage: "¡Creado con éxito!" },
-    });
   };
 
   return (
@@ -205,6 +231,7 @@ export default function FormInvestigador({
       onSubmit={submit}
       className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
     >
+      {errors.grupo && <p role="alert">{errors.grupo}</p>}
       <Field label="Nombre y apellido" name="nombre" error={errors.nombre}>
         <>
           <input
@@ -358,8 +385,9 @@ export default function FormInvestigador({
           Volver
         </Button>
 
-        <Button type="submit" size="sm">
-          {isEdit ? "Actualizar" : "Guardar"}
+        <Button type="submit" size="sm" disabled={isSaving} aria-busy={isSaving}>
+          {isSaving && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />}
+          {isSaving ? "Guardando..." : isEdit ? "Actualizar" : "Guardar"}
         </Button>
       </div>
     </form>

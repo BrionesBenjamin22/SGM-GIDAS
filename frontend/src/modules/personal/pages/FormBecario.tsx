@@ -1,4 +1,5 @@
-import { applyFieldErrors } from "@/lib/httpError";
+import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
+import { LoaderCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { MAX_HORAS_SEMANALES, validWeeklyHours, WEEKLY_HOURS_ERROR } from "@/modules/personal/utils/weeklyHours";
 import { personalFieldErrors } from "@/modules/personal/utils/personalFieldErrors";
@@ -57,6 +58,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
   });
 
   const [becasVinculadas, setBecasVinculadas] = useState<BecaVinculada[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const formatDateStr = (d: Date | null) => {
     if (!d) return undefined;
@@ -152,6 +154,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
     if (!fechaAltaGrupo) {
       newErrors.fechaAltaGrupo = "Debe ingresar la fecha de alta en el grupo";
     }
+    if (!uct?.id) newErrors.grupo = "Lo sentimos, no pudimos recuperar el grupo. Intente nuevamente.";
 
     if (agregarBeca) {
       if (becasVinculadas.length === 0) {
@@ -171,6 +174,10 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
     }
 
     setErrors(newErrors);
+    if (Object.keys(newErrors).length) {
+      focusFieldErrors(newErrors);
+      onError(new Error("No pudimos guardar el registro. Complete o corrija los campos indicados e intente nuevamente."));
+    }
     return Object.keys(newErrors).length === 0;
   };
 
@@ -179,13 +186,12 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
       await operation();
       return true;
     } catch (error) {
+      onError(error);
       if (applyFieldErrors(error, setErrors, ["nombre","horas","tipoFormacion","fechaAltaGrupo","becaGlobal"])) return false;
       const fieldErrors = personalFieldErrors(error);
       if (fieldErrors.horas) {
         setErrors((prev) => ({ ...prev, horas: fieldErrors.horas }));
         document.getElementById("becario-horas")?.focus();
-      } else {
-        onError(error);
       }
       return false;
     }
@@ -193,76 +199,81 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     if (!validate()) return;
-    if (!uct?.id) return;
+    setIsSaving(true);
+    try {
 
-    const payload = {
-      nombre_apellido: nombreApellido,
-      horas_semanales: Number(horasSemanales),
-      tipo_formacion_id: Number(tipoFormacionId),
-      fecha_alta_grupo: formatDateStr(fechaAltaGrupo)!,
-      grupo_utn_id: uct.id,
-      activo,
-      becas: agregarBeca
-        ? becasVinculadas.map((beca) => ({
-            beca_id: Number(beca.becaId),
-            fecha_inicio: formatDateStr(beca.fechaInicio)!,
-            fecha_fin: formatDateStr(beca.fechaFin),
-            monto_percibido: beca.monto !== "" ? Number(beca.monto) : undefined,
-          }))
-        : [],
-    };
-
-    if (isEdit && initialData?.id) {
-      const original = {
-        nombre_apellido: initialData.nombre_apellido,
-        horas_semanales: Number(initialData.horas_semanales),
-        tipo_formacion_id: Number(initialData.relaciones?.tipo_formacion?.id ?? initialData.tipo_formacion_id),
-        fecha_alta_grupo: initialData.fecha_alta_grupo,
-        grupo_utn_id: Number(initialData.grupo_utn_id ?? uct.id),
-        activo: initialData.activo ?? true,
-        becas: (initialData.becas || []).map((beca) => ({
-          beca_id: Number(beca.id),
-          fecha_inicio: beca.fecha_inicio,
-          fecha_fin: beca.fecha_fin || undefined,
-          monto_percibido: beca.monto_percibido ?? undefined,
-        })),
+      const payload = {
+        nombre_apellido: nombreApellido,
+        horas_semanales: Number(horasSemanales),
+        tipo_formacion_id: Number(tipoFormacionId),
+        fecha_alta_grupo: formatDateStr(fechaAltaGrupo)!,
+        grupo_utn_id: uct!.id,
+        activo,
+        becas: agregarBeca
+          ? becasVinculadas.map((beca) => ({
+              beca_id: Number(beca.becaId),
+              fecha_inicio: formatDateStr(beca.fechaInicio)!,
+              fecha_fin: formatDateStr(beca.fechaFin),
+              monto_percibido: beca.monto !== "" ? Number(beca.monto) : undefined,
+            }))
+          : [],
       };
-      const changedPayload = Object.fromEntries(
-        Object.entries(payload).filter(([key, value]) =>
-          JSON.stringify(value) !== JSON.stringify(original[key as keyof typeof original])
-        )
-      );
-      if (Object.keys(changedPayload).length > 0) {
-        const updated = await executeSafely(() =>
-          actualizarBecario(initialData.id, changedPayload)
+
+      if (isEdit && initialData?.id) {
+        const original = {
+          nombre_apellido: initialData.nombre_apellido,
+          horas_semanales: Number(initialData.horas_semanales),
+          tipo_formacion_id: Number(initialData.relaciones?.tipo_formacion?.id ?? initialData.tipo_formacion_id),
+          fecha_alta_grupo: initialData.fecha_alta_grupo,
+          grupo_utn_id: Number(initialData.grupo_utn_id ?? uct!.id),
+          activo: initialData.activo ?? true,
+          becas: (initialData.becas || []).map((beca) => ({
+            beca_id: Number(beca.id),
+            fecha_inicio: beca.fecha_inicio,
+            fecha_fin: beca.fecha_fin || undefined,
+            monto_percibido: beca.monto_percibido ?? undefined,
+          })),
+        };
+        const changedPayload = Object.fromEntries(
+          Object.entries(payload).filter(([key, value]) =>
+            JSON.stringify(value) !== JSON.stringify(original[key as keyof typeof original])
+          )
         );
-        if (!updated) return;
+        if (Object.keys(changedPayload).length > 0) {
+          const updated = await executeSafely(() =>
+            actualizarBecario(initialData.id, changedPayload)
+          );
+          if (!updated) return;
+        }
+
+        await qc.invalidateQueries({ queryKey: ["personal"] });
+        await qc.invalidateQueries({ queryKey: ["becarios"] });
+        await qc.invalidateQueries({
+          queryKey: ["personal-detalle", "becario", String(initialData.id)],
+        });
+
+        navigate(`/personal/becario/${initialData.id}`, {
+          replace: true,
+          state: { successMessage: "¡Actualizado con éxito!" },
+        });
+
+        return;
       }
 
-      qc.invalidateQueries({ queryKey: ["personal"] });
-      qc.invalidateQueries({ queryKey: ["becarios"] });
-      qc.invalidateQueries({
-        queryKey: ["personal-detalle", "becario", String(initialData.id)],
-      });
+      const created = await executeSafely(() => crearBecario(payload));
+      if (!created) return;
 
-      navigate(`/personal/becario/${initialData.id}`, {
-        replace: true,
-        state: { successMessage: "¡Actualizado con éxito!" },
-      });
+      await qc.invalidateQueries({ queryKey: ["personal"] });
+      await qc.invalidateQueries({ queryKey: ["becarios"] });
 
-      return;
+      navigate("/personal", {
+        state: { successMessage: "¡Creado con éxito!" },
+      });
+    } finally {
+      setIsSaving(false);
     }
-
-    const created = await executeSafely(() => crearBecario(payload));
-    if (!created) return;
-
-    qc.invalidateQueries({ queryKey: ["personal"] });
-    qc.invalidateQueries({ queryKey: ["becarios"] });
-
-    navigate("/personal", {
-      state: { successMessage: "¡Creado con éxito!" },
-    });
   };
 
   return (
@@ -271,6 +282,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
       onSubmit={submit}
       className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
     >
+      {errors.grupo && <p role="alert">{errors.grupo}</p>}
       <Field label="Nombre y apellido" name="nombre" error={errors.nombre}>
         <>
           <input
@@ -558,8 +570,9 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
           Volver
         </Button>
 
-        <Button type="submit" size="sm">
-          {isEdit ? "Actualizar" : "Guardar"}
+        <Button type="submit" size="sm" disabled={isSaving} aria-busy={isSaving}>
+          {isSaving && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />}
+          {isSaving ? "Guardando..." : isEdit ? "Actualizar" : "Guardar"}
         </Button>
       </div>
     </form>

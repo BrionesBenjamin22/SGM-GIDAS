@@ -124,3 +124,17 @@ Tecnico administrativo y de apoyo, Profesional, Becario e Investigador. Varia
 fecha de alta y carga horaria para habilitar pruebas manuales de filtros,
 ordenamiento y paginacion. La carga es idempotente y mantiene la proteccion que
 impide ejecutarla accidentalmente en produccion.
+# Candidatos de proyectos (ISS-10)
+
+Seguimiento ISS-08: el listado combinado `/personal-all` (ruta canónica
+`/api/v1/personal/all`) ordena todos los subtipos por `created_at` descendente,
+con ID y rol como desempate determinista. Las altas recientes aparecen primero
+en el home paginado. No se modifica el contrato de creación ni se requiere
+migración. Regresión de orden entre subtipos y más de nueve registros:
+`tests/test_personal_alta_ptaa.py`.
+
+GET `/api/v1/investigadores/` conserva permisos ADMIN/GESTOR/LECTURA.
+El listado por defecto y `activos=true` requieren `activo=true` y ausencia
+de baja lógica. `activos=false` incluye inactivos o dados de baja; `all`
+conserva todos. Esto evita ofrecer investigadores inactivos como candidatos
+de coordinador sin alterar el hook compartido del frontend.

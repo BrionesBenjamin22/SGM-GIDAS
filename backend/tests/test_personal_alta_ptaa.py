@@ -1,4 +1,5 @@
 import unittest
+from datetime import date, datetime
 from unittest.mock import patch
 
 from flask import Flask
@@ -75,6 +76,23 @@ class PersonalAltaPTAATest(unittest.TestCase):
         result = SearchService.search("Persona PTAA")[0]
         self.assertEqual(result["url"], f"/personal/personal/{record_id}")
         self.assertEqual(PersonalHorasHistorial.query.count(), 1)
+
+    def test_listado_combina_subtipos_con_altas_recientes_primero(self):
+        for id in range(1, 12):
+            db.session.add(Personal(id=id, nombre_apellido=f"Personal {id}", horas_semanales=20,
+                                    tipo_personal_id=1, grupo_utn_id=1, activo=True,
+                                    fecha_alta_grupo=date(2026, 1, 1), created_at=datetime(2026, 9, id)))
+        db.session.add_all([
+            Becario(id=1, nombre_apellido="Becario reciente", horas_semanales=20, activo=True,
+                    tipo_formacion_id=1, grupo_utn_id=1, created_at=datetime(2026, 9, 12)),
+            Investigador(id=1, nombre_apellido="Investigador nuevo", horas_semanales=20, activo=True,
+                         tipo_dedicacion_id=1, grupo_utn_id=1, created_at=datetime(2026, 9, 13)),
+        ])
+        db.session.commit()
+        listing = listar_personal_completo()
+        self.assertEqual([(p["rol"], p["id"]) for p in listing[:3]],
+                         [("investigador", 1), ("becario", 1), ("personal", 11)])
+        self.assertEqual(listing[:9][0]["nombre_apellido"], "Investigador nuevo")
 
     def test_referencia_inexistente_o_inactiva(self):
         for field in ("tipo_personal_id", "grupo_utn_id"):

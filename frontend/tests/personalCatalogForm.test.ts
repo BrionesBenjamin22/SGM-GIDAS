@@ -9,13 +9,19 @@ test("formulario real muestra catálogo arbitrario, envía su ID y bloquea 220 h
   const harness = {
     values: ["Persona", 20, 37, new Date(2026, 8, 1), true, {}] as any[],
     cursor: 0, calls: [] as any[], catalog: [{ id: 37, nombre: "Especialista de laboratorio" }],
+    errors: [] as unknown[], focused: 0,
   };
   const globals = globalThis as typeof globalThis & { __personalHarness?: typeof harness; __personalJsx?: (...args: any[]) => Element };
   globals.__personalHarness = harness;
+  const previousDocument = globalThis.document;
+  const previousFrame = globalThis.requestAnimationFrame;
+  globalThis.document = { querySelectorAll: () => [{dataset: {errorField: "horas"}, querySelector: () => ({focus: () => harness.focused++})}] } as unknown as Document;
+  globalThis.requestAnimationFrame = callback => { callback(0); return 0; };
   globals.__personalJsx = (type, props, ...children) => ({ type, props: props ?? {}, children });
   const mock = `const h = globalThis.__personalHarness;
     export const useState = initial => { const i = h.cursor++; return [h.values[i] ?? initial, next => h.values[i] = typeof next === 'function' ? next(h.values[i]) : next]; };
     export const useEffect = () => {};
+    export const LoaderCircle = () => {};
     export const useNavigate = () => (...args) => h.calls.push({navigate: args});
     export const useUct = () => ({uct: {id: 1}});
     export const useTiposPersonal = () => ({data: h.catalog, isLoading: false, isError: false, refetch: async () => {}});
@@ -39,7 +45,7 @@ test("formulario real muestra catálogo arbitrario, envía su ID y bloquea 220 h
       ? [node, ...node.children.flatMap(walk)] : [];
   try {
     const { default: Form } = await import(`data:text/javascript;base64,${Buffer.from(js).toString("base64")}`);
-    const render = () => { harness.cursor = 0; return Form({onCancel: () => {}, onError: (e: unknown) => { throw e; }}); };
+    const render = () => { harness.cursor = 0; return Form({onCancel: () => {}, onError: (e: unknown) => harness.errors.push(e)}); };
     let tree = render();
     const options = walk(tree).filter(node => node.type === "option");
     assert.ok(options.some(node => node.props.value === 37 && node.children.includes("Especialista de laboratorio")));
@@ -54,6 +60,8 @@ test("formulario real muestra catálogo arbitrario, envía su ID y bloquea 220 h
     await tree.props.onSubmit({preventDefault() {}});
     assert.equal(harness.calls.length, 0);
     assert.match(harness.values[5].horas, /168/);
+    assert.equal(harness.focused, 1);
+    assert.match((harness.errors[0] as Error).message, /Complete o corrija/);
     harness.values[1] = 168;
     tree = render();
     await tree.props.onSubmit({preventDefault() {}});
@@ -66,6 +74,8 @@ test("formulario real muestra catálogo arbitrario, envía su ID y bloquea 220 h
     assert.equal(harness.calls.length, 0);
     assert.ok(harness.values[5].tipoPersonal);
   } finally {
+    globalThis.document = previousDocument;
+    globalThis.requestAnimationFrame = previousFrame;
     delete globals.__personalHarness;
     delete globals.__personalJsx;
   }

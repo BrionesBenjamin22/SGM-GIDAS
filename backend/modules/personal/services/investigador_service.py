@@ -1,6 +1,7 @@
 from datetime import date
 
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import or_
 
 from extension import db
 from modules.personal.services.horas_validation import validar_horas_semanales as _validar_horas
@@ -384,13 +385,13 @@ def listar_investigadores(activos=None):
     activos = str(activos).strip().lower()
 
     if activos == "true":
-        query = query.filter(Investigador.deleted_at.is_(None))
+        query = query.filter(Investigador.deleted_at.is_(None), Investigador.activo.is_(True))
     elif activos == "false":
-        query = query.filter(Investigador.deleted_at.isnot(None))
+        query = query.filter(or_(Investigador.deleted_at.isnot(None), Investigador.activo.is_(False)))
     elif activos == "all":
         pass
     else:
-        query = query.filter(Investigador.deleted_at.is_(None))
+        query = query.filter(Investigador.deleted_at.is_(None), Investigador.activo.is_(True))
 
     return query.all()
 
