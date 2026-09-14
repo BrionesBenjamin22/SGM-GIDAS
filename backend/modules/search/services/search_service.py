@@ -972,7 +972,7 @@ class SearchService:
                     "id": tr.id,
                     "titulo": tr.titulo_trabajo,
                     "subtitulo": tr.nombre_reunion,
-                    "fecha": tr.fecha_inicio,
+                    "fecha": tr.fecha_presentacion,
                     "url": f"/trabajos-reunion/{tr.id}",
                     "extra": {
                         "tipo_reunion": (

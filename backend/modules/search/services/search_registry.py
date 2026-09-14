@@ -310,8 +310,8 @@ SEARCH_ENTITIES = [
                 "autores": [a.serialize() for a in t.autorias],
                 "procedencia": t.procedencia,
                 "fecha": (
-                    t.fecha_inicio.isoformat()
-                    if t.fecha_inicio else None
+                    t.fecha_presentacion.isoformat()
+                    if t.fecha_presentacion else None
                 ),
                 "grupo": (
                     t.grupo_utn.nombre_sigla_grupo

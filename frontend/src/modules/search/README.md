@@ -58,3 +58,9 @@ mutateAsync para que el diálogo cubra toda la operación.
 La vista de búsqueda muestra el preview de trabajos usando extra.autores y la etiqueta Autores. Los nombres pueden pertenecer a investigadores o becarios; el resto de tipos de resultados conserva su contrato.
 
 Corrección de alcance ISS-12: los autores de trabajos son únicamente investigadores y becarios. Personal (PTAA/profesional) no puede vincularse como autor. Se mantiene la etiqueta Autores.
+
+## ISS-13: fecha de presentación
+
+La fecha genérica del resultado de un trabajo en reunión corresponde a
+fecha_presentacion. El enlace abre el detalle con Fecha de presentación;
+se conserva el contrato genérico de SearchPage sin campos nuevos de búsqueda.
