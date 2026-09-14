@@ -188,7 +188,8 @@ export default function ObjetosLanding() {
         onConfirm={confirmDelete}
         confirmText={isDeleting ? "Eliminando..." : "Aceptar"}
         confirmDisabled={isDeleting}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}

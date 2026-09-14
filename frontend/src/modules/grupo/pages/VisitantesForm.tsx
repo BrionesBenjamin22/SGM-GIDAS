@@ -161,6 +161,7 @@ export default function VisitantesForm() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mutation.isPending) return;
     if (!uct) return;
     if (!validate()) return;
 
@@ -306,7 +307,7 @@ export default function VisitantesForm() {
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={mutation.isPending || !uct}>
+          <Button type="submit" size="sm" disabled={mutation.isPending || !uct} loading={mutation.isPending} loadingText="Guardando...">
             {mutation.isPending
               ? isEdit
                 ? "Actualizando..."

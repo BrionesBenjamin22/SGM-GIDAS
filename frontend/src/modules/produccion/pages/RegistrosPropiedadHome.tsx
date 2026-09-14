@@ -459,7 +459,8 @@ export default function RegistrosPropiedadLanding() {
           items={selectedActiveItems.map((registro) => registro.nombre_articulo || "-")}
           onCancel={cancelSelection}
           onConfirm={confirmDelete}
-        />
+         loadingText="Eliminando..."
+       />
       </section>
 
       {showFilters && (

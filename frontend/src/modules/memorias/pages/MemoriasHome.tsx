@@ -358,7 +358,8 @@ export default function MemoriasHome() {
           }
         }}
         confirmText={isDeleting ? "Eliminando..." : "Confirmar"}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}

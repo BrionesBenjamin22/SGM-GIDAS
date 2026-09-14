@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import Button from "@/components/Button";
+import { getErrorMessage } from "@/lib/httpError";
 
 type Props = {
   open: boolean;
@@ -10,8 +11,10 @@ type Props = {
   confirmText?: string;
   cancelText?: string;
   confirmDisabled?: boolean;
+  loading?: boolean;
+  loadingText?: string;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: () => unknown;
 };
 
 export default function ConfirmDialog({
@@ -23,16 +26,47 @@ export default function ConfirmDialog({
   confirmText = "Aceptar",
   cancelText = "Cancelar",
   confirmDisabled = false,
+  loading = false,
+  loadingText = "Procesando...",
   onCancel,
   onConfirm,
 }: Props) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const inFlight = useRef(false);
+  const busy = loading || pending;
+  useEffect(() => {
+    if (open) setError("");
+  }, [open]);
+  const cancel = () => {
+    if (inFlight.current || loading) return;
+    setError("");
+    onCancel();
+  };
+  const confirm = async () => {
+    if (inFlight.current || loading || confirmDisabled) return;
+    inFlight.current = true;
+    setError("");
+    try {
+      const result = onConfirm();
+      if (result && typeof (result as PromiseLike<unknown>).then === "function") {
+        setPending(true);
+        await result;
+      }
+    } catch (cause) {
+      setError(getErrorMessage(cause, "Lo sentimos, no pudimos completar la operación. Intente nuevamente."));
+    } finally {
+      inFlight.current = false;
+      setPending(false);
+    }
+  };
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div
         className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-        onClick={onCancel}
+        onClick={cancel}
       />
 
       <div
@@ -57,14 +91,16 @@ export default function ConfirmDialog({
           </ul>
         )}
 
-        {children && <div className="mb-4">{children}</div>}
+        {children && <fieldset disabled={busy} className="mb-4">{children}</fieldset>}
+        {error && <p role="alert" className="mb-4 text-sm text-rose-600">{error}</p>}
 
         <div className="flex justify-between">
           <Button
             variant="secondary"
             size="sm"
             className="px-3 py-1 text-xs"
-            onClick={onCancel}
+            onClick={cancel}
+            disabled={busy}
           >
             {cancelText}
           </Button>
@@ -72,8 +108,10 @@ export default function ConfirmDialog({
           <Button
             size="sm"
             className="px-3 py-1 text-xs"
-            onClick={onConfirm}
+            onClick={confirm}
             disabled={confirmDisabled}
+            loading={busy}
+            loadingText={loadingText}
           >
             {confirmText}
           </Button>

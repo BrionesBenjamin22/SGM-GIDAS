@@ -425,7 +425,8 @@ export default function EquipamientoLanding() {
         items={selectedActiveItems.map((e) => e.denominacion || "-")}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}

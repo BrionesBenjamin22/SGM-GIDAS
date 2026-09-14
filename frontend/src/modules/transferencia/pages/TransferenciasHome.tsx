@@ -456,7 +456,8 @@ export default function TransferenciasHome() {
         )}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}

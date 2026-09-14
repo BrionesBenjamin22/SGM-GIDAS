@@ -462,7 +462,8 @@ export default function ParticipacionesHome() {
         items={selectedActiveItems.map((p) => p.nombre_evento || "-")}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}

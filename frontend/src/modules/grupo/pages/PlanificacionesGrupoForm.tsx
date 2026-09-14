@@ -83,6 +83,7 @@ export default function PlanificacionGrupoForm() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isPending) return;
 
     if (!uct) return;
     if (!validate()) return;
@@ -221,7 +222,7 @@ export default function PlanificacionGrupoForm() {
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={isPending}>
+          <Button type="submit" size="sm" disabled={isPending} loading={isPending} loadingText="Guardando...">
             {isPending
               ? "Guardando…"
               : isEdit

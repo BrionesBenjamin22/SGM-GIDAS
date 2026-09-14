@@ -423,7 +423,8 @@ export default function DistincionesHome() {
         items={selectedActiveItems.map((d) => d.descripcion || "-")}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}

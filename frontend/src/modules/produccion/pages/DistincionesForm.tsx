@@ -134,6 +134,7 @@ export default function DistincionesForm() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mutation.isPending) return;
     if (!validate()) return;
     if (!uct) return;
 
@@ -258,7 +259,7 @@ export default function DistincionesForm() {
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={mutation.isPending || !uct}>
+          <Button type="submit" size="sm" disabled={mutation.isPending || !uct} loading={mutation.isPending} loadingText="Guardando...">
             {mutation.isPending
               ? isEdit
                 ? "Actualizando..."

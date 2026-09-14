@@ -385,7 +385,7 @@ export default function FormInvestigador({
           Volver
         </Button>
 
-        <Button type="submit" size="sm" disabled={isSaving} aria-busy={isSaving}>
+        <Button type="submit" size="sm" disabled={isSaving} aria-busy={isSaving} loading={isSaving} loadingText="Guardando...">
           {isSaving && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />}
           {isSaving ? "Guardando..." : isEdit ? "Actualizar" : "Guardar"}
         </Button>

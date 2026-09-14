@@ -319,7 +319,8 @@ export default function MemoriaDetalle() {
             : Promise.resolve(undefined)
         }
         confirmText={isChangingState ? "Actualizando..." : "Confirmar"}
-      />
+       loadingText="Actualizando..."
+     />
 
       <ConfirmDialog
         open={showReopenConfirm}
@@ -329,7 +330,8 @@ export default function MemoriaDetalle() {
         onCancel={() => setShowReopenConfirm(false)}
         onConfirm={() => reabrir()}
         confirmText={isReopening ? "Reabriendo..." : "Confirmar"}
-      />
+       loadingText="Reabriendo..."
+     />
 
       <SuccessToast
         open={showSuccess}

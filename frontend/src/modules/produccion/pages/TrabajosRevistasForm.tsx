@@ -231,6 +231,7 @@ export default function TrabajosRevistasForm() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mutation.isPending) return;
 
     if (!uct) return;
     if (!validate()) return;
@@ -483,7 +484,7 @@ export default function TrabajosRevistasForm() {
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={mutation.isPending}>
+          <Button type="submit" size="sm" disabled={mutation.isPending} loading={mutation.isPending} loadingText="Guardando...">
             {mutation.isPending
               ? isEdit
                 ? "Actualizando..."
@@ -502,9 +503,10 @@ export default function TrabajosRevistasForm() {
         items={[]}
         onCancel={() => setInvestigadorAEliminar(null)}
         onConfirm={() =>
-          desvincularMutation.mutate(investigadorAEliminar!.id)
+          desvincularMutation.mutateAsync(investigadorAEliminar!.id)
         }
-      />
+       loadingText="Desvinculando..."
+     />
 
       <SuccessToast
         open={showSuccess}

@@ -404,7 +404,9 @@ export default function SearchPage() {
             size="md"
             className="hidden sm:flex items-center gap-2"
             disabled={loading}
-          >
+           loading={loading}
+           loadingText="Buscando..."
+         >
             <Search className="w-4 h-4" />
             Buscar
           </Button>

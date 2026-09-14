@@ -595,7 +595,7 @@ export default function ProyectosForm() {
             {investigadoresQuery.isLoading && <p role="status">Cargando investigadores...</p>}
             {investigadoresQuery.isError && <div role="alert">
               <p>Lo sentimos, no pudimos recuperar los investigadores. Intente nuevamente.</p>
-              <Button type="button" variant="secondary" onClick={() => void investigadoresQuery.refetch()}>Reintentar</Button>
+              <Button type="button" variant="secondary" onClick={() => void investigadoresQuery.refetch()} loading={investigadoresQuery.isFetching} loadingText="Reintentando...">Reintentar</Button>
             </div>}
             {!investigadoresQuery.isLoading && !investigadoresQuery.isError && investigadores.length === 0 &&
               <p role="status">No hay investigadores activos disponibles. Registre o reactive un investigador para asignar un coordinador.</p>}
@@ -713,7 +713,7 @@ export default function ProyectosForm() {
           </Button>
 
           {!proyectoCerrado && (
-            <Button type="submit" size="sm" disabled={mutation.isPending} aria-busy={mutation.isPending}>
+            <Button type="submit" size="sm" disabled={mutation.isPending} aria-busy={mutation.isPending} loading={mutation.isPending} loadingText="Guardando...">
               {mutation.isPending && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />}
               {mutation.isPending
                 ? "Guardando..."

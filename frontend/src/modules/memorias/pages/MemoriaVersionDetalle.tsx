@@ -405,7 +405,7 @@ export default function MemoriaVersionDetalle() {
           )}
 
           {puedeExportarExcel && (
-            <Button size="sm" onClick={() => descargarExcel()} disabled={isExportingExcel}>
+            <Button size="sm" onClick={() => descargarExcel()} disabled={isExportingExcel} loading={isExportingExcel} loadingText="Generando Excel...">
               {isExportingExcel ? "Generando Excel..." : "Generar Excel"}
             </Button>
           )}
@@ -597,7 +597,7 @@ export default function MemoriaVersionDetalle() {
                 Cancelar
               </Button>
 
-              <Button size="sm" onClick={handleGuardarPrograma} disabled={isSavingPrograma}>
+              <Button size="sm" onClick={handleGuardarPrograma} disabled={isSavingPrograma} loading={isSavingPrograma} loadingText="Guardando...">
                 {isSavingPrograma ? "Guardando..." : planificacionActual ? "Actualizar" : "Guardar"}
               </Button>
             </div>

@@ -418,7 +418,8 @@ export default function DocumentacionHome() {
         items={selectedActiveDocuments.map((item) => formatTitulo(item.titulo))}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}

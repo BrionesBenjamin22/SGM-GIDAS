@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -449,6 +449,8 @@ function CatalogPanel({
 
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"create" | "update" | "delete" | null>(null);
+  const actionInFlight = useRef(false);
   const [fkOptions, setFkOptions] = useState<CatalogItem[]>([]);
   const [historyByItem, setHistoryByItem] = useState<CatalogHistoryMap>({});
   const [historyLoadFailed, setHistoryLoadFailed] = useState(false);
@@ -582,6 +584,7 @@ function CatalogPanel({
   }, [currentPage, totalPages]);
 
   const handleAdd = async () => {
+    if (actionInFlight.current) return;
     if (!canCreate) return;
     if (!newName.trim()) {
       setErrorMessage("Debe ingresar un nombre antes de crear el registro.");
@@ -597,6 +600,8 @@ function CatalogPanel({
     if (def.descField && newDesc.trim()) body[def.descField] = newDesc.trim();
     if (def.fkField && newFkId) body[def.fkField.idField] = Number(newFkId);
 
+    actionInFlight.current = true;
+    setPendingAction("create");
     try {
       await createCatalogItem(def.endpoint, body);
       setNewName("");
@@ -605,8 +610,8 @@ function CatalogPanel({
       setShowAdd(false);
       setErrorMessage("");
       showToast(`El registro se creo correctamente en ${def.label}.`, "success");
-      queryClient.invalidateQueries();
-      load();
+      await queryClient.invalidateQueries();
+      await load();
     } catch (error) {
       const message = getCatalogErrorMessage(
         error,
@@ -615,10 +620,14 @@ function CatalogPanel({
       );
       setErrorMessage(message);
       showToast(message, "error");
+    } finally {
+      actionInFlight.current = false;
+      setPendingAction(null);
     }
   };
 
   const handleUpdate = async (id: number) => {
+    if (actionInFlight.current) return;
     if (!canEdit) return;
     const item = items.find((current) => current.id === id);
     if (!item) {
@@ -659,13 +668,15 @@ function CatalogPanel({
       return;
     }
 
+    actionInFlight.current = true;
+    setPendingAction("update");
     try {
       await updateCatalogItem(def.endpoint, id, body);
       setEditId(null);
       setErrorMessage("");
       showToast(`Los cambios se guardaron correctamente en ${def.label}.`, "success");
-      queryClient.invalidateQueries();
-      load();
+      await queryClient.invalidateQueries();
+      await load();
     } catch (error) {
       const message = getCatalogErrorMessage(
         error,
@@ -674,10 +685,14 @@ function CatalogPanel({
       );
       setErrorMessage(message);
       showToast(message, "error");
+    } finally {
+      actionInFlight.current = false;
+      setPendingAction(null);
     }
   };
 
   const handleDelete = async () => {
+    if (actionInFlight.current) return;
     if (!canDelete) return;
     if (!deleteTarget) return;
     if (isInactive(deleteTarget)) {
@@ -688,13 +703,15 @@ function CatalogPanel({
       return;
     }
 
+    actionInFlight.current = true;
+    setPendingAction("delete");
     try {
       await deleteCatalogItem(def.endpoint, deleteTarget.id);
       setDeleteTarget(null);
       setErrorMessage("");
       showToast(`El registro se elimino correctamente de ${def.label}.`, "success");
-      queryClient.invalidateQueries();
-      load();
+      await queryClient.invalidateQueries();
+      await load();
     } catch (error) {
       const message = getCatalogErrorMessage(
         error,
@@ -704,6 +721,9 @@ function CatalogPanel({
       setDeleteTarget(null);
       setErrorMessage(message);
       showToast(message, "error");
+    } finally {
+      actionInFlight.current = false;
+      setPendingAction(null);
     }
   };
 
@@ -852,7 +872,7 @@ function CatalogPanel({
                     >
                       Cancelar
                     </Button>
-                    <Button type="button" size="sm" onClick={() => handleUpdate(item.id)}>
+                    <Button type="button" size="sm" onClick={() => handleUpdate(item.id)} loading={pendingAction === "update"} loadingText="Guardando..." disabled={pendingAction !== null}>
                       Guardar
                     </Button>
                   </div>
@@ -1122,7 +1142,7 @@ function CatalogPanel({
             >
               Cancelar
             </Button>
-            <Button type="button" size="sm" onClick={handleAdd}>
+            <Button type="button" size="sm" onClick={handleAdd} loading={pendingAction === "create"} loadingText="Creando..." disabled={pendingAction !== null}>
               Crear
             </Button>
           </div>
@@ -1150,7 +1170,9 @@ function CatalogPanel({
         }", verifique que no esté asociado a registros históricos o memorias. Si está en uso, el sistema puede bloquear la operación.`}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-      />
+        loading={pendingAction === "delete"}
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={toast.open}

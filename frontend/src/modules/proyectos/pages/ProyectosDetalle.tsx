@@ -152,7 +152,9 @@ export default function ProyectoDetalle() {
               size="sm"
               onClick={() => reabrirMutation.mutate(String(data.id))}
               disabled={reabrirMutation.isPending}
-            >
+             loading={reabrirMutation.isPending}
+             loadingText="Reabriendo..."
+           >
               {reabrirMutation.isPending ? "Reabriendo..." : "Reabrir"}
             </Button>
           ) : null}

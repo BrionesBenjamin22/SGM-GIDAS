@@ -1,5 +1,5 @@
 import { applyFieldErrors } from "@/lib/httpError";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Pencil, Trash2 } from "lucide-react";
 import Button from "@/components/Button";
@@ -38,8 +38,10 @@ type DirectivoItem = {
 };
 
 export default function UctForm() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitInFlight = useRef(false);
   const todayIso = getLocalTodayIso();
-  const { uct, save, saving, isLoading: isLoadingUct } = useUct();
+  const { uct, save, isLoading: isLoadingUct } = useUct();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -238,7 +240,10 @@ export default function UctForm() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitInFlight.current) return;
     if (!validate()) return;
+    submitInFlight.current = true;
+    setIsSubmitting(true);
 
     try {
       setSubmitError("");
@@ -311,6 +316,9 @@ export default function UctForm() {
           "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
         )
       );
+    } finally {
+      submitInFlight.current = false;
+      setIsSubmitting(false);
     }
   };
 
@@ -629,7 +637,9 @@ export default function UctForm() {
                             size="sm"
                             onClick={handleEditarDirectivo}
                             disabled={actualizarDirectivo.isPending}
-                          >
+                           loading={actualizarDirectivo.isPending}
+                           loadingText="Guardando..."
+                         >
                             {actualizarDirectivo.isPending
                               ? "Guardando..."
                               : "Guardar"}
@@ -713,16 +723,19 @@ export default function UctForm() {
             variant="secondary"
             size="sm"
             onClick={() => navigate(-1)}
+            disabled={isSubmitting}
           >
             Volver
           </Button>
 
           <Button
             type="submit"
-            disabled={saving || crearAsignar.isPending}
+            disabled={isSubmitting}
             size="sm"
-          >
-            {saving || crearAsignar.isPending
+           loading={isSubmitting}
+           loadingText="Guardando..."
+         >
+            {isSubmitting
               ? "Guardando…"
               : !isEdit
                 ? "Guardar grupo"
@@ -757,7 +770,8 @@ export default function UctForm() {
         }
         onCancel={cerrarConfirmFinalizar}
         onConfirm={handleFinalizarDirectivo}
-      >
+       loadingText="Procesando..."
+     >
         <div className="space-y-2">
           <label className="block text-sm font-medium text-slate-700">
             Fecha de finalización

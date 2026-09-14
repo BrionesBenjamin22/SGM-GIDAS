@@ -423,7 +423,8 @@ export default function ArticulosDivulgacionHome() {
         items={selectedActiveItems.map((a) => a.titulo || "-")}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}

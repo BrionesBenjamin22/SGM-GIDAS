@@ -53,3 +53,14 @@ Los errores del formulario se muestran una sola vez mediante Field. El
 helperText de Calendar/DatePicker contiene exclusivamente ayuda de formato o
 rango; no recibe el mensaje de error del formulario. Se conservan los límites,
 las reglas de validación y el foco del primer campo inválido.
+
+## Feedback de acciones (seguimiento ISS-09)
+
+Las acciones asíncronas del módulo usan Button con loading/loadingText
+o ConfirmDialog, que espera la promesa devuelta por onConfirm. Durante la
+operación se muestra texto de progreso con un icono animado, aria-busy y
+role=status. El botón de acción se deshabilita hasta terminar; las
+confirmaciones bloquean además cancelar, el fondo y los campos del diálogo.
+El estado se libera al resolver o fallar, conservando errores y mensajes de
+éxito existentes. Los callbacks basados en React Query deben devolver
+mutateAsync para que el diálogo cubra toda la operación.

@@ -647,7 +647,8 @@ export default function DocenciaLanding() {
         items={selectedActiveItems.map((d) => toTitleCase(d.curso) || "-")}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}

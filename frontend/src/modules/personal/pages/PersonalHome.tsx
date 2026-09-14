@@ -418,7 +418,8 @@ export default function PersonalLanding() {
         items={selectedActiveItems.map((x) => x.nombre)}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}

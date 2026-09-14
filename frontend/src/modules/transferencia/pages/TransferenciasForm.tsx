@@ -256,6 +256,7 @@ export default function TransferenciasForm() {
         noValidate
         onSubmit={async (e) => {
           e.preventDefault();
+    if (isPending) return;
           if (!uct) return;
           if (!validate()) return;
           await mutateAsync();
@@ -417,7 +418,7 @@ export default function TransferenciasForm() {
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={isPending || !uct}>
+          <Button type="submit" size="sm" disabled={isPending || !uct} loading={isPending} loadingText="Guardando...">
             {isPending ? "Guardando..." : isEdit ? "Actualizar" : "Guardar"}
           </Button>
         </div>

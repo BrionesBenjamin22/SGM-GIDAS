@@ -80,3 +80,23 @@ mantienen fachadas paralelas en `src/pages`, `src/services` ni `src/hooks`.
   globales no deben modificarse sin una decision explicita del proyecto.
 - Cada modulo debe mantener services dedicados, tipos TypeScript, hooks,
   validaciones y manejo uniforme de errores cuando corresponda.
+
+## Contrato de feedback de acciones (ISS-09)
+
+Button acepta loading y loadingText (por defecto Procesando...). Cuando
+loading es true muestra un icono decorativo con respeto a movimiento reducido,
+un texto anunciado como status y aria-busy, y deshabilita la acción.
+Cuando finaliza conserva children y cualquier disabled establecido por permisos
+o validaciones. Los formularios pasan isPending/isSaving durante el guardado.
+
+ConfirmDialog acepta las mismas propiedades y espera automáticamente una
+promesa devuelta por onConfirm. Un bloqueo inmediato impide confirmar dos veces
+antes del siguiente render. Mientras espera impide cancelar, cerrar desde el
+fondo y editar sus campos. Los callbacks de mutaciones deben devolver
+mutateAsync, no mutate. Un fallo no manejado conserva un aviso seguro en el
+diálogo y libera el bloqueo; al reabrir se limpia el aviso. Las acciones
+síncronas que solo preparan cambios locales no simulan esperas del servidor.
+
+Pruebas de regresión: tests/actionFeedback.test.ts verifica los componentes
+reales mediante SSR y un harness de hooks, sin navegador. Las pantallas de
+autenticación conservan sus estados de carga existentes.

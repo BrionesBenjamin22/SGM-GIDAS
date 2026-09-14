@@ -428,7 +428,8 @@ export default function VisitantesHome() {
         items={selectedActiveItems.map((v) => v.razon || "-")}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}

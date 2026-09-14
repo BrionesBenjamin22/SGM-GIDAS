@@ -136,7 +136,7 @@ export default function MemoriaForm() {
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={isPending}>
+          <Button type="submit" size="sm" disabled={isPending} loading={isPending} loadingText="Guardando...">
             {isPending ? "Guardando..." : "Guardar"}
           </Button>
         </div>

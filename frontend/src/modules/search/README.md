@@ -41,3 +41,14 @@ La cobertura integral se valida con los datos ficticios e idempotentes de
 `ALLOW_TEST_SEED=true` en staging. Esta variable no debe persistirse ni utilizarse
 contra produccion. La validacion de referencia recupera correctamente los 24
 modulos.
+
+## Feedback de acciones (seguimiento ISS-09)
+
+Las acciones asíncronas del módulo usan Button con loading/loadingText
+o ConfirmDialog, que espera la promesa devuelta por onConfirm. Durante la
+operación se muestra texto de progreso con un icono animado, aria-busy y
+role=status. El botón de acción se deshabilita hasta terminar; las
+confirmaciones bloquean además cancelar, el fondo y los campos del diálogo.
+El estado se libera al resolver o fallar, conservando errores y mensajes de
+éxito existentes. Los callbacks basados en React Query deben devolver
+mutateAsync para que el diálogo cubra toda la operación.

@@ -10,6 +10,24 @@ semántico cuando se publica una entrega.
 
 ### Corregido
 
+#### ISS-09: feedback visible durante acciones asincronas
+
+- Button centraliza texto de progreso, icono animado, aria-busy y role=status.
+- ConfirmDialog espera promesas, bloquea confirmar/cancelar y sus campos durante
+  la operacion, conserva errores seguros y recupera los controles al terminar.
+- Integrado en guardados de formularios, altas/ediciones de catalogos,
+  eliminaciones y desvinculaciones, reaperturas, exportacion Excel, busqueda
+  y reintentos de tipos de personal y candidatos de proyectos.
+- UCT mantiene feedback durante todo el guardado consolidado de directivos.
+  El cierre de proyectos utiliza la confirmacion comun y la reapertura por
+  seleccion informa progreso y evita peticiones concurrentes.
+- Documentados diez modulos y el contrato comun. Pruebas de regresion de los
+  componentes reales para progreso, bloqueo inmediato, fallo y recuperacion.
+
+Validacion: 85 tests frontend, typecheck, build de produccion y diff check.
+Pruebas de navegador a cargo del usuario. Sin cambios de contrato backend.
+Preservados cambios previos ajenos.
+
 #### ISS-09: evitar validaciones de fechas duplicadas
 
 - Corregidos 19 campos de fechas en 15 formularios de Recursos, Personal,

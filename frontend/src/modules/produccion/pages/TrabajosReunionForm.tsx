@@ -217,6 +217,7 @@ export default function TrabajoReunionForm() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mutation.isPending) return;
     if (!uct) return;
     if (!validate()) return;
 
@@ -425,7 +426,7 @@ export default function TrabajoReunionForm() {
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={mutation.isPending || !uct}>
+          <Button type="submit" size="sm" disabled={mutation.isPending || !uct} loading={mutation.isPending} loadingText="Guardando...">
             {mutation.isPending ? (isEdit ? "Actualizando..." : "Guardando...") : isEdit ? "Actualizar" : "Guardar"}
           </Button>
         </div>
@@ -437,8 +438,9 @@ export default function TrabajoReunionForm() {
         message={`¿Desea desvincular a ${investigadorAEliminar?.nombre}?`}
         items={[]}
         onCancel={() => setInvestigadorAEliminar(null)}
-        onConfirm={() => desvincularMutation.mutate(investigadorAEliminar!.id)}
-      />
+        onConfirm={() => desvincularMutation.mutateAsync(investigadorAEliminar!.id)}
+       loadingText="Desvinculando..."
+     />
 
       <SuccessToast
         open={showSuccess}

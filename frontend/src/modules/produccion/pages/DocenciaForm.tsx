@@ -179,6 +179,7 @@ export default function FormDocenciaInvestigador() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (mutation.isPending) return;
     if (!validate()) return;
 
     const payload = {
@@ -404,7 +405,7 @@ export default function FormDocenciaInvestigador() {
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={mutation.isPending}>
+          <Button type="submit" size="sm" disabled={mutation.isPending} loading={mutation.isPending} loadingText="Guardando...">
             {mutation.isPending
               ? isEdit
                 ? "Actualizando..."

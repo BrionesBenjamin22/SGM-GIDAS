@@ -139,6 +139,7 @@ export default function EquipamientoForm() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isPending) return;
     if (!uct) return;
     if (!validate()) return;
 
@@ -298,7 +299,7 @@ export default function EquipamientoForm() {
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={isPending || !uct}>
+          <Button type="submit" size="sm" disabled={isPending || !uct} loading={isPending} loadingText="Guardando...">
             {isPending
               ? isEdit
                 ? "Actualizando..."

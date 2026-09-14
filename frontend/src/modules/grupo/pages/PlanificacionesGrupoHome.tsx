@@ -271,7 +271,8 @@ export default function PlanificacionGrupoLanding() {
         items={selectedItems}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}

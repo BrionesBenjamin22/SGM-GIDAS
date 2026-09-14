@@ -533,7 +533,8 @@ export default function Home() {
               setShowError(true);
             }
           }}
-        />
+         loadingText="Eliminando..."
+       />
 
         <SuccessToast
           open={showSuccess}

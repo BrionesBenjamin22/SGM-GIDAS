@@ -442,7 +442,8 @@ export default function TrabajosReunionLanding() {
         items={selectedActiveItems.map((t) => t.titulo_trabajo || "-")}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}

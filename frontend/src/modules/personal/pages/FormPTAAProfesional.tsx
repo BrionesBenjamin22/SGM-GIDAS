@@ -29,7 +29,7 @@ export default function FormPTAAProfesional({
 }: Props) {
   const navigate = useNavigate();
   const { uct } = useUct();
-  const { data: tiposPersonal = [], isLoading: tiposLoading, isError: tiposError, refetch: refetchTipos } = useTiposPersonal();
+  const { data: tiposPersonal = [], isLoading: tiposLoading, isFetching: tiposFetching, isError: tiposError, refetch: refetchTipos } = useTiposPersonal();
   const qc = useQueryClient();
   const isEdit = Boolean(initialData);
 
@@ -268,7 +268,7 @@ export default function FormPTAAProfesional({
         {tiposLoading && <p role="status">Cargando tipos de personal…</p>}
         {tiposError && <div role="alert">
           <p>Lo sentimos, no pudimos recuperar los tipos de personal. Intente nuevamente.</p>
-          <Button type="button" variant="secondary" onClick={() => void refetchTipos()}>Reintentar</Button>
+          <Button type="button" variant="secondary" onClick={() => void refetchTipos()} loading={tiposFetching} loadingText="Reintentando...">Reintentar</Button>
         </div>}
         {!tiposLoading && !tiposError && !tiposPersonal.length && <p role="alert">No hay tipos de personal disponibles. Agregue un tipo en el catálogo e intente nuevamente.</p>}
         <Field label="Tipo de personal" required error={errors.tipoPersonal} name="tipoPersonal">
@@ -312,7 +312,7 @@ export default function FormPTAAProfesional({
           Volver
         </Button>
 
-        <Button type="submit" size="sm" disabled={isSaving} aria-busy={isSaving}>
+        <Button type="submit" size="sm" disabled={isSaving} aria-busy={isSaving} loading={isSaving} loadingText="Guardando...">
           {isSaving && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />}
           {isSaving ? "Guardando..." : isEdit ? "Actualizar" : "Guardar"}
         </Button>

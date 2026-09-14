@@ -142,6 +142,7 @@ export default function RegistrosPropiedadForm() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mutation.isPending) return;
 
     if (!uct) return;
     if (!validate()) return;
@@ -323,7 +324,7 @@ export default function RegistrosPropiedadForm() {
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={mutation.isPending}>
+          <Button type="submit" size="sm" disabled={mutation.isPending} loading={mutation.isPending} loadingText="Guardando...">
             {mutation.isPending
               ? isEdit
                 ? "Actualizando..."

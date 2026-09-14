@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 
 import Button from "@/components/Button";
-import CerrarProyectoDialog from "@/components/CerrarProyectoDialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import Calendar from "@/components/Calendar";
+import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
 import Tarjeta from "@/components/Tarjeta";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
@@ -39,6 +41,9 @@ export default function ProyectosLanding() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showCerrarDialog, setShowCerrarDialog] = useState(false);
+  const [fechaCierre, setFechaCierre] = useState<Date | null>(new Date());
+  const [pendingAction, setPendingAction] = useState<"closing" | "reopening" | null>(null);
+  const actionInFlight = useRef(false);
 
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -182,9 +187,12 @@ export default function ProyectosLanding() {
   };
 
   const confirmCerrar = async (fecha: Date) => {
+    if (actionInFlight.current) return;
     const fechaFormateada = toCivilDateString(fecha);
     if (!fechaFormateada) return;
 
+    actionInFlight.current = true;
+    setPendingAction("closing");
     try {
       for (const id of selectedIds) {
         await cerrarProyecto(id, fechaFormateada);
@@ -202,10 +210,16 @@ export default function ProyectosLanding() {
           "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
+    } finally {
+      actionInFlight.current = false;
+      setPendingAction(null);
     }
   };
 
   const handleReabrirSeleccion = async () => {
+    if (actionInFlight.current) return;
+    actionInFlight.current = true;
+    setPendingAction("reopening");
     try {
       for (const id of selectedIds) {
         await reabrirProyecto(id);
@@ -222,6 +236,9 @@ export default function ProyectosLanding() {
           "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
+    } finally {
+      actionInFlight.current = false;
+      setPendingAction(null);
     }
   };
 
@@ -371,12 +388,12 @@ export default function ProyectosLanding() {
               )}
 
               {selectedIds.length > 0 && haySeleccionablesCerrados && puedeEliminar && (
-                <Button size="sm" onClick={handleReabrirSeleccion}>
+                <Button size="sm" onClick={handleReabrirSeleccion} loading={pendingAction === "reopening"} loadingText="Reabriendo..." disabled={pendingAction !== null}>
                   Reabrir selección
                 </Button>
               )}
 
-              <Button variant="secondary" size="sm" onClick={cancelSelection}>
+              <Button variant="secondary" size="sm" onClick={cancelSelection} disabled={pendingAction !== null}>
                 Cancelar
               </Button>
             </div>
@@ -622,11 +639,20 @@ export default function ProyectosLanding() {
         </>
       )}
 
-      <CerrarProyectoDialog
+      <ConfirmDialog
         open={showCerrarDialog}
+        title="Cerrar proyecto"
         onCancel={() => setShowCerrarDialog(false)}
-        onConfirm={confirmCerrar}
-      />
+        onConfirm={() => fechaCierre ? confirmCerrar(fechaCierre) : undefined}
+        confirmText="Confirmar cierre"
+        confirmDisabled={!fechaCierre}
+        loading={pendingAction === "closing"}
+        loadingText="Cerrando..."
+      >
+        <Field label="Fecha de cierre" name="fechaCierre" required>
+          <Calendar value={fechaCierre} onChange={setFechaCierre} className="input" helperText="DD/MM/AAAA" />
+        </Field>
+      </ConfirmDialog>
 
       <SuccessToast
         open={showSuccess}
