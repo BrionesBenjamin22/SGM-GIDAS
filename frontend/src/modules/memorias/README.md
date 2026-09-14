@@ -70,3 +70,10 @@ mutateAsync para que el diálogo cubra toda la operación.
 Los snapshots de trabajos reciben autores congelados (id, rol, nombre_apellido, tipo, activo), y el Excel de la versión incluye investigadores y becarios. La navegación hacia homes y detalles mantiene el contexto de memoria y el contrato de las secciones.
 
 Corrección de alcance ISS-12: los autores de trabajos son únicamente investigadores y becarios. Personal (PTAA/profesional) no puede vincularse como autor. Se mantiene la etiqueta Autores.
+
+## ISS-13: fecha de presentación de trabajos
+
+Los snapshots de trabajos en reuniones exponen fecha_presentacion y sus enlaces
+apuntan al flujo de reuniones con esa fecha. Excel identifica Fecha de
+presentación y clasifica ponencias según el período anual de la memoria.
+Se conserva contexto de navegación y el resto del contrato de snapshots.

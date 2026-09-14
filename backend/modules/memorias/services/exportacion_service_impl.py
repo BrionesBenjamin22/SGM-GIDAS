@@ -416,7 +416,7 @@ class ExportService:
         return (
             TrabajoReunionCientifica.query.options(joinedload(TrabajoReunionCientifica.tipo_reunion_cientifica), selectinload(TrabajoReunionCientifica.autorias))
             .filter(TrabajoReunionCientifica.grupo_utn_id == grupo_id, TrabajoReunionCientifica.deleted_at.is_(None))
-            .order_by(TrabajoReunionCientifica.fecha_inicio.desc(), TrabajoReunionCientifica.id.desc())
+            .order_by(TrabajoReunionCientifica.fecha_presentacion.desc(), TrabajoReunionCientifica.id.desc())
             .all()
         )
 
@@ -1369,7 +1369,7 @@ class ExportService:
                 idx,
                 item.get("nombre_reunion") or "-",
                 item.get("procedencia") or "-",
-                cls._format_date(item.get("fecha_inicio")),
+                cls._format_date(item.get("fecha_presentacion")),
                 cls._autores_texto(item.get("autores", [])),
                 item.get("titulo_trabajo") or "-",
             ]
@@ -1388,7 +1388,7 @@ class ExportService:
             reuniones_nacionales_header_row,
             reuniones_nacionales_end_row,
             "7.1.- Reunion Cientifica Nacional con Referato",
-            ["Nro.", "Nombre reunion", "Ciudad / Pais", "Fecha inicio", "Autores", "Titulo trabajo"],
+            ["Nro.", "Nombre reunion", "Ciudad / Pais", "Fecha de presentación", "Autores", "Titulo trabajo"],
             reuniones_nacionales,
             chars_per_line=32,
         )
@@ -1403,7 +1403,7 @@ class ExportService:
             reuniones_internacionales_header_row,
             reuniones_internacionales_end_row,
             "7.2.- Reunion Cientifica Internacional",
-            ["Nro.", "Nombre reunion", "Ciudad / Pais", "Fecha inicio", "Autores", "Titulo trabajo"],
+            ["Nro.", "Nombre reunion", "Ciudad / Pais", "Fecha de presentación", "Autores", "Titulo trabajo"],
             reuniones_internacionales,
             chars_per_line=32,
         )
@@ -1817,7 +1817,7 @@ class ExportService:
         reuniones_grouped = {}
         for trabajo in trabajos_reunion:
             tipo = trabajo.tipo_reunion_cientifica.nombre if trabajo.tipo_reunion_cientifica else "Sin tipo definido"
-            reuniones_grouped.setdefault(tipo, []).append([len(reuniones_grouped.get(tipo, [])) + 1, trabajo.titulo_trabajo, trabajo.nombre_reunion, trabajo.procedencia, trabajo.fecha_inicio, cls._autores_texto([a.serialize() for a in trabajo.autorias])])
+            reuniones_grouped.setdefault(tipo, []).append([len(reuniones_grouped.get(tipo, [])) + 1, trabajo.titulo_trabajo, trabajo.nombre_reunion, trabajo.procedencia, trabajo.fecha_presentacion, cls._autores_texto([a.serialize() for a in trabajo.autorias])])
         row = cls._write_grouped_tables(ws, row, "7", "TRABAJOS PRESENTADOS EN CONGRESOS Y REUNIONES CIENTIFICAS CON REFERATO", list(reuniones_grouped.items()), ["Nro.", "Titulo del trabajo", "Reunion cientifica", "Institucion de procedencia", "Fecha de presentacion", "Autores"], merge_span=10, date_cols={5})
         articulos_rows = [[idx, articulo.titulo, articulo.descripcion, articulo.fecha_publicacion] for idx, articulo in enumerate(articulos, start=1)]
         row = cls._write_table(ws, row, "8.- TRABAJOS REALIZADOS Y PUBLICADOS", ["Nro.", "Titulo del articulo", "Descripcion o sintesis", "Fecha de publicacion"], articulos_rows, merge_span=8, date_cols={4})
