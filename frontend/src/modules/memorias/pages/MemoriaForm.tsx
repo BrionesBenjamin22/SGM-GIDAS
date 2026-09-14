@@ -97,7 +97,7 @@ export default function MemoriaForm() {
                 setErrors((prev) => ({ ...prev, periodoInicio: "" }));
               }
             }}
-            helperText={errors.periodoInicio || "DD/MM/AAAA"}
+            helperText="DD/MM/AAAA"
             className={inputClass("periodoInicio")}
           />
         </Field>
@@ -111,7 +111,7 @@ export default function MemoriaForm() {
                 setErrors((prev) => ({ ...prev, periodoFin: "" }));
               }
             }}
-            helperText={errors.periodoFin || "DD/MM/AAAA"}
+            helperText="DD/MM/AAAA"
             className={inputClass("periodoFin")}
           />
         </Field>

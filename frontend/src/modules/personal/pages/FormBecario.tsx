@@ -368,7 +368,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
           className={`input ${
             errors.fechaAltaGrupo ? "!border-red-500 !ring-2 !ring-red-500" : ""
           }`}
-          helperText={errors.fechaAltaGrupo ?? "DD/MM/AAAA"}
+          helperText="DD/MM/AAAA"
         />
       </Field>
 
@@ -518,9 +518,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
                           ? "!border-red-500 !ring-2 !ring-red-500"
                           : ""
                       }`}
-                      helperText={
-                        errors[`beca_${index}_fechaInicio`] ?? "DD/MM/AAAA"
-                      }
+                      helperText="DD/MM/AAAA"
                     />
                   </Field>
 

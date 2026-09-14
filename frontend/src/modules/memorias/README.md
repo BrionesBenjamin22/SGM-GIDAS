@@ -46,3 +46,10 @@ heredados. Cuerpos de texto no estructurados no se muestran al usuario.
 - Los fallos de guardado y eliminacion muestran mensajes accionables.
 - El detalle inexistente se representa como ausencia de datos sin exponer detalles
   internos.
+
+## Validaciones de fechas sin duplicados (ISS-09)
+
+Los errores del formulario se muestran una sola vez mediante Field. El
+helperText de Calendar/DatePicker contiene exclusivamente ayuda de formato o
+rango; no recibe el mensaje de error del formulario. Se conservan los límites,
+las reglas de validación y el foco del primer campo inválido.

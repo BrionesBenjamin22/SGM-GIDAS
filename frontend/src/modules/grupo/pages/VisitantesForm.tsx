@@ -246,7 +246,7 @@ export default function VisitantesForm() {
               if (date) clearError("fecha");
             }}
             className={inputClass("fecha")}
-            helperText={errors.fecha ?? "DD/MM/AAAA"}
+            helperText="DD/MM/AAAA"
           />
         </Field>
 

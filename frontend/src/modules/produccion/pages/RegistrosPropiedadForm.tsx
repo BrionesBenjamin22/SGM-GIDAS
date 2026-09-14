@@ -274,7 +274,7 @@ export default function RegistrosPropiedadForm() {
               });
               if (dt) clearError("fecha_registro");
             }}
-            helperText={errors.fecha_registro ?? "DD/MM/AAAA"}
+            helperText="DD/MM/AAAA"
             className={inputClass("fecha_registro")}
           />
         </Field>

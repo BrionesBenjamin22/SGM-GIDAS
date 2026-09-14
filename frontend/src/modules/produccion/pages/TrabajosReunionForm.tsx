@@ -416,7 +416,7 @@ export default function TrabajoReunionForm() {
               if (date) clearError("fechaInicio");
             }}
             className={inputClass("fechaInicio")}
-            helperText={errors.fechaInicio ?? "DD/MM/AAAA"}
+            helperText="DD/MM/AAAA"
           />
         </Field>
 

@@ -139,3 +139,10 @@ Pruebas: `weeklyHours.test.ts`, `personalCatalogForm.test.ts` (formulario real
 con harness de hooks/JSX, no navegador), `personalAlta.test.ts` y
 `formValidation.test.ts`. Comprobar manualmente en Docker altas/ediciones de las
 tres clases, límites 168/169/220 y un tipo con nombre arbitrario del catálogo.
+
+## Validaciones de fechas sin duplicados (ISS-09)
+
+Los errores del formulario se muestran una sola vez mediante Field. El
+helperText de Calendar/DatePicker contiene exclusivamente ayuda de formato o
+rango; no recibe el mensaje de error del formulario. Se conservan los límites,
+las reglas de validación y el foco del primer campo inválido.

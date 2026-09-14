@@ -315,11 +315,8 @@ export default function FormDocenciaInvestigador() {
                   if (date) clearError("fechaInicio");
                 }}
                 className={inputClass("fechaInicio")}
-                helperText={errors.fechaInicio ?? "DD/MM/AAAA"}
+                helperText="DD/MM/AAAA"
               />
-              {errors.fechaInicio && (
-                <p className="mt-1 text-sm text-red-500">{errors.fechaInicio}</p>
-              )}
             </>
           </Field>
 
@@ -333,11 +330,8 @@ export default function FormDocenciaInvestigador() {
                 }}
                 minDate={fechaInicio ?? undefined}
                 className={inputClass("fechaFin")}
-                helperText={errors.fechaFin ?? "DD/MM/AAAA"}
+                helperText="DD/MM/AAAA"
               />
-              {errors.fechaFin && (
-                <p className="mt-1 text-sm text-red-500">{errors.fechaFin}</p>
-              )}
             </>
           </Field>
         </div>

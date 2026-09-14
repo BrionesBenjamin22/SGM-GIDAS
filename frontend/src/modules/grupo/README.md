@@ -80,3 +80,10 @@ Los botones se condicionan con las capacidades del usuario y el estado activo
 de la entidad. Los errores de carga, guardado, eliminacion y exportacion usan el
 normalizador compartido y mensajes accionables; no se reflejan estructuras
 desconocidas del servidor ni se utilizan alertas del navegador.
+
+## Validaciones de fechas sin duplicados (ISS-09)
+
+Los errores del formulario se muestran una sola vez mediante Field. El
+helperText de Calendar/DatePicker contiene exclusivamente ayuda de formato o
+rango; no recibe el mensaje de error del formulario. Se conservan los límites,
+las reglas de validación y el foco del primer campo inválido.

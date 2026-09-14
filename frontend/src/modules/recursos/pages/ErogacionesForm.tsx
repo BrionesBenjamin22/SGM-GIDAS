@@ -331,7 +331,7 @@ export default function ErogacionesForm() {
               }));
               if (dt) clearError("fecha");
             }}
-            helperText={errors.fecha ?? "DD/MM/AAAA"}
+            helperText="DD/MM/AAAA"
             className={inputClass("fecha")}
             disabled={isEdit}
           />

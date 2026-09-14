@@ -363,7 +363,7 @@ export default function TransferenciasForm() {
               }));
               if (dt) clearError("fechaInicio");
             }}
-            helperText={errors.fechaInicio ?? "DD/MM/AAAA"}
+            helperText="DD/MM/AAAA"
             className={inputClass("fechaInicio")}
           />
         </Field>
@@ -378,7 +378,7 @@ export default function TransferenciasForm() {
               }));
               clearError("fechaFin");
             }}
-            helperText={errors.fechaFin ?? "Opcional"}
+            helperText="Opcional"
             className={inputClass("fechaFin")}
           />
         </Field>

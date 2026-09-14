@@ -199,7 +199,7 @@ export default function DistincionesForm() {
               if (date) clearError("fecha");
             }}
             className={inputClass("fecha")}
-            helperText={errors.fecha ?? "DD/MM/AAAA"}
+            helperText="DD/MM/AAAA"
           />
         </Field>
 

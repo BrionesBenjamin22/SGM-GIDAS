@@ -283,10 +283,7 @@ export default function EquipamientoForm() {
 
               if (dt) clearError("fecha_incorporacion");
             }}
-            helperText={
-              errors.fecha_incorporacion ??
-              "Ingrese una fecha entre el 01/01/2010 y la fecha actual"
-            }
+            helperText="Ingrese una fecha entre el 01/01/2010 y la fecha actual"
             className={inputClass("fecha_incorporacion")}
           />
         </Field>

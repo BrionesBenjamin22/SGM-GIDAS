@@ -69,3 +69,11 @@ de cada operacion.
 - Las eliminaciones y desvinculaciones requieren confirmacion y feedback visible.
 - La validacion tecnica del modulo comprende pruebas unitarias compartidas,
   `npm run typecheck` y `npm run build`.
+
+## Validaciones de fechas sin duplicados (ISS-09)
+
+Los errores del formulario se muestran una sola vez mediante Field. El
+helperText de Calendar/DatePicker contiene exclusivamente ayuda de formato o
+rango; no recibe el mensaje de error del formulario. Se conservan los límites,
+las reglas de validación y el foco del primer campo inválido.
+Docencia tampoco renderiza párrafos manuales para repetir errores de fechas.

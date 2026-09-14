@@ -10,6 +10,21 @@ semántico cuando se publica una entrega.
 
 ### Corregido
 
+#### ISS-09: evitar validaciones de fechas duplicadas
+
+- Corregidos 19 campos de fechas en 15 formularios de Recursos, Personal,
+  Proyectos, Grupo, Memorias, Transferencia y Produccion.
+- Field muestra el error una sola vez; Calendar/DatePicker conserva la ayuda
+  de formato o rango. Eliminados los parrafos redundantes de fechas de Docencia.
+- Documentadas las convenciones de validacion en los siete modulos afectados.
+- Los estados de botones quedan para la siguiente etapa acordada.
+
+Validaciones: 83 tests frontend, typecheck, build de produccion y diff check
+correctos. Comprobacion de renderizado Field/Calendar: un solo mensaje y
+role=alert en 20 campos con ayuda literal, incluidos los 19 corregidos.
+Pruebas de navegador a cargo del usuario; sin cambios de contrato backend.
+Se preservan cambios previos ajenos.
+
 #### ISS-08 e ISS-10 — Seguimiento de listado, validaciones y fecha de fin
 
 - Investigador invalida Personal y candidatos de proyectos después de guardar;

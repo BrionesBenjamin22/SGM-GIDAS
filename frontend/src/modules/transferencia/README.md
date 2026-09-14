@@ -67,3 +67,10 @@ El mock de transferencia solo se habilita en desarrollo cuando
 `VITE_ENABLE_TRANSFERENCIA_MOCK=true`. Los datos de `localStorage` se parsean de
 forma defensiva y nunca se usan como fallback automatico por falta de configuracion
 de API ni en builds de produccion.
+
+## Validaciones de fechas sin duplicados (ISS-09)
+
+Los errores del formulario se muestran una sola vez mediante Field. El
+helperText de Calendar/DatePicker contiene exclusivamente ayuda de formato o
+rango; no recibe el mensaje de error del formulario. Se conservan los límites,
+las reglas de validación y el foco del primer campo inválido.

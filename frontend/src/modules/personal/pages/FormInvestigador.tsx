@@ -371,7 +371,7 @@ export default function FormInvestigador({
           className={`input ${
             errors.fechaAltaGrupo ? "!border-red-500 !ring-2 !ring-red-500" : ""
           }`}
-          helperText={errors.fechaAltaGrupo ?? "DD/MM/AAAA"}
+          helperText="DD/MM/AAAA"
         />
       </Field>
 

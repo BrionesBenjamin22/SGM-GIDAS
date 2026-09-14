@@ -99,3 +99,10 @@ Las acciones de alta, cierre, reapertura, edicion y baja se condicionan con las
 capacidades del usuario, sin considerar la interfaz como unica barrera. Los errores
 se normalizan mediante el helper compartido y no se reflejan estructuras desconocidas
 del servidor. No se utiliza HTML inyectado, storage del navegador ni `fetch` directo.
+
+## Validaciones de fechas sin duplicados (ISS-09)
+
+Los errores del formulario se muestran una sola vez mediante Field. El
+helperText de Calendar/DatePicker contiene exclusivamente ayuda de formato o
+rango; no recibe el mensaje de error del formulario. Se conservan los límites,
+las reglas de validación y el foco del primer campo inválido.

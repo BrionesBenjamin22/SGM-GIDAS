@@ -317,7 +317,7 @@ export default function DocumentacionForm() {
               }));
               if (dt) clearError("fecha");
             }}
-            helperText={errors.fecha ?? "DD/MM/AAAA"}
+            helperText="DD/MM/AAAA"
             className={inputClass("fecha")}
           />
         </Field>
