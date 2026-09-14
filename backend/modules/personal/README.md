@@ -138,3 +138,9 @@ El listado por defecto y `activos=true` requieren `activo=true` y ausencia
 de baja lógica. `activos=false` incluye inactivos o dados de baja; `all`
 conserva todos. Esto evita ofrecer investigadores inactivos como candidatos
 de coordinador sin alterar el hook compartido del frontend.
+
+## ISS-12: autoría de integrantes
+
+Las relaciones inversas de investigadores con trabajos se obtienen de autorias_reunion/autorias_revista. Se mantienen los datos de trabajos en la serialización de investigadores sin depender de tablas de asociación exclusivas. Investigadores y becarios son los únicos orígenes válidos de la colección común de autores de Producción; no se fusionan las tablas de personal.
+
+Corrección de alcance ISS-12: los autores de trabajos son únicamente investigadores y becarios. Personal (PTAA/profesional) no puede vincularse como autor. Se mantiene la etiqueta Autores.

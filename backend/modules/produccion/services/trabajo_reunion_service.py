@@ -3,7 +3,10 @@ from datetime import date, datetime
 from sqlalchemy import or_
 
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
-from modules.personal.models.personal import Investigador
+from modules.produccion.models.trabajo_autor import TrabajoReunionAutor
+from modules.produccion.services.trabajo_autores_service import (
+    validar_autores, validar_referencias, sincronizar_autores, filtrar_por_autor,
+)
 from modules.produccion.models.trabajo_reunion import (
     TrabajoReunionCientifica,
     TipoReunion,
@@ -165,29 +168,9 @@ class TrabajoReunionCientificaService:
             )
 
     @staticmethod
-    def _validar_investigadores_ids(investigadores_ids):
-        if not isinstance(investigadores_ids, list) or not investigadores_ids:
-            raise ValidationError("investigadores_ids debe ser una lista no vacia")
-
-        ids = []
-        vistos = set()
-        for investigador_id in investigadores_ids:
-            investigador_id = TrabajoReunionCientificaService._validar_id(
-                investigador_id, "investigadores_ids"
-            )
-            if investigador_id in vistos:
-                raise ValidationError(
-                    "investigadores_ids no puede contener IDs repetidos"
-                )
-            vistos.add(investigador_id)
-            ids.append(investigador_id)
-
-        return ids
-
-    @staticmethod
     def get_all(filters: dict = None):
         filters = filters or {}
-        query = TrabajoReunionCientifica.query
+        query = filtrar_por_autor(TrabajoReunionCientifica.query, TrabajoReunionCientifica, TrabajoReunionAutor, filters)
 
         activos = TrabajoReunionCientificaService._normalizar_activos(
             filters.get("activos")
@@ -208,15 +191,6 @@ class TrabajoReunionCientificaService:
             query = query.filter(
                 TrabajoReunionCientifica.deleted_at.is_(None),
                 TrabajoReunionCientifica.activo.is_(True)
-            )
-
-        investigador_id = TrabajoReunionCientificaService._parse_int_filter(
-            filters.get("investigador_id"), "investigador_id"
-        )
-        if investigador_id is not None:
-            query = query.join(TrabajoReunionCientifica.investigadores).filter(
-                Investigador.id == investigador_id,
-                Investigador.deleted_at.is_(None)
             )
 
         grupo_utn_id = TrabajoReunionCientificaService._parse_int_filter(
@@ -278,6 +252,8 @@ class TrabajoReunionCientificaService:
             fecha_inicio,
         )
 
+        autores = validar_autores(data.get("autores", []))
+
         trabajo = TrabajoReunionCientifica(
             titulo_trabajo=titulo,
             nombre_reunion=nombre_reunion,
@@ -288,8 +264,10 @@ class TrabajoReunionCientificaService:
             created_by=user_id
         )
 
-        db.session.add(trabajo)
         try:
+            db.session.add(trabajo)
+            db.session.flush()
+            sincronizar_autores(trabajo, autores, TrabajoReunionAutor, "trabajo_reunion_cientifica", user_id)
             db.session.commit()
         except Exception:
             db.session.rollback()
@@ -302,6 +280,7 @@ class TrabajoReunionCientificaService:
         TrabajoReunionCientificaService._validar_payload(data)
         TrabajoReunionCientificaService._validar_user_id(user_id)
         trabajo = TrabajoReunionCientificaService._get_activo_or_404(trabajo_id)
+        autores = validar_autores(data["autores"], trabajo.autorias) if "autores" in data else None
         cambios = {}
 
         fecha_inicio = trabajo.fecha_inicio
@@ -348,64 +327,66 @@ class TrabajoReunionCientificaService:
             trabajo.id,
         )
 
-        cambio = AuditoriaService.construir_cambio(
-            trabajo.fecha_inicio,
-            fecha_inicio
-        )
-        if cambio:
-            cambios["fecha_inicio"] = cambio
-            trabajo.fecha_inicio = fecha_inicio
-
-        cambio = AuditoriaService.construir_cambio(
-            trabajo.titulo_trabajo,
-            titulo
-        )
-        if cambio:
-            cambios["titulo_trabajo"] = cambio
-            trabajo.titulo_trabajo = titulo
-
-        cambio = AuditoriaService.construir_cambio(
-            trabajo.nombre_reunion,
-            nombre_reunion
-        )
-        if cambio:
-            cambios["nombre_reunion"] = cambio
-            trabajo.nombre_reunion = nombre_reunion
-
-        cambio = AuditoriaService.construir_cambio(
-            trabajo.procedencia,
-            procedencia
-        )
-        if cambio:
-            cambios["procedencia"] = cambio
-            trabajo.procedencia = procedencia
-
-        cambio = AuditoriaService.construir_cambio(
-            trabajo.tipo_reunion_id,
-            tipo_reunion_id
-        )
-        if cambio:
-            cambios["tipo_reunion_id"] = cambio
-            trabajo.tipo_reunion_id = tipo_reunion_id
-
-        cambio = AuditoriaService.construir_cambio(
-            trabajo.grupo_utn_id,
-            grupo_utn_id
-        )
-        if cambio:
-            cambios["grupo_utn_id"] = cambio
-            trabajo.grupo_utn_id = grupo_utn_id
-
-        if cambios:
-            trabajo.mark_updated(user_id)
-            AuditoriaService.registrar_cambios(
-                entidad="trabajo_reunion_cientifica",
-                registro_id=trabajo.id,
-                cambios=cambios,
-                user_id=user_id
-            )
-
         try:
+            cambio = AuditoriaService.construir_cambio(
+                trabajo.fecha_inicio,
+                fecha_inicio
+            )
+            if cambio:
+                cambios["fecha_inicio"] = cambio
+                trabajo.fecha_inicio = fecha_inicio
+
+            cambio = AuditoriaService.construir_cambio(
+                trabajo.titulo_trabajo,
+                titulo
+            )
+            if cambio:
+                cambios["titulo_trabajo"] = cambio
+                trabajo.titulo_trabajo = titulo
+
+            cambio = AuditoriaService.construir_cambio(
+                trabajo.nombre_reunion,
+                nombre_reunion
+            )
+            if cambio:
+                cambios["nombre_reunion"] = cambio
+                trabajo.nombre_reunion = nombre_reunion
+
+            cambio = AuditoriaService.construir_cambio(
+                trabajo.procedencia,
+                procedencia
+            )
+            if cambio:
+                cambios["procedencia"] = cambio
+                trabajo.procedencia = procedencia
+
+            cambio = AuditoriaService.construir_cambio(
+                trabajo.tipo_reunion_id,
+                tipo_reunion_id
+            )
+            if cambio:
+                cambios["tipo_reunion_id"] = cambio
+                trabajo.tipo_reunion_id = tipo_reunion_id
+
+            cambio = AuditoriaService.construir_cambio(
+                trabajo.grupo_utn_id,
+                grupo_utn_id
+            )
+            if cambio:
+                cambios["grupo_utn_id"] = cambio
+                trabajo.grupo_utn_id = grupo_utn_id
+
+            if cambios:
+                trabajo.mark_updated(user_id)
+                AuditoriaService.registrar_cambios(
+                    entidad="trabajo_reunion_cientifica",
+                    registro_id=trabajo.id,
+                    cambios=cambios,
+                    user_id=user_id
+                )
+
+            if autores is not None:
+                sincronizar_autores(trabajo, autores, TrabajoReunionAutor, "trabajo_reunion_cientifica", user_id)
             db.session.commit()
         except Exception:
             db.session.rollback()
@@ -446,98 +427,13 @@ class TrabajoReunionCientificaService:
         return trabajo.serialize()
 
     @staticmethod
-    def vincular_investigadores(
-        trabajo_id: int,
-        investigadores_ids: list[int],
-        user_id: int | None = None
-    ):
+    def desvincular_autores(trabajo_id, autores, user_id):
+        TrabajoReunionCientificaService._validar_user_id(user_id)
         trabajo = TrabajoReunionCientificaService._get_activo_or_404(trabajo_id)
-        investigadores_ids = (
-            TrabajoReunionCientificaService._validar_investigadores_ids(
-                investigadores_ids
-            )
-        )
-
-        investigadores = (
-            db.session.query(Investigador)
-            .filter(
-                Investigador.id.in_(investigadores_ids),
-                Investigador.deleted_at.is_(None)
-            )
-            .all()
-        )
-
-        if len(investigadores) != len(investigadores_ids):
-            raise NotFoundError("Uno o mas investigadores no existen o estan eliminados")
-
-        hubo_cambios = False
-        for inv in investigadores:
-            if inv not in trabajo.investigadores:
-                trabajo.investigadores.append(inv)
-                hubo_cambios = True
-                AuditoriaService.registrar_evento_relacion(
-                    entidad="trabajo_reunion_cientifica",
-                    registro_id=trabajo.id,
-                    relacion="investigadores",
-                    accion="vincular",
-                    detalle={
-                        "investigador_id": inv.id,
-                        "nombre_apellido": inv.nombre_apellido
-                    },
-                    user_id=user_id
-                )
-
-        if hubo_cambios:
-            trabajo.mark_updated(user_id)
-
-        try:
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-            raise
-
-        return trabajo.serialize()
-
-    @staticmethod
-    def desvincular_investigadores(
-        trabajo_id: int,
-        investigadores_ids: list[int],
-        user_id: int | None = None
-    ):
-        trabajo = TrabajoReunionCientificaService._get_activo_or_404(trabajo_id)
-        investigadores_ids = (
-            TrabajoReunionCientificaService._validar_investigadores_ids(
-                investigadores_ids
-            )
-        )
-
-        hubo_cambios = False
-        for inv in trabajo.investigadores[:]:
-            if inv.id in investigadores_ids:
-                trabajo.investigadores.remove(inv)
-                hubo_cambios = True
-                AuditoriaService.registrar_evento_relacion(
-                    entidad="trabajo_reunion_cientifica",
-                    registro_id=trabajo.id,
-                    relacion="investigadores",
-                    accion="desvincular",
-                    detalle={
-                        "investigador_id": inv.id,
-                        "nombre_apellido": inv.nombre_apellido
-                    },
-                    user_id=user_id
-                )
-
-        if hubo_cambios:
-            trabajo.mark_updated(user_id)
-
-        try:
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-            raise
-
-        return trabajo.serialize()
+        claves = set(validar_referencias(autores))
+        restantes = [{"rol": a.rol, "id": a.integrante.id} for a in trabajo.autorias
+                     if (a.rol, a.integrante.id) not in claves]
+        return TrabajoReunionCientificaService.update(trabajo_id, {"autores": restantes}, user_id)
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
@@ -547,11 +443,7 @@ class TrabajoReunionCientificaService:
         for trabajo in trabajos:
             if not esta_en_periodo_memoria(memoria_version, trabajo.fecha_inicio):
                 continue
-            investigadores_participantes = ", ".join(sorted([
-                investigador.nombre_apellido
-                for investigador in trabajo.investigadores
-                if getattr(investigador, "deleted_at", None) is None
-            ]))
+            autores = [autor.serialize() for autor in trabajo.autorias]
 
             snapshot = TrabajoReunionCientificaMemoriaVersion(
                 memoria_version_id=memoria_version.id,
@@ -570,7 +462,7 @@ class TrabajoReunionCientificaService:
                     trabajo.grupo_utn.nombre_sigla_grupo
                     if trabajo.grupo_utn else None
                 ),
-                investigadores_participantes=investigadores_participantes,
+                autores=autores,
                 created_by=user_id
             )
             db.session.add(snapshot)

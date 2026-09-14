@@ -91,7 +91,8 @@ export default function TrabajosRevistasLanding() {
         !query ||
         String(t.titulo_trabajo ?? "").toLowerCase().includes(query) ||
         String(t.nombre_revista ?? "").toLowerCase().includes(query) ||
-        String(t.fecha ?? "").toLowerCase().includes(query);
+        String(t.fecha ?? "").toLowerCase().includes(query) ||
+        t.autores?.some(autor => autor.nombre_apellido.toLowerCase().includes(query));
 
       const matchRevista =
         !filters.revista ||

@@ -2,15 +2,11 @@ import datetime
 import re
 from sqlalchemy.orm import validates
 from extension import db
+from modules.produccion.models.trabajo_autor import TrabajoRevistaAutor
 from modules.produccion.models.trabajo_reunion import TipoReunion
 from modules.shared.models.audit_mixin import AuditMixin
 
 
-investigador_x_trabajo_revista = db.Table(
-    'investigador_x_trabajo_revista',
-    db.Column('investigador_id', db.Integer, db.ForeignKey('investigador.id'), primary_key=True),
-    db.Column('trabajos_revista_id', db.Integer, db.ForeignKey('trabajos_revista.id'), primary_key=True)
-)
 
 class TrabajosRevistasReferato(db.Model, AuditMixin):
     __tablename__ = 'trabajos_revista'
@@ -45,10 +41,8 @@ class TrabajosRevistasReferato(db.Model, AuditMixin):
         back_populates='trabajos_revistas'
     )
 
-    investigadores = db.relationship(
-        'Investigador',
-        secondary=investigador_x_trabajo_revista,
-        back_populates='trabajos_revistas'
+    autorias = db.relationship(
+        "TrabajoRevistaAutor", back_populates="trabajo", cascade="all, delete-orphan", lazy="selectin"
     )
 
     def serialize(self):
@@ -59,14 +53,7 @@ class TrabajosRevistasReferato(db.Model, AuditMixin):
                 self.grupo_utn.nombre_sigla_grupo
                 if self.grupo_utn else None
             ),
-            "investigadores": [
-                {
-                    "id": inv.id,
-                    "nombre_apellido": inv.nombre_apellido
-                }
-                for inv in self.investigadores
-                if inv.deleted_at is None
-            ],
+            "autores": [autor.serialize() for autor in self.autorias],
             "tipo_reunion": (
                 {
                     "id": self.tipo_reunion.id,
@@ -115,7 +102,7 @@ class TrabajosRevistasReferatoMemoriaVersion(db.Model, AuditMixin):
         nullable=False
     )
     tipo_reunion_nombre = db.Column(db.String(100), nullable=True)
-    investigadores_participantes = db.Column(db.Text, nullable=True)
+    autores = db.Column(db.JSON, nullable=False, default=list)
 
     memoria_version = db.relationship("MemoriaVersion", lazy="joined")
     trabajo_revista = db.relationship("TrabajosRevistasReferato", lazy="joined")
@@ -132,9 +119,7 @@ class TrabajosRevistasReferatoMemoriaVersion(db.Model, AuditMixin):
 
     def serialize(self):
         data = self.to_dict()
-        data["investigadores_participantes"] = (
-            self.investigadores_participantes or ""
-        )
+        data["autores"] = self.autores or []
         return data
     
 

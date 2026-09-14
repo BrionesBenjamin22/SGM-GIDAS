@@ -1,3 +1,4 @@
+import type { AutorReferencia, IntegranteAutor } from "@/modules/produccion/services/trabajoAutoresServices";
 import { http } from "@/lib/http";
 
 export interface TrabajoRevista {
@@ -23,10 +24,7 @@ export interface TrabajoRevista {
     id: number;
     nombre: string;
   } | null;
-  investigadores?: {
-    id: number;
-    nombre_apellido: string;
-  }[];
+  autores: IntegranteAutor[];
 }
 
 export interface HistorialTrabajoRevistaItem {
@@ -40,6 +38,7 @@ export interface HistorialTrabajoRevistaItem {
 }
 
 export interface TrabajoRevistaPayload {
+  autores: AutorReferencia[];
   titulo_trabajo: string;
   nombre_revista: string;
   editorial: string;
@@ -78,7 +77,7 @@ const normalizeTrabajoRevista = (item: TrabajoRevistaBackend): TrabajoRevista =>
   fecha: item.fecha ?? "",
   grupo: item.grupo ?? null,
   tipo_reunion: item.tipo_reunion ?? null,
-  investigadores: Array.isArray(item.investigadores) ? item.investigadores : [],
+  autores: Array.isArray(item.autores) ? item.autores : [],
 });
 
 export const getTrabajosRevistas = async (
@@ -154,6 +153,7 @@ export const updateTrabajoRevista = async (
   data: Partial<TrabajoRevistaPayload>
 ): Promise<TrabajoRevista> => {
   const body: Record<string, unknown> = {};
+  if ("autores" in data) body.autores = data.autores;
 
   if ("titulo_trabajo" in data) body.titulo_trabajo = data.titulo_trabajo;
   if ("nombre_revista" in data) body.nombre_revista = data.nombre_revista;
@@ -175,26 +175,4 @@ export const updateTrabajoRevista = async (
 export const deleteTrabajoRevista = async (id: number) =>
   http<{ message: string }>(`/trabajos-revistas/${id}`, {
     method: "DELETE",
-  });
-
-export const vincularInvestigadoresRevista = async (
-  trabajoId: number,
-  investigadoresIds: number[]
-) =>
-  http<{ message: string }>(`/trabajos-revistas/${trabajoId}/investigadores/`, {
-    method: "POST",
-    body: JSON.stringify({
-      investigadores_ids: investigadoresIds,
-    }),
-  });
-
-export const desvincularInvestigadoresRevista = async (
-  trabajoId: number,
-  investigadoresIds: number[]
-) =>
-  http<{ message: string }>(`/trabajos-revistas/${trabajoId}/investigadores/`, {
-    method: "DELETE",
-    body: JSON.stringify({
-      investigadores_ids: investigadoresIds,
-    }),
   });

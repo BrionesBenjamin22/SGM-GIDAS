@@ -1,13 +1,9 @@
+import type { AutorReferencia, IntegranteAutor } from "@/modules/produccion/services/trabajoAutoresServices";
 import { http } from "@/lib/http";
 
 export interface TipoReunion {
   id: number;
   nombre: string;
-}
-
-export interface InvestigadorResumen {
-  id: number;
-  nombre_apellido: string;
 }
 
 export interface TrabajoReunion {
@@ -27,7 +23,7 @@ export interface TrabajoReunion {
   procedencia: string;
   fecha_inicio: string;
   tipo_reunion: TipoReunion | null;
-  investigadores: InvestigadorResumen[];
+  autores: IntegranteAutor[];
   grupo_utn: string | null;
 }
 
@@ -42,6 +38,7 @@ export interface HistorialTrabajoReunionItem {
 }
 
 export interface TrabajoReunionPayload {
+  autores: AutorReferencia[];
   titulo_trabajo: string;
   nombre_reunion: string;
   procedencia: string;
@@ -75,7 +72,7 @@ const normalizeTrabajoReunion = (item: TrabajoReunionBackend): TrabajoReunion =>
   procedencia: item.procedencia ?? "",
   fecha_inicio: item.fecha_inicio ?? "",
   tipo_reunion: item.tipo_reunion ?? null,
-  investigadores: Array.isArray(item.investigadores) ? item.investigadores : [],
+  autores: Array.isArray(item.autores) ? item.autores : [],
   grupo_utn: item.grupo_utn ?? null,
 });
 
@@ -154,6 +151,7 @@ export const updateTrabajoReunion = async (
   data: Partial<TrabajoReunionPayload>
 ): Promise<TrabajoReunion> => {
   const body: Record<string, unknown> = {};
+  if ("autores" in data) body.autores = data.autores;
 
   if ("titulo_trabajo" in data) body.titulo_trabajo = data.titulo_trabajo;
   if ("nombre_reunion" in data) body.nombre_reunion = data.nombre_reunion;
@@ -174,34 +172,4 @@ export const deleteTrabajoReunion = async (id: number) => {
   return http<{ message: string }>(`/trabajos-reunion-cientifica/${id}`, {
     method: "DELETE",
   });
-};
-
-export const vincularInvestigadoresTrabajo = async (
-  trabajoId: number,
-  investigadoresIds: number[]
-) => {
-  return http<{ message: string }>(
-    `/trabajos-reunion-cientifica/${trabajoId}/investigadores/`,
-    {
-      method: "POST",
-      body: JSON.stringify({
-        investigadores_ids: investigadoresIds,
-      }),
-    }
-  );
-};
-
-export const desvincularInvestigadoresTrabajo = async (
-  trabajoId: number,
-  investigadoresIds: number[]
-) => {
-  return http<{ message: string }>(
-    `/trabajos-reunion-cientifica/${trabajoId}/investigadores/`,
-    {
-      method: "DELETE",
-      body: JSON.stringify({
-        investigadores_ids: investigadoresIds,
-      }),
-    }
-  );
 };

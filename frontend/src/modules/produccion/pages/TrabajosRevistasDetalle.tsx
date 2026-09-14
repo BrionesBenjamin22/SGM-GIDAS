@@ -1,3 +1,4 @@
+import { autorEtiqueta } from "@/modules/produccion/services/trabajoAutoresServices";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -61,10 +62,10 @@ export default function TrabajoRevistaDetalle() {
 
   if (isLoading) return <p className="text-slate-500">Cargando...</p>;
   if (isError || !data) {
-    return <p className="text-slate-500">Trabajo en revista no encontrado.</p>;
+    return <p className="text-slate-500">Lo sentimos, no pudimos recuperar la información. Intente nuevamente.</p>;
   }
 
-  const isDeleted = !!data.deleted_at;
+  const isDeleted = !!data.deleted_at || data.activo === false;
 
   const formatHistorialValue = (
     item: { campo?: string },
@@ -86,14 +87,16 @@ export default function TrabajoRevistaDetalle() {
       return tipos.find((tipo) => tipo.id === asNumber)?.nombre ?? String(value);
     }
 
-    if (item.campo === "investigadores" && typeof value === "object" && value !== null) {
+    if (item.campo === "autores" && typeof value === "object" && value !== null) {
       const payload = value as {
-        detalle?: { nombre_apellido?: string };
+        accion?: string;
+        detalle?: { nombre_apellido?: string; tipo?: string };
       };
       if (kind === "anterior") {
         return "-";
       }
-      return payload.detalle?.nombre_apellido ?? "Investigador";
+      return payload.detalle?.nombre_apellido
+        ? `${payload.accion === "desvincular" ? "Desvinculado" : "Vinculado"}: ${payload.detalle.nombre_apellido}${payload.detalle.tipo ? ` (${payload.detalle.tipo})` : ""}` : "Autor";
     }
 
     if (typeof value === "object") {
@@ -107,10 +110,7 @@ export default function TrabajoRevistaDetalle() {
     return String(value);
   };
 
-  const investigadores =
-    data.investigadores?.length
-      ? data.investigadores.map((i) => i.nombre_apellido).join(", ")
-      : "-";
+  const autores = data.autores?.length ? data.autores.map(autorEtiqueta).join(", ") : "-";
 
   return (
     <>
@@ -172,8 +172,8 @@ export default function TrabajoRevistaDetalle() {
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Investigadores:</span>{" "}
-              {investigadores}
+              <span className="font-medium text-slate-700">Autores:</span>{" "}
+              {autores}
             </p>
           </div>
         </article>

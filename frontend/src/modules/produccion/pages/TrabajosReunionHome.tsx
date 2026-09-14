@@ -11,7 +11,7 @@ import { getErrorMessage } from "@/lib/httpError";
 
 import { useTrabajosReunion } from "@/modules/produccion/hooks/useTrabajosReunion";
 import { useTiposReunion } from "@/modules/produccion/hooks/useTiposReunion";
-import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
+import { autorClave, autorEtiqueta } from "@/modules/produccion/services/trabajoAutoresServices";
 
 import {
   deleteTrabajoReunion,
@@ -64,7 +64,7 @@ export default function TrabajosReunionLanding() {
     estado: "",
     tipo: "",
     procedencia: "",
-    investigador: "",
+    autor: "",
     anio: "",
   });
 
@@ -87,7 +87,7 @@ export default function TrabajosReunionLanding() {
     [list, memoriaFilter]
   );
   const { tipos = [] } = useTiposReunion();
-  const { data: investigadores = [] } = useInvestigadores();
+  const autores = [...new Map(scopedList.flatMap(t => t.autores ?? []).map(autor => [autorClave(autor), autor])).values()];
 
   const trabajosFiltrados = useMemo(() => {
     return scopedList.filter((t) => {
@@ -99,7 +99,7 @@ export default function TrabajosReunionLanding() {
         String(t.nombre_reunion ?? "").toLowerCase().includes(query) ||
         String(t.procedencia ?? "").toLowerCase().includes(query) ||
         String(t.tipo_reunion?.nombre ?? "").toLowerCase().includes(query) ||
-        t.investigadores?.some((i) =>
+        t.autores?.some((i) =>
           String(i.nombre_apellido ?? "").toLowerCase().includes(query)
         );
 
@@ -111,9 +111,9 @@ export default function TrabajosReunionLanding() {
           .toLowerCase()
           .includes(filters.procedencia.toLowerCase());
 
-      const matchInvestigador =
-        !filters.investigador ||
-        t.investigadores?.some((i) => i.id === Number(filters.investigador));
+      const matchAutor =
+        !filters.autor ||
+        t.autores?.some((i) => autorClave(i) === filters.autor);
 
       const matchAnio =
         !filters.anio ||
@@ -123,7 +123,7 @@ export default function TrabajosReunionLanding() {
         matchSearch &&
         matchTipo &&
         matchProcedencia &&
-        matchInvestigador &&
+        matchAutor &&
         matchAnio
       );
     });
@@ -294,7 +294,7 @@ export default function TrabajosReunionLanding() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por título, congreso, investigador..."
+              placeholder="Buscar por título, congreso, autor..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -531,22 +531,22 @@ export default function TrabajosReunionLanding() {
 
               <div>
                 <label className="mb-1 block uppercase tracking-wider text-slate-400 font-bold">
-                  Investigador
+                  Autor
                 </label>
                 <select
                   className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
-                  value={tempFilters.investigador}
+                  value={tempFilters.autor}
                   onChange={(e) =>
                     setTempFilters({
                       ...tempFilters,
-                      investigador: e.target.value,
+                      autor: e.target.value,
                     })
                   }
                 >
-                  <option value="">Todos los investigadores</option>
-                  {investigadores.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.nombre_apellido}
+                  <option value="">Todos los autores</option>
+                  {autores.map((i) => (
+                    <option key={autorClave(i)} value={autorClave(i)}>
+                      {autorEtiqueta(i)}
                     </option>
                   ))}
                 </select>
@@ -581,7 +581,7 @@ export default function TrabajosReunionLanding() {
                     estado: "",
                     tipo: "",
                     procedencia: "",
-                    investigador: "",
+                    autor: "",
                     anio: "",
                   })
                 }

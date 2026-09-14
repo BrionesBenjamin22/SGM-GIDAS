@@ -63,12 +63,10 @@ from modules.produccion.models.trabajo_reunion import (  # noqa: F401
     TipoReunion,
     TrabajoReunionCientifica,
     TrabajoReunionCientificaMemoriaVersion,
-    investigador_x_trabajo_reunion,
 )
 from modules.produccion.models.trabajo_revista import (  # noqa: F401
     TrabajosRevistasReferato,
     TrabajosRevistasReferatoMemoriaVersion,
-    investigador_x_trabajo_revista,
 )
 from modules.proyectos.models.participacion_relevante import (  # noqa: F401
     ParticipacionRelevante,
@@ -101,3 +99,5 @@ from modules.transferencia.models.transferencia_socio import (  # noqa: F401
     TransferenciaSocioProductiva,
     TransferenciaSocioProductivaMemoriaVersion,
 )
+
+from modules.produccion.models.trabajo_autor import TrabajoReunionAutor, TrabajoRevistaAutor  # noqa: F401

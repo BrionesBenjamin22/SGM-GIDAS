@@ -1,13 +1,12 @@
 import { applyFieldErrors } from "@/lib/httpError";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
-import PersonalProyectoField from "@/components/PersonalProyectoField";
+import IntegrantesAutoresField from "@/modules/produccion/components/IntegrantesAutoresField";
 import Field from "@/components/Field";
-import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 
 import { getErrorMessage } from "@/lib/httpError";
@@ -17,15 +16,15 @@ import {
   createTrabajoReunion,
   updateTrabajoReunion,
   getTrabajoReunionById,
-  vincularInvestigadoresTrabajo,
-  desvincularInvestigadoresTrabajo,
   type TrabajoReunion,
   type TrabajoReunionPayload,
 } from "@/modules/produccion/services/trabajosReunionServices";
 
 import { useTiposReunion } from "@/modules/produccion/hooks/useTiposReunion";
-import InvestigadoresQueryFeedback from "@/modules/produccion/components/InvestigadoresQueryFeedback";
-import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
+import AutoresQueryFeedback from "@/modules/produccion/components/AutoresQueryFeedback";
+import { useIntegrantesAutores } from "@/modules/produccion/hooks/useIntegrantesAutores";
+import { mismasAutorias, type IntegranteAutor } from "@/modules/produccion/services/trabajoAutoresServices";
+import { useAuth } from "@/context/AuthContext";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 
 export default function TrabajoReunionForm() {
@@ -36,12 +35,14 @@ export default function TrabajoReunionForm() {
 
   const { uct, uctGuard } = useUctGuard();
   const { tipos = [] } = useTiposReunion();
-  const investigadoresQuery = useInvestigadores();
-  const investigadores = investigadoresQuery.data ?? [];
-  const investigadoresNoDisponibles = investigadoresQuery.data === undefined;
+  const { canCreateRecords, canEditRecords } = useAuth();
+  const puedeGuardar = isEdit ? canEditRecords() : canCreateRecords();
+  const autoresQuery = useIntegrantesAutores();
+  const integrantes = autoresQuery.data ?? [];
+  const autoresNoDisponibles = autoresQuery.data === undefined;
 
-  const { data: initialData, isLoading } = useQuery({
-    queryKey: ["trabajo-reunion", id],
+  const { data: initialData, isLoading, refetch } = useQuery({
+    queryKey: ["trabajo-reunion", Number(id)],
     queryFn: () => (id ? getTrabajoReunionById(Number(id)) : Promise.resolve(null)),
     enabled: isEdit,
   });
@@ -51,19 +52,15 @@ export default function TrabajoReunionForm() {
   const [procedencia, setProcedencia] = useState("");
   const [fechaInicio, setFechaInicio] = useState<Date | null>(null);
   const [tipoId, setTipoId] = useState<number | null>(null);
-  const [investigadoresIds, setInvestigadoresIds] = useState<number[]>([]);
+  const [autores, setAutores] = useState<IntegranteAutor[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-
-  const [investigadorAEliminar, setInvestigadorAEliminar] =
-    useState<{ id: number; nombre: string } | null>(null);
-
+  const datosCargadosId = useRef<number | null>(null);
   useEffect(() => {
-    if (!initialData) return;
+    if (!initialData || datosCargadosId.current === initialData.id) return;
+    datosCargadosId.current = initialData.id;
 
     setTitulo(initialData.titulo_trabajo ?? "");
     setNombreReunion(initialData.nombre_reunion ?? "");
@@ -72,9 +69,7 @@ export default function TrabajoReunionForm() {
       initialData.fecha_inicio ? new Date(`${initialData.fecha_inicio}T00:00:00`) : null
     );
     setTipoId(initialData.tipo_reunion?.id ?? null);
-    setInvestigadoresIds(
-      initialData.investigadores?.map((i: { id: number }) => i.id) ?? []
-    );
+    setAutores(initialData.autores ?? []);
   }, [initialData]);
 
   const formatDateStr = (date: Date | null) => {
@@ -116,8 +111,8 @@ export default function TrabajoReunionForm() {
       newErrors.fechaInicio = "Debe seleccionar fecha";
     }
 
-    if (investigadoresIds.length === 0) {
-      newErrors.investigadores = "Debe agregar al menos un investigador";
+    if (autores.length === 0) {
+      newErrors.autores = "Debe agregar al menos un autor";
     }
 
     setErrors(newErrors);
@@ -125,30 +120,8 @@ export default function TrabajoReunionForm() {
   };
 
   const mutation = useMutation({
-    mutationFn: async (
-      payload: Partial<TrabajoReunionPayload> & { _skipUpdate?: boolean }
-    ): Promise<TrabajoReunion | null> => {
-      const currentInvestigadoresIds =
-        initialData?.investigadores?.map((i: { id: number }) => i.id) ?? [];
-      const nuevosInvestigadoresIds = isEdit
-        ? investigadoresIds.filter((investigadorId) => !currentInvestigadoresIds.includes(investigadorId))
-        : investigadoresIds;
-
-      let trabajo = initialData ?? null;
-
-      if (!isEdit) {
-        trabajo = await createTrabajoReunion(payload as TrabajoReunionPayload);
-      } else if (!payload._skipUpdate) {
-        trabajo = await updateTrabajoReunion(Number(id), payload);
-      }
-
-      const trabajoId = trabajo?.id;
-
-      if (trabajoId && nuevosInvestigadoresIds.length > 0) {
-        await vincularInvestigadoresTrabajo(trabajoId, nuevosInvestigadoresIds);
-      }
-
-      return trabajo;
+    mutationFn: async (payload: Partial<TrabajoReunionPayload>): Promise<TrabajoReunion> => {
+      return isEdit ? updateTrabajoReunion(Number(id), payload) : createTrabajoReunion(payload as TrabajoReunionPayload);
     },
     onSuccess: async (saved) => {
       const trabajoId = saved?.id ?? Number(id);
@@ -167,7 +140,7 @@ export default function TrabajoReunionForm() {
       });
     },
     onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["titulo","nombreReunion","procedencia","tipoId","fechaInicio","investigadores"])) return;
+      if (applyFieldErrors(error, setErrors, ["titulo","nombreReunion","procedencia","tipoId","fechaInicio","autores"])) return;
       const backendMessage = getErrorMessage(
         error,
         "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
@@ -191,40 +164,16 @@ export default function TrabajoReunionForm() {
     },
   });
 
-  const desvincularMutation = useMutation({
-    mutationFn: async (investigadorId: number) => {
-      return desvincularInvestigadoresTrabajo(Number(id), [investigadorId]);
-    },
-    onSuccess: async (_, investigadorId) => {
-      setInvestigadoresIds((prev) => prev.filter((i) => i !== investigadorId));
-      setInvestigadorAEliminar(null);
-
-      await qc.invalidateQueries({ queryKey: ["trabajo-reunion", Number(id)] });
-      await qc.invalidateQueries({ queryKey: ["trabajo-reunion-historial", Number(id)] });
-
-      setSuccessMessage("Investigador desvinculado con éxito.");
-      setShowSuccess(true);
-    },
-    onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["titulo","nombreReunion","procedencia","tipoId","fechaInicio","investigadores"])) return;
-      setInvestigadorAEliminar(null);
-      setErrorMessage(
-        getErrorMessage(
-          error,
-          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
-        )
-      );
-      setShowError(true);
-    },
-  });
+  const guardadoBloqueado = mutation.isPending || autoresNoDisponibles || !puedeGuardar || (isEdit && (!initialData || initialData.activo === false || !!initialData.deleted_at)) || !uct;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mutation.isPending || investigadoresNoDisponibles) return;
+    if (guardadoBloqueado) return;
     if (!uct) return;
     if (!validate()) return;
 
     const payload = {
+      autores: autores.map(({ id, rol }) => ({ id, rol })),
       titulo_trabajo: toTitleCase(titulo.trim()),
       nombre_reunion: toTitleCase(nombreReunion.trim()),
       procedencia: toTitleCase(procedencia.trim()),
@@ -234,11 +183,12 @@ export default function TrabajoReunionForm() {
     };
 
     if (!isEdit) {
-      await mutation.mutateAsync(payload);
+      await mutation.mutateAsync(payload).catch(() => undefined);
       return;
     }
 
     const initialPayload = {
+      autores: initialData?.autores ?? [],
       titulo_trabajo: initialData?.titulo_trabajo ?? "",
       nombre_reunion: initialData?.nombre_reunion ?? "",
       procedencia: initialData?.procedencia ?? "",
@@ -249,17 +199,12 @@ export default function TrabajoReunionForm() {
 
     const changedPayload = Object.fromEntries(
       Object.entries(payload).filter(([key, value]) => {
+        if (key === "autores") return !mismasAutorias(payload.autores, initialPayload.autores);
         return initialPayload[key as keyof typeof initialPayload] !== value;
       })
     );
 
-    const currentInvestigadoresIds =
-      initialData?.investigadores?.map((i: { id: number }) => i.id) ?? [];
-    const nuevosInvestigadoresIds = investigadoresIds.filter(
-      (investigadorId) => !currentInvestigadoresIds.includes(investigadorId)
-    );
-
-    if (Object.keys(changedPayload).length === 0 && nuevosInvestigadoresIds.length === 0) {
+    if (Object.keys(changedPayload).length === 0) {
       navigate(`/trabajos-reunion/${id}`, {
         replace: true,
         state: {
@@ -269,14 +214,16 @@ export default function TrabajoReunionForm() {
       return;
     }
 
-    await mutation.mutateAsync({
-      ...changedPayload,
-      _skipUpdate: Object.keys(changedPayload).length === 0,
-    });
+    await mutation.mutateAsync(changedPayload).catch(() => undefined);
   };
 
   if (isEdit && isLoading) {
     return <p className="text-slate-500">Cargando trabajo...</p>;
+  }
+
+  if (isEdit && !initialData) {
+    return <div role="alert" className="space-y-3"><p>Lo sentimos, no pudimos recuperar la información. Intente nuevamente.</p>
+      <Button type="button" onClick={() => { void refetch(); }}>Reintentar</Button></div>;
   }
 
   const inputClass = (field: string) =>
@@ -385,32 +332,12 @@ export default function TrabajoReunionForm() {
           </>
         </Field>
 
-        <Field label="Investigadores" name="investigadores" error={errors.investigadores}>
+        <Field label="Autores" name="autores" error={errors.autores}>
           <>
-            <InvestigadoresQueryFeedback query={investigadoresQuery} />
-            <PersonalProyectoField
-              disabled={investigadoresNoDisponibles || investigadores.length === 0 || mutation.isPending}
-              value={investigadoresIds}
-              options={investigadores}
-              onChange={(ids) => {
-                setInvestigadoresIds(ids);
-                if (ids.length > 0) clearError("investigadores");
-              }}
-              isEdit={isEdit}
-              onRemoveConfirm={(personaId) => {
-                const inv = investigadores.find((i) => i.id === personaId);
-
-                if (inv) {
-                  setInvestigadorAEliminar({
-                    id: inv.id,
-                    nombre: inv.nombre_apellido,
-                  });
-                }
-              }}
-            />
-            {errors.investigadores && (
-              <p className="mt-1 text-sm text-red-500">{errors.investigadores}</p>
-            )}
+            <AutoresQueryFeedback query={autoresQuery} />
+            <IntegrantesAutoresField value={autores} options={integrantes}
+              disabled={guardadoBloqueado}
+              onChange={value => { setAutores(value); if (value.length) clearError("autores"); }} />
           </>
         </Field>
 
@@ -431,27 +358,11 @@ export default function TrabajoReunionForm() {
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={mutation.isPending || investigadoresNoDisponibles || !uct} loading={mutation.isPending} loadingText="Guardando...">
+          <Button type="submit" size="sm" disabled={guardadoBloqueado} loading={mutation.isPending} loadingText="Guardando...">
             {mutation.isPending ? (isEdit ? "Actualizando..." : "Guardando...") : isEdit ? "Actualizar" : "Guardar"}
           </Button>
         </div>
       </form>
-
-      <ConfirmDialog
-        open={!!investigadorAEliminar}
-        title="Desvincular investigador"
-        message={`¿Desea desvincular a ${investigadorAEliminar?.nombre}?`}
-        items={[]}
-        onCancel={() => setInvestigadorAEliminar(null)}
-        onConfirm={() => desvincularMutation.mutateAsync(investigadorAEliminar!.id)}
-       loadingText="Desvinculando..."
-     />
-
-      <SuccessToast
-        open={showSuccess}
-        message={successMessage}
-        onClose={() => setShowSuccess(false)}
-      />
 
       <SuccessToast
         open={showError}

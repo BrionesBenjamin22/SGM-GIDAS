@@ -302,11 +302,11 @@ def _seed_manual_people(grupo, catalogs, admin_user_id):
 
 def _seed_project(grupo, catalogs, investigador, becario, admin_user_id):
     proyecto = ProyectoInvestigacion.query.filter_by(
-        codigo_proyecto=2026001
+        codigo_proyecto="2026001"
     ).first()
     if not proyecto:
         proyecto = ProyectoInvestigacion(
-            codigo_proyecto=2026001,
+            codigo_proyecto="2026001",
             nombre_proyecto="Plataforma de gestion academica de prueba",
             descripcion_proyecto="Proyecto ficticio para operar el entorno testing.",
             fecha_inicio=date(2024, 1, 1),
@@ -777,12 +777,26 @@ def seed_testing_data():
 
     catalogs = _seed_catalogs()
     grupo = _seed_group()
-    investigador, becario, _personal = _seed_people(grupo, catalogs, admin.id)
+    investigador, becario, personal = _seed_people(grupo, catalogs, admin.id)
     _seed_manual_people(grupo, catalogs, admin.id)
     _seed_project(grupo, catalogs, investigador, becario, admin.id)
     _seed_memoria(admin.id)
     _seed_search_coverage(grupo, catalogs, investigador, admin.id)
     _seed_manual_testing_dataset(grupo, catalogs, investigador, admin.id)
+
+    # ISS-12: dataset mixto e idempotente para ambos tipos de trabajos.
+    from modules.produccion.models.trabajo_autor import TrabajoReunionAutor, TrabajoRevistaAutor
+    from modules.produccion.services.trabajo_autores_service import sincronizar_autores
+
+    db.session.flush()
+    autores = [("investigador", investigador), ("becario", becario)]
+    for modelo, asociacion, entidad in (
+        (TrabajoReunionCientifica, TrabajoReunionAutor, "trabajo_reunion_cientifica"),
+        (TrabajosRevistasReferato, TrabajoRevistaAutor, "trabajo_revista_referato"),
+    ):
+        for trabajo in modelo.query.filter_by(grupo_utn_id=grupo.id, deleted_at=None).all():
+            if not trabajo.autorias:
+                sincronizar_autores(trabajo, autores, asociacion, entidad, admin.id)
 
     db.session.commit()
 

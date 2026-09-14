@@ -47,9 +47,9 @@ class TrabajoRevistaMemoriaHistorialTestCase(unittest.TestCase):
             grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS"),
             tipo_reunion_id=2,
             tipo_reunion=SimpleNamespace(nombre="Articulo"),
-            investigadores=[
-                SimpleNamespace(nombre_apellido="Ana Perez", deleted_at=None),
-                SimpleNamespace(nombre_apellido="Luis Diaz", deleted_at=None)
+            autorias=[
+                SimpleNamespace(serialize=lambda: {"id": 1, "rol": "investigador", "tipo": "Investigador", "nombre_apellido": "Ana Perez"}),
+                SimpleNamespace(serialize=lambda: {"id": 1, "rol": "becario", "tipo": "Becario", "nombre_apellido": "Luis Diaz"})
             ]
         )
 
@@ -73,8 +73,8 @@ class TrabajoRevistaMemoriaHistorialTestCase(unittest.TestCase):
         self.assertEqual(snapshots[0].trabajo_revista_id, 6)
         self.assertEqual(snapshots[0].tipo_reunion_nombre, "Articulo")
         self.assertEqual(
-            snapshots[0].investigadores_participantes,
-            "Ana Perez, Luis Diaz"
+            [a["nombre_apellido"] for a in snapshots[0].autores],
+            ["Ana Perez", "Luis Diaz"]
         )
         self.assertEqual(snapshots[0].created_by, 24)
         self.mock_add.assert_called()

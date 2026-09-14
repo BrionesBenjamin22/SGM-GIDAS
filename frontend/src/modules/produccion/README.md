@@ -40,7 +40,7 @@ del backend. Los cuerpos de texto o estructuras desconocidas no se reflejan en U
 ## Relaciones
 
 - Documentacion mantiene autores asociados.
-- Trabajos en reuniones y revistas mantienen investigadores asociados.
+- Trabajos en reuniones y revistas mantienen integrantes autores (ISS-12).
 - Las altas y vinculaciones se consolidan al guardar el formulario.
 - Las desvinculaciones requieren confirmacion y actualizan datos e historial.
 - Una edicion sin diferencias reales no llama al endpoint de actualizacion.
@@ -107,3 +107,75 @@ conservacion de selecciones), typecheck y build:production correctos. La prueba
 visual y los guardados en navegador quedan a cargo del usuario.
 
 Validacion backend: 28 tests correctos de historial de trabajos en reuniones/revistas y errores de dominio de produccion (unittest).
+
+## ISS-12: integrantes autores
+
+Las vistas de alta/edición, detalle y home de trabajos en reuniones y revistas
+consumen `autores`. Un autor tiene `id`, `rol` (`investigador` o `becario`),
+`nombre_apellido`, `tipo` y `activo`. El par `(rol, id)` identifica
+al integrante; no se mezclan personas con IDs iguales de categorías distintas.
+Se muestran nombres y categorías; no se registran autores externos.
+
+`trabajoAutoresServices.ts` define los contratos, etiquetas, claves y comparación
+de colecciones. `useIntegrantesAutores` consulta integrantes activos mediante
+`GET /personal-all?activos=true` (normalizado a `/api/v1/personal/all`). El service
+filtra ese listado combinado y ofrece únicamente investigadores y becarios;
+Personal (PTAA/profesional) queda excluido. La etiqueta visible sigue siendo Autores.
+
+La regla `esAutorSeleccionable` se aplica en el service y en el selector para
+excluir categorías no habilitadas e inactivos incluso frente a opciones antiguas.
+La caché usa `integrantes-autores / investigadores-becarios`, separada del
+listado anterior. Los autores históricos inactivos permanecen en la selección
+existente y pueden quitarse, pero no aparecen como nuevas opciones.
+Desde los detalles de congresos y revistas, Editar abre el formulario común de
+autores de ese trabajo; ambos permiten agregar investigadores y becarios.
+En Docker de desarrollo, si Vite conserva módulos anteriores tras editar
+archivos del volumen, reiniciar el servicio frontend y comprobar los módulos
+servidos por HTTP antes de dar el ajuste por aplicado al entorno.
+`IntegrantesAutoresField` permite selección múltiple sin duplicados y bajas
+locales. Los autores históricos inactivos siguen visibles y se pueden quitar.
+`AutoresQueryFeedback` reemplaza el feedback exclusivo de investigadores:
+conserva carga/error/vacío/reintento y mantiene selecciones frente a refetch.
+
+Los services de trabajos envían `autores: [{rol, id}]` junto a los campos del
+trabajo en POST/PUT, en una única operación. En edición solo se envía la colección
+si cambió realmente, sin considerar cambios de orden; las altas y bajas se
+consolidan al pulsar Actualizar. Si no hay cambios no se llama al backend.
+Un refetch no sobrescribe el borrador. El formulario requiere al menos un autor,
+la UCT configurada y los permisos de alta/edición del usuario. Los detalles
+solo habilitan Editar si el registro está activo y el rol lo permite.
+
+Alta vuelve al home y edición al detalle con `successMessage`. El guardado
+bloquea el selector, muestra progreso y conserva errores seguros/accionables.
+Las fallas al cargar un registro ofrecen reintento; una lista cacheada utilizable
+mantiene las acciones habilitadas. Las búsquedas locales admiten nombres de
+cualquier autor; el filtro de reuniones usa claves compuestas y categorías.
+Homes conservan 9 items y el historial 3 items por página.
+
+Los detalles muestran nombres y tipos de autor y eventos de alta/baja dentro
+del historial existente. La búsqueda global usa `extra.autores`. Los snapshots
+de memoria reciben autores congelados y el Excel incluye todas las categorías.
+El cambio de esquema requiere regenerar el dataset de testing; no hay adaptación
+temporal del contrato exclusivo de investigadores.
+
+Pruebas: `tests/trabajoAutores.test.ts` ejecuta selector y formularios reales
+mediante SSR/harness de hooks para IDs coincidentes, conservación de inactivos,
+altas/bajas locales, guardado único, navegación, refetch y edición sin cambios.
+`tests/investigadoresFeedback.test.ts` conserva las regresiones de ISS-11,
+actualizadas a integrantes autores. Validación técnica: npm test, typecheck
+y build:production; validación del navegador contra backend temporal.
+
+## ISS-12: buscador de autores con confirmación explícita
+
+IntegrantesAutoresField, compartido por congresos y revistas, filtra localmente
+por fragmentos de nombre/apellido o prefijo de iniciales, sin distinguir tildes
+ni mayúsculas. Permite categoría Investigador/Becario, muestra nueve resultados
+y amplía de nueve en nueve con Ver más. Cambiar búsqueda o categoría reinicia
+el límite. El listado excluye seleccionados, personal e inactivos.
+Cada resultado tiene Añadir; escribir, perder foco o pulsar Enter en el buscador
+no añade ni envía el formulario. Autores seleccionados permite Quitar;
+las relaciones se persisten únicamente al guardar el formulario. Los controles
+se bloquean durante guardado según el formulario. Etiquetas asociadas, botones
+con type=button y estado de resultados anunciado. Sin cambio de API: se reutiliza
+la consulta cacheada de integrantes; la búsqueda y ampliación son locales,
+no paginación de servidor. La validación visual queda a cargo del usuario.

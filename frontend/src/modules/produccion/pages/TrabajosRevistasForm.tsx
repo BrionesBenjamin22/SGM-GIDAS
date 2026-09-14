@@ -1,13 +1,12 @@
 import { applyFieldErrors } from "@/lib/httpError";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
-import PersonalProyectoField from "@/components/PersonalProyectoField";
+import IntegrantesAutoresField from "@/modules/produccion/components/IntegrantesAutoresField";
 import Field from "@/components/Field";
-import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 
 import { getErrorMessage } from "@/lib/httpError";
@@ -17,15 +16,15 @@ import {
   createTrabajoRevista,
   updateTrabajoRevista,
   getTrabajoRevistaById,
-  vincularInvestigadoresRevista,
-  desvincularInvestigadoresRevista,
   type TrabajoRevista,
   type TrabajoRevistaPayload,
 } from "@/modules/produccion/services/trabajosRevistasServices";
 
 import { useTiposReunion } from "@/modules/produccion/hooks/useTiposReunion";
-import InvestigadoresQueryFeedback from "@/modules/produccion/components/InvestigadoresQueryFeedback";
-import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
+import AutoresQueryFeedback from "@/modules/produccion/components/AutoresQueryFeedback";
+import { useIntegrantesAutores } from "@/modules/produccion/hooks/useIntegrantesAutores";
+import { mismasAutorias, type IntegranteAutor } from "@/modules/produccion/services/trabajoAutoresServices";
+import { useAuth } from "@/context/AuthContext";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 
 export default function TrabajosRevistasForm() {
@@ -36,12 +35,14 @@ export default function TrabajosRevistasForm() {
 
   const { uct, uctGuard } = useUctGuard();
   const { tipos = [] } = useTiposReunion();
-  const investigadoresQuery = useInvestigadores();
-  const investigadores = investigadoresQuery.data ?? [];
-  const investigadoresNoDisponibles = investigadoresQuery.data === undefined;
+  const { canCreateRecords, canEditRecords } = useAuth();
+  const puedeGuardar = isEdit ? canEditRecords() : canCreateRecords();
+  const autoresQuery = useIntegrantesAutores();
+  const integrantes = autoresQuery.data ?? [];
+  const autoresNoDisponibles = autoresQuery.data === undefined;
 
-  const { data: initialData, isLoading } = useQuery({
-    queryKey: ["trabajo-revista", id],
+  const { data: initialData, isLoading, refetch } = useQuery({
+    queryKey: ["trabajo-revista", Number(id)],
     queryFn: () =>
       id ? getTrabajoRevistaById(Number(id)) : Promise.resolve(null),
     enabled: isEdit,
@@ -54,19 +55,15 @@ export default function TrabajosRevistasForm() {
   const [pais, setPais] = useState("");
   const [fecha, setFecha] = useState<Date | null>(null);
   const [tipoId, setTipoId] = useState<number | null>(null);
-  const [investigadoresIds, setInvestigadoresIds] = useState<number[]>([]);
+  const [autores, setAutores] = useState<IntegranteAutor[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-
-  const [investigadorAEliminar, setInvestigadorAEliminar] =
-    useState<{ id: number; nombre: string } | null>(null);
-
+  const datosCargadosId = useRef<number | null>(null);
   useEffect(() => {
-    if (!initialData) return;
+    if (!initialData || datosCargadosId.current === initialData.id) return;
+    datosCargadosId.current = initialData.id;
 
     setTitulo(initialData.titulo_trabajo ?? "");
     setNombreRevista(initialData.nombre_revista ?? "");
@@ -75,9 +72,7 @@ export default function TrabajosRevistasForm() {
     setPais(initialData.pais ?? "");
     setFecha(initialData.fecha ? new Date(`${initialData.fecha}T00:00:00`) : null);
     setTipoId(initialData.tipo_reunion?.id ?? null);
-    setInvestigadoresIds(
-      initialData.investigadores?.map((i: { id: number }) => i.id) ?? []
-    );
+    setAutores(initialData.autores ?? []);
   }, [initialData]);
 
   const clearError = (field: string) => {
@@ -117,8 +112,8 @@ export default function TrabajosRevistasForm() {
       newErrors.fecha = "Debe seleccionar fecha";
     }
 
-    if (investigadoresIds.length === 0) {
-      newErrors.investigadores = "Debe agregar al menos un investigador";
+    if (autores.length === 0) {
+      newErrors.autores = "Debe agregar al menos un autor";
     }
 
     setErrors(newErrors);
@@ -134,32 +129,8 @@ export default function TrabajosRevistasForm() {
   };
 
   const mutation = useMutation({
-    mutationFn: async (
-      payload: Partial<TrabajoRevistaPayload> & { _skipUpdate?: boolean }
-    ): Promise<TrabajoRevista | null> => {
-      const currentInvestigadoresIds =
-        initialData?.investigadores?.map((i: { id: number }) => i.id) ?? [];
-      const nuevosInvestigadoresIds = isEdit
-        ? investigadoresIds.filter(
-            (investigadorId) => !currentInvestigadoresIds.includes(investigadorId)
-          )
-        : investigadoresIds;
-
-      let trabajo = initialData ?? null;
-
-      if (!isEdit) {
-        trabajo = await createTrabajoRevista(payload as TrabajoRevistaPayload);
-      } else if (!payload._skipUpdate) {
-        trabajo = await updateTrabajoRevista(Number(id), payload);
-      }
-
-      const trabajoId = trabajo?.id;
-
-      if (trabajoId && nuevosInvestigadoresIds.length > 0) {
-        await vincularInvestigadoresRevista(trabajoId, nuevosInvestigadoresIds);
-      }
-
-      return trabajo;
+    mutationFn: async (payload: Partial<TrabajoRevistaPayload>): Promise<TrabajoRevista> => {
+      return isEdit ? updateTrabajoRevista(Number(id), payload) : createTrabajoRevista(payload as TrabajoRevistaPayload);
     },
     onSuccess: async (saved) => {
       const trabajoId = saved?.id ?? Number(id);
@@ -178,7 +149,7 @@ export default function TrabajosRevistasForm() {
       });
     },
     onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["titulo","nombreRevista","editorial","issn","pais","tipoId","fecha","investigadores"])) return;
+      if (applyFieldErrors(error, setErrors, ["titulo","nombreRevista","editorial","issn","pais","tipoId","fecha","autores"])) return;
       const backendMessage = getErrorMessage(
         error,
         "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
@@ -206,40 +177,17 @@ export default function TrabajosRevistasForm() {
     },
   });
 
-  const desvincularMutation = useMutation({
-    mutationFn: async (investigadorId: number) =>
-      desvincularInvestigadoresRevista(Number(id), [investigadorId]),
-    onSuccess: async (_, investigadorId) => {
-      setInvestigadoresIds((prev) => prev.filter((i) => i !== investigadorId));
-      setInvestigadorAEliminar(null);
-
-      await qc.invalidateQueries({ queryKey: ["trabajo-revista", Number(id)] });
-      await qc.invalidateQueries({ queryKey: ["trabajo-revista-historial", Number(id)] });
-
-      setSuccessMessage("Investigador desvinculado con éxito.");
-      setShowSuccess(true);
-    },
-    onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["titulo","nombreRevista","editorial","issn","pais","tipoId","fecha","investigadores"])) return;
-      setInvestigadorAEliminar(null);
-      setErrorMessage(
-        getErrorMessage(
-          error,
-          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
-        )
-      );
-      setShowError(true);
-    },
-  });
+  const guardadoBloqueado = mutation.isPending || autoresNoDisponibles || !puedeGuardar || (isEdit && (!initialData || initialData.activo === false || !!initialData.deleted_at)) || !uct;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mutation.isPending || investigadoresNoDisponibles) return;
+    if (guardadoBloqueado) return;
 
     if (!uct) return;
     if (!validate()) return;
 
     const payload = {
+      autores: autores.map(({ id, rol }) => ({ id, rol })),
       titulo_trabajo: toTitleCase(titulo.trim()),
       nombre_revista: toTitleCase(nombreRevista.trim()),
       editorial: toTitleCase(editorial.trim()),
@@ -251,11 +199,12 @@ export default function TrabajosRevistasForm() {
     };
 
     if (!isEdit) {
-      await mutation.mutateAsync(payload);
+      await mutation.mutateAsync(payload).catch(() => undefined);
       return;
     }
 
     const initialPayload = {
+      autores: initialData?.autores ?? [],
       titulo_trabajo: initialData?.titulo_trabajo ?? "",
       nombre_revista: initialData?.nombre_revista ?? "",
       editorial: initialData?.editorial ?? "",
@@ -268,17 +217,12 @@ export default function TrabajosRevistasForm() {
 
     const changedPayload = Object.fromEntries(
       Object.entries(payload).filter(([key, value]) => {
+        if (key === "autores") return !mismasAutorias(payload.autores, initialPayload.autores);
         return initialPayload[key as keyof typeof initialPayload] !== value;
       })
     );
 
-    const currentInvestigadoresIds =
-      initialData?.investigadores?.map((i: { id: number }) => i.id) ?? [];
-    const nuevosInvestigadoresIds = investigadoresIds.filter(
-      (investigadorId) => !currentInvestigadoresIds.includes(investigadorId)
-    );
-
-    if (Object.keys(changedPayload).length === 0 && nuevosInvestigadoresIds.length === 0) {
+    if (Object.keys(changedPayload).length === 0) {
       navigate(`/trabajos-revistas/${id}`, {
         replace: true,
         state: {
@@ -288,14 +232,16 @@ export default function TrabajosRevistasForm() {
       return;
     }
 
-    await mutation.mutateAsync({
-      ...changedPayload,
-      _skipUpdate: Object.keys(changedPayload).length === 0,
-    });
+    await mutation.mutateAsync(changedPayload).catch(() => undefined);
   };
 
   if (isEdit && isLoading) {
     return <p className="text-slate-500">Cargando...</p>;
+  }
+
+  if (isEdit && !initialData) {
+    return <div role="alert" className="space-y-3"><p>Lo sentimos, no pudimos recuperar la información. Intente nuevamente.</p>
+      <Button type="button" onClick={() => { void refetch(); }}>Reintentar</Button></div>;
   }
 
   const inputClass = (field: string) =>
@@ -439,31 +385,12 @@ export default function TrabajosRevistasForm() {
           </>
         </Field>
 
-        <Field label="Investigadores" name="investigadores" error={errors.investigadores}>
+        <Field label="Autores" name="autores" error={errors.autores}>
           <>
-            <InvestigadoresQueryFeedback query={investigadoresQuery} />
-            <PersonalProyectoField
-              disabled={investigadoresNoDisponibles || investigadores.length === 0 || mutation.isPending}
-              value={investigadoresIds}
-              options={investigadores}
-              onChange={(ids) => {
-                setInvestigadoresIds(ids);
-                if (ids.length > 0) clearError("investigadores");
-              }}
-              isEdit={isEdit}
-              onRemoveConfirm={(personaId) => {
-                const inv = investigadores.find((i) => i.id === personaId);
-                if (inv) {
-                  setInvestigadorAEliminar({
-                    id: inv.id,
-                    nombre: inv.nombre_apellido,
-                  });
-                }
-              }}
-            />
-            {errors.investigadores && (
-              <p className="mt-1 text-sm text-red-500">{errors.investigadores}</p>
-            )}
+            <AutoresQueryFeedback query={autoresQuery} />
+            <IntegrantesAutoresField value={autores} options={integrantes}
+              disabled={guardadoBloqueado}
+              onChange={value => { setAutores(value); if (value.length) clearError("autores"); }} />
           </>
         </Field>
 
@@ -489,7 +416,7 @@ export default function TrabajosRevistasForm() {
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={mutation.isPending || investigadoresNoDisponibles} loading={mutation.isPending} loadingText="Guardando...">
+          <Button type="submit" size="sm" disabled={mutation.isPending || autoresNoDisponibles || !puedeGuardar || (isEdit && (!initialData || initialData.activo === false || !!initialData.deleted_at))} loading={mutation.isPending} loadingText="Guardando...">
             {mutation.isPending
               ? isEdit
                 ? "Actualizando..."
@@ -500,24 +427,6 @@ export default function TrabajosRevistasForm() {
           </Button>
         </div>
       </form>
-
-      <ConfirmDialog
-        open={!!investigadorAEliminar}
-        title="Desvincular investigador"
-        message={`¿Desea desvincular a ${investigadorAEliminar?.nombre}?`}
-        items={[]}
-        onCancel={() => setInvestigadorAEliminar(null)}
-        onConfirm={() =>
-          desvincularMutation.mutateAsync(investigadorAEliminar!.id)
-        }
-       loadingText="Desvinculando..."
-     />
-
-      <SuccessToast
-        open={showSuccess}
-        message={successMessage}
-        onClose={() => setShowSuccess(false)}
-      />
 
       <SuccessToast
         open={showError}
