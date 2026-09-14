@@ -91,6 +91,21 @@ Sin commits ejecutados.
 
 ### Documentado
 
+#### ISS-10: cierre aceptado de asignacion del coordinador
+
+- El usuario acepta el cierre definitivo de ISS-10 el 2026-09-13.
+- Completados coordinador e integrantes con guardado consolidado, preservacion
+  del historial, altas con fecha de fin y feedback de guardado.
+- Cierre y aceptacion registrados en tasks/finished/ISS-10.md; sin trabajo de
+  implementacion pendiente. Las mejoras globales de botones corresponden al
+  seguimiento de ISS-09.
+
+Validaciones registradas: 46 tests backend de Personal/Proyectos; 85 frontend,
+typecheck, build de produccion y diff check correctos. Pruebas de navegador
+a cargo del usuario. El agente no las declara ejecutadas. Persisten las
+incidencias previas documentadas del launcher del venv y warnings SQLite.
+tasks/ sigue ignorado por la configuracion existente; no se cambia esa regla.
+
 #### ISS-05 a ISS-16 — Normalizar documentos de tareas pendientes
 
 - Se normalizó `ISS-05.md` con el frontmatter utilizado por las tareas del
