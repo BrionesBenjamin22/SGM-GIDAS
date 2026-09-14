@@ -88,3 +88,22 @@ confirmaciones bloquean además cancelar, el fondo y los campos del diálogo.
 El estado se libera al resolver o fallar, conservando errores y mensajes de
 éxito existentes. Los callbacks basados en React Query deben devolver
 mutateAsync para que el diálogo cubra toda la operación.
+
+## ISS-11: feedback del selector de investigadores en trabajos (2026-09-13)
+
+Los formularios de reuniones y revistas distinguen carga inicial, lista vacia y
+error de consulta con Reintentar y progreso accesible. El guardado y el selector
+se bloquean mientras no existe una respuesta disponible; una actualizacion en
+segundo plano con cache conserva opciones y acciones. Las selecciones no se
+reinician por fallos o reintentos. No cambian el endpoint, permisos ni payloads.
+El componente InvestigadoresQueryFeedback es exclusivo de produccion.
+
+La inspeccion previa del endpoint real devolvio HTTP 200 con dos investigadores
+activos; el incidente original de opciones ausentes no se reprodujo. La ampliacion
+de autoria queda en ISS-12, independiente de esta mejora.
+
+Validacion: 88 tests frontend (incluidas regresiones de carga, error, reintento y
+conservacion de selecciones), typecheck y build:production correctos. La prueba
+visual y los guardados en navegador quedan a cargo del usuario.
+
+Validacion backend: 28 tests correctos de historial de trabajos en reuniones/revistas y errores de dominio de produccion (unittest).

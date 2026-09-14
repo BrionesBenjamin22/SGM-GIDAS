@@ -24,6 +24,7 @@ import {
 } from "@/modules/produccion/services/trabajosReunionServices";
 
 import { useTiposReunion } from "@/modules/produccion/hooks/useTiposReunion";
+import InvestigadoresQueryFeedback from "@/modules/produccion/components/InvestigadoresQueryFeedback";
 import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 
@@ -35,7 +36,9 @@ export default function TrabajoReunionForm() {
 
   const { uct, uctGuard } = useUctGuard();
   const { tipos = [] } = useTiposReunion();
-  const { data: investigadores = [] } = useInvestigadores();
+  const investigadoresQuery = useInvestigadores();
+  const investigadores = investigadoresQuery.data ?? [];
+  const investigadoresNoDisponibles = investigadoresQuery.data === undefined;
 
   const { data: initialData, isLoading } = useQuery({
     queryKey: ["trabajo-reunion", id],
@@ -217,7 +220,7 @@ export default function TrabajoReunionForm() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mutation.isPending) return;
+    if (mutation.isPending || investigadoresNoDisponibles) return;
     if (!uct) return;
     if (!validate()) return;
 
@@ -384,7 +387,9 @@ export default function TrabajoReunionForm() {
 
         <Field label="Investigadores" name="investigadores" error={errors.investigadores}>
           <>
+            <InvestigadoresQueryFeedback query={investigadoresQuery} />
             <PersonalProyectoField
+              disabled={investigadoresNoDisponibles || investigadores.length === 0 || mutation.isPending}
               value={investigadoresIds}
               options={investigadores}
               onChange={(ids) => {
@@ -426,7 +431,7 @@ export default function TrabajoReunionForm() {
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={mutation.isPending || !uct} loading={mutation.isPending} loadingText="Guardando...">
+          <Button type="submit" size="sm" disabled={mutation.isPending || investigadoresNoDisponibles || !uct} loading={mutation.isPending} loadingText="Guardando...">
             {mutation.isPending ? (isEdit ? "Actualizando..." : "Guardando...") : isEdit ? "Actualizar" : "Guardar"}
           </Button>
         </div>

@@ -360,3 +360,14 @@ Validaciones:
 - Se corrigieron la ortografía, las tildes y la puntuación de etiquetas, títulos,
   ayudas, placeholders, confirmaciones y mensajes visibles de la interfaz en
   todos los módulos relevados.
+
+## 2026-09-13 - ISS-11: feedback del selector de investigadores en trabajos
+
+- Reuniones y revistas muestran carga inicial, lista vacia y error con Reintentar.
+- Bloquean guardar sin datos; conservan opciones en refetch y selecciones ante fallos.
+- Componente exclusivo del modulo; contratos, permisos y hooks compartidos intactos.
+- Validacion: 88 tests frontend, typecheck y build:production correctos.
+- Inspeccion previa: endpoint real HTTP 200 con dos investigadores activos; incidencia original no reproducida.
+- Navegador a cargo del usuario; ampliacion de autoria permanece en ISS-12.
+
+Validacion backend: 28 tests correctos de historial de trabajos en reuniones/revistas y errores de dominio de produccion (unittest).
