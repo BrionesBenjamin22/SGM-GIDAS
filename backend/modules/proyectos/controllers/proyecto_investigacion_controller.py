@@ -3,6 +3,7 @@ from flask import g, jsonify, request
 from modules.proyectos.services.proyecto_investigacion_service import ProyectoInvestigacionService
 from modules.shared.controllers.responses import exception_response
 from modules.shared.exceptions import ValidationError
+from modules.proyectos.services.proyecto_guardado_service import ProyectoGuardadoService
 
 
 class ProyectoInvestigacionController:
@@ -43,7 +44,7 @@ class ProyectoInvestigacionController:
             data = request.get_json()
             if not data:
                 raise ValidationError("El body es obligatorio")
-            return jsonify(ProyectoInvestigacionService.create(data, g.current_user_id)), 201
+            return jsonify(ProyectoGuardadoService.guardar(data, g.current_user_id)), 201
         except Exception as error:
             return exception_response(error, operation="crear proyecto de investigacion")
 
@@ -53,7 +54,7 @@ class ProyectoInvestigacionController:
             data = request.get_json()
             if not data:
                 raise ValidationError("El body es obligatorio")
-            return jsonify(ProyectoInvestigacionService.update(proyecto_id, data, g.current_user_id)), 200
+            return jsonify(ProyectoGuardadoService.guardar(data, g.current_user_id, proyecto_id)), 200
         except Exception as error:
             return exception_response(error, operation="actualizar proyecto de investigacion")
 

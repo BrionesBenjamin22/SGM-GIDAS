@@ -26,6 +26,42 @@ por permisos y estado activo.
 
 ## Proyectos
 
+### Coordinador y guardado consolidado (ISS-10)
+
+El coordinador se elige entre investigadores del proyecto. Las nuevas
+asignaciones requieren investigador activo sin baja lógica; no se ofrecen
+usuarios, becarios ni personas externas como coordinadores.
+
+`ProyectosForm` consulta `/investigadores/` con una clave de React Query propia
+(`proyecto-candidatos`) y refresca al montar. Muestra carga, error con reintento,
+ausencia de candidatos e instrucciones para agregar investigadores. Las filas
+vacías se rechazan antes del envío. Un investigador previamente asociado que
+dejó de estar activo se conserva visible; no puede recibir una nueva asignación
+como coordinador. El detalle identifica al coordinador inactivo sin ocultar su
+nombre ni su historial.
+
+`upsertProyectos` envía campos y relaciones en un solo POST o PUT:
+`investigadoresIds` pasa a `investigadores_ids`, `becariosIds` a `becarios_ids`
+y `coordinadorId` a `coordinador_id`. En alta se envían las selecciones; en
+edición únicamente las listas o el coordinador que cambiaron. Omitir una clave
+conserva su estado actual. La edición sin cambios no realiza peticiones.
+El borrador se limpia y se navega con éxito solo después del guardado completo.
+
+Seguimiento de prueba manual ISS-10: el alta con fecha de fin pasada, de hoy o
+futura admite el guardado consolidado; una fecha pasada/de hoy se muestra como
+proyecto cerrado después del alta. Los proyectos ya cerrados requieren
+reapertura antes de editar. Se valida localmente que fin no preceda a inicio.
+Guardar muestra un icono animado mientras espera al servidor. Una validación
+local o un error de API siempre muestra aviso general, además de los mensajes
+por campo y foco en el primero inválido, para evitar un guardado aparentemente
+sin respuesta cuando el usuario está al final de la pantalla.
+
+Los permisos ADMIN/GESTOR y los destinos de alta/home y edición/detalle se
+conservan. El historial se invalida tras guardar y se presenta con 3 elementos
+por página. Prueba automatizada del formulario y service reales:
+`tests/proyectoCoordinador.test.ts`. La comprobación visual en Docker queda a
+cargo del usuario.
+
 - el service transforma el contrato `snake_case` del backend al modelo de interfaz
 - el código de proyecto se maneja como texto alfanumérico, conserva mayúsculas y
   minúsculas y admite hasta 50 caracteres sin conversiones numéricas

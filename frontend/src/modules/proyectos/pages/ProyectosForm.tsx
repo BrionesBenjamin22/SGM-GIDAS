@@ -1,4 +1,5 @@
-import { applyFieldErrors } from "@/lib/httpError";
+import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
+import { LoaderCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -10,19 +11,15 @@ import PersonalProyectoField from "@/components/PersonalProyectoField";
 import SuccessToast from "@/components/SuccessToast";
 import { useBecarios } from "@/modules/personal/hooks/useBecarios";
 import { useFuentesFinanciamiento } from "@/modules/catalogos/hooks/useFuenteFinanciamiento";
-import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
+import { getInvestigadores } from "@/modules/personal/services/investigadorServices";
 import { useTiposProyecto } from "@/modules/proyectos/hooks/useTiposProyecto";
 import { useUct } from "@/modules/grupo/hooks/useUct";
 import { getErrorMessage } from "@/lib/httpError";
 import {
-  desvincularBecarios,
-  desvincularInvestigadores,
   getProyectoById,
   type Proyecto,
   type ProyectoPayload,
   upsertProyectos,
-  vincularBecarios,
-  vincularInvestigadores,
 } from "@/modules/proyectos/services/proyectosServices";
 import {
   PROYECTO_CODIGO_MAX_LENGTH,
@@ -57,7 +54,10 @@ export default function ProyectosForm() {
 
   const tiposQuery = useTiposProyecto();
   const fuentesQuery = useFuentesFinanciamiento();
-  const { data: investigadores = [] } = useInvestigadores();
+  const investigadoresQuery = useQuery({
+    queryKey: ["proyecto-candidatos"], queryFn: getInvestigadores, refetchOnMount: "always",
+  });
+  const investigadores = investigadoresQuery.data ?? [];
   const { data: becarios = [] } = useBecarios();
   const { uct } = useUct();
 
@@ -185,10 +185,12 @@ export default function ProyectosForm() {
   });
 
   const investigadoresSeleccionados = useMemo(() => {
-    return investigadores.filter((investigador) =>
+    const disponibles = [...investigadores, ...(initialData?.investigadores ?? [])
+      .filter(i => !investigadores.some(c => c.id === i.id))];
+    return disponibles.filter((investigador) =>
       investigadoresIds.includes(investigador.id)
     );
-  }, [investigadores, investigadoresIds]);
+  }, [investigadores, investigadoresIds, initialData]);
 
   const investigadoresInicialesIds = useMemo(
     () => initialData?.investigadores?.map((investigador) => investigador.id) ?? [],
@@ -208,105 +210,8 @@ export default function ProyectosForm() {
     [initialData]
   );
 
-  type ProyectoFormMutationPayload = ProyectoPayload & {
-    _skipUpsert?: boolean;
-  };
-
   const mutation = useMutation({
-    mutationFn: async (payload: ProyectoFormMutationPayload) => {
-      const shouldSkipUpsert = payload._skipUpsert === true;
-      const proyectoId = shouldSkipUpsert
-        ? Number(payload.id)
-        : Number((await upsertProyectos(payload)).id);
-      const fechaInicioVinculacion =
-        payload.fechaInicio ?? initialData?.fechaInicio;
-
-      if (!fechaInicioVinculacion || !Number.isFinite(proyectoId)) {
-        throw new Error("No se pudo determinar el proyecto o su fecha de inicio.");
-      }
-
-      const cambioCoordinador = isEdit && coordinadorInicialId !== coordinadorId;
-      const investigadoresConRolCambiado = cambioCoordinador
-        ? [coordinadorInicialId, coordinadorId].filter(
-            (value): value is number =>
-              value !== null &&
-              investigadoresInicialesIds.includes(value) &&
-              investigadoresIds.includes(value)
-          )
-        : [];
-
-      const investigadoresAAgregar = Array.from(new Set(isEdit
-        ? [
-            ...investigadoresIds.filter(
-            (idInvestigador) =>
-              !investigadoresInicialesIds.includes(idInvestigador)
-            ),
-            ...investigadoresConRolCambiado,
-          ]
-        : investigadoresIds));
-
-      const investigadoresADesvincular = isEdit
-        ? Array.from(new Set([
-            ...investigadoresInicialesIds.filter(
-              (idInvestigador) => !investigadoresIds.includes(idInvestigador)
-            ),
-            ...investigadoresConRolCambiado,
-          ]))
-        : [];
-
-      const becariosAAgregar = isEdit
-        ? becariosIds.filter(
-            (idBecario) => !becariosInicialesIds.includes(idBecario)
-          )
-        : becariosIds;
-
-      const becariosADesvincular = isEdit
-        ? becariosInicialesIds.filter(
-            (idBecario) => !becariosIds.includes(idBecario)
-          )
-        : [];
-
-      const fechaDesvinculacion = toCivilDateString(new Date());
-      if (!fechaDesvinculacion) return;
-
-      if (investigadoresADesvincular.length > 0) {
-        await desvincularInvestigadores(
-          proyectoId,
-          fechaDesvinculacion,
-          investigadoresADesvincular
-        );
-      }
-
-      if (becariosADesvincular.length > 0) {
-        await desvincularBecarios(
-          proyectoId,
-          fechaDesvinculacion,
-          becariosADesvincular
-        );
-      }
-
-      if (investigadoresAAgregar.length > 0) {
-        await vincularInvestigadores(
-          proyectoId,
-          investigadoresAAgregar.map((idInvestigador) => ({
-            id_investigador: idInvestigador,
-            fecha_inicio: fechaInicioVinculacion,
-            fecha_fin: null,
-            es_coordinador: coordinadorId === idInvestigador,
-          }))
-        );
-      }
-
-      if (becariosAAgregar.length > 0) {
-        await vincularBecarios(
-          proyectoId,
-          becariosAAgregar,
-          fechaInicioVinculacion
-        );
-      }
-
-      return { id: proyectoId };
-    },
+    mutationFn: (payload: ProyectoPayload) => upsertProyectos(payload),
     onSuccess: () => {
       clearDraft();
       qc.invalidateQueries({ queryKey: ["proyectos"] });
@@ -330,10 +235,8 @@ export default function ProyectosForm() {
       });
     },
     onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["codigoProyecto","nombreProyecto","tipoProyectoId","fechaInicio","montoDestinado","coordinadorId","investigadoresIds","descripcionProyecto","dificultadesProyecto","fuenteId","becariosIds","fechaFin"])) return;
-      const defaultMessage = isEdit
-        ? "No se pudo actualizar el proyecto."
-        : "No se pudo crear el proyecto.";
+      applyFieldErrors(error, setErrors, ["codigoProyecto","nombreProyecto","tipoProyectoId","fechaInicio","montoDestinado","coordinadorId","investigadoresIds","descripcionProyecto","dificultadesProyecto","fuenteId","becariosIds","fechaFin"]);
+      const defaultMessage = "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente.";
 
       setErrorMessage(getErrorMessage(error, defaultMessage));
 
@@ -368,6 +271,9 @@ export default function ProyectosForm() {
     if (!fechaInicio) {
       newErrors.fechaInicio = "Debe seleccionar fecha de inicio";
     }
+    if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
+      newErrors.fechaFin = "La fecha de fin no puede ser anterior a la fecha de inicio.";
+    }
 
     if (
       montoDestinado.trim() !== "" &&
@@ -376,6 +282,15 @@ export default function ProyectosForm() {
       newErrors.montoDestinado = "El monto debe ser un numero mayor o igual a cero";
     }
 
+    if (investigadoresIds.some(id => !Number.isInteger(id) || id <= 0)) {
+      newErrors.investigadoresIds = "Complete o quite las selecciones vacías.";
+    }
+    if (becariosIds.some(id => !Number.isInteger(id) || id <= 0)) {
+      newErrors.becariosIds = "Complete o quite las selecciones vacías.";
+    }
+    if (investigadoresQuery.isLoading || investigadoresQuery.isError) {
+      newErrors.investigadoresIds = "Espere la carga de investigadores o intente nuevamente.";
+    }
     if (investigadoresIds.length > 0 && coordinadorId === null) {
       newErrors.coordinadorId =
         "Debe seleccionar un coordinador entre los investigadores elegidos";
@@ -390,11 +305,17 @@ export default function ProyectosForm() {
     }
 
     setErrors(newErrors);
+    if (Object.keys(newErrors).length) {
+      focusFieldErrors(newErrors);
+      setErrorMessage("No pudimos guardar el proyecto. Complete o corrija los campos indicados e intente nuevamente.");
+      setShowError(true);
+    }
     return Object.keys(newErrors).length === 0;
   };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (mutation.isPending) return;
 
     if (proyectoCerrado) return;
     if (!validate()) return;
@@ -419,7 +340,7 @@ export default function ProyectosForm() {
     };
 
     if (!isEdit) {
-      mutation.mutate(payload);
+      mutation.mutate({ ...payload, investigadoresIds, becariosIds, coordinadorId });
       return;
     }
 
@@ -480,12 +401,12 @@ export default function ProyectosForm() {
     }
 
     mutation.mutate(
-      Object.keys(changedPayload).length === 0
-        ? {
-            id,
-            _skipUpsert: true,
-          }
-        : { ...changedPayload, id }
+      {
+        ...changedPayload, id,
+        ...(hayNuevosInvestigadores || hayInvestigadoresDesvinculados ? { investigadoresIds } : {}),
+        ...(hayNuevosBecarios || hayBecariosDesvinculados ? { becariosIds } : {}),
+        ...(cambioCoordinador ? { coordinadorId } : {}),
+      }
     );
   };
 
@@ -671,9 +592,22 @@ export default function ProyectosForm() {
 
         <Field label="Investigadores" name="investigadoresIds" error={errors.investigadoresIds}>
           <div className="space-y-4" data-error-field="coordinadorId" tabIndex={-1}>
+            {investigadoresQuery.isLoading && <p role="status">Cargando investigadores...</p>}
+            {investigadoresQuery.isError && <div role="alert">
+              <p>Lo sentimos, no pudimos recuperar los investigadores. Intente nuevamente.</p>
+              <Button type="button" variant="secondary" onClick={() => void investigadoresQuery.refetch()}>Reintentar</Button>
+            </div>}
+            {!investigadoresQuery.isLoading && !investigadoresQuery.isError && investigadores.length === 0 &&
+              <p role="status">No hay investigadores activos disponibles. Registre o reactive un investigador para asignar un coordinador.</p>}
+            {investigadoresSeleccionados.length === 0 && investigadores.length > 0 &&
+              <p>Agregue un investigador al proyecto para seleccionar su coordinador.</p>}
             <PersonalProyectoField
               value={investigadoresIds}
-              options={investigadores}
+              options={[
+                ...investigadores,
+                ...(initialData?.investigadores ?? []).filter(i => !investigadores.some(c => c.id === i.id)),
+              ]}
+              disabled={proyectoCerrado || investigadoresQuery.isLoading || investigadoresQuery.isError}
               onChange={(ids) => {
                 if (proyectoCerrado) return;
                 setInvestigadoresIds(ids);
@@ -707,10 +641,10 @@ export default function ProyectosForm() {
                           setCoordinadorId(investigador.id);
                           clearError("coordinadorId");
                         }}
-                        disabled={proyectoCerrado}
+                        disabled={proyectoCerrado || (!investigadores.some(c => c.id === investigador.id) && coordinadorId !== investigador.id)}
                       />
                       <span className="text-sm text-slate-700">
-                        {investigador.nombre_apellido}
+                        {investigador.nombre_apellido}{!investigadores.some(c => c.id === investigador.id) ? " (inactivo, asignación conservada)" : ""}
                       </span>
                     </label>
                   ))}
@@ -779,7 +713,8 @@ export default function ProyectosForm() {
           </Button>
 
           {!proyectoCerrado && (
-            <Button type="submit" size="sm" disabled={mutation.isPending}>
+            <Button type="submit" size="sm" disabled={mutation.isPending} aria-busy={mutation.isPending}>
+              {mutation.isPending && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />}
               {mutation.isPending
                 ? "Guardando..."
                 : isEdit

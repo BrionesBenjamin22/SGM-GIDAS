@@ -52,7 +52,7 @@ class ProyectoInvestigacionService:
 
     @staticmethod
     def _validar_id(valor, campo: str):
-        if not isinstance(valor, int) or valor <= 0:
+        if type(valor) is not int or valor <= 0:
             raise ValueError(f"El campo '{campo}' debe ser un entero positivo")
         return valor
 
@@ -90,7 +90,7 @@ class ProyectoInvestigacionService:
             investigador_id, "id_investigador"
         )
         investigador = db.session.get(Investigador, investigador_id)
-        if not investigador or investigador.deleted_at is not None:
+        if not investigador or investigador.deleted_at is not None or not investigador.activo:
             raise ValueError('Seleccione un investigador disponible e intente nuevamente.', details={"fields": {'id_investigador': 'Seleccione un investigador disponible e intente nuevamente.'}})
         return investigador_id
 
@@ -99,7 +99,7 @@ class ProyectoInvestigacionService:
         proyecto = ProyectoInvestigacion.query.filter_by(
             id=proyecto_id,
             deleted_at=None
-        ).first()
+        ).with_for_update().first()
 
         if not proyecto:
             raise NotFoundError("Proyecto no encontrado.")
@@ -249,7 +249,7 @@ class ProyectoInvestigacionService:
     # CREATE
     # =========================
     @staticmethod
-    def create(data: dict, user_id: int):
+    def create(data: dict, user_id: int, *, commit=True):
         codigo_proyecto = ProyectoInvestigacionService._validar_codigo_proyecto(
             data.get("codigo_proyecto")
         )
@@ -301,7 +301,10 @@ class ProyectoInvestigacionService:
         )
 
         db.session.add(proyecto)
-        db.session.commit()
+        if commit:
+            db.session.commit()
+        else:
+            db.session.flush()
 
         return proyecto.serialize()
 
@@ -309,7 +312,7 @@ class ProyectoInvestigacionService:
     # UPDATE
     # =========================
     @staticmethod
-    def update(proyecto_id: int, data: dict, user_id: int = None):
+    def update(proyecto_id: int, data: dict, user_id: int = None, *, commit=True):
 
         proyecto = ProyectoInvestigacion.query.filter_by(
             id=proyecto_id,
@@ -473,7 +476,10 @@ class ProyectoInvestigacionService:
                 user_id=user_id
             )
 
-        db.session.commit()
+        if commit:
+            db.session.commit()
+        else:
+            db.session.flush()
         return proyecto.serialize()
 
     # =========================

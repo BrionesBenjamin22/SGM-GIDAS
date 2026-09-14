@@ -3,6 +3,7 @@ import { http } from "@/lib/http";
 export type ProyectosActivosFilter = "true" | "false" | "all";
 
 export type InvestigadorProyecto = {
+  activo?: boolean;
   fecha_inicio: string;
   fecha_fin?: string | null;
   id: number;
@@ -65,6 +66,9 @@ export type Proyecto = {
 };
 
 export type ProyectoPayload = {
+  investigadoresIds?: number[];
+  becariosIds?: number[];
+  coordinadorId?: number | null;
   id?: string;
   codigoProyecto?: string;
   nombreProyecto?: string;
@@ -146,6 +150,7 @@ function mapProyecto(p: ProyectoApiResponse): Proyecto {
       fecha_inicio: inv.fecha_inicio,
       fecha_fin: inv.fecha_fin,
       es_coordinador: Boolean(inv.es_coordinador),
+      activo: inv.activo,
     })),
     becarios: (p.becarios || []).map((bec) => ({
       id: bec.id,
@@ -170,6 +175,9 @@ export async function getProyectos(
 
 export async function upsertProyectos(payload: ProyectoPayload): Promise<Proyecto> {
   const body: Record<string, unknown> = {};
+  if ("investigadoresIds" in payload) body.investigadores_ids = payload.investigadoresIds;
+  if ("becariosIds" in payload) body.becarios_ids = payload.becariosIds;
+  if ("coordinadorId" in payload) body.coordinador_id = payload.coordinadorId;
 
   if ("codigoProyecto" in payload) {
     body.codigo_proyecto = payload.codigoProyecto;

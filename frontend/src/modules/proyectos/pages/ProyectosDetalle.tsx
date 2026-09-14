@@ -79,8 +79,10 @@ export default function ProyectoDetalle() {
     return date.toLocaleDateString("es-AR");
   };
 
-  const coordinador =
-    data.investigadores?.find((inv) => inv.es_coordinador)?.nombre_apellido || "-";
+  const investigadorCoordinador = data.investigadores?.find((inv) => inv.es_coordinador);
+  const coordinador = investigadorCoordinador
+    ? `${investigadorCoordinador.nombre_apellido}${investigadorCoordinador.activo === false ? " (inactivo, asignación conservada)" : ""}`
+    : "-";
 
   const investigadores = data.investigadores?.length
     ? data.investigadores

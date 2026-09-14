@@ -8,6 +8,54 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### Corregido
+
+#### ISS-08 e ISS-10 — Seguimiento de listado, validaciones y fecha de fin
+
+- Investigador invalida Personal y candidatos de proyectos después de guardar;
+  el listado combinado muestra primero las altas recientes entre todos los subtipos.
+- Los tres formularios de Personal muestran Guardando con icono animado,
+  deshabilitan el envío mientras esperan y recuperan el botón ante errores.
+- Personal y Proyectos muestran avisos generales y enfocan el primer campo
+  inválido, tanto para validaciones locales como para errores del servidor.
+- Se permite el alta completa de proyectos históricos con fecha de fin pasada
+  o de hoy, incluyendo coordinador e integrantes; las participaciones iniciales
+  conservan el período del proyecto. Las fechas futuras se admiten en alta.
+  Los proyectos previamente cerrados siguen requiriendo reapertura para editar.
+- Se valida localmente el orden inicio-fin. Documentación de ambos módulos y
+  seguimientos integrados en sus archivos de tareas, sin archivos temporales ni logs.
+
+Validaciones: 46 tests backend, 83 frontend, typecheck y build de producción
+correctos; git diff --check correcto. Se probaron formularios y React Query real
+con caché vigente, errores, foco y prevención de doble envío. Pruebas de navegador
+y PostgreSQL a cargo del usuario. Persisten warnings ajenos de Query.get y
+ciclos SQLite; se preservaron cambios previos. Sin commits ejecutados.
+
+Incidencia de entorno: un intento de build fue rechazado por acceso de esbuild
+al directorio padre; la repetición del comando habitual terminó correctamente,
+sin cambiar permisos ni configuración.
+
+#### ISS-10 — Habilitar la asignación del coordinador de un proyecto
+
+- Guardado de campos, coordinador e integrantes en una sola transacción POST/PUT,
+  con rollback completo y bloqueo del agregado durante cambios en PostgreSQL.
+- Elegibilidad de investigadores activos sin baja lógica; IDs inválidos,
+  duplicados y coordinadores externos al proyecto se rechazan con errores por campo.
+- Reemplazo del coordinador sin reconstruir participaciones ni alterar fechas;
+  conservación visible de asignaciones inactivas y desvinculación con soft delete.
+- Formulario con carga, error/reintento, vacío e instrucciones; IDs temporales
+  rechazados antes de guardar, payload parcial y ausencia de peticiones sin cambios.
+- Auditoría de coordinador y eventos relacionales dentro del guardado, contratos
+  documentados y snapshots de memorias preservados.
+
+Validaciones: 42 tests backend, 82 frontend, typecheck, build de producción y
+git diff --check correctos. Pruebas de navegador a cargo del usuario. PostgreSQL
+y concurrencia pendientes en Docker; SQLite no verifica FOR UPDATE. Warnings
+preexistentes de Query.get y ciclos de claves foráneas SQLite; launcher del venv
+con ruta antigua, se utilizó Python instalado con sus paquetes. Script y logs
+temporales eliminados. Cambios previos preservados; tasks continúa ignorado.
+Sin commits ejecutados.
+
 ### Documentado
 
 #### ISS-05 a ISS-16 — Normalizar documentos de tareas pendientes
