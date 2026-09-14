@@ -1,5 +1,5 @@
 from sqlalchemy import or_
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from datetime import datetime
 from extension import db
 from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
@@ -246,7 +246,7 @@ class SearchService:
                 joinedload(Investigador.participaciones_proyecto)
                     .joinedload(InvestigadorProyecto.proyecto),
                 joinedload(Investigador.participaciones_relevantes),
-                joinedload(Investigador.trabajos_reunion_cientifica)
+                selectinload(Investigador.autorias_reunion)
             ),
             Investigador,
             eliminados,
@@ -940,7 +940,7 @@ class SearchService:
             db.session.query(TrabajoReunionCientifica)
             .options(
                 joinedload(TrabajoReunionCientifica.tipo_reunion_cientifica),
-                joinedload(TrabajoReunionCientifica.investigadores),
+                selectinload(TrabajoReunionCientifica.autorias),
                 joinedload(TrabajoReunionCientifica.grupo_utn)
             ),
             TrabajoReunionCientifica,
@@ -955,16 +955,16 @@ class SearchService:
             titulo_norm = SearchService.normalize_text(tr.titulo_trabajo)
             reunion_norm = SearchService.normalize_text(tr.nombre_reunion)
             procedencia_norm = SearchService.normalize_text(tr.procedencia)
-            investigadores_norm = [
-                SearchService.normalize_text(inv.nombre_apellido)
-                for inv in tr.investigadores
+            autores_norm = [
+                SearchService.normalize_text(autor.integrante.nombre_apellido)
+                for autor in tr.autorias
             ]
             
             if (
                 query_normalized in titulo_norm
                 or query_normalized in reunion_norm
                 or query_normalized in procedencia_norm
-                or any(query_normalized in inv for inv in investigadores_norm)
+                or any(query_normalized in inv for inv in autores_norm)
             ):
 
                 resultados.append(SearchService.with_status(tr, {
@@ -984,13 +984,7 @@ class SearchService:
                             tr.grupo_utn.nombre_unidad_academica
                             if tr.grupo_utn else None
                         ),
-                        "investigadores": [
-                            {
-                                "id": inv.id,
-                                "nombre": inv.nombre_apellido
-                            }
-                            for inv in tr.investigadores
-                        ]
+                        "autores": [autor.serialize() for autor in tr.autorias]
                     }
                 }))
                 
@@ -1004,7 +998,7 @@ class SearchService:
             .options(
                 joinedload(TrabajosRevistasReferato.grupo_utn),
                 joinedload(TrabajosRevistasReferato.tipo_reunion),
-                joinedload(TrabajosRevistasReferato.investigadores)
+                selectinload(TrabajosRevistasReferato.autorias)
             ),
             TrabajosRevistasReferato,
             eliminados,
@@ -1020,9 +1014,9 @@ class SearchService:
             editorial_norm = SearchService.normalize_text(tr.editorial)
             issn_norm = SearchService.normalize_text(tr.issn)
             pais_norm = SearchService.normalize_text(tr.pais)
-            investigadores_norm = [
-                SearchService.normalize_text(inv.nombre_apellido)
-                for inv in tr.investigadores
+            autores_norm = [
+                SearchService.normalize_text(autor.integrante.nombre_apellido)
+                for autor in tr.autorias
             ]
 
             if (
@@ -1031,7 +1025,7 @@ class SearchService:
                 or query_normalized in editorial_norm
                 or query_normalized in issn_norm
                 or query_normalized in pais_norm
-                or any(query_normalized in inv for inv in investigadores_norm)
+                or any(query_normalized in inv for inv in autores_norm)
             ):
 
                 resultados.append(SearchService.with_status(tr, {
@@ -1047,13 +1041,7 @@ class SearchService:
                         "pais": tr.pais,
                         "grupo": tr.grupo_utn.nombre_sigla_grupo if tr.grupo_utn else None,
                         "tipo_reunion": tr.tipo_reunion.nombre if tr.tipo_reunion else None,
-                        "investigadores": [
-                            {
-                                "id": inv.id,
-                                "nombre": inv.nombre_apellido
-                            }
-                            for inv in tr.investigadores
-                        ]
+                        "autores": [autor.serialize() for autor in tr.autorias]
                     }
                 }))
 

@@ -307,10 +307,7 @@ SEARCH_ENTITIES = [
             "title": t.titulo_trabajo,
             "description": f"{t.nombre_reunion} – {t.tipo_reunion_cientifica}",
             "extra": {
-                "investigadores": [
-                    inv.nombre_apellido
-                    for inv in t.investigadores
-                ],
+                "autores": [a.serialize() for a in t.autorias],
                 "procedencia": t.procedencia,
                 "fecha": (
                     t.fecha_inicio.isoformat()
@@ -411,10 +408,7 @@ SEARCH_ENTITIES = [
                     t.tipo_reunion.nombre
                     if t.tipo_reunion else None
                 ),
-                "investigadores": [
-                    inv.nombre_apellido
-                    for inv in t.investigadores
-                ]
+                "autores": [a.serialize() for a in t.autorias]
             },
             "url": f"/trabajos-revistas/{t.id}"
         }

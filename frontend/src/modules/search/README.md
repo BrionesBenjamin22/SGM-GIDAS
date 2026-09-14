@@ -52,3 +52,9 @@ confirmaciones bloquean además cancelar, el fondo y los campos del diálogo.
 El estado se libera al resolver o fallar, conservando errores y mensajes de
 éxito existentes. Los callbacks basados en React Query deben devolver
 mutateAsync para que el diálogo cubra toda la operación.
+
+## ISS-12: autoría de integrantes
+
+La vista de búsqueda muestra el preview de trabajos usando extra.autores y la etiqueta Autores. Los nombres pueden pertenecer a investigadores o becarios; el resto de tipos de resultados conserva su contrato.
+
+Corrección de alcance ISS-12: los autores de trabajos son únicamente investigadores y becarios. Personal (PTAA/profesional) no puede vincularse como autor. Se mantiene la etiqueta Autores.
