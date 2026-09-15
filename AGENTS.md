@@ -11,6 +11,8 @@ Establecer reglas de trabajo consistentes para acelerar el desarrollo y reducir 
   - `tasks/pendient/`
   - `tasks/finished/`
 - `docs/agents-tasks/` queda reemplazada por `tasks/`.
+- La convencion de nombres de tareas es `ISS-XX.md`, con un unico archivo por identificador.
+- Los seguimientos y ajustes de una tarea se agregan dentro de su archivo, en orden temporal, con fecha, cambios, archivos, validaciones, incidencias y estado de aceptacion relevantes. No crear archivos adicionales con sufijos para el mismo issue.
 - Al iniciar una sesion de trabajo, revisar primero `tasks/in-progress/` y luego `tasks/pendient/` antes de modificar codigo.
 - No modificar codigo antes de leer la tarea activa y comprender su estado actual.
 - Al pausar una tarea, dejarla en `tasks/in-progress/` y registrar archivos modificados, estado exacto, validaciones hechas y proximo paso.
@@ -194,3 +196,14 @@ Considerar en cada nueva funcionalidad:
 - reutilizacion
 - minimizacion de renders
 - eficiencia de consultas
+
+<!-- CODEGRAPH_START -->
+## CodeGraph
+
+In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
+
+- **MCP tool** (when available): `codegraph_explore` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops grep can't follow. Name a file or symbol in the query to read its current line-numbered source. If it's listed but deferred, load it by name via tool search.
+- **Shell** (always works): `codegraph explore "<symbol names or question>"` prints the same output.
+
+If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
+<!-- CODEGRAPH_END -->
