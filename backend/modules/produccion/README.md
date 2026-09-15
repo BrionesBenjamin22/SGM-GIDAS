@@ -96,8 +96,9 @@ fecha_presentacion en YYYY-MM-DD. Solicitudes antiguas pueden enviar
 fecha_inicio temporalmente; se normaliza a fecha_presentacion sin alterar
 el payload original. Ambos campos iguales se aceptan; distintos se rechazan
 con 400 y error de campo, sin cambios persistidos. La respuesta solo expone
-el nombre nuevo. Se mantienen permisos y auditoría, fecha mínima 2010-01-01
-y prohibición de fecha futura. Duplicados y orden asc/desc usan la nueva fecha.
+el nombre nuevo. Se mantienen permisos y auditoría y la fecha mínima
+2010-01-01. Se admiten fechas futuras para registrar presentaciones programadas.
+Duplicados y orden asc/desc usan la nueva fecha.
 La pertenencia a memoria usa su período inclusivo sobre fecha_presentacion:
 31/12 corresponde al año que termina y 01/01 al siguiente. El snapshot congela
 la fecha. La revisión c13d7e9a2b40 renombra las columnas de trabajos y snapshots,

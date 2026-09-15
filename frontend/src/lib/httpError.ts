@@ -33,7 +33,15 @@ export function getApiErrorMessage(body: unknown): string | null {
   );
 }
 
-export function getErrorMessage(error: unknown, fallback: string): string {
+type ErrorMessageOptions = {
+  includeTrackingReference?: boolean;
+};
+
+export function getErrorMessage(
+  error: unknown,
+  fallback: string,
+  options: ErrorMessageOptions = {},
+): string {
   if (!error || typeof error !== "object") return fallback;
 
   const candidate = error as { body?: unknown; message?: unknown };
@@ -43,6 +51,7 @@ export function getErrorMessage(error: unknown, fallback: string): string {
     fallback
   );
   const safe = isSafeMessage(message) ? message : fallback;
+  if (options.includeTrackingReference === false) return safe;
   const requestId = getErrorRequestId(error);
   return requestId ? `${safe} Referencia de seguimiento: ${requestId}.` : safe;
 }

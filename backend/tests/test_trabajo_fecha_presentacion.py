@@ -1,6 +1,6 @@
 import importlib.util
 import unittest
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
@@ -37,13 +37,35 @@ class FechaPresentacionTest(unittest.TestCase):
         response = self.client.put(ruta, json={"fecha_inicio": "2026-03-21", "fecha_presentacion": "2026-03-22"}, headers=self.headers)
         self.assertEqual(response.status_code, 400)
         self.assertEqual(self.client.get(ruta, headers=self.headers).get_json()["fecha_presentacion"], "2026-03-21")
-        for fecha in ("2009-12-31", "9999-01-01", "2026-02-30"):
+        for fecha in ("2009-12-31", "2026-02-30"):
             self.assertEqual(self.client.put(ruta, json={"fecha_presentacion": fecha}, headers=self.headers).status_code, 400)
         historial = self.client.get(ruta + "/historial", headers=self.headers).get_json()
         self.assertEqual([i["campo"] for i in historial].count("fecha_presentacion"), 1)
         payload["titulo_trabajo"] = "Solicitud de consumidor anterior"
         payload["fecha_inicio"] = payload.pop("fecha_presentacion")
         self.assertEqual(self.client.post("/reuniones", json=payload, headers=self.headers).status_code, 201)
+
+    def test_alta_y_edicion_aceptan_presentaciones_futuras(self):
+        fecha_futura = (date.today() + timedelta(days=365)).isoformat()
+        payload = {
+            **self.payload("reuniones"),
+            "titulo_trabajo": "Presentacion programada",
+            "fecha_presentacion": fecha_futura,
+        }
+
+        response = self.client.post("/reuniones", json=payload, headers=self.headers)
+        self.assertEqual(response.status_code, 201, response.get_json())
+        self.assertEqual(response.get_json()["fecha_presentacion"], fecha_futura)
+
+        nueva_fecha = (date.today() + timedelta(days=730)).isoformat()
+        ruta = f"/reuniones/{response.get_json()['id']}"
+        response = self.client.put(
+            ruta,
+            json={"fecha_presentacion": nueva_fecha},
+            headers=self.headers,
+        )
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(response.get_json()["fecha_presentacion"], nueva_fecha)
 
     def test_limites_anuales_orden_y_excel_de_snapshot(self):
         ids = []

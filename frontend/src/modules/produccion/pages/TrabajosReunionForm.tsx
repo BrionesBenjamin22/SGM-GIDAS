@@ -148,7 +148,8 @@ export default function TrabajoReunionForm() {
       if (applyFieldErrors(error, setErrors, ["enlace","titulo","nombreReunion","procedencia","tipoId","fechaPresentacion","autores"])) return;
       const backendMessage = getErrorMessage(
         error,
-        "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+        "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente.",
+        { includeTrackingReference: false },
       );
       const lowerMessage = backendMessage.toLowerCase();
 
@@ -362,7 +363,7 @@ export default function TrabajoReunionForm() {
               if (date) clearError("fechaPresentacion");
             }}
             className={inputClass("fechaPresentacion")}
-            helperText="DD/MM/AAAA"
+            helperText="Desde 01/01/2010. Puede indicar una presentación programada."
           />
         </Field>
 

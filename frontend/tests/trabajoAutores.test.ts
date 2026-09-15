@@ -245,6 +245,17 @@ test("ISS-13: service normaliza fechas antiguas y envía únicamente fecha_prese
   assert.equal(JSON.stringify(saved), '{"fecha_presentacion":"2026-01-01"}');
 });
 
+test("ISS-17: reuniones informa fechas programadas y oculta referencias internas", () => {
+  const source = readFileSync(
+    "src/modules/produccion/pages/TrabajosReunionForm.tsx",
+    "utf8",
+  );
+
+  assert.match(source, /Puede indicar una presentación programada\./);
+  assert.match(source, /includeTrackingReference:\s*false/);
+  assert.doesNotMatch(source, /maxDate=\{new Date\(\)\}/);
+});
+
 test("ISS-14: enlace opcional valida protocolo, longitud y apertura segura", () => {
   const { errorEnlace, enlaceSeguro } = load("src/modules/produccion/utils/trabajoEnlace.ts");
   for (const url of ["", "  ", "http://example.org", "https://doi.org/10.1234/test", "https://example.org/" + "a".repeat(2028)]) assert.equal(errorEnlace(url), undefined);

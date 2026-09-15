@@ -212,3 +212,12 @@ validación, carga/edición, alta, eliminación y diferencias reales.
 
 La validación también rechaza hosts inválidos; admite dominios internacionalizados
 y hosts IPv6 válidos mediante los analizadores de URL de cada plataforma.
+
+## ISS-17: presentaciones programadas y errores seguros
+
+TrabajosReunionForm admite fechas de presentación futuras para registrar trabajos
+ya programados y mantiene como límite inferior el 01/01/2010. La ayuda del campo
+explicita ambos comportamientos. Los errores de guardado conservan el mensaje
+seguro y accionable del contrato o el fallback del formulario, pero no muestran
+la referencia interna de seguimiento. Los demás formularios permanecen fuera de
+esta etapa hasta completar la validación manual del flujo de reuniones.

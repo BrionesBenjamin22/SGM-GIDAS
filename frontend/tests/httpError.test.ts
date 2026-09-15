@@ -49,6 +49,31 @@ test("descarta detalles técnicos y muestra una referencia segura", () => {
   assert.deepEqual(getApiFieldErrors({ body: { fields: { nombre: "SQLAlchemy column secret", mail: 123 } } }), {});
 });
 
+test("puede ocultar la referencia interna sin perder el mensaje seguro", () => {
+  const fallback = "Lo sentimos, no pudimos guardar los cambios. Intente nuevamente.";
+  const error = {
+    body: {
+      error: {
+        message: "Revise la fecha de presentación e intente nuevamente.",
+        details: { request_id: "req-interno-17" },
+      },
+    },
+  };
+
+  assert.equal(
+    getErrorMessage(error, fallback, { includeTrackingReference: false }),
+    "Revise la fecha de presentación e intente nuevamente.",
+  );
+  assert.equal(
+    getErrorMessage(
+      { body: { error: { message: "SELECT password FROM users", details: { request_id: "req-interno-17" } } } },
+      fallback,
+      { includeTrackingReference: false },
+    ),
+    fallback,
+  );
+});
+
 test("enfoca el primer campo inválido en el orden visual", () => {
   const previous = globalThis.requestAnimationFrame;
   const focused: string[] = [];

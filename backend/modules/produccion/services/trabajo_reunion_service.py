@@ -2,7 +2,7 @@ from modules.memorias.services.memoria_periodo_service import (
     consultar_entidades_memoria, registro_puntual_en_memoria,
 )
 from modules.produccion.services.trabajo_enlace import validar_enlace
-from datetime import date, datetime
+from datetime import datetime
 
 from sqlalchemy import or_
 
@@ -87,9 +87,6 @@ class TrabajoReunionCientificaService:
             fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
         except (TypeError, ValueError):
             raise ValidationError("La fecha debe tener formato YYYY-MM-DD")
-
-        if fecha > date.today():
-            raise ValidationError("La fecha de presentación no puede ser futura")
 
         return validate_institutional_date(fecha, "fecha_presentacion")
 

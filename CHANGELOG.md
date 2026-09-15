@@ -8,6 +8,20 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-17: permitir presentaciones futuras sin referencias internas
+
+- Los trabajos en reuniones admiten fechas de presentación futuras en altas y
+  ediciones para registrar actividades ya programadas; conservan formato civil
+  y límite institucional inferior del 01/01/2010.
+- El formulario informa explícitamente que acepta presentaciones programadas y
+  mantiene los errores seguros y accionables sin mostrar la referencia interna
+  de seguimiento.
+- Se actualizaron los contratos documentados y las regresiones de frontend y
+  backend. La aceptación manual fue confirmada por el usuario.
+
+Validaciones: 4 pruebas backend focalizadas, 103 frontend, typecheck,
+build:production con 2668 módulos y git diff --check correctos.
+
 ### ISS-16: configurar períodos y snapshots de memorias por UCT
 
 - Cada memoria pertenece a una UCT y admite un rango inclusivo configurable,
