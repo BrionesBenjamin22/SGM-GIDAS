@@ -1,3 +1,4 @@
+import { errorEnlace, MAX_ENLACE } from "@/modules/produccion/utils/trabajoEnlace";
 import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -48,6 +49,7 @@ export default function TrabajosRevistasForm() {
     enabled: isEdit,
   });
 
+  const [enlace, setEnlace] = useState("");
   const [titulo, setTitulo] = useState("");
   const [nombreRevista, setNombreRevista] = useState("");
   const [editorial, setEditorial] = useState("");
@@ -65,6 +67,7 @@ export default function TrabajosRevistasForm() {
     if (!initialData || datosCargadosId.current === initialData.id) return;
     datosCargadosId.current = initialData.id;
 
+    setEnlace(initialData.enlace ?? "");
     setTitulo(initialData.titulo_trabajo ?? "");
     setNombreRevista(initialData.nombre_revista ?? "");
     setEditorial(initialData.editorial ?? "");
@@ -116,6 +119,8 @@ export default function TrabajosRevistasForm() {
       newErrors.autores = "Debe agregar al menos un autor";
     }
 
+    const enlaceError = errorEnlace(enlace);
+    if (enlaceError) newErrors.enlace = enlaceError;
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -149,7 +154,7 @@ export default function TrabajosRevistasForm() {
       });
     },
     onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["titulo","nombreRevista","editorial","issn","pais","tipoId","fecha","autores"])) return;
+      if (applyFieldErrors(error, setErrors, ["enlace","titulo","nombreRevista","editorial","issn","pais","tipoId","fecha","autores"])) return;
       const backendMessage = getErrorMessage(
         error,
         "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
@@ -187,6 +192,7 @@ export default function TrabajosRevistasForm() {
     if (!validate()) return;
 
     const payload = {
+      enlace: enlace.trim() || null,
       autores: autores.map(({ id, rol }) => ({ id, rol })),
       titulo_trabajo: toTitleCase(titulo.trim()),
       nombre_revista: toTitleCase(nombreRevista.trim()),
@@ -204,6 +210,7 @@ export default function TrabajosRevistasForm() {
     }
 
     const initialPayload = {
+      enlace: initialData?.enlace ?? null,
       autores: initialData?.autores ?? [],
       titulo_trabajo: initialData?.titulo_trabajo ?? "",
       nombre_revista: initialData?.nombre_revista ?? "",
@@ -383,6 +390,12 @@ export default function TrabajosRevistasForm() {
               <p className="mt-1 text-sm text-red-500">{errors.tipoId}</p>
             )}
           </>
+        </Field>
+
+        <Field label="Enlace al trabajo o DOI (opcional)" name="enlace" error={errors.enlace}>
+          <input type="url" className={inputClass("enlace")} value={enlace}
+            maxLength={MAX_ENLACE} placeholder="https://doi.org/10.1234/ejemplo"
+            onChange={e => { setEnlace(e.target.value); clearError("enlace"); }} />
         </Field>
 
         <Field label="Autores" name="autores" error={errors.autores}>

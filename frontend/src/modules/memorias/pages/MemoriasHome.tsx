@@ -12,12 +12,12 @@ import {
   getMemorias,
   type Memoria,
 } from "@/modules/memorias/services/memoriasService";
-import { formatFecha, formatFechaHora, getCivilYear } from "@/utils/dateTime";
+import { formatFecha, formatFechaHora } from "@/utils/dateTime";
 
 const ITEMS_PER_PAGE = 9;
 
 const buildTitle = (memoria: Memoria) =>
-  `Memoria ${getCivilYear(memoria.periodo_fin) ?? "-"}`;
+  `Memoria ${formatFecha(memoria.periodo_inicio)}–${formatFecha(memoria.periodo_fin)}`;
 
 const renderEstadoBadge = (estado?: string, inactiva?: boolean) => {
   if (inactiva) {
@@ -55,9 +55,9 @@ export default function MemoriasHome() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isGestor } = useAuth();
 
-  const puedeCrear = isAdmin();
+  const puedeCrear = isAdmin() || isGestor();
   const puedeEliminar = isAdmin();
 
   const [estadoRapido, setEstadoRapido] = useState<"activas" | "todas" | "cerradas">("activas");
@@ -104,6 +104,7 @@ export default function MemoriasHome() {
       const numeroVersion = memoria.version_actual?.numero_version || "";
 
       return [
+        memoria.grupo_utn_nombre || "",
         memoria.periodo_inicio,
         memoria.periodo_fin,
         estado,
@@ -272,7 +273,7 @@ export default function MemoriasHome() {
           <p className="py-10 text-center text-slate-500">Cargando...</p>
         ) : isError ? (
           <p className="py-10 text-center text-slate-500">
-            Error al cargar memorias.
+            Lo sentimos, no pudimos recuperar la información. Intente nuevamente.
           </p>
         ) : memoriasFiltradas.length === 0 ? (
           <p className="py-10 text-center text-slate-500">
@@ -281,16 +282,16 @@ export default function MemoriasHome() {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {paginatedItems.map((memoria) => {
-              const anioMemoria = getCivilYear(memoria.periodo_fin);
               const snapshotListo = memoria.version_actual?.estado === "cerrada";
 
               return (
                 <Tarjeta
                   key={memoria.id}
                   item={memoria}
-                  title={() => `Memoria ${anioMemoria}`}
+                  title={buildTitle}
                   subtitle={(item) =>
                     [
+                      `UCT: ${item.grupo_utn_nombre || "Pendiente de asociar"}`,
                       `Período: ${formatFecha(item.periodo_inicio)} - ${formatFecha(
                         item.periodo_fin
                       )}`,

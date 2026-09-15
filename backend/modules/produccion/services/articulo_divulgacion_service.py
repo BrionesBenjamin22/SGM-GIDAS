@@ -1,3 +1,6 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, registro_puntual_en_memoria,
+)
 from datetime import datetime, date
 
 from extension import db
@@ -275,14 +278,11 @@ class ArticuloDivulgacionService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        articulos = ArticuloDivulgacion.query.filter().all()
+        articulos = consultar_entidades_memoria(ArticuloDivulgacion, memoria_version)
 
         snapshots = []
         for articulo in articulos:
-            if not esta_en_periodo_memoria(
-                memoria_version,
-                articulo.fecha_publicacion
-            ):
+            if not registro_puntual_en_memoria(memoria_version, articulo, articulo.fecha_publicacion):
                 continue
             snapshot = ArticuloDivulgacionMemoriaVersion(
                 memoria_version_id=memoria_version.id,

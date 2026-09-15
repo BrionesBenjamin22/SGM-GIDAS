@@ -229,7 +229,7 @@ class MemoriaController:
                 (item for item in versiones if item.get("id") == memoria_version_id),
                 None
             )
-            anio = memoria["periodo_fin"][:4] if memoria.get("periodo_fin") else "memoria"
+            periodo = f"{memoria['periodo_inicio']}_{memoria['periodo_fin']}"
             numero_version = (
                 version.get("numero_version")
                 if version and version.get("numero_version") is not None
@@ -239,7 +239,7 @@ class MemoriaController:
             return send_file(
                 archivo,
                 as_attachment=True,
-                download_name=f"memoria_{anio}_v{numero_version}.xlsx",
+                download_name=f"memoria_{periodo}_v{numero_version}.xlsx",
                 mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
         except Exception as error:
@@ -263,7 +263,7 @@ class MemoriaController:
             data = request.get_json()
 
             return jsonify(
-                MemoriaService.update(memoria_id, data)
+                MemoriaService.update(memoria_id, data, g.current_user_id)
             ), 200
         except Exception as error:
             return exception_response(error, operation="actualizar memoria")
@@ -302,3 +302,10 @@ class MemoriaController:
             ), 200
         except Exception as error:
             return exception_response(error, operation="reabrir memoria")
+
+    @staticmethod
+    def get_historial(memoria_id):
+        try:
+            return jsonify(MemoriaService.get_historial(memoria_id)), 200
+        except Exception as error:
+            return exception_response(error, operation="consultar historial de memoria")

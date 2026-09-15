@@ -18,6 +18,7 @@ export interface TrabajoReunion {
   deleted_by_nombre?: string | null;
   deleted_at: string | null | undefined;
   activo?: boolean;
+  enlace?: string | null;
   titulo_trabajo: string;
   nombre_reunion: string;
   procedencia: string;
@@ -39,6 +40,7 @@ export interface HistorialTrabajoReunionItem {
 
 export interface TrabajoReunionPayload {
   autores: AutorReferencia[];
+  enlace?: string | null;
   titulo_trabajo: string;
   nombre_reunion: string;
   procedencia: string;
@@ -67,6 +69,7 @@ const normalizeTrabajoReunion = (item: TrabajoReunionBackend): TrabajoReunion =>
   deleted_by_nombre: item.deleted_by_nombre ?? null,
   deleted_at: item.deleted_at ?? null,
   activo: item.activo ?? true,
+  enlace: item.enlace ?? null,
   titulo_trabajo: item.titulo_trabajo ?? "",
   nombre_reunion: item.nombre_reunion ?? "",
   procedencia: item.procedencia ?? "",
@@ -153,6 +156,7 @@ export const updateTrabajoReunion = async (
   const body: Record<string, unknown> = {};
   if ("autores" in data) body.autores = data.autores;
 
+  if ("enlace" in data) body.enlace = data.enlace;
   if ("titulo_trabajo" in data) body.titulo_trabajo = data.titulo_trabajo;
   if ("nombre_reunion" in data) body.nombre_reunion = data.nombre_reunion;
   if ("procedencia" in data) body.procedencia = data.procedencia;

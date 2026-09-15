@@ -1,3 +1,7 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, registro_puntual_en_memoria,
+)
+from modules.produccion.services.trabajo_enlace import validar_enlace
 from datetime import date, datetime
 
 from sqlalchemy import or_
@@ -278,6 +282,7 @@ class TrabajosRevistasReferatoService:
             fecha,
         )
 
+        enlace = validar_enlace(data.get("enlace"))
         autores = validar_autores(data.get("autores", []))
 
         trabajo = TrabajosRevistasReferato(
@@ -289,6 +294,7 @@ class TrabajosRevistasReferatoService:
             pais=pais,
             grupo_utn_id=grupo_utn_id,
             tipo_reunion_id=tipo_reunion_id,
+            enlace=enlace,
             created_by=user_id
         )
 
@@ -309,6 +315,7 @@ class TrabajosRevistasReferatoService:
         TrabajosRevistasReferatoService._validar_user_id(user_id)
         trabajo = TrabajosRevistasReferatoService._get_activo_or_404(trabajo_id)
         autores = validar_autores(data["autores"], trabajo.autorias) if "autores" in data else None
+        enlace = validar_enlace(data["enlace"]) if "enlace" in data else trabajo.enlace
         cambios = {}
 
         titulo_trabajo = trabajo.titulo_trabajo
@@ -423,6 +430,11 @@ class TrabajosRevistasReferatoService:
                 cambios["tipo_reunion_id"] = cambio
                 trabajo.tipo_reunion_id = tipo_reunion_id
 
+            cambio = AuditoriaService.construir_cambio(trabajo.enlace, enlace)
+            if cambio:
+                cambios["enlace"] = cambio
+                trabajo.enlace = enlace
+
             if cambios:
                 trabajo.mark_updated(user_id)
                 AuditoriaService.registrar_cambios(
@@ -484,17 +496,18 @@ class TrabajosRevistasReferatoService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        trabajos = TrabajosRevistasReferato.query.filter().all()
+        trabajos = consultar_entidades_memoria(TrabajosRevistasReferato, memoria_version)
 
         snapshots = []
         for trabajo in trabajos:
-            if not esta_en_periodo_memoria(memoria_version, trabajo.fecha):
+            if not registro_puntual_en_memoria(memoria_version, trabajo, trabajo.fecha):
                 continue
             autores = [autor.serialize() for autor in trabajo.autorias]
 
             snapshot = TrabajosRevistasReferatoMemoriaVersion(
                 memoria_version_id=memoria_version.id,
                 trabajo_revista_id=trabajo.id,
+                enlace=trabajo.enlace,
                 titulo_trabajo=trabajo.titulo_trabajo,
                 nombre_revista=trabajo.nombre_revista,
                 editorial=trabajo.editorial,

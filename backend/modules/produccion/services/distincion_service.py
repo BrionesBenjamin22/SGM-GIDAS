@@ -1,3 +1,6 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, registro_puntual_en_memoria,
+)
 from datetime import date, datetime
 
 from sqlalchemy import or_
@@ -295,11 +298,11 @@ class DistincionRecibidaService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        distinciones = DistincionRecibida.query.filter().all()
+        distinciones = consultar_entidades_memoria(DistincionRecibida, memoria_version, relacion="proyecto_investigacion")
 
         snapshots = []
         for distincion in distinciones:
-            if not esta_en_periodo_memoria(memoria_version, distincion.fecha):
+            if not registro_puntual_en_memoria(memoria_version, distincion, distincion.fecha):
                 continue
             snapshot = DistincionRecibidaMemoriaVersion(
                 memoria_version_id=memoria_version.id,

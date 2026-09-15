@@ -13,6 +13,9 @@ transversal en `../README.md`.
 
 ## Fechas
 
+En el formulario de proyecto, `Field` muestra el error de fecha de inicio una
+sola vez. El texto de ayuda del calendario conserva el formato `DD/MM/AAAA`.
+
 Los períodos de proyectos y de sus participaciones admiten fechas desde el
 01/01/2010. Una fecha de finalización no puede preceder a su fecha de inicio;
 los cierres conservan la prohibición de utilizar una fecha futura.

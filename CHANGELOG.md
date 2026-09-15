@@ -8,6 +8,67 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-16: configurar períodos y snapshots de memorias por UCT
+
+- Cada memoria pertenece a una UCT y admite un rango inclusivo configurable,
+  incluso entre años. Se impiden solapamientos dentro de la misma UCT y se
+  permite una memoria operativamente activa por UCT.
+- ADMIN y GESTOR pueden crear y corregir períodos antes del primer cierre;
+  LECTURA conserva consulta y recibe 403 ante mutaciones. La UI incorpora el
+  selector de UCT, atajo de año calendario, rangos completos y errores visibles.
+- La ruta de `Nueva` usa la misma autorización ADMIN/GESTOR que el home y deja de
+  redirigir a gestores autorizados. El detalle muestra `Cerrar memoria` de forma
+  explícita; `Seleccionar`, destinado a la baja múltiple, sigue limitado a ADMIN.
+- ADMIN y GESTOR pueden pasar la memoria a revisión o cerrarla. El rango no
+  provoca un cierre automático: la transición explícita congela los snapshots.
+  Reapertura y baja continúan reservadas a ADMIN.
+- El historial presenta la sigla de la UCT en lugar de su ID, también para
+  asignaciones anteriores que ya habían guardado el identificador técnico.
+- El cierre congela entidades según UCT y vigencia histórica, incluido el fin
+  funcional de proyectos y las bajas lógicas. Las horas corresponden al valor
+  vigente al final del período; si no existe evidencia histórica quedan nulas.
+- La sección de elementos conserva el diseño anterior: muestra cantidades y abre
+  cada módulo filtrado por los registros incluidos, sin desplegables de datos en
+  las tarjetas. Los snapshots continúan disponibles para reglas y exportación.
+- Se congelan contexto institucional, autoridades, planificación, fecha de alta
+  y campos de cada entidad. UI y Excel leen la versión cerrada sin reconstruirla
+  desde datos actuales. Cambios de período, estado y reaperturas quedan auditados.
+- Migración reversible `e16a0b2c4d60` aplicada al PostgreSQL local. Para poder
+  ejecutarla se transfirió al usuario de la aplicación la propiedad de las cinco
+  tablas afectadas, permiso REFERENCES sobre `grupo_utn` y CREATE en `public`.
+- Contratos, permisos, reglas temporales y limitaciones se documentaron en los
+  módulos de memorias, grupo, personal, proyectos, producción, recursos y
+  transferencia de backend, y en memorias/grupo de frontend.
+
+Validaciones: 25 pruebas backend focalizadas, 119 de Memorias, 101 frontend, typecheck,
+build:production, migración upgrade/downgrade temporal y aplicación local.
+La suite backend completa ejecutó 416 pruebas: 412 correctas y cuatro incidencias
+ajenas ya existentes (dos expectativas obsoletas del filtrado seguro de detalles,
+una tilde esperada por Search y un archivo SQLite concurrente retenido en Windows).
+`aaferrando` no existe en la base local, por lo que no se asignó ni elevó un rol.
+La aceptación visual y el circuito con ese usuario quedan pendientes del usuario.
+
+### ISS-14: agregar un enlace opcional al trabajo
+
+- Congresos/reuniones y revistas permiten crear, editar y quitar un enlace
+  HTTP/HTTPS opcional, hasta 2048 caracteres, con DOI mediante URL completa.
+  Validaciones frontend/backend y errores asociados al campo; apertura segura
+  y accesible desde detalle en pestaña nueva.
+- Cambios reales auditados; snapshots conservan el enlace original y exportaciones
+  de memoria/grupo lo incluyen sin alterar las columnas de la plantilla.
+- Migración reversible d14e8f0a3c51 aplicada a PostgreSQL local de testeo:
+  cuatro columnas nullable, 13 trabajos de cada tipo conservados con enlace null.
+- Documentados contratos, permisos y validaciones en producción y memorias.
+
+Validaciones: 65 tests backend correctos, tres de enlaces reejecutados tras
+validar hosts inválidos, 97 frontend, typecheck, build:production y diff --check.
+Upgrade/downgrade y snapshots/Excel inmutables probados en SQLite temporal.
+HTTP autenticado 200 y módulos Vite actualizados; backend/frontend reiniciados.
+Dos fixtures de snapshots actualizados al campo nuevo tras la primera ejecución.
+Build inicial limitado por sandbox; compilación autorizada posterior correcta.
+Revisión de navegador a cargo del usuario. No se implementa el plan de ISS-16.
+
+
 ### ISS-13: sustituir Fecha de inicio por Fecha de presentación
 
 - Trabajos en congresos/reuniones y snapshots usan fecha_presentacion.
@@ -151,6 +212,22 @@ a cargo del usuario. El agente no las declara ejecutadas. Persisten las
 incidencias previas documentadas del launcher del venv y warnings SQLite.
 tasks/ sigue ignorado por la configuracion existente; no se cambia esa regla.
 
+#### ISS-08 — Unificar la tarea y sus seguimientos
+
+- Se integraron los documentos de alta PTAA, feedback de fechas/sesión y horas
+  semanales/catálogo en `tasks/finished/ISS-08.md`, en orden de implementación.
+- Se conservaron los cambios, archivos, validaciones, incidencias y estados de
+  aceptación manual de cada etapa, junto con la metadata histórica.
+- Se retiraron los dos archivos de seguimiento redundantes y se corrigió el
+  espacio sobrante de `ISS-04 .md`, ahora `ISS-04.md`, sin cambiar su contenido.
+- Se registró en AGENTS.md la convención `ISS-XX.md`: un archivo por issue y
+  seguimientos dentro del mismo documento, en orden temporal.
+
+Validaciones: contenido original preservado en la consolidación, contenido de
+ISS-04 idéntico por SHA256 y revisión de nombres y referencias. No se modificó
+código ni se ejecutaron commits. `tasks/` continúa ignorado por Git según la
+configuración existente del usuario.
+
 #### ISS-05 a ISS-16 — Normalizar documentos de tareas pendientes
 
 - Se normalizó `ISS-05.md` con el frontmatter utilizado por las tareas del
@@ -170,6 +247,17 @@ Validaciones:
 - `git diff --check`: correcto.
 
 ### Corregido
+
+#### ISS-09 (seguimiento) — Evitar error duplicado de fecha de inicio
+
+- En el formulario de proyecto, el calendario muestra la ayuda de formato y
+  `Field` conserva el único mensaje de error de fecha de inicio.
+- Se mantiene la validación existente; el usuario detectó la duplicación al
+  intentar guardar el formulario vacío durante la prueba manual.
+
+Validaciones: 81 pruebas frontend, `npm run typecheck`,
+`npm run build:production` y `git diff --check`: correctos.
+Pendiente confirmación visual del usuario.
 
 #### ISS-09 — Implementar mensajes de error accionables (pendiente prueba manual)
 

@@ -72,7 +72,8 @@ class PersonalMemoriaVersion(db.Model, AuditMixin):
     )
 
     nombre_apellido = db.Column(db.String(120), nullable=False)
-    horas_semanales = db.Column(db.Integer, nullable=False)
+    fecha_alta_grupo = db.Column(db.Date, nullable=True)
+    horas_semanales = db.Column(db.Integer, nullable=True)
 
     tipo_personal_id = db.Column(
         db.Integer,
@@ -352,7 +353,8 @@ class BecarioMemoriaVersion(db.Model, AuditMixin):
     )
 
     nombre_apellido = db.Column(db.String(120), nullable=False)
-    horas_semanales = db.Column(db.Integer, nullable=False)
+    fecha_alta_grupo = db.Column(db.Date, nullable=True)
+    horas_semanales = db.Column(db.Integer, nullable=True)
 
     tipo_formacion_id = db.Column(
         db.Integer,
@@ -409,7 +411,8 @@ class InvestigadorMemoriaVersion(db.Model, AuditMixin):
     )
 
     nombre_apellido = db.Column(db.String(120), nullable=False)
-    horas_semanales = db.Column(db.Integer, nullable=False)
+    fecha_alta_grupo = db.Column(db.Date, nullable=True)
+    horas_semanales = db.Column(db.Integer, nullable=True)
 
     tipo_dedicacion_id = db.Column(
         db.Integer,

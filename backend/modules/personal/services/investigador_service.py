@@ -1,3 +1,6 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, resolver_horas_al_fin,
+)
 from datetime import date
 
 from sqlalchemy.exc import IntegrityError
@@ -420,7 +423,7 @@ def obtener_historial_investigador(id):
 
 
 def snapshot_investigadores_para_memoria_version(memoria_version, user_id):
-    investigadores = Investigador.query.filter().all()
+    investigadores = consultar_entidades_memoria(Investigador, memoria_version)
 
     snapshots = []
     for investigador in investigadores:
@@ -434,7 +437,8 @@ def snapshot_investigadores_para_memoria_version(memoria_version, user_id):
             memoria_version_id=memoria_version.id,
             investigador_id=investigador.id,
             nombre_apellido=investigador.nombre_apellido,
-            horas_semanales=_resolver_horas_activas(investigador),
+            fecha_alta_grupo=investigador.fecha_alta_grupo,
+            horas_semanales=resolver_horas_al_fin(investigador, memoria_version),
             tipo_dedicacion_id=investigador.tipo_dedicacion_id,
             tipo_dedicacion_nombre=(
                 investigador.tipo_dedicacion.nombre

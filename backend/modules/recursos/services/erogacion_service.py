@@ -1,3 +1,6 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, registro_puntual_en_memoria,
+)
 from datetime import datetime
 
 from modules.recursos.models.erogacion import Erogacion, TipoErogacion, ErogacionMemoriaVersion
@@ -205,11 +208,11 @@ class ErogacionService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        erogaciones = Erogacion.query.filter().all()
+        erogaciones = consultar_entidades_memoria(Erogacion, memoria_version)
 
         snapshots = []
         for erogacion in erogaciones:
-            if not esta_en_periodo_memoria(memoria_version, erogacion.fecha):
+            if not registro_puntual_en_memoria(memoria_version, erogacion, erogacion.fecha):
                 continue
             snapshot = ErogacionMemoriaVersion(
                 memoria_version_id=memoria_version.id,

@@ -100,3 +100,11 @@ El estado se libera al resolver o fallar, conservando errores y mensajes de
 mutateAsync para que el diálogo cubra toda la operación.
 UCT mantiene isSubmitting durante todo el guardado consolidado, incluyendo
 altas, modificaciones y finalizaciones pendientes de directivos.
+
+## Opciones de UCT para memorias (ISS-16)
+
+`gruposUtnServices.ts` consulta `GET /grupo-utn/opciones` y expone únicamente
+`id` y `nombre` de las UCT activas. Memorias usa este contrato para el selector
+de alta y para asociar explícitamente memorias anteriores sin UCT. La lectura
+está disponible para ADMIN, GESTOR y LECTURA; el permiso de crear o corregir la
+memoria se valida por separado en el módulo Memorias.

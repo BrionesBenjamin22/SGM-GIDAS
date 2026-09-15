@@ -1,3 +1,6 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, registro_puntual_en_memoria,
+)
 import builtins
 from datetime import date, datetime
 import unicodedata
@@ -318,11 +321,11 @@ class ParticipacionRelevanteService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        participaciones = ParticipacionRelevante.query.filter().all()
+        participaciones = consultar_entidades_memoria(ParticipacionRelevante, memoria_version, relacion="investigador")
 
         snapshots = []
         for participacion in participaciones:
-            if not esta_en_periodo_memoria(memoria_version, participacion.fecha):
+            if not registro_puntual_en_memoria(memoria_version, participacion, participacion.fecha):
                 continue
             snapshot = ParticipacionRelevanteMemoriaVersion(
                 memoria_version_id=memoria_version.id,

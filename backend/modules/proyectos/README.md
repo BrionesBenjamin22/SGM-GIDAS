@@ -93,3 +93,7 @@ relaciones, cierres y reaperturas conservan auditoria e historial.
 - `tests/test_proyecto_domain_errors.py`
 - `tests/test_proyecto_codigo_alfanumerico.py`
 - `tests/test_proyecto_memoria_historial.py`
+
+## Snapshots de memorias (ISS-16)
+
+Un proyecto entra cuando pertenece a la UCT y su intervalo desde `fecha_inicio` hasta el primero entre `fecha_fin` y baja lógica solapa el período. Los terminados antes se excluyen. Distinciones y participaciones heredan la UCT del proyecto o investigador y usan su fecha puntual inclusiva.

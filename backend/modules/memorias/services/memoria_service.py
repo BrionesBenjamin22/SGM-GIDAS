@@ -1,8 +1,11 @@
 from datetime import datetime
 
 from extension import db
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.memorias.models.memorias import Memoria, MemoriaVersion, EstadoMemoria
+from modules.memorias.services.memoria_contexto_service import snapshot_contexto_institucional
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
+from modules.shared.services.auditoria_service import AuditoriaService
 from modules.shared.services.date_time import validate_institutional_date
 from modules.personal.services.investigador_service import (
     obtener_snapshots_investigadores_por_memoria_version,
@@ -108,30 +111,45 @@ class MemoriaService:
                 "La fecha de inicio del periodo no puede ser mayor a la fecha de fin"
             )
 
-        if fecha_inicio.year != fecha_fin.year:
-            raise ValidationError(
-                "La memoria debe corresponder a un unico anio calendario"
-            )
-
         return fecha_inicio, fecha_fin
 
     @staticmethod
-    def _validar_unicidad_anual(periodo_fin, memoria_id_excluida: int | None = None):
-        query = Memoria.query.filter(Memoria.deleted_at.is_(None))
-
-        if memoria_id_excluida is not None:
-            query = query.filter(Memoria.id != memoria_id_excluida)
-
-        memorias = query.all()
-        for memoria in memorias:
-            if memoria.periodo_fin and memoria.periodo_fin.year == periodo_fin.year:
-                raise ConflictError(
-                    f"Ya existe una memoria registrada para el anio {periodo_fin.year}"
-                )
+    def _validar_grupo(grupo_utn_id):
+        MemoriaService._validar_id(grupo_utn_id, "grupo_utn_id")
+        grupo = db.session.get(GrupoInvestigacionUtn, grupo_utn_id, with_for_update={"of": GrupoInvestigacionUtn})
+        if grupo is None or grupo.deleted_at is not None:
+            raise ValidationError("Debe seleccionar una UCT activa", details={"fields": {"grupo_utn_id": "Seleccione una UCT activa"}})
+        return grupo.id
 
     @staticmethod
-    def _validar_unica_memoria_activa(memoria_id_excluida: int | None = None):
-        query = Memoria.query.filter(Memoria.deleted_at.is_(None))
+    def _nombre_grupo_historial(valor):
+        if valor in (None, ""):
+            return valor
+        try:
+            grupo_id = int(valor)
+        except (TypeError, ValueError):
+            return valor
+        grupo = db.session.get(GrupoInvestigacionUtn, grupo_id)
+        return grupo.nombre_sigla_grupo if grupo else valor
+
+    @staticmethod
+    def _validar_solapamiento(periodo_inicio, periodo_fin, grupo_utn_id, memoria_id_excluida=None):
+        query = Memoria.query.filter(
+            Memoria.deleted_at.is_(None),
+            Memoria.grupo_utn_id == grupo_utn_id,
+            Memoria.periodo_inicio <= periodo_fin,
+            Memoria.periodo_fin >= periodo_inicio,
+        )
+        if memoria_id_excluida is not None:
+            query = query.filter(Memoria.id != memoria_id_excluida)
+        if query.first() is not None:
+            raise ConflictError(
+                "El período se superpone con otra memoria. Verifique las fechas e intente nuevamente."
+            )
+
+    @staticmethod
+    def _validar_unica_memoria_activa(grupo_utn_id, memoria_id_excluida: int | None = None):
+        query = Memoria.query.filter(Memoria.deleted_at.is_(None), Memoria.grupo_utn_id == grupo_utn_id)
 
         if memoria_id_excluida is not None:
             query = query.filter(Memoria.id != memoria_id_excluida)
@@ -145,7 +163,7 @@ class MemoriaService:
                 and version_actual.estado != EstadoMemoria.CERRADA
             ):
                 raise ConflictError(
-                    "Solo puede existir una memoria activa a la vez"
+                    "Solo puede existir una memoria activa a la vez por UCT"
                 )
 
     @staticmethod
@@ -226,10 +244,11 @@ class MemoriaService:
         )
 
     @staticmethod
-    def _get_memoria_or_404(memoria_id: int):
+    def _get_memoria_or_404(memoria_id: int, bloquear=False):
         memoria = db.session.get(
             Memoria,
-            MemoriaService._validar_id(memoria_id, "memoria_id")
+            MemoriaService._validar_id(memoria_id, "memoria_id"),
+            **({"with_for_update": {"of": Memoria}} if bloquear else {})
         )
         if not memoria or memoria.deleted_at is not None:
             raise NotFoundError("Memoria no encontrada")
@@ -568,25 +587,26 @@ class MemoriaService:
             data.get("periodo_inicio"),
             data.get("periodo_fin")
         )
-        MemoriaService._validar_unicidad_anual(periodo_fin)
-        MemoriaService._validar_unica_memoria_activa()
+        grupo_utn_id = MemoriaService._validar_grupo(data.get("grupo_utn_id"))
+        MemoriaService._validar_solapamiento(periodo_inicio, periodo_fin, grupo_utn_id)
+        MemoriaService._validar_unica_memoria_activa(grupo_utn_id)
 
         memoria = Memoria(
+            grupo_utn_id=grupo_utn_id,
             periodo_inicio=periodo_inicio,
             periodo_fin=periodo_fin,
             created_by=user_id
         )
 
-        db.session.add(memoria)
-        db.session.flush()
-
-        MemoriaService._crear_version_inicial(
-            memoria,
-            user_id,
-            data.get("fecha_apertura")
-        )
-
         try:
+            db.session.add(memoria)
+            db.session.flush()
+
+            MemoriaService._crear_version_inicial(
+                memoria,
+                user_id,
+                data.get("fecha_apertura")
+            )
             db.session.commit()
         except Exception:
             db.session.rollback()
@@ -599,14 +619,76 @@ class MemoriaService:
     # ==========================================
 
     @staticmethod
-    def update(memoria_id: int, data: dict):
-        MemoriaService._validar_id(memoria_id, "memoria_id")
+    def update(memoria_id: int, data: dict, user_id: int):
         MemoriaService._validar_payload(data)
+        MemoriaService._validar_id(user_id, "user_id")
+        memoria = MemoriaService._get_memoria_or_404(memoria_id, bloquear=True)
+        if set(data) - {"periodo_inicio", "periodo_fin", "grupo_utn_id"}:
+            raise ValidationError("Solo se permite corregir las fechas del período")
+        if any(v.estado == EstadoMemoria.CERRADA or v.fecha_cierre is not None
+               for v in memoria.versiones):
+            raise ConflictError("El período no puede modificarse porque existe una versión cerrada")
+        grupo_id = memoria.grupo_utn_id
+        if "grupo_utn_id" in data:
+            if grupo_id is not None and data["grupo_utn_id"] != grupo_id:
+                raise ConflictError("La UCT de la memoria no puede cambiarse")
+            grupo_id = MemoriaService._validar_grupo(data["grupo_utn_id"])
+        elif grupo_id is not None:
+            MemoriaService._validar_grupo(grupo_id)
+        if grupo_id is None:
+            raise ValidationError("Debe asociar la memoria a una UCT")
+        inicio, fin = MemoriaService._validar_periodos(
+            data.get("periodo_inicio", memoria.periodo_inicio.isoformat()),
+            data.get("periodo_fin", memoria.periodo_fin.isoformat()),
+        )
+        cambios = [(campo, getattr(memoria, campo), valor)
+                   for campo, valor in (("periodo_inicio", inicio), ("periodo_fin", fin))
+                   if getattr(memoria, campo) != valor]
+        if grupo_id != memoria.grupo_utn_id:
+            cambios.append(("grupo_utn_id", memoria.grupo_utn_id, grupo_id))
+            MemoriaService._validar_unica_memoria_activa(grupo_id, memoria.id)
+        if not cambios:
+            return memoria.serialize()
+        MemoriaService._validar_solapamiento(inicio, fin, grupo_id, memoria.id)
+        try:
+            for campo, anterior, nuevo in cambios:
+                anterior_auditado = anterior
+                nuevo_auditado = nuevo
+                if campo == "grupo_utn_id":
+                    anterior_auditado = MemoriaService._nombre_grupo_historial(anterior)
+                    nuevo_auditado = MemoriaService._nombre_grupo_historial(nuevo)
+                AuditoriaService.registrar_cambios(
+                    entidad="memoria", registro_id=memoria.id,
+                    cambios={
+                        campo: AuditoriaService.construir_cambio(
+                            anterior_auditado,
+                            nuevo_auditado,
+                        )
+                    },
+                    user_id=user_id, memoria_id=memoria.id,
+                )
+                setattr(memoria, campo, nuevo)
+            memoria.mark_updated(user_id)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
+        return memoria.serialize()
 
-        # La memoria raiz representa la identidad del expediente/versionado.
-        # Una vez creada no se modifica; cualquier evolucion se resuelve en la
-        # capa de versionado y transicion de estados.
-        raise ConflictError("La memoria no puede modificarse una vez creada")
+    @staticmethod
+    def get_historial(memoria_id: int):
+        MemoriaService._get_memoria_or_404(memoria_id)
+        historial = AuditoriaService.obtener_historial_entidad("memoria", memoria_id)
+        for item in historial:
+            if item.get("campo") != "grupo_utn_id":
+                continue
+            item["valor_anterior"] = MemoriaService._nombre_grupo_historial(
+                item.get("valor_anterior")
+            )
+            item["valor_nuevo"] = MemoriaService._nombre_grupo_historial(
+                item.get("valor_nuevo")
+            )
+        return historial
 
     # ==========================================
     # SOFT DELETE
@@ -615,7 +697,7 @@ class MemoriaService:
     @staticmethod
     def delete(memoria_id: int, user_id: int):
         MemoriaService._validar_id(user_id, "user_id")
-        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        memoria = MemoriaService._get_memoria_or_404(memoria_id, bloquear=True)
 
         # El borrado sigue la estrategia general del sistema: se marca como
         # inactiva para preservar trazabilidad y no perder referencias.
@@ -636,7 +718,10 @@ class MemoriaService:
     @staticmethod
     def change_status(memoria_id: int, data: dict, user_id: int | None = None):
         MemoriaService._validar_payload(data)
-        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        memoria = MemoriaService._get_memoria_or_404(memoria_id, bloquear=True)
+        if memoria.grupo_utn_id is None:
+            raise ConflictError("Debe asociar la memoria a una UCT antes de continuar")
+        MemoriaService._validar_grupo(memoria.grupo_utn_id)
         version_actual = MemoriaService._get_version_actual_or_404(memoria)
         nuevo_estado = MemoriaService._validar_estado(data.get("estado"))
 
@@ -644,88 +729,104 @@ class MemoriaService:
             version_actual.estado,
             nuevo_estado
         )
-
-        # Mientras la version siga viva, solo muta su estado. La unica salida
-        # definitiva de la version actual es el estado cerrada.
-        version_actual.estado = nuevo_estado
-
-        if nuevo_estado == EstadoMemoria.CERRADA:
-            version_actual.fecha_cierre = MemoriaService._resolver_fecha_evento(
-                data.get("fecha_cierre"),
-                "fecha_cierre"
-            )
-            if user_id is not None:
-                version_actual.mark_updated(user_id)
-                snapshot_investigadores_para_memoria_version(
-                    version_actual,
-                    user_id
-                )
-                snapshot_becarios_para_memoria_version(
-                    version_actual,
-                    user_id
-                )
-                snapshot_personal_para_memoria_version(
-                    version_actual,
-                    user_id
-                )
-                ProyectoInvestigacionService.snapshot_para_memoria_version(
-                    version_actual,
-                    user_id
-                )
-                ActividadDocenciaService.snapshot_para_memoria_version(
-                    version_actual,
-                    user_id
-                )
-                ParticipacionRelevanteService.snapshot_para_memoria_version(
-                    version_actual,
-                    user_id
-                )
-                DocumentacionBibliograficaService.snapshot_para_memoria_version(
-                    version_actual,
-                    user_id
-                )
-                EquipamientoService.snapshot_para_memoria_version(
-                    version_actual,
-                    user_id
-                )
-                ErogacionService.snapshot_para_memoria_version(
-                    version_actual,
-                    user_id
-                )
-                TransferenciaSocioProductivaService.snapshot_para_memoria_version(
-                    version_actual,
-                    user_id
-                )
-                TrabajoReunionCientificaService.snapshot_para_memoria_version(
-                    version_actual,
-                    user_id
-                )
-                TrabajosRevistasReferatoService.snapshot_para_memoria_version(
-                    version_actual,
-                    user_id
-                )
-                DistincionRecibidaService.snapshot_para_memoria_version(
-                    version_actual,
-                    user_id
-                )
-                RegistrosPropiedadService.snapshot_para_memoria_version(
-                    version_actual,
-                    user_id
-                )
-                ArticuloDivulgacionService.snapshot_para_memoria_version(
-                    version_actual,
-                    user_id
-                )
-                snapshot_visitas_para_memoria_version(
-                    version_actual,
-                    user_id
-                )
-        else:
-            version_actual.fecha_cierre = None
-            if user_id is not None:
-                version_actual.mark_updated(user_id)
+        estado_anterior = version_actual.estado
 
         try:
+            # Mientras la version siga viva, solo muta su estado. La unica salida
+            # definitiva de la version actual es el estado cerrada.
+            version_actual.estado = nuevo_estado
+
+            if nuevo_estado == EstadoMemoria.CERRADA:
+                version_actual.contexto_institucional = snapshot_contexto_institucional(version_actual)
+                version_actual.fecha_cierre = MemoriaService._resolver_fecha_evento(
+                    data.get("fecha_cierre"),
+                    "fecha_cierre"
+                )
+                if user_id is not None:
+                    version_actual.mark_updated(user_id)
+                    snapshot_investigadores_para_memoria_version(
+                        version_actual,
+                        user_id
+                    )
+                    snapshot_becarios_para_memoria_version(
+                        version_actual,
+                        user_id
+                    )
+                    snapshot_personal_para_memoria_version(
+                        version_actual,
+                        user_id
+                    )
+                    ProyectoInvestigacionService.snapshot_para_memoria_version(
+                        version_actual,
+                        user_id
+                    )
+                    ActividadDocenciaService.snapshot_para_memoria_version(
+                        version_actual,
+                        user_id
+                    )
+                    ParticipacionRelevanteService.snapshot_para_memoria_version(
+                        version_actual,
+                        user_id
+                    )
+                    DocumentacionBibliograficaService.snapshot_para_memoria_version(
+                        version_actual,
+                        user_id
+                    )
+                    EquipamientoService.snapshot_para_memoria_version(
+                        version_actual,
+                        user_id
+                    )
+                    ErogacionService.snapshot_para_memoria_version(
+                        version_actual,
+                        user_id
+                    )
+                    TransferenciaSocioProductivaService.snapshot_para_memoria_version(
+                        version_actual,
+                        user_id
+                    )
+                    TrabajoReunionCientificaService.snapshot_para_memoria_version(
+                        version_actual,
+                        user_id
+                    )
+                    TrabajosRevistasReferatoService.snapshot_para_memoria_version(
+                        version_actual,
+                        user_id
+                    )
+                    DistincionRecibidaService.snapshot_para_memoria_version(
+                        version_actual,
+                        user_id
+                    )
+                    RegistrosPropiedadService.snapshot_para_memoria_version(
+                        version_actual,
+                        user_id
+                    )
+                    ArticuloDivulgacionService.snapshot_para_memoria_version(
+                        version_actual,
+                        user_id
+                    )
+                    snapshot_visitas_para_memoria_version(
+                        version_actual,
+                        user_id
+                    )
+            else:
+                version_actual.fecha_cierre = None
+                if user_id is not None:
+                    version_actual.mark_updated(user_id)
+            AuditoriaService.registrar_cambios(
+                entidad="memoria",
+                registro_id=memoria.id,
+                cambios={
+                    "estado": AuditoriaService.construir_cambio(
+                        estado_anterior,
+                        nuevo_estado,
+                    )
+                },
+                user_id=user_id,
+                memoria_id=memoria.id,
+                memoria_version_id=version_actual.id,
+            )
+            if user_id is not None:
+                memoria.mark_updated(user_id)
             db.session.commit()
         except Exception:
             db.session.rollback()
@@ -740,7 +841,10 @@ class MemoriaService:
     @staticmethod
     def reopen(memoria_id: int, user_id: int, data: dict | None = None):
         MemoriaService._validar_id(user_id, "user_id")
-        memoria = MemoriaService._get_memoria_or_404(memoria_id)
+        memoria = MemoriaService._get_memoria_or_404(memoria_id, bloquear=True)
+        if memoria.grupo_utn_id is None:
+            raise ConflictError("Debe asociar la memoria a una UCT antes de continuar")
+        MemoriaService._validar_grupo(memoria.grupo_utn_id)
         version_actual = MemoriaService._get_version_actual_or_404(memoria)
         data = data or {}
 
@@ -749,7 +853,7 @@ class MemoriaService:
                 "Solo se puede crear una nueva version a partir de una memoria cerrada"
             )
 
-        MemoriaService._validar_unica_memoria_activa(memoria_id_excluida=memoria.id)
+        MemoriaService._validar_unica_memoria_activa(memoria.grupo_utn_id, memoria_id_excluida=memoria.id)
 
         # Reabrir no muta la version historica cerrada: crea una nueva version
         # editable y la convierte en la version actual de la memoria.
@@ -764,11 +868,24 @@ class MemoriaService:
             created_by=user_id
         )
 
-        db.session.add(nueva_version)
-        db.session.flush()
-        memoria.version_actual_id = nueva_version.id
-
         try:
+            db.session.add(nueva_version)
+            db.session.flush()
+            memoria.version_actual_id = nueva_version.id
+            memoria.mark_updated(user_id)
+            AuditoriaService.registrar_evento_relacion(
+                entidad="memoria",
+                registro_id=memoria.id,
+                relacion="versiones",
+                accion="reapertura",
+                detalle={
+                    "version_anterior": version_actual.numero_version,
+                    "version_nueva": nueva_version.numero_version,
+                },
+                user_id=user_id,
+                memoria_id=memoria.id,
+                memoria_version_id=nueva_version.id,
+            )
             db.session.commit()
         except Exception:
             db.session.rollback()

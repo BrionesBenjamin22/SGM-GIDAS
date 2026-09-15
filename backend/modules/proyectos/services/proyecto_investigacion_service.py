@@ -1,3 +1,6 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, fin_vigencia,
+)
 from datetime import datetime, date
 import builtins
 import re
@@ -702,14 +705,14 @@ class ProyectoInvestigacionService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        proyectos = ProyectoInvestigacion.query.filter().all()
+        proyectos = consultar_entidades_memoria(ProyectoInvestigacion, memoria_version)
 
         snapshots = []
         for proyecto in proyectos:
             if not estuvo_activo_en_periodo_memoria(
                 memoria_version,
                 proyecto.fecha_inicio,
-                getattr(proyecto, "deleted_at", None)
+                fin_vigencia(proyecto)
             ):
                 continue
 

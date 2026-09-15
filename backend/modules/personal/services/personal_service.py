@@ -1,3 +1,6 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, resolver_horas_al_fin,
+)
 from datetime import date
 
 from extension import db
@@ -530,7 +533,7 @@ def obtener_historial_personal_por_rol(id, rol):
 
 
 def snapshot_personal_para_memoria_version(memoria_version, user_id):
-    personales = Personal.query.filter().all()
+    personales = consultar_entidades_memoria(Personal, memoria_version)
 
     snapshots = []
     for personal in personales:
@@ -544,7 +547,8 @@ def snapshot_personal_para_memoria_version(memoria_version, user_id):
             memoria_version_id=memoria_version.id,
             personal_id=personal.id,
             nombre_apellido=personal.nombre_apellido,
-            horas_semanales=_resolver_horas_activas(personal),
+            fecha_alta_grupo=personal.fecha_alta_grupo,
+            horas_semanales=resolver_horas_al_fin(personal, memoria_version),
             tipo_personal_id=personal.tipo_personal_id,
             tipo_personal_nombre=(
                 personal.tipo_personal.nombre

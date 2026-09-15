@@ -13,8 +13,7 @@ transversal en `../README.md`.
 
 ## Fechas
 
-Los períodos informados por las memorias admiten fechas desde el 01/01/2010 y
-mantienen la coherencia cronológica y anual definida por el módulo.
+Los períodos informados por las memorias admiten fechas desde el 01/01/2010, conservan el orden cronológico y pueden abarcar años distintos.
 
 ## Funcionalidad
 
@@ -24,10 +23,12 @@ alta vuelve al home con `successMessage`.
 
 ## Vistas y permisos
 
-- `MemoriasHome`: listado, filtros y baja logica; la creacion y eliminacion son
-  exclusivas de administradores.
+- `MemoriasHome`: listado y filtros; ADMIN y GESTOR pueden crear memorias y la
+  baja lógica continúa reservada a ADMIN. El botón `Seleccionar` inicia la baja
+  múltiple, por eso solo se muestra a ADMIN; cada tarjeta abre el detalle.
 - `MemoriaForm`: alta con validacion de periodos.
-- `MemoriaDetalle`: auditoria, versiones y cambios de estado.
+- `MemoriaDetalle`: auditoria, versiones y cambios de estado. ADMIN y GESTOR
+  pueden enviar a revisión y cerrar; el cierre se presenta como acción explícita.
 - `MemoriaVersionDetalle`: consulta de snapshots y exportacion.
 
 Los permisos visuales complementan, pero no reemplazan, los controles del backend.
@@ -75,5 +76,33 @@ Corrección de alcance ISS-12: los autores de trabajos son únicamente investiga
 
 Los snapshots de trabajos en reuniones exponen fecha_presentacion y sus enlaces
 apuntan al flujo de reuniones con esa fecha. Excel identifica Fecha de
-presentación y clasifica ponencias según el período anual de la memoria.
+presentación y clasifica ponencias según el rango configurado de la memoria.
 Se conserva contexto de navegación y el resto del contrato de snapshots.
+
+## ISS-14: enlaces de trabajos en snapshots
+
+El contrato de entradas de snapshot admite `enlace` string o null para ambos
+tipos de trabajo mediante MemoriaSnapshotEntry. La descarga Excel incluye el
+valor congelado. La vista conserva contadores y navegación vigente hacia los
+registros del módulo; esos destinos muestran los datos actuales del trabajo.
+La revisión de pertenencia y presentación histórica permanece planificada en
+ISS-16, sin implementación dentro de ISS-14.
+
+## ISS-16: períodos configurables por UCT
+
+ADMIN y GESTOR crean memorias seleccionando UCT, inicio y fin, incluso entre años, con un atajo para año calendario. El detalle permite corregir solo diferencias reales antes del primer cierre, vuelve con `successMessage` y muestra cambios de período, estado y reapertura paginados de 3 ítems. Home, detalle y Excel identifican la memoria por rango y UCT.
+
+El período delimita el contenido pero no cierra automáticamente la memoria.
+ADMIN y GESTOR pueden pasarla a revisión o cerrarla desde el detalle; reabrir y
+eliminar continúan reservados a ADMIN. El historial rotula la relación como UCT
+y muestra su sigla en lugar del identificador técnico.
+
+La ruta de alta usa la misma protección `ADMIN/GESTOR` que el botón `Nueva`, para
+evitar que un gestor autorizado sea redirigido al inicio al abrir el formulario.
+
+Las versiones conservan el flujo visual anterior: cada sección informa su cantidad
+y abre el módulo correspondiente filtrado por los elementos incluidos en la
+memoria. Los snapshots históricos siguen respaldando el alcance y el Excel, sin
+desplegables adicionales dentro de las tarjetas. La planificación actual se
+presenta como una acción separada y no modifica los datos congelados ni el Excel
+de la versión.

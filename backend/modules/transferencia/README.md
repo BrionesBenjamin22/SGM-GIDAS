@@ -21,3 +21,7 @@ exponer datos internos.
 
 - `tests/test_transferencia_domain_errors.py`
 - `tests/test_transferencia_memoria_historial.py`
+
+## Snapshots de memorias (ISS-16)
+
+Las transferencias se filtran por UCT y por solapamiento entre inicio, finalización, baja y período. Los adoptantes y vínculos vigentes quedan congelados con el snapshot padre; una baja posterior al inicio del período no borra la relación histórica.

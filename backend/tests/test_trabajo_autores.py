@@ -22,6 +22,7 @@ from modules.produccion.services.trabajo_reunion_service import TrabajoReunionCi
 from modules.produccion.services.trabajo_revista_service import TrabajosRevistasReferatoService
 from modules.memorias.models.memorias import Memoria, MemoriaVersion, EstadoMemoria
 from modules.memorias.services.exportacion_service_impl import ExportService
+from modules.memorias.services.memoria_contexto_service import snapshot_contexto_institucional
 from modules.shared.models.auditoria_campo import AuditoriaCampo
 from modules.auth.models.usuario import Usuario, RolUsuario
 from modules.search.services.search_service import SearchService
@@ -199,12 +200,13 @@ class TrabajoAutoresTest(unittest.TestCase):
     def test_snapshot_y_excel_con_autores_inmutables(self):
         self.crear("reuniones")
         self.crear("revistas")
-        memoria = Memoria(periodo_inicio=date(2026, 1, 1), periodo_fin=date(2026, 12, 31), created_by=7)
+        memoria = Memoria(grupo_utn_id=1, periodo_inicio=date(2026, 1, 1), periodo_fin=date(2026, 12, 31), created_by=7)
         db.session.add(memoria)
         db.session.flush()
         version = MemoriaVersion(memoria_id=memoria.id, numero_version=1, fecha_apertura=datetime(2026, 1, 1), estado=EstadoMemoria.CERRADA, created_by=7)
         db.session.add(version)
         db.session.flush()
+        version.contexto_institucional = snapshot_contexto_institucional(version)
         reuniones = TrabajoReunionCientificaService.snapshot_para_memoria_version(version, 7)
         revistas = TrabajosRevistasReferatoService.snapshot_para_memoria_version(version, 7)
         db.session.commit()

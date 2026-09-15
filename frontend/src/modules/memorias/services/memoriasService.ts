@@ -5,6 +5,7 @@ export type MemoriaActivosFilter = "true" | "false" | "all";
 export type MemoriaEstado = "abierta" | "en revision" | "cerrada";
 
 export type MemoriaVersion = {
+  contexto_institucional?: Record<string, unknown> | null;
   id: number;
   numero_version: number;
   fecha_apertura: string;
@@ -25,6 +26,8 @@ export type MemoriaVersion = {
 
 export type Memoria = {
   id: number;
+  grupo_utn_id: number | null;
+  grupo_utn_nombre?: string | null;
   periodo_inicio: string;
   periodo_fin: string;
   version_actual_id?: number | null;
@@ -45,6 +48,7 @@ export type Memoria = {
 };
 
 export type MemoriaPayload = {
+  grupo_utn_id: number;
   periodo_inicio: string;
   periodo_fin: string;
   fecha_apertura?: string;
@@ -273,3 +277,20 @@ export const getVisitasAcademicasSnapshot = (
   memoriaId: number,
   versionId: number
 ) => getSnapshot(memoriaId, versionId, "visitas-academicas");
+
+export type MemoriaCambio = {
+  id: number;
+  campo: string;
+  valor_anterior: string | null;
+  valor_nuevo: string | null;
+  fecha_cambio: string;
+  usuario_nombre: string | null;
+};
+
+export async function updateMemoria(id: number, payload: Partial<Pick<MemoriaPayload, "periodo_inicio" | "periodo_fin" | "grupo_utn_id">>): Promise<Memoria> {
+  return http<Memoria>(`/memorias/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+}
+
+export async function getHistorialMemoria(id: number): Promise<MemoriaCambio[]> {
+  return http<MemoriaCambio[]>(`/memorias/${id}/historial`);
+}

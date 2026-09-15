@@ -1,3 +1,4 @@
+import { errorEnlace, MAX_ENLACE } from "@/modules/produccion/utils/trabajoEnlace";
 import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -47,6 +48,7 @@ export default function TrabajoReunionForm() {
     enabled: isEdit,
   });
 
+  const [enlace, setEnlace] = useState("");
   const [titulo, setTitulo] = useState("");
   const [nombreReunion, setNombreReunion] = useState("");
   const [procedencia, setProcedencia] = useState("");
@@ -62,6 +64,7 @@ export default function TrabajoReunionForm() {
     if (!initialData || datosCargadosId.current === initialData.id) return;
     datosCargadosId.current = initialData.id;
 
+    setEnlace(initialData.enlace ?? "");
     setTitulo(initialData.titulo_trabajo ?? "");
     setNombreReunion(initialData.nombre_reunion ?? "");
     setProcedencia(initialData.procedencia ?? "");
@@ -115,6 +118,8 @@ export default function TrabajoReunionForm() {
       newErrors.autores = "Debe agregar al menos un autor";
     }
 
+    const enlaceError = errorEnlace(enlace);
+    if (enlaceError) newErrors.enlace = enlaceError;
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -140,7 +145,7 @@ export default function TrabajoReunionForm() {
       });
     },
     onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["titulo","nombreReunion","procedencia","tipoId","fechaPresentacion","autores"])) return;
+      if (applyFieldErrors(error, setErrors, ["enlace","titulo","nombreReunion","procedencia","tipoId","fechaPresentacion","autores"])) return;
       const backendMessage = getErrorMessage(
         error,
         "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
@@ -173,6 +178,7 @@ export default function TrabajoReunionForm() {
     if (!validate()) return;
 
     const payload = {
+      enlace: enlace.trim() || null,
       autores: autores.map(({ id, rol }) => ({ id, rol })),
       titulo_trabajo: toTitleCase(titulo.trim()),
       nombre_reunion: toTitleCase(nombreReunion.trim()),
@@ -188,6 +194,7 @@ export default function TrabajoReunionForm() {
     }
 
     const initialPayload = {
+      enlace: initialData?.enlace ?? null,
       autores: initialData?.autores ?? [],
       titulo_trabajo: initialData?.titulo_trabajo ?? "",
       nombre_reunion: initialData?.nombre_reunion ?? "",
@@ -330,6 +337,12 @@ export default function TrabajoReunionForm() {
               <p className="mt-1 text-sm text-red-500">{errors.tipoId}</p>
             )}
           </>
+        </Field>
+
+        <Field label="Enlace al trabajo o DOI (opcional)" name="enlace" error={errors.enlace}>
+          <input type="url" className={inputClass("enlace")} value={enlace}
+            maxLength={MAX_ENLACE} placeholder="https://doi.org/10.1234/ejemplo"
+            onChange={e => { setEnlace(e.target.value); clearError("enlace"); }} />
         </Field>
 
         <Field label="Autores" name="autores" error={errors.autores}>

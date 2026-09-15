@@ -1,3 +1,6 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, fin_vigencia, resolver_horas_al_fin,
+)
 import builtins
 from datetime import date, datetime
 
@@ -130,8 +133,7 @@ def _resolver_becas_percibidas(becario, memoria_version=None):
             if not estuvo_activo_en_periodo_memoria(
                 memoria_version,
                 getattr(relacion, "fecha_inicio", None),
-                getattr(relacion, "fecha_fin", None)
-                or getattr(relacion, "deleted_at", None)
+                fin_vigencia(relacion)
             ):
                 continue
         elif getattr(relacion, "deleted_at", None) is not None:
@@ -538,7 +540,7 @@ def obtener_historial_becario(id: int):
 
 
 def snapshot_becarios_para_memoria_version(memoria_version, user_id):
-    becarios = Becario.query.filter().all()
+    becarios = consultar_entidades_memoria(Becario, memoria_version)
 
     snapshots = []
     for becario in becarios:
@@ -553,7 +555,8 @@ def snapshot_becarios_para_memoria_version(memoria_version, user_id):
             memoria_version_id=memoria_version.id,
             becario_id=becario.id,
             nombre_apellido=becario.nombre_apellido,
-            horas_semanales=_resolver_horas_activas(becario),
+            fecha_alta_grupo=becario.fecha_alta_grupo,
+            horas_semanales=resolver_horas_al_fin(becario, memoria_version),
             tipo_formacion_id=becario.tipo_formacion_id,
             tipo_formacion_nombre=(
                 becario.tipo_formacion.nombre

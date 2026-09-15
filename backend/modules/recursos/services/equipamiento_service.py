@@ -1,3 +1,6 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria,
+)
 import builtins
 from datetime import datetime, date
 
@@ -268,7 +271,7 @@ class EquipamientoService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        equipamientos = Equipamiento.query.filter().all()
+        equipamientos = consultar_entidades_memoria(Equipamiento, memoria_version)
 
         snapshots = []
         for equipamiento in equipamientos:

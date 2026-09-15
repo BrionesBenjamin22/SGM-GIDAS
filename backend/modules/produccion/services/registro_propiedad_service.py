@@ -1,3 +1,6 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, registro_puntual_en_memoria,
+)
 from datetime import datetime, date
 
 from sqlalchemy import or_
@@ -315,14 +318,11 @@ class RegistrosPropiedadService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        registros = RegistrosPropiedad.query.filter().all()
+        registros = consultar_entidades_memoria(RegistrosPropiedad, memoria_version)
 
         snapshots = []
         for registro in registros:
-            if not esta_en_periodo_memoria(
-                memoria_version,
-                registro.fecha_registro
-            ):
+            if not registro_puntual_en_memoria(memoria_version, registro, registro.fecha_registro):
                 continue
             snapshot = RegistrosPropiedadMemoriaVersion(
                 memoria_version_id=memoria_version.id,

@@ -1,3 +1,4 @@
+import { enlaceSeguro } from "@/modules/produccion/utils/trabajoEnlace";
 import { autorEtiqueta } from "@/modules/produccion/services/trabajoAutoresServices";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -69,6 +70,7 @@ export default function TrabajoReunionDetalle() {
     return <p className="text-slate-500">Trabajo en reunión científica no encontrado.</p>;
   }
 
+  const enlace = enlaceSeguro(data.enlace);
   const isDeleted = !!data.deleted_at || data.activo === false;
 
   const formatHistorialValue = (
@@ -166,6 +168,14 @@ export default function TrabajoReunionDetalle() {
               <span className="font-medium text-slate-700">Fecha de presentación:</span>{" "}
               {formatFecha(data.fecha_presentacion)}
             </p>
+
+            {enlace && <p className="break-words">
+              <span className="font-medium text-slate-700">Enlace al trabajo o DOI:</span>{" "}
+              <a href={enlace} target="_blank" rel="noopener noreferrer"
+                className="text-blue-700 underline focus-visible:outline focus-visible:outline-2">
+                {enlace}<span className="sr-only"> (abre en una pestaña nueva)</span>
+              </a>
+            </p>}
 
             <p>
               <span className="font-medium text-slate-700">Autores:</span>{" "}

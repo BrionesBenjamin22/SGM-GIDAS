@@ -1,3 +1,6 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, fin_vigencia, relacion_vigente_en_memoria,
+)
 import builtins
 from datetime import datetime
 from extension import db
@@ -487,15 +490,14 @@ class TransferenciaSocioProductivaService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        transferencias = TransferenciaSocioProductiva.query.filter().all()
+        transferencias = consultar_entidades_memoria(TransferenciaSocioProductiva, memoria_version)
 
         snapshots = []
         for transferencia in transferencias:
             if not estuvo_activo_en_periodo_memoria(
                 memoria_version,
                 transferencia.fecha_inicio,
-                getattr(transferencia, "fecha_fin", None)
-                or getattr(transferencia, "deleted_at", None)
+                fin_vigencia(transferencia)
             ):
                 continue
             snapshot = TransferenciaSocioProductivaMemoriaVersion(
@@ -524,9 +526,9 @@ class TransferenciaSocioProductivaService:
             db.session.flush()
 
             for participacion in transferencia.participaciones:
-                if participacion.deleted_at is not None or participacion.adoptante is None:
+                if not relacion_vigente_en_memoria(memoria_version, participacion) or participacion.adoptante is None:
                     continue
-                if getattr(participacion.adoptante, "deleted_at", None) is not None:
+                if not relacion_vigente_en_memoria(memoria_version, participacion.adoptante):
                     continue
 
                 participacion_snapshot = AdoptanteTransferenciaMemoriaVersion(

@@ -37,3 +37,7 @@ equipamiento correspondientes al periodo versionado para mantener trazabilidad.
 Los controladores delegan en el contrato uniforme de errores. Los datos ausentes,
 formatos invalidos, montos no positivos, grupos inexistentes y fechas fuera del
 rango se responden como errores de validacion sin exponer detalles internos.
+
+## Snapshots de memorias (ISS-16)
+
+Equipamiento y erogaciones se filtran por UCT. Equipamiento usa solapamiento entre incorporación, baja y período; erogaciones usan su fecha puntual inclusiva. Una baja posterior no elimina un hecho histórico que correspondía al período.

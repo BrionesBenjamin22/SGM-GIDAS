@@ -13,9 +13,10 @@ function load(file: string, mocks: Record<string, unknown> = {}) {
   const code = ts.transpileModule(readFileSync(file, "utf8"), { compilerOptions: {
     module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX,
   } }).outputText;
-  runInNewContext(code, { module, exports: module.exports, require: (name: string) => {
+  runInNewContext(code, { URL, module, exports: module.exports, require: (name: string) => {
     if (name in mocks) return mocks[name];
     if (name.startsWith("@/components/") || name.startsWith("@/modules/produccion/components/")) return { default: name.split("/").at(-1) };
+    if (name === "@/modules/produccion/utils/trabajoEnlace") return load("src/modules/produccion/utils/trabajoEnlace.ts");
     if (name.startsWith("@/")) return {};
     return require(name);
   } });
@@ -120,7 +121,7 @@ for (const [page, route] of [
       "react-router-dom": { useParams: () => ({ id: "8" }), useLocation: () => ({ state: null }),
         useNavigate: () => (path: string) => navigations.push(path) },
       "@tanstack/react-query": { useQuery: (options: any) => ({ data: options.queryKey[0].includes("historial") ? [] : {
-        id: 8, titulo_trabajo: "Estudio", autores: [investigador, becario], activo: true,
+        id: 8, titulo_trabajo: "Estudio", enlace: "https://doi.org/10.1234/test", autores: [investigador, becario], activo: true,
       }, isLoading: false, isError: false }) },
       "@/modules/produccion/services/trabajoAutoresServices": contratos,
       "@/context/AuthContext": { useAuth: () => ({ canEditRecords: () => true }) },
@@ -131,6 +132,10 @@ for (const [page, route] of [
     }).default;
     const nodes = walk(Detail());
     const text = nodes.filter(node => node.type === "p").map(node => JSON.stringify(node.props.children)).join(" ");
+    const link = nodes.find(node => node.type === "a" && node.props.target === "_blank");
+    assert.equal(link.props.href, "https://doi.org/10.1234/test");
+    assert.equal(link.props.rel, "noopener noreferrer");
+    assert.match(JSON.stringify(link.props.children), /pestaña nueva/);
     assert.match(text, /Autores/);
     if (page === "TrabajosReunionDetalle") assert.match(text, /Fecha de presentación/);
     assert.match(text, /Ana \(Investigador\), Luis \(Becario\)/);
@@ -206,6 +211,21 @@ for (const [page, serviceFile, getName, updateName, createName, route] of [
     await submit();
     assert.equal(navigations.at(-1)[0], route);
     assert.equal(saved.autores[0].rol, "becario");
+    const inputEnlace = () => render().find(node => node.type === "input" && node.props.type === "url");
+    inputEnlace().props.onChange({ target: { value: "javascript:alert(1)" } });
+    const before = calls;
+    await submit();
+    assert.equal(calls, before);
+    assert.ok(render().find(node => node.props.name === "enlace").props.error);
+    inputEnlace().props.onChange({ target: { value: " https://doi.org/10.1234/test " } });
+    await submit();
+    assert.equal(saved.enlace, "https://doi.org/10.1234/test");
+    params = { id: "8" };
+    initialData = { ...initialData, enlace: saved.enlace };
+    inputEnlace().props.onChange({ target: { value: "" } });
+    await submit();
+    assert.equal(saved.enlace, null);
+
   });
 }
 
@@ -223,4 +243,14 @@ test("ISS-13: service normaliza fechas antiguas y envía únicamente fecha_prese
   assert.equal(trabajo.fecha_inicio, undefined);
   await service.updateTrabajoReunion(8, { fecha_presentacion: "2026-01-01" });
   assert.equal(JSON.stringify(saved), '{"fecha_presentacion":"2026-01-01"}');
+});
+
+test("ISS-14: enlace opcional valida protocolo, longitud y apertura segura", () => {
+  const { errorEnlace, enlaceSeguro } = load("src/modules/produccion/utils/trabajoEnlace.ts");
+  for (const url of ["", "  ", "http://example.org", "https://doi.org/10.1234/test", "https://example.org/" + "a".repeat(2028)]) assert.equal(errorEnlace(url), undefined);
+  for (const url of ["javascript:alert(1)", "ftp://example.org", "//example.org", "https://", "https://user:pass@example.org", "https://@example.org", "https://example.org:99999", "https://example.org/a b", "https://%", "https://<invalid>", "https://invalid_host/", "https://example.org/" + "a".repeat(2029)]) {
+    assert.ok(errorEnlace(url), url);
+    assert.equal(enlaceSeguro(url), null);
+  }
+  assert.equal(enlaceSeguro(null), null);
 });

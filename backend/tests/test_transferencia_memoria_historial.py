@@ -12,6 +12,8 @@ from modules.transferencia.services.transferencia_service import TransferenciaSo
 class TransferenciaMemoriaHistorialTestCase(unittest.TestCase):
 
     def setUp(self):
+        self.enterContext(patch("modules.memorias.services.memoria_service.MemoriaService._validar_grupo", return_value=1))
+        self.enterContext(patch("modules.memorias.services.memoria_service.snapshot_contexto_institucional", return_value=None))
         self.add_patcher = patch("modules.transferencia.services.transferencia_service.db.session.add")
         self.flush_patcher = patch("modules.transferencia.services.transferencia_service.db.session.flush")
         self.commit_patcher = patch("extension.db.session.commit")
@@ -99,6 +101,7 @@ class TransferenciaMemoriaHistorialTestCase(unittest.TestCase):
 
     def test_change_status_a_cerrada_genera_snapshot_transferencias(self):
         memoria = Memoria(
+            grupo_utn_id=1,
             id=1,
             periodo_inicio=date(2026, 1, 1),
             periodo_fin=date(2026, 12, 31),

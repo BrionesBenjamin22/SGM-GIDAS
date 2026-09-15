@@ -192,3 +192,23 @@ eventos históricos fecha_inicio/fecha_presentacion a Fecha de presentación
 con valores formateados, conservando paginación de tres y permisos de edición.
 No se modifica el flujo de revistas, cuya fecha ya tiene otro contrato.
 No se modifican hooks compartidos ni componentes globales.
+
+## ISS-14: enlace al trabajo o DOI
+
+Formularios de congresos/reuniones y revistas ofrecen un input URL opcional,
+con placeholder DOI y máximo 2048 caracteres. `utils/trabajoEnlace.ts` valida
+HTTP/HTTPS y longitud al guardar; el backend valida de manera independiente.
+El DOI debe ser una URL completa https://doi.org/… . Vaciar elimina el enlace
+mediante null; edición envía solo diferencias y no solicita cambios si no hay.
+Los errores API `enlace` se muestran en el campo. No se normalizan mayúsculas.
+Services dedicados tipan `enlace?: string | null` y normalizan ausentes a null.
+
+Detalle muestra la URL como enlace solo cuando pasa `enlaceSeguro`, con
+target=_blank, rel=noopener noreferrer y aviso accesible de pestaña nueva.
+Mantiene permisos, navegación e historial de tres items; home conserva nueve.
+No hay consultas adicionales ni previsualización remota del destino.
+Regresiones SSR/harness en trabajoAutores.test.ts verifican apertura segura,
+validación, carga/edición, alta, eliminación y diferencias reales.
+
+La validación también rechaza hosts inválidos; admite dominios internacionalizados
+y hosts IPv6 válidos mediante los analizadores de URL de cada plataforma.

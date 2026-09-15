@@ -1,3 +1,7 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, registro_puntual_en_memoria,
+)
+from modules.produccion.services.trabajo_enlace import validar_enlace
 from datetime import date, datetime
 
 from sqlalchemy import or_
@@ -265,6 +269,7 @@ class TrabajoReunionCientificaService:
             fecha_presentacion,
         )
 
+        enlace = validar_enlace(data.get("enlace"))
         autores = validar_autores(data.get("autores", []))
 
         trabajo = TrabajoReunionCientifica(
@@ -274,6 +279,7 @@ class TrabajoReunionCientificaService:
             fecha_presentacion=fecha_presentacion,
             tipo_reunion_id=tipo_reunion_id,
             grupo_utn_id=grupo_utn_id,
+            enlace=enlace,
             created_by=user_id
         )
 
@@ -295,6 +301,7 @@ class TrabajoReunionCientificaService:
         TrabajoReunionCientificaService._validar_user_id(user_id)
         trabajo = TrabajoReunionCientificaService._get_activo_or_404(trabajo_id)
         autores = validar_autores(data["autores"], trabajo.autorias) if "autores" in data else None
+        enlace = validar_enlace(data["enlace"]) if "enlace" in data else trabajo.enlace
         cambios = {}
 
         fecha_presentacion = trabajo.fecha_presentacion
@@ -390,6 +397,11 @@ class TrabajoReunionCientificaService:
                 cambios["grupo_utn_id"] = cambio
                 trabajo.grupo_utn_id = grupo_utn_id
 
+            cambio = AuditoriaService.construir_cambio(trabajo.enlace, enlace)
+            if cambio:
+                cambios["enlace"] = cambio
+                trabajo.enlace = enlace
+
             if cambios:
                 trabajo.mark_updated(user_id)
                 AuditoriaService.registrar_cambios(
@@ -451,17 +463,18 @@ class TrabajoReunionCientificaService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        trabajos = TrabajoReunionCientifica.query.filter().all()
+        trabajos = consultar_entidades_memoria(TrabajoReunionCientifica, memoria_version)
 
         snapshots = []
         for trabajo in trabajos:
-            if not esta_en_periodo_memoria(memoria_version, trabajo.fecha_presentacion):
+            if not registro_puntual_en_memoria(memoria_version, trabajo, trabajo.fecha_presentacion):
                 continue
             autores = [autor.serialize() for autor in trabajo.autorias]
 
             snapshot = TrabajoReunionCientificaMemoriaVersion(
                 memoria_version_id=memoria_version.id,
                 trabajo_reunion_id=trabajo.id,
+                enlace=trabajo.enlace,
                 titulo_trabajo=trabajo.titulo_trabajo,
                 nombre_reunion=trabajo.nombre_reunion,
                 procedencia=trabajo.procedencia,

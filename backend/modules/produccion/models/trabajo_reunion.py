@@ -10,6 +10,7 @@ class TrabajoReunionCientifica(db.Model, AuditMixin):
 
     id = db.Column(db.Integer, primary_key=True)
 
+    enlace = db.Column(db.String(2048), nullable=True)
     titulo_trabajo = db.Column(db.Text, nullable=False)
     nombre_reunion = db.Column(db.Text, nullable=False)
     procedencia = db.Column(db.Text, nullable=False)
@@ -84,6 +85,7 @@ class TrabajoReunionCientificaMemoriaVersion(db.Model, AuditMixin):
         nullable=False
     )
 
+    enlace = db.Column(db.String(2048), nullable=True)
     titulo_trabajo = db.Column(db.Text, nullable=False)
     nombre_reunion = db.Column(db.Text, nullable=False)
     procedencia = db.Column(db.Text, nullable=False)

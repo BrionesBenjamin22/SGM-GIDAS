@@ -1,3 +1,6 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, registro_puntual_en_memoria,
+)
 from datetime import datetime, date
 
 from extension import db
@@ -215,11 +218,11 @@ def obtener_historial_visita(id):
 
 
 def snapshot_visitas_para_memoria_version(memoria_version, user_id):
-    visitas = VisitaAcademica.query.filter().all()
+    visitas = consultar_entidades_memoria(VisitaAcademica, memoria_version)
 
     snapshots = []
     for visita in visitas:
-        if not esta_en_periodo_memoria(memoria_version, visita.fecha):
+        if not registro_puntual_en_memoria(memoria_version, visita, visita.fecha):
             continue
         snapshot = VisitaAcademicaMemoriaVersion(
             memoria_version_id=memoria_version.id,

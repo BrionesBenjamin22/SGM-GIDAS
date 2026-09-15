@@ -106,3 +106,29 @@ Los eventos históricos conservan su campo original; nuevos eventos usan
 fecha_presentacion. Tests reales: test_trabajo_fecha_presentacion.py verifica
 API, alias, rechazo de conflictos, fechas inválidas, auditoría, orden, límites
 anuales, XLSX y migración/downgrade preservando filas.
+
+## ISS-14: enlace opcional de trabajos
+
+Congresos/reuniones y revistas aceptan `enlace` opcional en POST/PUT y lo
+exponen en GET y snapshots como string o null. Ausente en alta, null o texto
+vacío se almacenan como null; ausente en edición conserva el valor previo.
+Se recortan espacios exteriores sin alterar mayúsculas ni contenido del DOI.
+Admite HTTP/HTTPS con host, hasta 2048 caracteres; rechaza otros protocolos,
+URLs incompletas, credenciales, espacios internos, controles, barras inversas
+y puertos inválidos. Un DOI debe ingresarse como URL https://doi.org/… .
+Error 400 con `error.details.fields.enlace`; no se consulta el destino.
+Los cambios reales, incluida la eliminación del enlace, se auditan en `enlace`.
+Se conservan permisos, autores y soft delete del trabajo. No modifica duplicados.
+
+La revisión d14e8f0a3c51 añade String(2048) nullable a ambos trabajos y sus
+snapshots. Registros existentes quedan con null. Downgrade elimina las cuatro
+columnas y sus valores, conservando las filas; no reconstruye URLs eliminadas.
+Tests test_trabajo_enlace.py cubren API, rechazo atómico, historial sin duplicados,
+snapshot inmutable, XLSX y upgrade/downgrade con registros existentes.
+
+La validación también rechaza hosts inválidos; admite dominios internacionalizados
+y hosts IPv6 válidos mediante los analizadores de URL de cada plataforma.
+
+## Pertenencia a memorias (ISS-16)
+
+Los generadores filtran por la UCT. Publicaciones, documentación, registros, distinciones y trabajos usan su fecha puntual dentro del rango inclusivo; docencia usa el intervalo completo y conserva los grados que estuvieron vigentes. Las bajas se interpretan históricamente.

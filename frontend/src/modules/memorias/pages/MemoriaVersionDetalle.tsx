@@ -4,7 +4,7 @@ import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/rea
 import Button from "@/components/Button";
 import SuccessToast from "@/components/SuccessToast";
 import { useAuth } from "@/context/AuthContext";
-import { useUct } from "@/modules/grupo/hooks/useUct";
+
 import {
   exportarExcelMemoria,
   getActividadesDocenciaSnapshot,
@@ -162,8 +162,7 @@ const sections: SnapshotSection[] = [
 ];
 
 function buildMemoriaLabel(memoria: Memoria | null | undefined) {
-  const year = getCivilYear(memoria?.periodo_fin) ?? "";
-  return year ? `Memoria ${year}` : "Memoria";
+  return memoria ? `Memoria ${formatFecha(memoria.periodo_inicio)}–${formatFecha(memoria.periodo_fin)}` : "Memoria";
 }
 
 const snapshotEntityIdKeys: Record<string, string> = {
@@ -203,7 +202,7 @@ export default function MemoriaVersionDetalle() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAdmin, isGestor, canEditRecords } = useAuth();
-  const { uct, isLoading: isLoadingUct } = useUct();
+
 
   const memoriaId = Number(id);
   const memoriaVersionId = Number(versionId);
@@ -252,16 +251,16 @@ export default function MemoriaVersionDetalle() {
   const { data: planificacionesPage, isLoading: isLoadingPlanificaciones } = useQuery({
     queryKey: ["planificaciones", "true"],
     queryFn: () => getPlanificaciones("true"),
-    enabled: puedeEditarPrograma && !!anioPrograma && !!uct?.id,
+    enabled: puedeEditarPrograma && !!anioPrograma && !!memoria?.grupo_utn_id,
   });
   const planificaciones = planificacionesPage?.data ?? [];
 
   const planificacionActual = useMemo<PlanificacionGrupo | undefined>(
     () =>
       planificaciones.find(
-        (item) => item.anio === anioPrograma && item.grupo_id === uct?.id && item.activo
+        (item) => item.anio === anioPrograma && item.grupo_id === memoria?.grupo_utn_id && item.activo
       ),
-    [anioPrograma, planificaciones, uct?.id]
+    [anioPrograma, planificaciones, memoria?.grupo_utn_id]
   );
 
   useEffect(() => {
@@ -292,7 +291,7 @@ export default function MemoriaVersionDetalle() {
       if (!descripcion) {
         throw new Error("Debe ingresar una descripción para el programa de actividades.");
       }
-      if (!anioPrograma || !uct?.id) {
+      if (!anioPrograma || !memoria?.grupo_utn_id) {
         throw new Error("No se pudo resolver el año o el grupo de investigación.");
       }
 
@@ -300,14 +299,14 @@ export default function MemoriaVersionDetalle() {
         return updatePlanificacion(planificacionActual.id, {
           descripcion,
           anio: anioPrograma,
-          grupo_id: uct.id,
+          grupo_id: memoria!.grupo_utn_id!,
         });
       }
 
       return createPlanificacion({
         descripcion,
         anio: anioPrograma,
-        grupo_id: uct.id,
+        grupo_id: memoria!.grupo_utn_id!,
       });
     },
     onSuccess: () => {
@@ -354,8 +353,7 @@ export default function MemoriaVersionDetalle() {
   };
 
   const abrirProgramaActividades = () => {
-    if (isLoadingUct) return;
-    if (!uct?.id) {
+    if (!memoria?.grupo_utn_id) {
       setMessage("No hay un grupo de investigación configurado para guardar la planificación.");
       setShowError(true);
       return;
@@ -390,6 +388,7 @@ export default function MemoriaVersionDetalle() {
             Memoria {formatFecha(memoria.periodo_inicio)} - {formatFecha(memoria.periodo_fin)}
           </p>
           <p className="mt-1 text-xs text-slate-500">Versión {numeroVersionMemoria}</p>
+          <p className="mt-1 text-sm text-slate-500">UCT: {memoria.grupo_utn_nombre || "Pendiente de asociar"}</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -398,9 +397,9 @@ export default function MemoriaVersionDetalle() {
               size="sm"
               variant="secondary"
               onClick={abrirProgramaActividades}
-              disabled={isLoadingPlanificaciones || isLoadingUct}
+              disabled={isLoadingPlanificaciones}
             >
-              Programa Actividades
+              Planificación actual
             </Button>
           )}
 
@@ -557,7 +556,7 @@ export default function MemoriaVersionDetalle() {
                 Programa de Actividades {anioPrograma ?? ""}
               </h3>
               <p className="mt-1 text-sm text-slate-500">
-                Registra los objetivos y actividades del grupo para la proxima memoria.
+                Registra los objetivos y actividades actuales del grupo para el año siguiente al fin del período. Los cambios no modifican los datos históricos ni el Excel de esta versión cerrada.
               </p>
             </div>
 

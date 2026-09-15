@@ -13,6 +13,7 @@ from openpyxl import load_workbook
 from extension import db
 from modules.memorias.models.memorias import Memoria, MemoriaVersion, EstadoMemoria
 from modules.memorias.services.exportacion_service_impl import ExportService
+from modules.memorias.services.memoria_contexto_service import snapshot_contexto_institucional
 from modules.produccion.services.trabajo_reunion_service import TrabajoReunionCientificaService as Service
 from tests import test_trabajo_autores as fixtures
 
@@ -54,12 +55,13 @@ class FechaPresentacionTest(unittest.TestCase):
         self.assertEqual([t["id"] for t in Service.get_all({"orden": "asc"})], ids)
         self.assertEqual([t["id"] for t in Service.get_all({"orden": "desc"})], ids[::-1])
         for anio, esperado in zip((2025, 2026), ids):
-            memoria = Memoria(periodo_inicio=date(anio, 1, 1), periodo_fin=date(anio, 12, 31), created_by=7)
+            memoria = Memoria(grupo_utn_id=1, periodo_inicio=date(anio, 1, 1), periodo_fin=date(anio, 12, 31), created_by=7)
             db.session.add(memoria)
             db.session.flush()
             version = MemoriaVersion(memoria_id=memoria.id, numero_version=1, fecha_apertura=datetime(anio, 1, 1), estado=EstadoMemoria.CERRADA, created_by=7)
             db.session.add(version)
             db.session.flush()
+            version.contexto_institucional = snapshot_contexto_institucional(version)
             snapshots = Service.snapshot_para_memoria_version(version, 7)
             db.session.commit()
             self.assertEqual([s.trabajo_reunion_id for s in snapshots], [esperado])

@@ -1,3 +1,5 @@
+import MemoriaPeriodoForm from "@/modules/memorias/components/MemoriaPeriodoForm";
+import HistorialCambiosCard from "@/components/HistorialCambiosCard";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -9,22 +11,24 @@ import { getErrorMessage } from "@/lib/httpError";
 import {
   cambiarEstadoMemoria,
   getMemoriaById,
+  getHistorialMemoria,
   reabrirMemoria,
   type Memoria,
   type MemoriaEstado,
 } from "@/modules/memorias/services/memoriasService";
-import { formatFecha, formatFechaHora, getCivilYear } from "@/utils/dateTime";
+import { formatFecha, formatFechaHora } from "@/utils/dateTime";
 
 export default function MemoriaDetalle() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isGestor } = useAuth();
 
-  const puedeEditar = isAdmin();
+  const puedeEditar = isAdmin() || isGestor();
   const puedeReabrir = isAdmin();
 
+  const [editandoPeriodo, setEditandoPeriodo] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [showError, setShowError] = useState(false);
@@ -37,6 +41,12 @@ export default function MemoriaDetalle() {
     queryFn: () => getMemoriaById(Number(id)),
     enabled: !!id,
     refetchOnMount: "always",
+  });
+
+  const { data: historial = [], isLoading: cargandoHistorial, isError: errorHistorial } = useQuery({
+    queryKey: ["memoria-historial", id],
+    queryFn: () => getHistorialMemoria(Number(id)),
+    enabled: !!id,
   });
 
   useEffect(() => {
@@ -62,6 +72,7 @@ export default function MemoriaDetalle() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["memorias"] });
       await queryClient.invalidateQueries({ queryKey: ["memoria", id] });
+      await queryClient.invalidateQueries({ queryKey: ["memoria-historial", id] });
 
       setSuccessMessage("Estado de la memoria actualizado con éxito.");
       setShowSuccess(true);
@@ -118,11 +129,14 @@ export default function MemoriaDetalle() {
     return <p className="text-slate-500">Cargando memoria...</p>;
   }
 
-  if (isError || !memoria || !versionActual) {
+  if (isError) return <p role="alert">Lo sentimos, no pudimos recuperar la información. Intente nuevamente.</p>;
+
+  if (!memoria || !versionActual) {
     return <p className="text-slate-500">No se encontró la memoria.</p>;
   }
 
-  const anioMemoria = getCivilYear(memoria.periodo_fin) ?? "-";
+  const puedeCorregirPeriodo = (isAdmin() || isGestor()) && !memoria.deleted_at &&
+    !(memoria.versiones || []).some((v) => v.estado === "cerrada" || !!v.fecha_cierre);
   const snapshotDisponible = versionActual.estado === "cerrada";
 
   return (
@@ -131,7 +145,7 @@ export default function MemoriaDetalle() {
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-2">
             <h2 className="text-2xl font-semibold leading-none md:text-3xl">
-              Memoria {anioMemoria}
+              Memoria {formatFecha(memoria.periodo_inicio)}–{formatFecha(memoria.periodo_fin)}
             </h2>
 
             <span
@@ -148,6 +162,7 @@ export default function MemoriaDetalle() {
           </div>
 
           <div className="flex flex-wrap justify-end gap-2">
+            {puedeCorregirPeriodo && !editandoPeriodo && <Button size="sm" variant="secondary" onClick={() => setEditandoPeriodo(true)}>Editar período</Button>}
             <Button
               variant="secondary"
               size="sm"
@@ -168,7 +183,11 @@ export default function MemoriaDetalle() {
                   variant="secondary"
                   onClick={() => setEstadoPendiente(estado)}
                 >
-                  Pasar a {estado}
+                  {estado === "cerrada"
+                    ? "Cerrar memoria"
+                    : estado === "en revision"
+                      ? "Enviar a revisión"
+                      : "Volver a abierta"}
                 </Button>
               ))}
 
@@ -182,6 +201,14 @@ export default function MemoriaDetalle() {
           </div>
         </div>
 
+        {!memoria.grupo_utn_id && <p role="status">Esta memoria anterior requiere una asociación explícita a una UCT. Las versiones cerradas se conservan sin reconstruir su historia.</p>}
+        {editandoPeriodo && puedeCorregirPeriodo && <article className="rounded-2xl border border-slate-200 bg-white p-6">
+          <h3 className="mb-4 text-lg font-semibold">Editar período</h3>
+          <MemoriaPeriodoForm memoria={memoria} onCancel={() => setEditandoPeriodo(false)} onSaved={() => {
+            setEditandoPeriodo(false);
+            navigate(`/memorias/${memoria.id}`, { replace: true, state: { successMessage: "Período de la memoria actualizado con éxito." } });
+          }} />
+        </article>}
         <article className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
           <div className="mb-4">
             <h3 className="text-lg font-semibold text-slate-700">
@@ -190,6 +217,11 @@ export default function MemoriaDetalle() {
           </div>
 
           <div className="space-y-2 text-sm text-slate-500 md:text-base">
+            <p><span className="font-medium text-slate-700">UCT:</span> {memoria.grupo_utn_nombre || "Pendiente de asociar"}</p>
+            <p>
+              El período define qué información integra la memoria. Su estado
+              permanece abierto hasta que un gestor o administrador la cierre.
+            </p>
             <p>
               <span className="font-medium text-slate-700">Período de inicio:</span>{" "}
               {formatFecha(memoria.periodo_inicio)}
@@ -300,6 +332,21 @@ export default function MemoriaDetalle() {
           </div>
         </article>
 
+        <article className="rounded-2xl border border-slate-200 bg-white p-6">
+          <h3 className="mb-4 text-lg font-semibold">Auditoría</h3>
+          <p className="text-sm text-slate-500">Creada: {formatFechaHora(memoria.created_at)} por {memoria.created_by_nombre || "-"}</p>
+          <p className="text-sm text-slate-500">Actualizada: {formatFechaHora(memoria.updated_at)} por {memoria.updated_by_nombre || "-"}</p>
+          {memoria.deleted_at && <p className="text-sm text-slate-500">Baja: {formatFechaHora(memoria.deleted_at)} por {memoria.deleted_by_nombre || "-"}</p>}
+        </article>
+        {errorHistorial ? <p role="alert">Lo sentimos, no pudimos recuperar el historial. Intente nuevamente.</p> :
+          <HistorialCambiosCard
+            items={historial.map((item) => ({
+              ...item,
+              campo: item.campo === "grupo_utn_id" ? "UCT" : item.campo,
+            }))}
+            isLoading={cargandoHistorial}
+            pageSize={3}
+          />}
         <div className="flex justify-start pt-4">
           <Button variant="secondary" size="sm" onClick={() => navigate("/memorias")}>
             Volver

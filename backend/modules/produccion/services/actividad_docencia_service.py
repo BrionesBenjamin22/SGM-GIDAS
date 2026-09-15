@@ -1,3 +1,6 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, fin_vigencia,
+)
 from datetime import date, datetime
 
 from modules.produccion.models.actividad_docencia import (
@@ -549,15 +552,14 @@ class ActividadDocenciaService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        actividades = ActividadDocencia.query.filter().all()
+        actividades = consultar_entidades_memoria(ActividadDocencia, memoria_version, relacion="investigador")
 
         snapshots = []
         for actividad in actividades:
             if not estuvo_activo_en_periodo_memoria(
                 memoria_version,
                 actividad.fecha_inicio,
-                getattr(actividad, "fecha_fin", None)
-                or getattr(actividad, "deleted_at", None)
+                fin_vigencia(actividad)
             ):
                 continue
             grado_activo = (
@@ -594,6 +596,8 @@ class ActividadDocenciaService:
             db.session.flush()
 
             for historial in getattr(actividad, "investigadores_grado", []):
+                if not estuvo_activo_en_periodo_memoria(memoria_version, historial.fecha_inicio, fin_vigencia(historial)):
+                    continue
                 historial_snapshot = ActividadDocenciaGradoMemoriaVersion(
                     actividad_docencia_memoria_version=snapshot,
                     investigador_actividad_grado_id=historial.id,

@@ -13,6 +13,7 @@ export interface TrabajoRevista {
   deleted_by_nombre?: string | null;
   deleted_at: string | null | undefined;
   activo?: boolean;
+  enlace?: string | null;
   titulo_trabajo: string;
   nombre_revista: string;
   editorial: string;
@@ -39,6 +40,7 @@ export interface HistorialTrabajoRevistaItem {
 
 export interface TrabajoRevistaPayload {
   autores: AutorReferencia[];
+  enlace?: string | null;
   titulo_trabajo: string;
   nombre_revista: string;
   editorial: string;
@@ -69,6 +71,7 @@ const normalizeTrabajoRevista = (item: TrabajoRevistaBackend): TrabajoRevista =>
   deleted_by_nombre: item.deleted_by_nombre ?? null,
   deleted_at: item.deleted_at ?? null,
   activo: item.activo ?? true,
+  enlace: item.enlace ?? null,
   titulo_trabajo: item.titulo_trabajo ?? "",
   nombre_revista: item.nombre_revista ?? "",
   editorial: item.editorial ?? "",
@@ -155,6 +158,7 @@ export const updateTrabajoRevista = async (
   const body: Record<string, unknown> = {};
   if ("autores" in data) body.autores = data.autores;
 
+  if ("enlace" in data) body.enlace = data.enlace;
   if ("titulo_trabajo" in data) body.titulo_trabajo = data.titulo_trabajo;
   if ("nombre_revista" in data) body.nombre_revista = data.nombre_revista;
   if ("editorial" in data) body.editorial = data.editorial;

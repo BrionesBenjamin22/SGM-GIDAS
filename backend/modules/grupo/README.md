@@ -69,3 +69,7 @@ Los services distinguen validaciones (`VALIDATION_ERROR`), recursos inexistentes
 (`NOT_FOUND`) y conflictos de estado (`CONFLICT`). Los controladores serializan
 unicamente errores de dominio conocidos; una falla inesperada responde
 `INTERNAL_ERROR` con `request_id` y no expone detalles internos.
+
+## Integración con memorias (ISS-16)
+
+GET `/api/v1/grupo/grupo-utn/opciones` devuelve `{id, nombre}` de las UCT activas a ADMIN, GESTOR y LECTURA. Al cerrar una memoria se congelan la UCT, sus autoridades vigentes durante el período y la planificación del año siguiente; cambios actuales no alteran esa versión ni su Excel.

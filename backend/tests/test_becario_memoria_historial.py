@@ -16,6 +16,8 @@ from modules.memorias.services.memoria_service import MemoriaService
 class BecarioMemoriaHistorialTestCase(unittest.TestCase):
 
     def setUp(self):
+        self.enterContext(patch("modules.memorias.services.memoria_service.MemoriaService._validar_grupo", return_value=1))
+        self.enterContext(patch("modules.memorias.services.memoria_service.snapshot_contexto_institucional", return_value=None))
         self.add_patcher = patch("extension.db.session.add")
         self.commit_patcher = patch("extension.db.session.commit")
         self.rollback_patcher = patch("extension.db.session.rollback")
@@ -48,7 +50,7 @@ class BecarioMemoriaHistorialTestCase(unittest.TestCase):
             grupo_utn_id=4,
             tipo_formacion=SimpleNamespace(nombre="Doctorado"),
             grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS"),
-            historial_horas=[SimpleNamespace(horas_semanales=18, fecha_fin=None)],
+            historial_horas=[SimpleNamespace(id=1, horas_semanales=18, fecha_inicio=date(2020, 1, 1), fecha_fin=None)],
             becas=[
                 SimpleNamespace(
                     deleted_at=None,
@@ -90,6 +92,7 @@ class BecarioMemoriaHistorialTestCase(unittest.TestCase):
 
     def test_change_status_a_cerrada_genera_snapshot_becarios(self):
         memoria = Memoria(
+            grupo_utn_id=1,
             id=1,
             periodo_inicio=date(2026, 1, 1),
             periodo_fin=date(2026, 12, 31),

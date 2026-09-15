@@ -1,7 +1,8 @@
+import { getGruposUtn } from "@/modules/grupo/services/gruposUtnServices";
 import { applyFieldErrors } from "@/lib/httpError";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
 import Field from "@/components/Field";
 import DatePicker from "@/components/Calendar";
@@ -14,6 +15,8 @@ export default function MemoriaForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  const [grupoId, setGrupoId] = useState("");
+  const { data: grupos = [], isLoading: cargandoGrupos, isError: errorGrupos } = useQuery({ queryKey: ["grupos-utn"], queryFn: getGruposUtn });
   const [periodoInicio, setPeriodoInicio] = useState("");
   const [periodoFin, setPeriodoFin] = useState("");
   const [fechaApertura, setFechaApertura] = useState("");
@@ -23,6 +26,8 @@ export default function MemoriaForm() {
 
   const validate = () => {
     const nextErrors: Record<string, string> = {};
+
+    if (!grupoId) nextErrors.grupo_utn_id = "Debe seleccionar una UCT.";
 
     if (!periodoInicio) {
       nextErrors.periodoInicio = "Debe ingresar el inicio del período.";
@@ -44,6 +49,7 @@ export default function MemoriaForm() {
   const { mutateAsync, isPending } = useMutation({
     mutationFn: () =>
       createMemoria({
+        grupo_utn_id: Number(grupoId),
         periodo_inicio: periodoInicio,
         periodo_fin: periodoFin,
         fecha_apertura: fechaApertura || undefined,
@@ -58,7 +64,15 @@ export default function MemoriaForm() {
       });
     },
     onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["periodoInicio","periodoFin"])) return;
+      if (
+        applyFieldErrors(error, setErrors, [
+          "grupo_utn_id",
+          "periodoInicio",
+          "periodoFin",
+        ])
+      ) {
+        return;
+      }
       setErrorMessage(
         getErrorMessage(
           error,
@@ -85,9 +99,29 @@ export default function MemoriaForm() {
         onSubmit={async (event) => {
           event.preventDefault();
           if (!validate()) return;
-          await mutateAsync();
+          try { await mutateAsync(); } catch { /* onError muestra el mensaje */ }
         }}
       >
+        <Field label="UCT" name="grupo_utn_id" error={errors.grupo_utn_id}>
+          <select id="grupo_utn_id" value={grupoId} disabled={cargandoGrupos || errorGrupos || isPending} onChange={(event) => {
+            setGrupoId(event.target.value); setErrors((prev) => ({ ...prev, grupo_utn_id: "" }));
+          }} className="w-full rounded-lg border border-slate-200 p-3">
+            <option value="">Seleccione una UCT</option>
+            {grupos.map((grupo) => <option key={grupo.id} value={grupo.id}>{grupo.nombre}</option>)}
+          </select>
+          {errorGrupos && <p role="alert">Lo sentimos, no pudimos recuperar las UCT. Intente nuevamente.</p>}
+          {!cargandoGrupos && !errorGrupos && !grupos.length && <p role="status">Debe registrar una UCT antes de crear una memoria.</p>}
+        </Field>
+        <p className="text-sm text-slate-500">
+          El período indica qué fechas abarca la memoria y puede cruzar años.
+          La fecha de apertura indica cuándo comienza su carga.
+        </p>
+        <Button type="button" variant="secondary" size="sm" onClick={() => {
+          const year = new Date().getFullYear();
+          setPeriodoInicio(`${year}-01-01`);
+          setPeriodoFin(`${year}-12-31`);
+          setErrors({});
+        }}>Usar año calendario actual</Button>
         <Field label="Período de inicio" name="periodoInicio" error={errors.periodoInicio}>
           <DatePicker
             value={periodoInicio ? new Date(`${periodoInicio}T00:00:00`) : null}

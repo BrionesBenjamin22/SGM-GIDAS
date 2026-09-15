@@ -273,11 +273,7 @@ const router = createBrowserRouter([
       { path: "memorias", element: <MemoriasHome /> },
       {
         path: "memorias/nueva",
-        element: (
-          <ProtectedRoute requiredRole="ADMIN">
-            <MemoriaForm />
-          </ProtectedRoute>
-        ),
+        element: editorOnly(<MemoriaForm />),
       },
       { path: "memorias/:id", element: <MemoriaDetalle /> },
       {

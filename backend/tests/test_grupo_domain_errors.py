@@ -22,6 +22,19 @@ class GrupoDomainErrorsTestCase(unittest.TestCase):
             return_value={"sub": "7", "rol": rol},
         )
 
+    def test_opciones_uct_respeta_roles_y_contrato(self):
+        for rol, status in (("ADMIN", 200), ("GESTOR", 200), ("LECTURA", 200), ("LECTOR", 403)):
+            with self.subTest(rol=rol), self._auth(rol), patch(
+                "modules.grupo.controllers.grupo_controller.listar_grupos_utn_activos",
+                return_value=[{"id": 3, "nombre": "GIDAS"}],
+            ):
+                response = self.client.get(
+                    "/api/v1/grupo/grupo-utn/opciones", headers=self._headers()
+                )
+            self.assertEqual(response.status_code, status)
+            if status == 200:
+                self.assertEqual(response.get_json(), [{"id": 3, "nombre": "GIDAS"}])
+
     def test_cargo_expone_validacion_tipificada(self):
         with self._auth(), patch(
             "modules.grupo.controllers.cargo_controller.CargoService.create",

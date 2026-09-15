@@ -43,6 +43,15 @@ def obtener_grupo_utn():
     ).first()
 
 
+def listar_grupos_utn_activos():
+    return [
+        {"id": grupo.id, "nombre": grupo.nombre_sigla_grupo}
+        for grupo in GrupoInvestigacionUtn.query.filter(
+            GrupoInvestigacionUtn.deleted_at.is_(None)
+        ).order_by(GrupoInvestigacionUtn.nombre_sigla_grupo.asc()).all()
+    ]
+
+
 def actualizar_grupo_utn(data):
     grupo = obtener_grupo_utn()
     if not grupo:

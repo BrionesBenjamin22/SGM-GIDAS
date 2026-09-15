@@ -144,3 +144,7 @@ de coordinador sin alterar el hook compartido del frontend.
 Las relaciones inversas de investigadores con trabajos se obtienen de autorias_reunion/autorias_revista. Se mantienen los datos de trabajos en la serialización de investigadores sin depender de tablas de asociación exclusivas. Investigadores y becarios son los únicos orígenes válidos de la colección común de autores de Producción; no se fusionan las tablas de personal.
 
 Corrección de alcance ISS-12: los autores de trabajos son únicamente investigadores y becarios. Personal (PTAA/profesional) no puede vincularse como autor. Se mantiene la etiqueta Autores.
+
+## Snapshots de memorias (ISS-16)
+
+Personal, investigadores y becarios se seleccionan por UCT y solapamiento entre alta, baja y período. La foto conserva `fecha_alta_grupo`. `horas_semanales` representa el historial vigente al final del período y queda null cuando no hay evidencia, sin copiar horas actuales. Las becas usan sus intervalos completos.
