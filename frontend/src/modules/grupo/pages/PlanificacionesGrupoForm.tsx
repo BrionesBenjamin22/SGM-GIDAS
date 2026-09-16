@@ -164,7 +164,7 @@ export default function PlanificacionGrupoForm() {
         onSubmit={submit}
         className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 space-y-6"
       >
-        <Field label="Año" name="anio" error={errors.anio}>
+        <Field required label="Año" name="anio" error={errors.anio}>
           <>
             <input
               type="number"
@@ -186,7 +186,7 @@ export default function PlanificacionGrupoForm() {
           </>
         </Field>
 
-        <Field label="Descripción" name="descripcion" error={errors.descripcion}>
+        <Field required label="Descripción" name="descripcion" error={errors.descripcion}>
           <>
             <textarea
               rows={8}

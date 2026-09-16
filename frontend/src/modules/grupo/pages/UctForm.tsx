@@ -382,7 +382,7 @@ export default function UctForm() {
         className="rounded-2xl border border-slate-200 bg-white p-6 space-y-8"
       >
         {submitError && <ErrorText>{submitError}</ErrorText>}
-        <Field label="Facultad Regional" name="facultadRegional" error={errors.facultadRegional}>
+        <Field required label="Facultad Regional" name="facultadRegional" error={errors.facultadRegional}>
           <>
             <input
               className={inputClass("facultadRegional")}
@@ -395,7 +395,7 @@ export default function UctForm() {
           </>
         </Field>
 
-        <Field label="Nombre y Sigla del Grupo" name="nombreSigla" error={errors.nombreSigla}>
+        <Field required label="Nombre y Sigla del Grupo" name="nombreSigla" error={errors.nombreSigla}>
           <>
             <input
               className={inputClass("nombreSigla")}
@@ -427,7 +427,7 @@ export default function UctForm() {
             <div className="grid md:grid-cols-3 gap-6">
               {faltaDirector && (
                 <>
-                  <Field label="Nombre completo" name="nombre1" error={errors.nombre1}>
+                  <Field required label="Nombre completo" name="nombre1" error={errors.nombre1}>
                     <>
                       <input
                         className={inputClass("nombre1")}
@@ -439,7 +439,7 @@ export default function UctForm() {
                     </>
                   </Field>
 
-                  <Field label="Cargo" name="cargo1" error={errors.cargo1}>
+                  <Field required label="Cargo" name="cargo1" error={errors.cargo1}>
                     <>
                       <select
                         className={inputClass("cargo1")}
@@ -457,7 +457,7 @@ export default function UctForm() {
                     </>
                   </Field>
 
-                  <Field label="Fecha de inicio" name="fecha1" error={errors.fecha1}>
+                  <Field required label="Fecha de inicio" name="fecha1" error={errors.fecha1}>
                     <>
                       <input
                         type="date"
@@ -475,7 +475,7 @@ export default function UctForm() {
 
               {faltaVicedirector && (
                 <>
-                  <Field label="Nombre completo" name="nombre2" error={errors.nombre2}>
+                  <Field required label="Nombre completo" name="nombre2" error={errors.nombre2}>
                     <>
                       <input
                         className={inputClass("nombre2")}
@@ -487,7 +487,7 @@ export default function UctForm() {
                     </>
                   </Field>
 
-                  <Field label="Cargo" name="cargo2" error={errors.cargo2}>
+                  <Field required label="Cargo" name="cargo2" error={errors.cargo2}>
                     <>
                       <select
                         className={inputClass("cargo2")}
@@ -505,7 +505,7 @@ export default function UctForm() {
                     </>
                   </Field>
 
-                  <Field label="Fecha de inicio" name="fecha2" error={errors.fecha2}>
+                  <Field required label="Fecha de inicio" name="fecha2" error={errors.fecha2}>
                     <>
                       <input
                         type="date"
@@ -694,7 +694,7 @@ export default function UctForm() {
           </div>
         )}
 
-        <Field label="Correo electrónico" name="correo" error={errors.correo}>
+        <Field required label="Correo electrónico" name="correo" error={errors.correo}>
           <>
             <input
               type="email"
@@ -706,7 +706,7 @@ export default function UctForm() {
           </>
         </Field>
 
-        <Field label="Objetivos" name="objetivos" error={errors.objetivos}>
+        <Field required label="Objetivos" name="objetivos" error={errors.objetivos}>
           <>
             <textarea
               rows={5}
@@ -774,7 +774,7 @@ export default function UctForm() {
      >
         <div className="space-y-2">
           <label className="block text-sm font-medium text-slate-700">
-            Fecha de finalización
+            Fecha de finalización<span className="ml-1 text-rose-500" aria-hidden="true">*</span>
           </label>
           <input
             type="date"

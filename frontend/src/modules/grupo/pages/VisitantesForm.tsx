@@ -223,7 +223,7 @@ export default function VisitantesForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Razon de la visita" name="razon" error={errors.razon}>
+        <Field required label="Razon de la visita" name="razon" error={errors.razon}>
           <>
             <textarea
               className={`${inputClass("razon")} min-h-[80px]`}
@@ -239,7 +239,7 @@ export default function VisitantesForm() {
           </>
         </Field>
 
-        <Field label="Fecha" name="fecha" error={errors.fecha}>
+        <Field required label="Fecha" name="fecha" error={errors.fecha}>
           <Calendar
             value={fecha}
             onChange={(date) => {
@@ -251,7 +251,7 @@ export default function VisitantesForm() {
           />
         </Field>
 
-        <Field label="Procedencia" name="procedencia" error={errors.procedencia}>
+        <Field required label="Procedencia" name="procedencia" error={errors.procedencia}>
           <>
             <input
               type="text"
@@ -269,7 +269,7 @@ export default function VisitantesForm() {
           </>
         </Field>
 
-        <Field label="Tipo de visita" name="tipoVisita" error={errors.tipoVisita}>
+        <Field required label="Tipo de visita" name="tipoVisita" error={errors.tipoVisita}>
           <>
             <select
               className={`${inputClass("tipoVisita")} ${
