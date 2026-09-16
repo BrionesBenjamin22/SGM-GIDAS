@@ -263,7 +263,7 @@ export default function TransferenciasForm() {
         }}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Número de transferencia" name="numeroTransferencia" error={errors.numeroTransferencia}>
+        <Field required label="Número de transferencia" name="numeroTransferencia" error={errors.numeroTransferencia}>
           <>
             <input
               type="number"
@@ -281,7 +281,7 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <Field label="Denominación" name="denominacion" error={errors.denominacion}>
+        <Field required label="Denominación" name="denominacion" error={errors.denominacion}>
           <>
             <input
               className={inputClass("denominacion")}
@@ -298,7 +298,7 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <Field label="Demandante" name="demandante" error={errors.demandante}>
+        <Field required label="Demandante" name="demandante" error={errors.demandante}>
           <>
             <input
               className={inputClass("demandante")}
@@ -315,7 +315,7 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <Field label="Descripción de la actividad" name="descripcionActividad" error={errors.descripcionActividad}>
+        <Field required label="Descripción de la actividad" name="descripcionActividad" error={errors.descripcionActividad}>
           <>
             <textarea
               rows={5}
@@ -336,7 +336,7 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <Field label="Monto" name="monto" error={errors.monto}>
+        <Field required label="Monto" name="monto" error={errors.monto}>
           <>
             <input
               type="number"
@@ -354,7 +354,7 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <Field label="Fecha de inicio" name="fechaInicio" error={errors.fechaInicio}>
+        <Field required label="Fecha de inicio" name="fechaInicio" error={errors.fechaInicio}>
           <DatePicker
             value={data.fechaInicio ? new Date(`${data.fechaInicio}T00:00:00`) : null}
             onChange={(dt) => {
@@ -384,7 +384,7 @@ export default function TransferenciasForm() {
           />
         </Field>
 
-        <Field label="Tipo de contrato" name="tipoContratoId" error={errors.tipoContratoId}>
+        <Field required label="Tipo de contrato" name="tipoContratoId" error={errors.tipoContratoId}>
           <>
             <select
               className={`${inputClass("tipoContratoId")} ${
