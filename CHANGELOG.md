@@ -8,6 +8,40 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-18: ocultar referencias internas en mensajes visibles de la interfaz
+
+- Los errores visibles usan mensajes publicos seguros o un fallback accionable;
+  ya no agregan `request_id` ni referencias de seguimiento. Se retiro la opcion
+  que podia mostrar esas referencias y la exportacion sin consumidores.
+- Se reforzaron las pruebas frente a SQL, identificadores malformados y cuerpos
+  desconocidos, y se revisaron los consumidores y la documentacion de frontend.
+- El usuario confirmo un POST 400 real de Proyectos: el ID aparecio en la
+  cabecera y el log del backend, pero no en la UI. Tambien confirmo un 500
+  simulado con mensaje generico en la UI y sin informacion interna.
+
+Validaciones: 104 pruebas frontend, typecheck, build:production (2668 modulos),
+git diff --check y 17 pruebas backend focalizadas correctas. El 500 fue
+simulado en el navegador y no genero log de backend; la correlacion real se
+verifico con el 400. Dos pruebas ajenas de `tests.test_api_responses` siguen
+fallando por expectativas antiguas sobre detalles arbitrarios del backend.
+
+### ISS-21: indicar campos obligatorios en todos los formularios
+
+- Se revisaron los formularios de autenticación, catálogos, grupo, memorias,
+  personal, producción, proyectos, recursos y transferencia. Los campos que
+  impiden guardar sin valor muestran el asterisco rojo existente de `Field`.
+- Se marcaron también los campos condicionales de becas, directivos y
+  coordinador, y controles con etiqueta propia. Los campos opcionales
+  permanecen sin marca. No se cambiaron reglas de validación ni contratos API.
+- Se actualizó la documentación de frontend de los módulos afectados. La
+  comprobación visual de Proyectos y Documentación fue confirmada por el
+  usuario tras reiniciar el contenedor de desarrollo.
+
+Validaciones: 104 pruebas frontend, typecheck, build:production con 2668
+módulos, 74 pruebas backend focalizadas y git diff --check correctos. El build
+por defecto requirió ejecutarse fuera del sandbox local porque esbuild no podía
+leer `vite.config.ts` dentro de él; terminó correctamente.
+
 ### ISS-17: permitir presentaciones futuras sin referencias internas
 
 - Los trabajos en reuniones admiten fechas de presentación futuras en altas y
