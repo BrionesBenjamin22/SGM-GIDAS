@@ -823,6 +823,7 @@ function CatalogPanel({
 
                   <Field
                     label={def.nameField === "nombre_beca" ? "Nombre de la beca" : "Nombre"}
+                    required
                   >
                     <input
                       className="input"
@@ -1109,7 +1110,7 @@ function CatalogPanel({
           )}
 
           {def.fkField && (
-            <Field label={fkLabel}>
+            <Field label={fkLabel} required>
               <select
                 className="input"
                 value={newFkId}
