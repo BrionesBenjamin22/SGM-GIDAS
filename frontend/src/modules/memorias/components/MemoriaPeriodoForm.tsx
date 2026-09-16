@@ -49,18 +49,18 @@ export default function MemoriaPeriodoForm({ memoria, onCancel, onSaved }: {
   }}>
     <p className="text-sm text-slate-500">Puede corregir el período hasta que exista una versión cerrada. Las fechas de apertura y cierre no cambian.</p>
     <fieldset disabled={isPending} className="space-y-4">
-      {memoria.grupo_utn_id === null && <Field label="UCT" name="grupo_utn_id" error={errors.grupo_utn_id}>
+      {memoria.grupo_utn_id === null && <Field required label="UCT" name="grupo_utn_id" error={errors.grupo_utn_id}>
         <select id="grupo_utn_id" value={grupoId} onChange={(event) => setGrupoId(event.target.value)} className="w-full rounded-lg border border-slate-200 p-3">
           <option value="">Seleccione la UCT de esta memoria</option>
           {grupos.map((grupo) => <option key={grupo.id} value={grupo.id}>{grupo.nombre}</option>)}
         </select>
       </Field>}
-      <Field label="Inicio del período" name="periodo_inicio" error={errors.periodo_inicio}>
+      <Field required label="Inicio del período" name="periodo_inicio" error={errors.periodo_inicio}>
         <DatePicker value={inicio ? new Date(`${inicio}T00:00:00`) : null} onChange={(date) => {
           setInicio(toCivilDateString(date) ?? ""); setErrors((prev) => ({ ...prev, periodo_inicio: "" }));
         }} helperText="DD/MM/AAAA" />
       </Field>
-      <Field label="Fin del período" name="periodo_fin" error={errors.periodo_fin}>
+      <Field required label="Fin del período" name="periodo_fin" error={errors.periodo_fin}>
         <DatePicker value={fin ? new Date(`${fin}T00:00:00`) : null} onChange={(date) => {
           setFin(toCivilDateString(date) ?? ""); setErrors((prev) => ({ ...prev, periodo_fin: "" }));
         }} helperText="DD/MM/AAAA" />

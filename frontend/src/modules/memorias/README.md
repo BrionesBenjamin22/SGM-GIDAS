@@ -7,7 +7,7 @@ Los formularios del módulo consumen `error.details.fields` mediante
 y enfocan el primer campo inválido. Los nombres locales de los controles se
 vinculan con las claves API, sin cambiar el payload del service ni los permisos.
 Los errores sin campo o con campos desconocidos conservan el aviso general;
-los errores inesperados muestran una referencia de seguimiento cuando existe.
+los errores inesperados muestran un mensaje publico seguro o un fallback accionable, sin identificadores internos.
 Se conservan las reglas y el momento de validación existentes. Véase el contrato
 transversal en `../README.md`.
 
@@ -106,3 +106,7 @@ memoria. Los snapshots históricos siguen respaldando el alcance y el Excel, sin
 desplegables adicionales dentro de las tarjetas. La planificación actual se
 presenta como una acción separada y no modifica los datos congelados ni el Excel
 de la versión.
+
+## Indicadores de campos obligatorios (ISS-21)
+
+El alta y la correccion de periodos muestran el indicador en UCT e inicio y fin del periodo. La fecha de apertura sigue siendo opcional.

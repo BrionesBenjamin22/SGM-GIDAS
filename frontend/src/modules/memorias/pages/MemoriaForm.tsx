@@ -102,7 +102,7 @@ export default function MemoriaForm() {
           try { await mutateAsync(); } catch { /* onError muestra el mensaje */ }
         }}
       >
-        <Field label="UCT" name="grupo_utn_id" error={errors.grupo_utn_id}>
+        <Field required label="UCT" name="grupo_utn_id" error={errors.grupo_utn_id}>
           <select id="grupo_utn_id" value={grupoId} disabled={cargandoGrupos || errorGrupos || isPending} onChange={(event) => {
             setGrupoId(event.target.value); setErrors((prev) => ({ ...prev, grupo_utn_id: "" }));
           }} className="w-full rounded-lg border border-slate-200 p-3">
@@ -122,7 +122,7 @@ export default function MemoriaForm() {
           setPeriodoFin(`${year}-12-31`);
           setErrors({});
         }}>Usar año calendario actual</Button>
-        <Field label="Período de inicio" name="periodoInicio" error={errors.periodoInicio}>
+        <Field required label="Período de inicio" name="periodoInicio" error={errors.periodoInicio}>
           <DatePicker
             value={periodoInicio ? new Date(`${periodoInicio}T00:00:00`) : null}
             onChange={(date) => {
@@ -136,7 +136,7 @@ export default function MemoriaForm() {
           />
         </Field>
 
-        <Field label="Período de fin" name="periodoFin" error={errors.periodoFin}>
+        <Field required label="Período de fin" name="periodoFin" error={errors.periodoFin}>
           <DatePicker
             value={periodoFin ? new Date(`${periodoFin}T00:00:00`) : null}
             onChange={(date) => {
