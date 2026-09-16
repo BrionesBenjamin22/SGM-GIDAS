@@ -3,15 +3,18 @@
 ## Errores accionables (ISS-09)
 
 `src/lib/httpError.ts` interpreta el contrato vigente `error.code`, `error.message`
-y `error.details.fields/request_id`, con compatibilidad para respuestas heredadas.
+y `error.details.fields`, con compatibilidad para respuestas heredadas. El
+`request_id` es metadata operativa para correlacion interna y no contenido de UI.
 `mapFieldErrors` adapta las claves API a los nombres de los controles del formulario.
 `applyFieldErrors` muestra los errores junto a los campos y enfoca el primero en
 orden visual; devuelve `false` si quedan campos desconocidos para conservar el aviso
 general. `Field` asocia etiqueta, `aria-invalid`, descripción y mensaje accesible,
 sin duplicar los errores que ya aparecen dentro del control.
 
-Los errores generales usan `getErrorMessage`, que descarta detalles técnicos y
-agrega una referencia de seguimiento segura cuando existe. Los mensajes de éxito,
+Los errores generales usan `getErrorMessage`, que conserva mensajes publicos
+seguros y descarta detalles tecnicos e identificadores de seguimiento. El ID
+permanece en el contrato HTTP y en `X-Request-ID` para logs y diagnostico interno,
+pero nunca se agrega al texto visible. Los mensajes de éxito,
 las reglas de validación y el momento de validación existentes se conservan.
 No se incorporan validaciones en tiempo real ni indicadores verdes.
 
@@ -100,3 +103,7 @@ síncronas que solo preparan cambios locales no simulan esperas del servidor.
 Pruebas de regresión: tests/actionFeedback.test.ts verifica los componentes
 reales mediante SSR y un harness de hooks, sin navegador. Las pantallas de
 autenticación conservan sus estados de carga existentes.
+
+## Campos obligatorios (ISS-21)
+
+Los formularios usan `Field required` para marcar con un asterisco rojo los campos que la validacion exige antes de guardar. Los campos opcionales y las condiciones que solo se validan cuando tienen valor no se marcan. Los controles con etiqueta propia siguen el mismo criterio visual. Esta marca no sustituye la validacion de frontend ni la del backend.

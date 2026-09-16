@@ -149,7 +149,6 @@ export default function TrabajoReunionForm() {
       const backendMessage = getErrorMessage(
         error,
         "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente.",
-        { includeTrackingReference: false },
       );
       const lowerMessage = backendMessage.toLowerCase();
 
@@ -248,7 +247,7 @@ export default function TrabajoReunionForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Título del trabajo" name="titulo" error={errors.titulo}>
+        <Field required label="Título del trabajo" name="titulo" error={errors.titulo}>
           <>
             <input
               className={inputClass("titulo")}
@@ -268,7 +267,7 @@ export default function TrabajoReunionForm() {
           </>
         </Field>
 
-        <Field label="Nombre de la reunión" name="nombreReunion" error={errors.nombreReunion}>
+        <Field required label="Nombre de la reunión" name="nombreReunion" error={errors.nombreReunion}>
           <>
             <input
               className={inputClass("nombreReunion")}
@@ -290,7 +289,7 @@ export default function TrabajoReunionForm() {
           </>
         </Field>
 
-        <Field label="Procedencia" name="procedencia" error={errors.procedencia}>
+        <Field required label="Procedencia" name="procedencia" error={errors.procedencia}>
           <>
             <input
               className={inputClass("procedencia")}
@@ -312,7 +311,7 @@ export default function TrabajoReunionForm() {
           </>
         </Field>
 
-        <Field label="Tipo de reunión" name="tipoId" error={errors.tipoId}>
+        <Field required label="Tipo de reunión" name="tipoId" error={errors.tipoId}>
           <>
             <select
               className={`${inputClass("tipoId")} ${
@@ -346,7 +345,7 @@ export default function TrabajoReunionForm() {
             onChange={e => { setEnlace(e.target.value); clearError("enlace"); }} />
         </Field>
 
-        <Field label="Autores" name="autores" error={errors.autores}>
+        <Field required label="Autores" name="autores" error={errors.autores}>
           <>
             <AutoresQueryFeedback query={autoresQuery} />
             <IntegrantesAutoresField value={autores} options={integrantes}
@@ -355,7 +354,7 @@ export default function TrabajoReunionForm() {
           </>
         </Field>
 
-        <Field label="Fecha de presentación" name="fechaPresentacion" error={errors.fechaPresentacion}>
+        <Field required label="Fecha de presentación" name="fechaPresentacion" error={errors.fechaPresentacion}>
           <Calendar
             value={fechaPresentacion}
             onChange={(date) => {

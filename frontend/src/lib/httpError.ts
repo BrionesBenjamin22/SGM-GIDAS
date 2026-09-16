@@ -33,14 +33,9 @@ export function getApiErrorMessage(body: unknown): string | null {
   );
 }
 
-type ErrorMessageOptions = {
-  includeTrackingReference?: boolean;
-};
-
 export function getErrorMessage(
   error: unknown,
   fallback: string,
-  options: ErrorMessageOptions = {},
 ): string {
   if (!error || typeof error !== "object") return fallback;
 
@@ -50,15 +45,12 @@ export function getErrorMessage(
     nonEmptyString(candidate.message) ??
     fallback
   );
-  const safe = isSafeMessage(message) ? message : fallback;
-  if (options.includeTrackingReference === false) return safe;
-  const requestId = getErrorRequestId(error);
-  return requestId ? `${safe} Referencia de seguimiento: ${requestId}.` : safe;
+  return isSafeMessage(message) ? message : fallback;
 }
 
 function isSafeMessage(message: string): boolean {
   return !/^(?:Bad Request|Unauthorized|Forbidden|Not Found|Conflict|Internal Server Error|Failed to fetch|NetworkError)$/i.test(message) &&
-    !/traceback|sqlalchemy|psycopg|sqlite|postgres(?:ql)?|SELECT\s+.+\s+FROM|INSERT\s+INTO|UPDATE\s+.+\s+SET|DELETE\s+FROM|\b(?:table|column|constraint)\b|password\s*=|https?:\/\/|[A-Za-z]:[\\/]|\b[a-zA-Z]+(?:_[a-zA-Z0-9]+)+\b/i.test(message);
+    !/traceback|sqlalchemy|psycopg|sqlite|postgres(?:ql)?|SELECT\s+.+\s+FROM|INSERT\s+INTO|UPDATE\s+.+\s+SET|DELETE\s+FROM|\b(?:table|column|constraint)\b|password\s*=|https?:\/\/|[A-Za-z]:[\\/]|\b[a-zA-Z]+(?:_[a-zA-Z0-9]+)+\b|referencia de seguimiento|request.?id/i.test(message);
 }
 
 function errorContract(error: unknown): Record<string, unknown> | null {
@@ -68,13 +60,6 @@ function errorContract(error: unknown): Record<string, unknown> | null {
   const nested = (body as { error?: unknown }).error;
   return nested && typeof nested === "object" && !Array.isArray(nested)
     ? nested as Record<string, unknown> : body as Record<string, unknown>;
-}
-
-export function getErrorRequestId(error: unknown): string | null {
-  const contract = errorContract(error);
-  const details = contract?.details as Record<string, unknown> | undefined;
-  const id = nonEmptyString(details?.request_id ?? contract?.requestId);
-  return id && /^[A-Za-z0-9._:-]{1,128}$/.test(id) ? id : null;
 }
 
 export function getApiFieldErrors(error: unknown): Record<string, string> {

@@ -1,13 +1,30 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { runInNewContext } from "node:vm";
 import { transformSync } from "esbuild";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { applyFieldErrors, focusFieldErrors, getApiErrorMessage, getApiFieldErrors, getErrorMessage, mapFieldErrors } from "../src/lib/httpError.ts";
+
+test("la interfaz no compone referencias internas en mensajes visibles", () => {
+  const visit = (directory: string): void => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) { visit(path); continue; }
+      if (!/\.(?:ts|tsx)$/.test(entry.name)) continue;
+      const source = readFileSync(path, "utf8");
+      assert.doesNotMatch(source, /includeTrackingReference/i, path);
+      if (entry.name !== "httpError.ts") assert.doesNotMatch(source, /Referencia de seguimiento/i, path);
+      assert.doesNotMatch(source, /(?:`[^`]*\$\{\s*(?:requestId|request_id)\s*\}[^`]*`|\+\s*(?:requestId|request_id)\b|\b(?:requestId|request_id)\s*\+)/, path);
+    }
+  };
+  visit(fileURLToPath(new URL("../src", import.meta.url)));
+});
 
 test("Field muestra el error junto al control sin duplicar el mensaje heredado", () => {
   const source = readFileSync(new URL("../src/components/Field.tsx", import.meta.url), "utf8");
@@ -41,15 +58,15 @@ test("mapea campos y conserva los errores desconocidos", () => {
   assert.deepEqual(mapFieldErrors({ body: { fields: { mail: "Revise el correo." } } }, ["email"]), { email: "Revise el correo." });
 });
 
-test("descarta detalles técnicos y muestra una referencia segura", () => {
+test("descarta detalles técnicos y nunca muestra el identificador interno", () => {
   const fallback = "Intente nuevamente.";
   assert.equal(getErrorMessage({ body: { error: { message: "SELECT password FROM users", details: { request_id: "req-09" } } } }, fallback),
-    "Intente nuevamente. Referencia de seguimiento: req-09.");
+    fallback);
   assert.equal(getErrorMessage({ body: { requestId: "<script>" } }, fallback), fallback);
   assert.deepEqual(getApiFieldErrors({ body: { fields: { nombre: "SQLAlchemy column secret", mail: 123 } } }), {});
 });
 
-test("puede ocultar la referencia interna sin perder el mensaje seguro", () => {
+test("conserva el mensaje público sin reflejar metadata operativa", () => {
   const fallback = "Lo sentimos, no pudimos guardar los cambios. Intente nuevamente.";
   const error = {
     body: {
@@ -61,17 +78,20 @@ test("puede ocultar la referencia interna sin perder el mensaje seguro", () => {
   };
 
   assert.equal(
-    getErrorMessage(error, fallback, { includeTrackingReference: false }),
+    getErrorMessage(error, fallback),
     "Revise la fecha de presentación e intente nuevamente.",
   );
   assert.equal(
     getErrorMessage(
       { body: { error: { message: "SELECT password FROM users", details: { request_id: "req-interno-17" } } } },
       fallback,
-      { includeTrackingReference: false },
     ),
     fallback,
   );
+  assert.equal(getErrorMessage({ body: { error: { message: "Referencia de seguimiento: req-interno-17" } } }, fallback), fallback);
+  assert.equal(getErrorMessage({ body: { error: { message: "Error request_id=req-interno-17" } } }, fallback), fallback);
+  assert.equal(getErrorMessage({ body: { error: { message: "Revise los datos.", details: { request_id: "<script>" } } } }, fallback), "Revise los datos.");
+  assert.equal(getErrorMessage({ body: { error: { details: { request_id: { value: "secreto" } } } } }, fallback), fallback);
 });
 
 test("enfoca el primer campo inválido en el orden visual", () => {

@@ -252,7 +252,7 @@ test("ISS-17: reuniones informa fechas programadas y oculta referencias internas
   );
 
   assert.match(source, /Puede indicar una presentación programada\./);
-  assert.match(source, /includeTrackingReference:\s*false/);
+  assert.doesNotMatch(source, /includeTrackingReference/);
   assert.doesNotMatch(source, /maxDate=\{new Date\(\)\}/);
 });
 
