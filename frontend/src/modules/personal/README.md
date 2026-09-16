@@ -7,7 +7,7 @@ Los formularios del módulo consumen `error.details.fields` mediante
 y enfocan el primer campo inválido. Los nombres locales de los controles se
 vinculan con las claves API, sin cambiar el payload del service ni los permisos.
 Los errores sin campo o con campos desconocidos conservan el aviso general;
-los errores inesperados muestran una referencia de seguimiento cuando existe.
+los errores inesperados muestran un mensaje publico seguro o un fallback accionable, sin identificadores internos.
 Se conservan las reglas y el momento de validación existentes. Véase el contrato
 transversal en `../README.md`.
 
@@ -157,3 +157,7 @@ confirmaciones bloquean además cancelar, el fondo y los campos del diálogo.
 El estado se libera al resolver o fallar, conservando errores y mensajes de
 éxito existentes. Los callbacks basados en React Query deben devolver
 mutateAsync para que el diálogo cubra toda la operación.
+
+## Indicadores de campos obligatorios (ISS-21)
+
+La clase de registro y los campos obligatorios de investigadores y becarios muestran el indicador. Al agregar una beca, tipo y fecha de inicio son obligatorios; monto y fecha de fin son opcionales.

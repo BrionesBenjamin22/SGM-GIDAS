@@ -232,7 +232,7 @@ export default function FormInvestigador({
       className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
     >
       {errors.grupo && <p role="alert">{errors.grupo}</p>}
-      <Field label="Nombre y apellido" name="nombre" error={errors.nombre}>
+      <Field required label="Nombre y apellido" name="nombre" error={errors.nombre}>
         <>
           <input
             className={`input ${
@@ -250,7 +250,7 @@ export default function FormInvestigador({
         </>
       </Field>
 
-      <Field label="Horas semanales" name="horas" error={errors.horas}>
+      <Field required label="Horas semanales" name="horas" error={errors.horas}>
         <>
           <input
             type="number"
@@ -277,7 +277,7 @@ export default function FormInvestigador({
         </>
       </Field>
 
-      <Field label="Dedicacion" name="dedicacion" error={errors.dedicacion}>
+      <Field required label="Dedicacion" name="dedicacion" error={errors.dedicacion}>
         <>
           <select
             className={`input ${
@@ -305,7 +305,7 @@ export default function FormInvestigador({
         </>
       </Field>
 
-      <Field label="Categoría UTN" name="categoria" error={errors.categoria}>
+      <Field required label="Categoría UTN" name="categoria" error={errors.categoria}>
         <>
           <select
             className={`input ${
@@ -333,7 +333,7 @@ export default function FormInvestigador({
         </>
       </Field>
 
-      <Field label="Programa de incentivos" name="programa" error={errors.programa}>
+      <Field required label="Programa de incentivos" name="programa" error={errors.programa}>
         <>
           <select
             className={`input ${
@@ -361,7 +361,7 @@ export default function FormInvestigador({
         </>
       </Field>
 
-      <Field label="Fecha de alta en el grupo" name="fechaAltaGrupo" error={errors.fechaAltaGrupo}>
+      <Field required label="Fecha de alta en el grupo" name="fechaAltaGrupo" error={errors.fechaAltaGrupo}>
         <Calendar
           value={fechaAltaGrupo}
           onChange={(date) => {

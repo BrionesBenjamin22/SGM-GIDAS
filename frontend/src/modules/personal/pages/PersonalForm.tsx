@@ -109,7 +109,7 @@ export default function PersonalForm() {
         {!isEdit && (
           <div>
             <label htmlFor="personal-clase" className="block text-sm font-medium mb-2">
-              Clase de registro
+              Clase de registro<span className="ml-1 text-rose-500" aria-hidden="true">*</span>
             </label>
 
             <select
