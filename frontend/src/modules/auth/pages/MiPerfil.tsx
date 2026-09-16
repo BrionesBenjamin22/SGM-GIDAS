@@ -171,10 +171,10 @@ export default function MiPerfil() {
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           {/* Nombre de usuario */}
           <div className="rounded-xl border border-slate-200 p-4">
-            <p className="text-sm text-slate-500 mb-1">Nombre de usuario</p>
+            {!editando && <p className="text-sm text-slate-500 mb-1">Nombre de usuario</p>}
 
             {editando ? (
-              <Field label="Nombre de usuario" name="nombreUsuario" error={fieldErrors.nombreUsuario}>
+              <Field required label="Nombre de usuario" name="nombreUsuario" error={fieldErrors.nombreUsuario}>
               <input
                 className="input"
                 value={nombreUsuario}
@@ -197,10 +197,10 @@ export default function MiPerfil() {
 
           {/* Email ocupa todo el ancho */}
           <div className="rounded-xl border border-slate-200 p-4 md:col-span-2">
-            <p className="text-sm text-slate-500 mb-1">Email</p>
+            {!editando && <p className="text-sm text-slate-500 mb-1">Email</p>}
 
             {editando ? (
-              <Field label="Correo electrónico" name="email" error={fieldErrors.email}>
+              <Field required label="Correo electrónico" name="email" error={fieldErrors.email}>
               <input
                 className="input"
                 type="email"

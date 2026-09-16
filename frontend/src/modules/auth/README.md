@@ -7,7 +7,7 @@ Los formularios del módulo consumen `error.details.fields` mediante
 y enfocan el primer campo inválido. Los nombres locales de los controles se
 vinculan con las claves API, sin cambiar el payload del service ni los permisos.
 Los errores sin campo o con campos desconocidos conservan el aviso general;
-los errores inesperados muestran una referencia de seguimiento cuando existe.
+los errores inesperados muestran un mensaje publico seguro o un fallback accionable, sin identificadores internos.
 Se conservan las reglas y el momento de validación existentes. Véase el contrato
 transversal en `../README.md`.
 
@@ -87,3 +87,7 @@ npm run build:production
 
 `tests/landingAccessState.test.ts` cubre la precedencia de sesión, carga inicial,
 errores, primer administrador, login y conservación de datos durante refetch.
+
+## Indicadores de campos obligatorios (ISS-21)
+
+En Mi perfil, nombre de usuario y correo muestran el indicador de campo obligatorio durante la edicion. Login, registro y cambio de contrasena ya lo mostraban.
