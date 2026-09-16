@@ -220,7 +220,7 @@ export default function ParticipacionesForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Investigador" name="investigador" error={errors.investigador}>
+        <Field required label="Investigador" name="investigador" error={errors.investigador}>
           <>
             <select
               className={`${inputClass("investigador")} ${
@@ -249,7 +249,7 @@ export default function ParticipacionesForm() {
           </>
         </Field>
 
-        <Field label="Nombre del evento" name="nombreEvento" error={errors.nombreEvento}>
+        <Field required label="Nombre del evento" name="nombreEvento" error={errors.nombreEvento}>
           <>
             <input
               type="text"
@@ -267,7 +267,7 @@ export default function ParticipacionesForm() {
           </>
         </Field>
 
-        <Field label="Forma de participación" name="formaParticipacion" error={errors.formaParticipacion}>
+        <Field required label="Forma de participación" name="formaParticipacion" error={errors.formaParticipacion}>
           <>
             <select
               className={`${inputClass("formaParticipacion")} ${
@@ -297,7 +297,7 @@ export default function ParticipacionesForm() {
           </>
         </Field>
 
-        <Field label="Fecha" name="fecha" error={errors.fecha}>
+        <Field required label="Fecha" name="fecha" error={errors.fecha}>
           <Calendar
             value={fecha}
             onChange={(date) => {

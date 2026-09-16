@@ -7,7 +7,7 @@ Los formularios del módulo consumen `error.details.fields` mediante
 y enfocan el primer campo inválido. Los nombres locales de los controles se
 vinculan con las claves API, sin cambiar el payload del service ni los permisos.
 Los errores sin campo o con campos desconocidos conservan el aviso general;
-los errores inesperados muestran una referencia de seguimiento cuando existe.
+los errores inesperados muestran un mensaje publico seguro o un fallback accionable, sin identificadores internos.
 Se conservan las reglas y el momento de validación existentes. Véase el contrato
 transversal en `../README.md`.
 
@@ -122,3 +122,7 @@ El estado se libera al resolver o fallar, conservando errores y mensajes de
 mutateAsync para que el diálogo cubra toda la operación.
 El cierre usa ConfirmDialog con fecha de cierre y texto Cerrando; la
 reapertura de una selección bloquea nuevas acciones hasta finalizar.
+
+## Indicadores de campos obligatorios (ISS-21)
+
+En proyectos son obligatorios codigo, nombre, tipo y fecha de inicio. El coordinador se indica como obligatorio cuando se seleccionan investigadores. Las relaciones y los datos opcionales no llevan marca. Participaciones marca investigador, evento, forma y fecha.

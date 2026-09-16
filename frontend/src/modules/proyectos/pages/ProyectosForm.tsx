@@ -444,7 +444,7 @@ export default function ProyectosForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Código del proyecto" name="codigoProyecto" error={errors.codigoProyecto}>
+        <Field required label="Código del proyecto" name="codigoProyecto" error={errors.codigoProyecto}>
           <>
             <input
               id="codigo-proyecto"
@@ -475,7 +475,7 @@ export default function ProyectosForm() {
           </>
         </Field>
 
-        <Field label="Nombre del proyecto" name="nombreProyecto" error={errors.nombreProyecto}>
+        <Field required label="Nombre del proyecto" name="nombreProyecto" error={errors.nombreProyecto}>
           <>
             <input
               className={inputClass("nombreProyecto")}
@@ -517,7 +517,7 @@ export default function ProyectosForm() {
         </Field>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Field label="Tipo de proyecto" name="tipoProyectoId" error={errors.tipoProyectoId}>
+          <Field required label="Tipo de proyecto" name="tipoProyectoId" error={errors.tipoProyectoId}>
             <>
               <select
                 className={inputClass("tipoProyectoId")}
@@ -619,7 +619,7 @@ export default function ProyectosForm() {
             {investigadoresSeleccionados.length > 0 && (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <p className="mb-3 text-sm font-medium text-slate-800">
-                  Seleccionar coordinador
+                  Seleccionar coordinador<span className="ml-1 text-rose-500" aria-hidden="true">*</span>
                 </p>
 
                 <div className="space-y-2">
@@ -676,7 +676,7 @@ export default function ProyectosForm() {
         </Field>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Field label="Fecha inicio" name="fechaInicio" error={errors.fechaInicio}>
+          <Field required label="Fecha inicio" name="fechaInicio" error={errors.fechaInicio}>
             <Calendar
               value={fechaInicio}
               onChange={(date) => {
