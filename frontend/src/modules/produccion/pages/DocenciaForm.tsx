@@ -244,7 +244,7 @@ export default function FormDocenciaInvestigador() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Investigador" name="investigador" error={errors.investigador}>
+        <Field required label="Investigador" name="investigador" error={errors.investigador}>
           <>
             <select
               className={`${inputClass("investigador")} ${
@@ -272,7 +272,7 @@ export default function FormDocenciaInvestigador() {
           </>
         </Field>
 
-        <Field label="Curso" name="curso" error={errors.curso}>
+        <Field required label="Curso" name="curso" error={errors.curso}>
           <>
             <input
               className={inputClass("curso")}
@@ -289,7 +289,7 @@ export default function FormDocenciaInvestigador() {
           </>
         </Field>
 
-        <Field label="Institución" name="institucion" error={errors.institucion}>
+        <Field required label="Institución" name="institucion" error={errors.institucion}>
           <>
             <input
               className={inputClass("institucion")}
@@ -307,7 +307,7 @@ export default function FormDocenciaInvestigador() {
         </Field>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Field label="Fecha inicio" name="fechaInicio" error={errors.fechaInicio}>
+          <Field required label="Fecha inicio" name="fechaInicio" error={errors.fechaInicio}>
             <>
               <Calendar
                 value={fechaInicio}
@@ -321,7 +321,7 @@ export default function FormDocenciaInvestigador() {
             </>
           </Field>
 
-          <Field label="Fecha fin" name="fechaFin" error={errors.fechaFin}>
+          <Field required label="Fecha fin" name="fechaFin" error={errors.fechaFin}>
             <>
               <Calendar
                 value={fechaFin}
@@ -337,7 +337,7 @@ export default function FormDocenciaInvestigador() {
           </Field>
         </div>
 
-        <Field label="Grado academico" name="gradoAcademico" error={errors.gradoAcademico}>
+        <Field required label="Grado academico" name="gradoAcademico" error={errors.gradoAcademico}>
           <>
             <select
               className={`${inputClass("gradoAcademico")} ${
@@ -367,7 +367,7 @@ export default function FormDocenciaInvestigador() {
           </>
         </Field>
 
-        <Field label="Rol en la actividad" name="rolActividad" error={errors.rolActividad}>
+        <Field required label="Rol en la actividad" name="rolActividad" error={errors.rolActividad}>
           <>
             <select
               className={`${inputClass("rolActividad")} ${

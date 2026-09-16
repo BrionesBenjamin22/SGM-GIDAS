@@ -197,7 +197,7 @@ export default function ArticulosDivulgacionForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Título" name="titulo" error={errors.titulo}>
+        <Field required label="Título" name="titulo" error={errors.titulo}>
           <>
             <input
               type="text"
@@ -215,7 +215,7 @@ export default function ArticulosDivulgacionForm() {
           </>
         </Field>
 
-        <Field label="Descripción" name="descripcion" error={errors.descripcion}>
+        <Field required label="Descripción" name="descripcion" error={errors.descripcion}>
           <>
             <textarea
               className={`${inputClass("descripcion")} min-h-[100px]`}
@@ -232,7 +232,7 @@ export default function ArticulosDivulgacionForm() {
           </>
         </Field>
 
-        <Field label="Fecha de publicación" name="fecha" error={errors.fecha}>
+        <Field required label="Fecha de publicación" name="fecha" error={errors.fecha}>
           <Calendar
             value={fechaPublicacion}
             onChange={(date) => {

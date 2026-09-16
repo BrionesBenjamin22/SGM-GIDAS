@@ -261,7 +261,7 @@ export default function DocumentacionForm() {
         }}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Título" name="titulo" error={errors.titulo}>
+        <Field required label="Título" name="titulo" error={errors.titulo}>
           <>
             <input
               className={inputClass("titulo")}
@@ -277,7 +277,7 @@ export default function DocumentacionForm() {
           </>
         </Field>
 
-        <div>
+        <Field required label="Autores" name="autores" error={errors.autores}>
           <AutoresField
             value={autores}
             options={autoresDisponibles}
@@ -285,14 +285,10 @@ export default function DocumentacionForm() {
               setAutores(updatedAutores);
               if (updatedAutores.length > 0) clearError("autores");
             }}
-            label="Autores"
           />
-          {errors.autores && (
-            <p className="mt-1 text-sm text-red-500">{errors.autores}</p>
-          )}
-        </div>
+        </Field>
 
-        <Field label="Editorial" name="editorial" error={errors.editorial}>
+        <Field required label="Editorial" name="editorial" error={errors.editorial}>
           <>
             <input
               className={inputClass("editorial")}
@@ -308,7 +304,7 @@ export default function DocumentacionForm() {
           </>
         </Field>
 
-        <Field label="Fecha" name="fecha" error={errors.fecha}>
+        <Field required label="Fecha" name="fecha" error={errors.fecha}>
           <DatePicker
             value={data.fecha ? new Date(`${data.fecha}T00:00:00`) : null}
             onChange={(dt) => {

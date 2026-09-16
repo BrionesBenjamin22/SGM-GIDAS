@@ -7,7 +7,7 @@ Los formularios del módulo consumen `error.details.fields` mediante
 y enfocan el primer campo inválido. Los nombres locales de los controles se
 vinculan con las claves API, sin cambiar el payload del service ni los permisos.
 Los errores sin campo o con campos desconocidos conservan el aviso general;
-los errores inesperados muestran una referencia de seguimiento cuando existe.
+los errores inesperados muestran un mensaje publico seguro o un fallback accionable, sin identificadores internos.
 Se conservan las reglas y el momento de validación existentes. Véase el contrato
 transversal en `../README.md`.
 
@@ -219,5 +219,9 @@ TrabajosReunionForm admite fechas de presentación futuras para registrar trabaj
 ya programados y mantiene como límite inferior el 01/01/2010. La ayuda del campo
 explicita ambos comportamientos. Los errores de guardado conservan el mensaje
 seguro y accionable del contrato o el fallback del formulario, pero no muestran
-la referencia interna de seguimiento. Los demás formularios permanecen fuera de
-esta etapa hasta completar la validación manual del flujo de reuniones.
+la referencia interna de seguimiento. ISS-18 extiende esa regla a todos los
+formularios mediante el helper común.
+
+## Indicadores de campos obligatorios (ISS-21)
+
+Los formularios de produccion muestran el indicador en los datos obligatorios, incluidos los autores de documentacion y trabajos. Los enlaces opcionales permanecen sin marca.

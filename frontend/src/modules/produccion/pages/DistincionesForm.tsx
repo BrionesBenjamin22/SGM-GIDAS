@@ -192,7 +192,7 @@ export default function DistincionesForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Fecha" name="fecha" error={errors.fecha}>
+        <Field required label="Fecha" name="fecha" error={errors.fecha}>
           <Calendar
             value={fecha}
             onChange={(date) => {
@@ -204,7 +204,7 @@ export default function DistincionesForm() {
           />
         </Field>
 
-        <Field label="Descripción" name="descripcion" error={errors.descripcion}>
+        <Field required label="Descripción" name="descripcion" error={errors.descripcion}>
           <>
             <textarea
               className={`${inputClass("descripcion")} min-h-[80px]`}
@@ -221,7 +221,7 @@ export default function DistincionesForm() {
           </>
         </Field>
 
-        <Field label="Proyecto de investigación" name="proyecto" error={errors.proyecto}>
+        <Field required label="Proyecto de investigación" name="proyecto" error={errors.proyecto}>
           <>
             <select
               className={`${inputClass("proyecto")} ${

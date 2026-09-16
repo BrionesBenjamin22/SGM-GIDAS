@@ -265,7 +265,7 @@ export default function TrabajosRevistasForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Título del trabajo" name="titulo" error={errors.titulo}>
+        <Field required label="Título del trabajo" name="titulo" error={errors.titulo}>
           <>
             <input
               className={inputClass("titulo")}
@@ -285,7 +285,7 @@ export default function TrabajosRevistasForm() {
           </>
         </Field>
 
-        <Field label="Nombre de la revista" name="nombreRevista" error={errors.nombreRevista}>
+        <Field required label="Nombre de la revista" name="nombreRevista" error={errors.nombreRevista}>
           <>
             <input
               className={inputClass("nombreRevista")}
@@ -307,7 +307,7 @@ export default function TrabajosRevistasForm() {
           </>
         </Field>
 
-        <Field label="Editorial" name="editorial" error={errors.editorial}>
+        <Field required label="Editorial" name="editorial" error={errors.editorial}>
           <>
             <input
               className={inputClass("editorial")}
@@ -327,7 +327,7 @@ export default function TrabajosRevistasForm() {
           </>
         </Field>
 
-        <Field label="ISSN" name="issn" error={errors.issn}>
+        <Field required label="ISSN" name="issn" error={errors.issn}>
           <>
             <input
               className={inputClass("issn")}
@@ -344,7 +344,7 @@ export default function TrabajosRevistasForm() {
           </>
         </Field>
 
-        <Field label="País" name="pais" error={errors.pais}>
+        <Field required label="País" name="pais" error={errors.pais}>
           <>
             <input
               className={inputClass("pais")}
@@ -364,7 +364,7 @@ export default function TrabajosRevistasForm() {
           </>
         </Field>
 
-        <Field label="Tipo" name="tipoId" error={errors.tipoId}>
+        <Field required label="Tipo" name="tipoId" error={errors.tipoId}>
           <>
             <select
               className={`${inputClass("tipoId")} ${
@@ -398,7 +398,7 @@ export default function TrabajosRevistasForm() {
             onChange={e => { setEnlace(e.target.value); clearError("enlace"); }} />
         </Field>
 
-        <Field label="Autores" name="autores" error={errors.autores}>
+        <Field required label="Autores" name="autores" error={errors.autores}>
           <>
             <AutoresQueryFeedback query={autoresQuery} />
             <IntegrantesAutoresField value={autores} options={integrantes}
@@ -407,7 +407,7 @@ export default function TrabajosRevistasForm() {
           </>
         </Field>
 
-        <Field label="Fecha" name="fecha" error={errors.fecha}>
+        <Field required label="Fecha" name="fecha" error={errors.fecha}>
           <Calendar
             value={fecha}
             onChange={(date) => {

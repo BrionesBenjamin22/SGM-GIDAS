@@ -205,7 +205,7 @@ export default function RegistrosPropiedadForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Nombre del artículo" name="nombre_articulo" error={errors.nombre_articulo}>
+        <Field required label="Nombre del artículo" name="nombre_articulo" error={errors.nombre_articulo}>
           <>
             <input
               className={inputClass("nombre_articulo")}
@@ -233,7 +233,7 @@ export default function RegistrosPropiedadForm() {
           </>
         </Field>
 
-        <Field label="Organismo registrante" name="organismo_registrante" error={errors.organismo_registrante}>
+        <Field required label="Organismo registrante" name="organismo_registrante" error={errors.organismo_registrante}>
           <>
             <input
               className={inputClass("organismo_registrante")}
@@ -265,7 +265,7 @@ export default function RegistrosPropiedadForm() {
           </>
         </Field>
 
-        <Field label="Fecha de registro" name="fecha_registro" error={errors.fecha_registro}>
+        <Field required label="Fecha de registro" name="fecha_registro" error={errors.fecha_registro}>
           <DatePicker
             value={parseCivilDate(data.fecha_registro)}
             onChange={(dt) => {
@@ -280,7 +280,7 @@ export default function RegistrosPropiedadForm() {
           />
         </Field>
 
-        <Field label="Tipo de registro" name="tipo_registro_id" error={errors.tipo_registro_id}>
+        <Field required label="Tipo de registro" name="tipo_registro_id" error={errors.tipo_registro_id}>
           <>
             <select
               className={`${inputClass("tipo_registro_id")} ${
