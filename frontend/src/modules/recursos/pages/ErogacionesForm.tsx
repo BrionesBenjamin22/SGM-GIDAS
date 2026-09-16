@@ -238,7 +238,7 @@ export default function ErogacionesForm() {
           </div>
         )}
 
-        <Field label="Número de erogación" name="numero" error={errors.numero}>
+        <Field required label="Número de erogación" name="numero" error={errors.numero}>
           <>
             <input
               type="number"
@@ -260,7 +260,7 @@ export default function ErogacionesForm() {
           </>
         </Field>
 
-        <Field label="Tipo de erogación" name="tipo" error={errors.tipo}>
+        <Field required label="Tipo de erogación" name="tipo" error={errors.tipo}>
           <>
             <select
               className={`${inputClass("tipo")} ${
@@ -291,7 +291,7 @@ export default function ErogacionesForm() {
           </>
         </Field>
 
-        <Field label="Fuente de financiamiento" name="fuente" error={errors.fuente}>
+        <Field required label="Fuente de financiamiento" name="fuente" error={errors.fuente}>
           <>
             <select
               className={`${inputClass("fuente")} ${
@@ -322,7 +322,7 @@ export default function ErogacionesForm() {
           </>
         </Field>
 
-        <Field label="Fecha" name="fecha" error={errors.fecha}>
+        <Field required label="Fecha" name="fecha" error={errors.fecha}>
           <DatePicker
             value={data.fecha ? new Date(`${data.fecha}T00:00:00`) : null}
             onChange={(dt) => {
@@ -338,7 +338,7 @@ export default function ErogacionesForm() {
           />
         </Field>
 
-        <Field label="Ingresos" name="ingresos" error={errors.ingresos}>
+        <Field required label="Ingresos" name="ingresos" error={errors.ingresos}>
           <>
             <input
               type="number"
@@ -361,7 +361,7 @@ export default function ErogacionesForm() {
           </>
         </Field>
 
-        <Field label="Egresos" name="egresos" error={errors.egresos}>
+        <Field required label="Egresos" name="egresos" error={errors.egresos}>
           <>
             <input
               type="number"

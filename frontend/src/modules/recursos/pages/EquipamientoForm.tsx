@@ -201,7 +201,7 @@ export default function EquipamientoForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Denominación" name="denominacion" error={errors.denominacion}>
+        <Field required label="Denominación" name="denominacion" error={errors.denominacion}>
           <>
             <input
               className={inputClass("denominacion")}
@@ -221,7 +221,7 @@ export default function EquipamientoForm() {
           </>
         </Field>
 
-        <Field label="Descripción breve" name="descripcion" error={errors.descripcion}>
+        <Field required label="Descripción breve" name="descripcion" error={errors.descripcion}>
           <>
             <input
               className={inputClass("descripcion")}
@@ -241,7 +241,7 @@ export default function EquipamientoForm() {
           </>
         </Field>
 
-        <Field label="Monto invertido" name="monto" error={errors.monto}>
+        <Field required label="Monto invertido" name="monto" error={errors.monto}>
           <>
             <input
               type="number"
@@ -267,7 +267,7 @@ export default function EquipamientoForm() {
           </>
         </Field>
 
-        <Field label="Fecha de incorporación" name="fecha_incorporacion" error={errors.fecha_incorporacion}>
+        <Field required label="Fecha de incorporación" name="fecha_incorporacion" error={errors.fecha_incorporacion}>
           <DatePicker
             value={
               data.fecha_incorporacion
