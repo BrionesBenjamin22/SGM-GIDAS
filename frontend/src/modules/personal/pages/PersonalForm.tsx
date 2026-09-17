@@ -52,7 +52,9 @@ export default function PersonalForm() {
     setErrorMessage(
       getErrorMessage(
         error,
-        "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+        isEdit
+          ? "Lo sentimos, no pudimos actualizar el integrante. Revise los datos e intente nuevamente."
+          : "Lo sentimos, no pudimos crear el integrante. Revise los datos e intente nuevamente."
       )
     );
     setShowError(true);

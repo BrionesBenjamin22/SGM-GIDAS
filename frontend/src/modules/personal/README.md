@@ -1,5 +1,9 @@
 # Modulo frontend de personal
 
+Los tres formularios de personas admiten solo letras Unicode y espacios en
+nombre y apellido. Rechazan números y signos antes de guardar y muestran el
+error junto al campo.
+
 ## Errores por campo (ISS-09)
 
 Los formularios del módulo consumen `error.details.fields` mediante
@@ -10,6 +14,8 @@ Los errores sin campo o con campos desconocidos conservan el aviso general;
 los errores inesperados muestran un mensaje publico seguro o un fallback accionable, sin identificadores internos.
 Se conservan las reglas y el momento de validación existentes. Véase el contrato
 transversal en `../README.md`.
+
+ISS-19: los errores de nombre, fecha de alta y catálogos del backend se asocian a los controles existentes mediante `applyFieldErrors`. Los formularios conservan el borrador y el aviso general cuando la respuesta no identifica un campo visible.
 
 ## Fechas
 

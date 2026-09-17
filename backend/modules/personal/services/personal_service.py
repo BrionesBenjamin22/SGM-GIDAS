@@ -4,6 +4,7 @@ from modules.memorias.services.memoria_periodo_service import (
 from datetime import date
 
 from extension import db
+from modules.shared.services.text_validation import has_only_letters_and_spaces
 from modules.personal.services.horas_validation import validar_horas_semanales as _validar_horas
 from modules.shared.exceptions import (
     ConflictError,
@@ -53,20 +54,23 @@ def _validar_id_positivo(valor, campo: str, permitir_none: bool = False):
 
 def _validar_user_id(user_id: int):
     if not isinstance(user_id, int) or user_id <= 0:
-        raise ValueError("El user_id es invalido.")
+        raise ValueError("No pudimos procesar la solicitud. Intente nuevamente.")
 
 
 def _validar_nombre(nombre: str):
     if not isinstance(nombre, str):
-        raise ValueError("El nombre y apellido es obligatorio.")
+        raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"nombre_apellido": "Ingrese nombre y apellido."}})
 
     nombre = nombre.strip()
 
     if not nombre:
-        raise ValueError("El nombre y apellido es obligatorio.")
+        raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"nombre_apellido": "Ingrese nombre y apellido."}})
+
+    if not has_only_letters_and_spaces(nombre):
+        raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"nombre_apellido": "Use solo letras y espacios en nombre y apellido."}})
 
     if len(nombre) > 120:
-        raise ValueError("El nombre y apellido no puede superar los 120 caracteres.")
+        raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"nombre_apellido": "Use hasta 120 caracteres para nombre y apellido."}})
 
     return nombre
 
@@ -135,7 +139,7 @@ def _validar_tipo_formacion(tipo_formacion_id):
     tipo_formacion_id = _validar_id_positivo(tipo_formacion_id, "tipo_formacion_id")
 
     if not TipoFormacion.query.get(tipo_formacion_id):
-        raise ValueError("Tipo de formacion invalido.")
+        raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"tipo_formacion_id": "Seleccione un tipo de formación disponible."}})
 
     return tipo_formacion_id
 
@@ -144,7 +148,7 @@ def _validar_tipo_dedicacion(tipo_dedicacion_id):
     tipo_dedicacion_id = _validar_id_positivo(tipo_dedicacion_id, "tipo_dedicacion_id")
 
     if not TipoDedicacion.query.get(tipo_dedicacion_id):
-        raise ValueError("Tipo de dedicacion invalido.")
+        raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"tipo_dedicacion_id": "Seleccione un tipo de dedicación disponible."}})
 
     return tipo_dedicacion_id
 
@@ -173,7 +177,7 @@ def _validar_categoria_utn(categoria_utn_id):
     )
 
     if categoria_utn_id and not CategoriaUtn.query.get(categoria_utn_id):
-        raise ValueError("Categoria UTN invalida.")
+        raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"categoria_utn_id": "Seleccione una categoría disponible."}})
 
     return categoria_utn_id
 
@@ -184,7 +188,7 @@ def _validar_programa_incentivos(programa_incentivos_id):
     )
 
     if programa_incentivos_id and not ProgramaIncentivos.query.get(programa_incentivos_id):
-        raise ValueError("Programa de incentivos invalido.")
+        raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"programa_incentivos_id": "Seleccione un programa de incentivos disponible."}})
 
     return programa_incentivos_id
 
@@ -197,10 +201,7 @@ def crear_personal(data, user_id):
     _validar_payload(data)
     _validar_user_id(user_id)
 
-    try:
-        nombre = _validar_nombre(data.get("nombre_apellido"))
-    except ValueError as error:
-        raise ValueError(str(error), details={"fields": {"nombre_apellido": str(error)}}) from error
+    nombre = _validar_nombre(data.get("nombre_apellido"))
     horas = _validar_horas(data.get("horas_semanales"))
     tipo_personal_id = _validar_tipo_personal(data.get("tipo_personal_id"))
     grupo_utn_id = _validar_grupo_utn(data.get("grupo_utn_id"), obligatorio=True)
@@ -312,7 +313,11 @@ def actualizar_personal(id, data, rol, user_id: int):
         entidad.activo = data["activo"]
 
     if "fecha_alta_grupo" in data:
-        nuevo_valor = validar_fecha_alta_grupo(data["fecha_alta_grupo"])
+        try:
+            nuevo_valor = validar_fecha_alta_grupo(data["fecha_alta_grupo"])
+        except ValueError as error:
+            message = "Ingrese una fecha de alta válida desde el 01/01/2010."
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_alta_grupo": message}}) from error
         cambio = AuditoriaService.construir_cambio(
             entidad.fecha_alta_grupo,
             nuevo_valor

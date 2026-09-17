@@ -63,7 +63,7 @@ class PersonalRelacionesConsolidadasTestCase(unittest.TestCase):
         beca.deleted_at = None
 
         with patch("extension.db.session.get", return_value=beca):
-            with self.assertRaisesRegex(ValueError, "IDs repetidos"):
+            with self.assertRaisesRegex(ValueError, "beca está repetida") as caught:
                 _sincronizar_becas(
                     becario,
                     [
@@ -72,6 +72,7 @@ class PersonalRelacionesConsolidadasTestCase(unittest.TestCase):
                     ],
                     user_id=9,
                 )
+            self.assertIn("becas", caught.exception.details["fields"])
 
 
 if __name__ == "__main__":

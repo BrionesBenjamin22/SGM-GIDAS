@@ -1,4 +1,5 @@
 import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
+import { hasOnlyLettersAndSpaces } from "../../../lib/textValidation";
 import { LoaderCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
@@ -106,6 +107,8 @@ export default function FormInvestigador({
 
     if (!nombreApellido.trim()) {
       newErrors.nombre = "Debe ingresar nombre y apellido";
+    } else if (!hasOnlyLettersAndSpaces(nombreApellido)) {
+      newErrors.nombre = "Use solo letras y espacios en nombre y apellido";
     }
 
     if (!validWeeklyHours(horasSemanales)) {

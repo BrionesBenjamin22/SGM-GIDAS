@@ -1,4 +1,5 @@
 import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
+import { hasOnlyLettersAndSpaces } from "../../../lib/textValidation";
 import { LoaderCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -71,6 +72,8 @@ export default function FormPTAAProfesional({
 
     if (!nombreApellido.trim()) {
       newErrors.nombre = "Debe ingresar nombre y apellido";
+    } else if (!hasOnlyLettersAndSpaces(nombreApellido)) {
+      newErrors.nombre = "Use solo letras y espacios en nombre y apellido";
     }
 
     if (!validWeeklyHours(horasSemanales)) {

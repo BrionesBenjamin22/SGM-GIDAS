@@ -1,4 +1,5 @@
 import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
+import { hasOnlyLettersAndSpaces } from "../../../lib/textValidation";
 import { LoaderCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { MAX_HORAS_SEMANALES, validWeeklyHours, WEEKLY_HOURS_ERROR } from "@/modules/personal/utils/weeklyHours";
@@ -141,6 +142,8 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
 
     if (!nombreApellido.trim()) {
       newErrors.nombre = "Debe ingresar nombre y apellido";
+    } else if (!hasOnlyLettersAndSpaces(nombreApellido)) {
+      newErrors.nombre = "Use solo letras y espacios en nombre y apellido";
     }
 
     if (!validWeeklyHours(horasSemanales)) {

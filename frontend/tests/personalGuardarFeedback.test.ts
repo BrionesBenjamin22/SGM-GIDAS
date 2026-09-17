@@ -50,8 +50,10 @@ test("formularios Personal, Investigador y Becario enfocan errores y muestran gu
         jsx: ts.JsxEmit.React, jsxFactory: "globalThis.__guardarJsx", jsxFragmentFactory: "String",
       }}).outputText;
       js = js.replace(/from "([^"]+)"/g, (_match, path: string) => {
-        const target = path === "@/lib/httpError" || path.startsWith("@/modules/personal/utils/")
-          ? new URL(`../src/${path.slice(2)}.ts`, import.meta.url).href : `${mockUrl}#${config.name}`;
+        const target = path === "../../../lib/textValidation"
+          ? new URL("../src/lib/textValidation.ts", import.meta.url).href
+          : path === "@/lib/httpError" || path.startsWith("@/modules/personal/utils/")
+            ? new URL(`../src/${path.slice(2)}.ts`, import.meta.url).href : `${mockUrl}#${config.name}`;
         return `from ${JSON.stringify(target)}`;
       });
       try {

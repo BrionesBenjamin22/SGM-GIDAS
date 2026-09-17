@@ -1,5 +1,13 @@
 # Modulo backend de personal
 
+Los nombres de Personal, Investigador y Becario admiten solo letras Unicode y
+espacios entre palabras. `22`, `Ana 22` y `Ana-María` devuelven
+`details.fields.nombre_apellido`; `Ana María` es válido.
+
+Las variantes Investigador y Becario identifican nombre, selecciones de catálogo y proyectos inválidos mediante `error.details.fields`. Las validaciones internas del usuario conservan un mensaje general seguro.
+
+El formulario Becario asocia las fechas, montos y selección de becas al campo `becas`; los errores mantienen el rechazo transaccional sin cambios parciales.
+
 ## Contrato de fechas
 
 `fecha_alta_grupo` y los períodos de relaciones se validan desde el 01/01/2010.
@@ -34,6 +42,7 @@ Devuelve 201 con la entidad serializada y su historial inicial de horas.
 Inserción, flush, historial y commit se protegen con rollback completo.
 Validaciones y referencias inválidas devuelven 400 con
 `error.details.fields` (mapa de campo de payload a mensaje seguro).
+ISS-19: nombre, fecha de alta, horas y selecciones de catálogos conocidas devuelven claves HTTP concretas en `error.details.fields`. Las condiciones sin dato editable, como registros inactivos o inconsistencias del historial, conservan mensajes generales seguros.
 Errores inesperados conservan el contrato compartido 500.
 
 Listado: `/api/v1/personal/all`; detalle e historial:
