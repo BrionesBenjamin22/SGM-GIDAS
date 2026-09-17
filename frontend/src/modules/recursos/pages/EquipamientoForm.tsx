@@ -1,4 +1,5 @@
 import { applyFieldErrors } from "@/lib/httpError";
+import { hasLetter } from "../../../lib/textValidation";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
@@ -70,6 +71,8 @@ export default function EquipamientoForm() {
 
     if (!data.denominacion.trim()) {
       newErrors.denominacion = "La denominación es obligatoria";
+    } else if (!hasLetter(data.denominacion)) {
+      newErrors.denominacion = "La denominación debe contener letras";
     }
 
     if (!data.descripcion_breve.trim()) {
@@ -118,20 +121,10 @@ export default function EquipamientoForm() {
       if (applyFieldErrors(error, setErrors, ["denominacion","descripcion","fecha_incorporacion","monto"])) return;
       const backendMessage = getErrorMessage(
         error,
-        "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+        isEdit
+          ? "Lo sentimos, no pudimos actualizar el equipamiento. Revise los datos e intente nuevamente."
+          : "Lo sentimos, no pudimos crear el equipamiento. Revise los datos e intente nuevamente."
       );
-      const lowerMessage = backendMessage.toLowerCase();
-
-      if (lowerMessage.includes("denominacion")) {
-        setErrors((prev) => ({ ...prev, denominacion: backendMessage }));
-      } else if (lowerMessage.includes("descripcion")) {
-        setErrors((prev) => ({ ...prev, descripcion: backendMessage }));
-      } else if (lowerMessage.includes("monto")) {
-        setErrors((prev) => ({ ...prev, monto: backendMessage }));
-      } else if (lowerMessage.includes("fecha")) {
-        setErrors((prev) => ({ ...prev, fecha_incorporacion: backendMessage }));
-      }
-
       setErrorMessage(backendMessage);
       setShowError(true);
     },

@@ -55,7 +55,7 @@ export type CreateErogacionPayload = {
 };
 
 export type UpdateErogacionPayload = Partial<
-  Pick<CreateErogacionPayload, "ingresos" | "egresos">
+  Pick<CreateErogacionPayload, "numero_erogacion" | "tipo_erogacion_id" | "fuente_financiamiento_id" | "fecha" | "ingresos" | "egresos">
 >;
 
 type ErogacionBackend = Partial<Erogacion> & { id: number };
@@ -145,6 +145,10 @@ export async function updateErogacion(
 
   if ("ingresos" in payload) body.ingresos = payload.ingresos;
   if ("egresos" in payload) body.egresos = payload.egresos;
+  if ("numero_erogacion" in payload) body.numero_erogacion = payload.numero_erogacion;
+  if ("tipo_erogacion_id" in payload) body.tipo_erogacion_id = payload.tipo_erogacion_id;
+  if ("fuente_financiamiento_id" in payload) body.fuente_financiamiento_id = payload.fuente_financiamiento_id;
+  if ("fecha" in payload) body.fecha = payload.fecha;
 
   const response = await http<ErogacionBackend>(`/erogaciones/${id}`, {
     method: "PUT",

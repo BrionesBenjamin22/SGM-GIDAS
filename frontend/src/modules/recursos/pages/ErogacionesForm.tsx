@@ -18,11 +18,15 @@ import {
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 import { useTiposErogacion } from "@/modules/recursos/hooks/useTipoErogacion";
 import { useFuentesFinanciamiento } from "@/modules/catalogos/hooks/useFuenteFinanciamiento";
+import { useAuth } from "@/context/AuthContext";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
 
 export default function ErogacionesForm() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { uct, uctGuard } = useUctGuard();
+  const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
 
@@ -60,6 +64,16 @@ export default function ErogacionesForm() {
       egresos: erogacion.egresos?.toString() ?? "",
     });
   }, [erogacion]);
+
+  const { availableDraft, restoreDraft, discardDraft, clearDraft } = useFormDraft({
+    userId: user?.id,
+    module: "recursos-erogaciones",
+    recordId: id,
+    value: data,
+    ready: !isEdit || (!loadingErogacion && Boolean(erogacion)),
+    hasContent: (draft) => Object.values(draft).some((value) => value.trim() !== ""),
+    onRestore: setData,
+  });
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -120,6 +134,7 @@ export default function ErogacionesForm() {
         ? updateErogacion(Number(id), payload as UpdateErogacionPayload)
         : createErogacion(payload as CreateErogacionPayload),
     onSuccess: async (saved) => {
+      clearDraft();
       const erogacionId = isEdit ? Number(id) : saved.id;
 
       await qc.invalidateQueries({ queryKey: ["erogaciones"] });
@@ -141,24 +156,10 @@ export default function ErogacionesForm() {
       if (applyFieldErrors(error, setErrors, ["numero","tipo","fuente","fecha","ingresos","egresos"])) return;
       const backendMessage = getErrorMessage(
         error,
-        "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+        isEdit
+          ? "Lo sentimos, no pudimos actualizar la erogación. Revise los datos e intente nuevamente."
+          : "Lo sentimos, no pudimos crear la erogación. Revise los datos e intente nuevamente."
       );
-      const lowerMessage = backendMessage.toLowerCase();
-
-      if (lowerMessage.includes("numero")) {
-        setErrors((prev) => ({ ...prev, numero: backendMessage }));
-      } else if (lowerMessage.includes("tipo")) {
-        setErrors((prev) => ({ ...prev, tipo: backendMessage }));
-      } else if (lowerMessage.includes("fuente")) {
-        setErrors((prev) => ({ ...prev, fuente: backendMessage }));
-      } else if (lowerMessage.includes("fecha")) {
-        setErrors((prev) => ({ ...prev, fecha: backendMessage }));
-      } else if (lowerMessage.includes("ingreso")) {
-        setErrors((prev) => ({ ...prev, ingresos: backendMessage }));
-      } else if (lowerMessage.includes("egreso")) {
-        setErrors((prev) => ({ ...prev, egresos: backendMessage }));
-      }
-
       setErrorMessage(backendMessage);
       setShowError(true);
     },
@@ -186,11 +187,19 @@ export default function ErogacionesForm() {
     }
 
     const initialPayload = {
+      numero_erogacion: erogacion?.numero_erogacion ?? 0,
+      tipo_erogacion_id: erogacion?.tipo_erogacion_id ?? 0,
+      fuente_financiamiento_id: erogacion?.fuente_financiamiento_id ?? 0,
+      fecha: erogacion?.fecha ?? "",
       ingresos: erogacion?.ingresos ?? 0,
       egresos: erogacion?.egresos ?? 0,
     };
 
     const updatePayload = {
+      numero_erogacion: Number(data.numeroErogacion),
+      tipo_erogacion_id: Number(data.tipoErogacionId),
+      fuente_financiamiento_id: Number(data.fuenteFinanciamientoId),
+      fecha: data.fecha,
       ingresos: Number(data.ingresos),
       egresos: Number(data.egresos),
     };
@@ -202,6 +211,7 @@ export default function ErogacionesForm() {
     );
 
     if (Object.keys(changedPayload).length === 0) {
+      clearDraft();
       navigate(`/erogaciones/${id}`, {
         replace: true,
         state: {
@@ -227,24 +237,25 @@ export default function ErogacionesForm() {
         {isEdit ? "Editar erogación" : "Nueva erogación"}
       </h2>
 
+      {availableDraft && (
+        <DraftRecoveryNotice
+          savedAt={availableDraft.savedAt}
+          onRestore={restoreDraft}
+          onDiscard={discardDraft}
+        />
+      )}
+
       <form
         noValidate
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        {isEdit && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            En edición, el backend solo permite actualizar ingresos y egresos.
-          </div>
-        )}
-
         <Field required label="Número de erogación" name="numero" error={errors.numero}>
           <>
             <input
               type="number"
               className={inputClass("numero")}
               value={data.numeroErogacion}
-              disabled={isEdit}
               placeholder="Ej: 125"
               onChange={(e) => {
                 setData((prev) => ({
@@ -267,7 +278,6 @@ export default function ErogacionesForm() {
                 !data.tipoErogacionId ? "text-slate-400" : "text-slate-900"
               }`}
               value={data.tipoErogacionId}
-              disabled={isEdit}
               onChange={(e) => {
                 setData((prev) => ({
                   ...prev,
@@ -298,7 +308,6 @@ export default function ErogacionesForm() {
                 !data.fuenteFinanciamientoId ? "text-slate-400" : "text-slate-900"
               }`}
               value={data.fuenteFinanciamientoId}
-              disabled={isEdit}
               onChange={(e) => {
                 setData((prev) => ({
                   ...prev,
@@ -334,7 +343,6 @@ export default function ErogacionesForm() {
             }}
             helperText="DD/MM/AAAA"
             className={inputClass("fecha")}
-            disabled={isEdit}
           />
         </Field>
 

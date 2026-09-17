@@ -1,5 +1,8 @@
 # Recursos
 
+El formulario de equipamiento muestra el error junto a la denominación cuando
+se ingresan solo números.
+
 ## Errores por campo (ISS-09)
 
 Los formularios del módulo consumen `error.details.fields` mediante
@@ -40,7 +43,11 @@ tipos explicitos. Las llamadas HTTP se concentran en services dedicados.
   envio.
 - Erogaciones valida numero entero positivo, catalogos, fecha e importes finitos no
   negativos; ingresos y egresos no pueden ser ambos cero.
-- En edicion de erogaciones solo se envian ingresos y egresos, conforme al backend.
+- En edicion de erogaciones se pueden corregir numero, tipo, fuente, fecha,
+  ingresos y egresos. Se envian solo los campos modificados.
+- Erogaciones guarda un borrador local por usuario y registro cuando cambian los
+  campos. Ante una recarga o una sesion terminada, tras volver a ingresar ofrece
+  restaurarlo o descartarlo. El borrador se elimina al guardar correctamente.
 
 ## Seguridad, permisos y errores
 
@@ -48,7 +55,9 @@ Los errores se procesan con `getErrorMessage`, admitiendo el contrato tipado del
 backend sin reflejar cuerpos desconocidos. Las operaciones fallidas muestran un
 fallback accionable. Los permisos visuales complementan los controles del backend.
 
-El modulo no usa `any`, HTML no confiable, storage, secretos ni `fetch` directo.
+El modulo no usa `any`, HTML no confiable, secretos ni `fetch` directo.
+El borrador de erogaciones usa `localStorage` a traves del hook compartido y
+excluye credenciales del contenido persistido.
 React renderiza los datos como texto y los payloads se construyen con campos
 permitidos explicitamente.
 
@@ -78,3 +87,12 @@ mutateAsync para que el diálogo cubra toda la operación.
 ## Indicadores de campos obligatorios (ISS-21)
 
 Equipamiento y erogaciones muestran el indicador en cada campo que el formulario exige para guardar, incluidos ingresos y egresos de erogaciones.
+
+## Errores de formularios (ISS-19, en curso)
+
+El calendario compartido inserta ambas barras al escribir la fecha desde cero,
+conserva los separadores al reemplazar dia, mes o anio y permite sobrescribir
+digitos al ubicar el cursor en una fecha completa. Se mantienen los limites y
+la validacion de fecha.
+
+Equipamiento y erogaciones dejaron de inferir el campo inválido a partir del texto del error. `applyFieldErrors` utiliza `error.details.fields`; los errores restantes se muestran como aviso general. Alta y edición usan fallbacks propios. Las claves HTTP de fecha, monto, número, tipo y fuente se asocian a controles visibles.

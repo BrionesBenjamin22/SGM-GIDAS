@@ -1,5 +1,8 @@
 # Recursos
 
+La denominación del equipamiento debe contener una letra. Montos y fechas
+mantienen sus validaciones propias.
+
 ## Contrato de fechas
 
 Equipamiento, erogaciones, becas y sus relaciones se validan desde el
@@ -34,9 +37,18 @@ equipamiento correspondientes al periodo versionado para mantener trazabilidad.
 
 ## Errores
 
+La edicion de erogaciones acepta diferencias de `numero_erogacion`,
+`tipo_erogacion_id`, `fuente_financiamiento_id`, `fecha`, `ingresos` y
+`egresos`. La fecha se vuelve a validar con el rango institucional, el numero
+se comprueba dentro del grupo y los catalogos deben seguir disponibles. Cada
+cambio real se registra en el historial de auditoria; los snapshots de memoria
+ya creados conservan su version original.
+
 Los controladores delegan en el contrato uniforme de errores. Los datos ausentes,
 formatos invalidos, montos no positivos, grupos inexistentes y fechas fuera del
 rango se responden como errores de validacion sin exponer detalles internos.
+
+ISS-19: equipamiento identifica `denominacion`, `descripcion_breve`, `monto_invertido` y `fecha_incorporacion` en `error.details.fields`. Erogaciones identifica `numero_erogacion`, `egresos`, `ingresos`, `fecha`, `tipo_erogacion_id` y `fuente_financiamiento_id`. La edición valida ambos montos antes de modificar la entidad o registrar auditoría. Los conflictos de número conservan HTTP 409 y señalan el control correspondiente.
 
 ## Snapshots de memorias (ISS-16)
 
