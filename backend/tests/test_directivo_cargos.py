@@ -4,13 +4,67 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from app import create_app
+from flask import Flask
+from extension import db
+from modules import models_registry  # noqa: F401
 from modules.grupo.models.directivos import Cargo, Directivo, DirectivoGrupo
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.grupo.services.directivo_service import DirectivoGrupoService
 from modules.shared.exceptions import ValidationError
 
 
+class DirectivoAtomicTestCase(unittest.TestCase):
+    def setUp(self):
+        self.app = Flask(__name__)
+        self.app.config.update(TESTING=True, SQLALCHEMY_DATABASE_URI="sqlite:///:memory:")
+        db.init_app(self.app)
+        self.context = self.app.app_context()
+        self.context.push()
+        db.create_all()
+        db.session.add(GrupoInvestigacionUtn(id=1, nombre_sigla_grupo="UCT", mail="uct@test.invalid", nombre_unidad_academica="Regional", objetivo_desarrollo="Investigación"))
+        db.session.add(Cargo(id=1, nombre="Director"))
+        db.session.commit()
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.context.pop()
+
+    def test_creacion_y_asignacion_comparten_transaccion(self):
+        payload = {"nombre_apellido": "Ada", "id_grupo_utn": 1, "id_cargo": 999, "fecha_inicio": "2025-01-01"}
+        with self.assertRaises(ValidationError) as caught:
+            DirectivoGrupoService.crear_y_asignar(payload, 1)
+        self.assertIn("id_cargo", caught.exception.details["fields"])
+        self.assertEqual(Directivo.query.count(), 0)
+        payload["id_cargo"] = 1
+        result = DirectivoGrupoService.crear_y_asignar(payload, 1)
+        self.assertEqual(Directivo.query.count(), 1)
+        self.assertEqual(DirectivoGrupo.query.filter_by(id_directivo=result["id"]).count(), 1)
+
+
 class DirectivoCargosTestCase(unittest.TestCase):
+
+    def test_endpoint_atomico_respeta_permisos(self):
+        payload = {"nombre_apellido": "Ada", "id_grupo_utn": 1, "id_cargo": 1, "fecha_inicio": "2025-01-01"}
+        for rol, expected in (("GESTOR", 201), ("LECTURA", 403)):
+            with self.subTest(rol=rol), patch("modules.shared.services.middleware.AuthService.verify_token", return_value={"sub": "1", "rol": rol}), patch.object(DirectivoGrupoService, "crear_y_asignar", return_value={"id": 5, "nombre_apellido": "Ada"}) as create:
+                response = self.app.test_client().post("/api/v1/grupo/directivos/crear-y-asignar", json=payload, headers={"Authorization": "Bearer test"})
+            self.assertEqual(response.status_code, expected)
+            self.assertEqual(create.call_count, int(expected == 201))
+
+    def test_nombre_y_fecha_identifican_campos_editables(self):
+        with self.assertRaises(ValidationError) as caught:
+            DirectivoGrupoService.crear_directivo({"nombre_apellido": ""}, 1)
+        self.assertIn("nombre_apellido", caught.exception.details["fields"])
+        with self.assertRaises(ValidationError) as caught:
+            DirectivoGrupoService.crear_directivo({"nombre_apellido": "22"}, 1)
+        self.assertIn("nombre_apellido", caught.exception.details["fields"])
+        with self.assertRaises(ValidationError) as caught:
+            DirectivoGrupoService.crear_directivo({"nombre_apellido": "Ana 22"}, 1)
+        self.assertIn("nombre_apellido", caught.exception.details["fields"])
+        with self.assertRaises(ValidationError) as caught:
+            DirectivoGrupoService._validar_fecha("invalida", "fecha_inicio")
+        self.assertIn("fecha_inicio", caught.exception.details["fields"])
 
     def setUp(self):
         self.app = create_app()

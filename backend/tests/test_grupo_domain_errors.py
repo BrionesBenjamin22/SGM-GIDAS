@@ -3,9 +3,30 @@ from unittest.mock import patch
 
 from app import create_app
 from modules.shared.exceptions import ValidationError
+from modules.grupo.services.grupo_service import crear_grupo_utn
+from modules.grupo.services.programa_actividades_service import _validar_anio, _validar_descripcion
 
 
 class GrupoDomainErrorsTestCase(unittest.TestCase):
+
+    def test_uct_identifica_el_campo_obligatorio_antes_de_persistir(self):
+        with self.app.app_context(), patch("modules.grupo.services.grupo_service.GrupoInvestigacionUtn.query") as query, patch("modules.grupo.services.grupo_service.db.session.add") as add:
+            query.filter.return_value.first.return_value = None
+            with self.assertRaises(ValidationError) as caught:
+                crear_grupo_utn({}, 1)
+            add.assert_not_called()
+            self.assertEqual(caught.exception.details, {})
+
+            with self.assertRaises(ValidationError) as caught:
+                crear_grupo_utn({"nombre_unidad_academica": ""}, 1)
+            self.assertIn("nombre_unidad_academica", caught.exception.details["fields"])
+            add.assert_not_called()
+
+    def test_planificacion_identifica_descripcion_y_anio(self):
+        for validate, value, field in ((_validar_descripcion, "", "descripcion"), (_validar_anio, 1999, "anio")):
+            with self.subTest(field=field), self.assertRaises(ValidationError) as caught:
+                validate(value)
+            self.assertIn(field, caught.exception.details["fields"])
 
     def setUp(self):
         self.app = create_app()

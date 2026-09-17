@@ -1,6 +1,7 @@
 import builtins
 from datetime import datetime
 from extension import db
+from modules.shared.services.text_validation import has_only_letters_and_spaces
 from modules.shared.exceptions import ValidationError as ValueError
 from sqlalchemy.orm import joinedload
 from modules.grupo.models.directivos import Directivo, DirectivoGrupo, Cargo
@@ -35,10 +36,14 @@ class DirectivoGrupoService:
             fecha = datetime.strptime(valor, "%Y-%m-%d").date()
         except (TypeError, builtins.ValueError) as exc:
             raise ValueError(
-                f"El campo '{campo}' debe tener formato YYYY-MM-DD."
+                f"El campo '{campo}' debe tener formato YYYY-MM-DD.",
+                details={"fields": {campo: "Ingrese una fecha válida en formato YYYY-MM-DD"}},
             ) from exc
 
-        return validate_institutional_date(fecha, campo, allow_future=False)
+        try:
+            return validate_institutional_date(fecha, campo, allow_future=False)
+        except ValueError as error:
+            raise ValueError(str(error), details={"fields": {campo: str(error)}}) from error
 
     @staticmethod
     def _validar_cargo_y_cupo(
@@ -91,10 +96,12 @@ class DirectivoGrupoService:
     # =========================================================
 
     @staticmethod
-    def crear_directivo(data: dict, user_id: int):
+    def crear_directivo(data: dict, user_id: int, *, commit: bool = True):
 
-        if not data.get("nombre_apellido"):
-            raise ValueError("El nombre es obligatorio.")
+        if not isinstance(data.get("nombre_apellido"), str) or not data["nombre_apellido"].strip():
+            raise ValueError("El nombre es obligatorio.", details={"fields": {"nombre_apellido": "Ingrese nombre y apellido"}})
+        if not has_only_letters_and_spaces(data["nombre_apellido"]):
+            raise ValueError("Use solo letras y espacios en nombre y apellido.", details={"fields": {"nombre_apellido": "Use solo letras y espacios en nombre y apellido"}})
 
         directivo = Directivo(
             nombre_apellido=data["nombre_apellido"].strip(),
@@ -102,7 +109,10 @@ class DirectivoGrupoService:
         )
 
         db.session.add(directivo)
-        db.session.commit()
+        if commit:
+            db.session.commit()
+        else:
+            db.session.flush()
 
         return directivo.serialize()
 
@@ -121,6 +131,10 @@ class DirectivoGrupoService:
         )
 
         if "nombre_apellido" in data:
+            if not isinstance(data["nombre_apellido"], str) or not data["nombre_apellido"].strip():
+                raise ValueError("El nombre es obligatorio.", details={"fields": {"nombre_apellido": "Ingrese nombre y apellido"}})
+            if not has_only_letters_and_spaces(data["nombre_apellido"]):
+                raise ValueError("Use solo letras y espacios en nombre y apellido.", details={"fields": {"nombre_apellido": "Use solo letras y espacios en nombre y apellido"}})
             directivo.nombre_apellido = data["nombre_apellido"].strip()
 
         db.session.commit()
@@ -133,13 +147,13 @@ class DirectivoGrupoService:
     # =========================================================
 
     @staticmethod
-    def asignar_a_grupo(data: dict, user_id: int):
+    def asignar_a_grupo(data: dict, user_id: int, *, commit: bool = True):
 
         required = ["id_directivo", "id_grupo_utn", "id_cargo", "fecha_inicio"]
 
         for campo in required:
             if campo not in data:
-                raise ValueError(f"{campo} es obligatorio.")
+                raise ValueError(f"{campo} es obligatorio.", details={"fields": {campo: "Complete este campo"}})
 
         directivo = DirectivoGrupoService._get_activo_or_404(
             Directivo, data["id_directivo"], "Directivo no encontrado."
@@ -151,7 +165,7 @@ class DirectivoGrupoService:
 
         cargo = db.session.get(Cargo, data["id_cargo"])
         if not cargo:
-            raise ValueError("Cargo no encontrado.")
+            raise ValueError("Cargo no encontrado.", details={"fields": {"id_cargo": "Seleccione un cargo disponible"}})
 
         fecha_inicio = DirectivoGrupoService._validar_fecha(
             data["fecha_inicio"], "fecha_inicio"
@@ -164,7 +178,7 @@ class DirectivoGrupoService:
             )
 
             if fecha_fin < fecha_inicio:
-                raise ValueError("La fecha_fin no puede ser anterior a fecha_inicio.")
+                raise ValueError("La fecha de fin no puede ser anterior al inicio.", details={"fields": {"fecha_fin": "Elija una fecha posterior o igual al inicio"}})
 
         DirectivoGrupoService._validar_cargo_y_cupo(
             grupo.id,
@@ -198,9 +212,30 @@ class DirectivoGrupoService:
         )
 
         db.session.add(participacion)
-        db.session.commit()
+        if commit:
+            db.session.commit()
+        else:
+            db.session.flush()
 
         return {"message": "Directivo asignado correctamente."}
+
+    @staticmethod
+    def crear_y_asignar(data: dict, user_id: int):
+        if not isinstance(data, dict):
+            raise ValueError("Complete los datos del directivo.")
+        try:
+            directivo = DirectivoGrupoService.crear_directivo(data, user_id, commit=False)
+            DirectivoGrupoService.asignar_a_grupo({
+                "id_directivo": directivo["id"],
+                "id_grupo_utn": data.get("id_grupo_utn"),
+                "id_cargo": data.get("id_cargo"),
+                "fecha_inicio": data.get("fecha_inicio"),
+            }, user_id, commit=False)
+            db.session.commit()
+            return directivo
+        except Exception:
+            db.session.rollback()
+            raise
 
 
     # =========================================================

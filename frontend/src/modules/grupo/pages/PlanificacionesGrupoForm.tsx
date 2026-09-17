@@ -111,7 +111,7 @@ export default function PlanificacionGrupoForm() {
         setErrorMessage(
           getErrorMessage(
             error,
-            "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+            "Lo sentimos, no pudimos actualizar la planificación. Revise los datos e intente nuevamente."
           )
         );
         return;
@@ -124,7 +124,7 @@ export default function PlanificacionGrupoForm() {
         setErrorMessage(
           getErrorMessage(
             error,
-            "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+            "Lo sentimos, no pudimos crear la planificación. Revise los datos e intente nuevamente."
           )
         );
         return;

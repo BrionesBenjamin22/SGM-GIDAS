@@ -125,36 +125,9 @@ export default function VisitantesForm() {
     },
     onError: (error) => {
       if (applyFieldErrors(error, setErrors, ["razon","fecha","procedencia","tipoVisita"])) return;
-      const defaultMessage = isEdit
-        ? "No se pudo actualizar la visita."
-        : "No se pudo crear la visita.";
-
-      const backendMessage = getErrorMessage(error, defaultMessage);
-      const lowerMessage = backendMessage.toLowerCase();
-
-      if (lowerMessage.includes("razon")) {
-          setErrors((prev) => ({
-            ...prev,
-            razon: backendMessage,
-          }));
-      } else if (lowerMessage.includes("procedencia")) {
-          setErrors((prev) => ({
-            ...prev,
-            procedencia: backendMessage,
-          }));
-      } else if (lowerMessage.includes("fecha")) {
-          setErrors((prev) => ({
-            ...prev,
-            fecha: backendMessage,
-          }));
-      } else if (lowerMessage.includes("tipo")) {
-          setErrors((prev) => ({
-            ...prev,
-            tipoVisita: backendMessage,
-          }));
-      }
-
-      setErrorMessage(backendMessage);
+      setErrorMessage(getErrorMessage(error, isEdit
+        ? "Lo sentimos, no pudimos actualizar la visita. Revise los datos e intente nuevamente."
+        : "Lo sentimos, no pudimos crear la visita. Revise los datos e intente nuevamente."));
       setShowError(true);
     },
   });

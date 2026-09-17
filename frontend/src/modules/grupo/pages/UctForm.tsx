@@ -1,4 +1,5 @@
-import { applyFieldErrors } from "@/lib/httpError";
+import { applyFieldErrors, focusFieldErrors, getApiFieldErrors } from "@/lib/httpError";
+import { hasLetter, hasOnlyLettersAndSpaces } from "../../../lib/textValidation";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Pencil, Trash2 } from "lucide-react";
@@ -40,6 +41,8 @@ type DirectivoItem = {
 export default function UctForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submitInFlight = useRef(false);
+  const hasStartedSave = useRef(false);
+  const createdDirectivoSlots = useRef(new Set<1 | 2>());
   const todayIso = getLocalTodayIso();
   const { uct, save, isLoading: isLoadingUct } = useUct();
   const { user } = useAuth();
@@ -52,7 +55,7 @@ export default function UctForm() {
   const {
     data: directivosActuales = [],
     isLoading: isLoadingDirectivos,
-  } = useDirectivos(grupoId);
+  } = useDirectivos(grupoId, !hasStartedSave.current);
   const crearAsignar = useCrearYAsignarDirectivo(grupoId ?? 0);
   const actualizarDirectivo = useActualizarDirectivo(grupoId);
   const finalizarDirectivo = useFinalizarDirectivo(grupoId);
@@ -175,10 +178,14 @@ export default function UctForm() {
 
     if (!data.facultadRegional.trim()) {
       e.facultadRegional = "Debe ingresar facultad regional";
+    } else if (!hasLetter(data.facultadRegional)) {
+      e.facultadRegional = "La facultad regional debe contener letras";
     }
 
     if (!data.nombreSigla.trim()) {
       e.nombreSigla = "Debe ingresar nombre y sigla";
+    } else if (!hasLetter(data.nombreSigla)) {
+      e.nombreSigla = "El nombre y sigla debe contener letras";
     }
 
     if (!data.correo.trim()) {
@@ -194,6 +201,8 @@ export default function UctForm() {
     if (mostrarAltaDirectivos && faltaDirector) {
       if (!data.nombre1.trim()) {
         e.nombre1 = "Ingrese nombre";
+      } else if (!hasOnlyLettersAndSpaces(data.nombre1)) {
+        e.nombre1 = "Use solo letras y espacios";
       }
       if (!data.cargo1) {
         e.cargo1 = "Seleccione cargo";
@@ -210,6 +219,8 @@ export default function UctForm() {
     if (mostrarAltaDirectivos && faltaVicedirector) {
       if (!data.nombre2.trim()) {
         e.nombre2 = "Ingrese nombre";
+      } else if (!hasOnlyLettersAndSpaces(data.nombre2)) {
+        e.nombre2 = "Use solo letras y espacios";
       }
       if (!data.cargo2) {
         e.cargo2 = "Seleccione cargo";
@@ -243,7 +254,9 @@ export default function UctForm() {
     if (submitInFlight.current) return;
     if (!validate()) return;
     submitInFlight.current = true;
+    hasStartedSave.current = true;
     setIsSubmitting(true);
+    let directivoSlot: 1 | 2 | null = null;
 
     try {
       setSubmitError("");
@@ -274,20 +287,24 @@ export default function UctForm() {
       setPendingFinalizations({});
 
       if (grupoId && mostrarAltaDirectivos) {
-        if (faltaDirector) {
+        if (faltaDirector && !createdDirectivoSlots.current.has(1)) {
+          directivoSlot = 1;
           await crearAsignar.mutateAsync({
             nombre_apellido: data.nombre1.trim(),
             id_cargo: Number(data.cargo1),
             fecha_inicio: data.fecha1,
           });
+          createdDirectivoSlots.current.add(1);
         }
 
-        if (faltaVicedirector) {
+        if (faltaVicedirector && !createdDirectivoSlots.current.has(2)) {
+          directivoSlot = 2;
           await crearAsignar.mutateAsync({
             nombre_apellido: data.nombre2.trim(),
             id_cargo: Number(data.cargo2),
             fecha_inicio: data.fecha2,
           });
+          createdDirectivoSlots.current.add(2);
         }
 
         setMostrarAltaDirectivos(false);
@@ -309,11 +326,28 @@ export default function UctForm() {
         },
       });
     } catch (err: unknown) {
+      if (directivoSlot) {
+        const fields = getApiFieldErrors(err);
+        const slot = directivoSlot;
+        const controls: Record<string, string> = {
+          nombre_apellido: `nombre${slot}`,
+          id_cargo: `cargo${slot}`,
+          fecha_inicio: `fecha${slot}`,
+        };
+        const mapped = Object.fromEntries(Object.entries(fields).flatMap(([key, value]) =>
+          controls[key] ? [[controls[key], value]] : []
+        ));
+        if (Object.keys(mapped).length) {
+          setErrors((previous) => ({ ...previous, ...mapped }));
+          focusFieldErrors(mapped);
+        }
+        if (Object.keys(mapped).length && Object.keys(mapped).length === Object.keys(fields).length) return;
+      }
       if (applyFieldErrors(err, setErrors, ["facultadRegional","nombreSigla","nombre1","cargo1","fecha1","nombre2","cargo2","fecha2","correo","objetivos"])) return;
       setSubmitError(
         getErrorMessage(
           err,
-          "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+          "Lo sentimos, no pudimos guardar la UCT o su equipo directivo. Revise los datos e intente nuevamente."
         )
       );
     } finally {
@@ -324,6 +358,10 @@ export default function UctForm() {
 
   const handleEditarDirectivo = () => {
     if (!editingId || !editingNombre.trim()) return;
+    if (!hasOnlyLettersAndSpaces(editingNombre)) {
+      setSubmitError("Use solo letras y espacios en el nombre del directivo.");
+      return;
+    }
     setPendingUpdates((current) => ({
       ...current,
       [editingId]: editingNombre.trim(),

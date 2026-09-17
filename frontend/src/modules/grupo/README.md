@@ -1,5 +1,11 @@
 # Modulo frontend de grupo
 
+El formulario UCT valida nombre/sigla y exige solo letras Unicode y espacios
+en nombres de directivos al crear o preparar una edición. Esta validación no
+consulta nuevamente el equipo.
+
+El formulario UCT crea y asigna cada directivo mediante una sola solicitud transaccional. Al editar campos no vuelve a solicitar los directivos; los hooks del formulario tampoco fuerzan una recarga al guardar. Un acceso posterior al formulario consulta el estado actualizado.
+
 ## Errores por campo (ISS-09)
 
 Los formularios del módulo consumen `error.details.fields` mediante
@@ -112,3 +118,9 @@ memoria se valida por separado en el módulo Memorias.
 ## Indicadores de campos obligatorios (ISS-21)
 
 UCT, planificaciones y visitantes muestran el indicador en sus campos obligatorios; los datos de directivos lo muestran al habilitar su alta y la fecha de finalizacion al cerrar un cargo.
+
+## Errores de Visitas (ISS-19)
+
+VisitantesForm aplica error.details.fields mediante applyFieldErrors. Las claves razon, procedencia, fecha y tipo_visita_id se muestran junto a sus controles; una clave desconocida conserva el aviso general. Alta y edición presentan una indicación para revisar datos y reintentar.
+
+UCT y planificaciones muestran los campos identificados por el backend sin interpretar el texto de los mensajes. `nombre_unidad_academica` y `objetivo_desarrollo` se vinculan a facultad regional y objetivos; una planificación duplicada identifica `anio`. Las fallas de las operaciones de directivos permanecen como aviso general cuando no puede asociarse de forma inequívoca a uno de los dos controles visibles.

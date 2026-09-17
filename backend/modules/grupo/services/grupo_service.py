@@ -1,6 +1,15 @@
 from extension import db
+from modules.shared.services.text_validation import has_letter
 from modules.shared.exceptions import ValidationError as ValueError
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
+
+
+ETIQUETAS_GRUPO = {
+    "nombre_unidad_academica": "la facultad regional",
+    "nombre_sigla_grupo": "el nombre y sigla del grupo",
+    "mail": "el correo electrónico",
+    "objetivo_desarrollo": "los objetivos del grupo",
+}
 
 
 def crear_grupo_utn(data, user_id):
@@ -21,7 +30,9 @@ def crear_grupo_utn(data, user_id):
 
     for campo in campos:
         if not data.get(campo):
-            raise ValueError(f"El campo '{campo}' es obligatorio.")
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"Ingrese {ETIQUETAS_GRUPO[campo]}."}})
+        if campo in {"nombre_unidad_academica", "nombre_sigla_grupo"} and not has_letter(data[campo]):
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"{ETIQUETAS_GRUPO[campo].capitalize()} debe contener letras."}})
 
     nuevo_grupo = GrupoInvestigacionUtn(
         nombre_unidad_academica=data["nombre_unidad_academica"].strip(),
@@ -69,7 +80,9 @@ def actualizar_grupo_utn(data):
         if campo in data:
             valor = data[campo]
             if not isinstance(valor, str) or not valor.strip():
-                raise ValueError(f"El campo '{campo}' no puede estar vacío.")
+                raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"Ingrese {ETIQUETAS_GRUPO[campo]}."}})
+            if campo in {"nombre_unidad_academica", "nombre_sigla_grupo"} and not has_letter(valor):
+                raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"{ETIQUETAS_GRUPO[campo].capitalize()} debe contener letras."}})
             setattr(grupo, campo, valor.strip())
 
     db.session.commit()

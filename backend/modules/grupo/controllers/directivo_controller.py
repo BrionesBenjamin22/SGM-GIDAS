@@ -5,6 +5,18 @@ from modules.shared.controllers.responses import error_response, exception_respo
 
 class DirectivoController:
 
+    @staticmethod
+    def crear_y_asignar():
+        try:
+            data = request.get_json(silent=True)
+            if not isinstance(data, dict):
+                return error_response("VALIDATION_ERROR", status_code=400)
+            if not hasattr(g, "current_user_id"):
+                return error_response("AUTH_REQUIRED", status_code=401)
+            return jsonify(DirectivoGrupoService.crear_y_asignar(data, g.current_user_id)), 201
+        except Exception as error:
+            return exception_response(error, operation="crear y asignar directivo")
+
     # ==========================================
     # CREAR DIRECTIVO
     # ==========================================

@@ -62,6 +62,18 @@ export function getDirectivosActuales(grupoId: number) {
   });
 }
 
+export function crearYAsignarDirectivo(payload: {
+  nombre_apellido: string;
+  id_grupo_utn: number;
+  id_cargo: number;
+  fecha_inicio: string;
+}) {
+  return http<Directivo>("/directivos/crear-y-asignar", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function getHistorialDirectivos(grupoId: number) {
   return http<DirectivoPeriodo[]>(`/directivos/grupo/${grupoId}`, {
     method: "GET",

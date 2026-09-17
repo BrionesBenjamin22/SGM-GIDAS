@@ -6,9 +6,15 @@ const uctFormSource = readFileSync(
   new URL("../src/modules/grupo/pages/UctForm.tsx", import.meta.url),
   "utf8"
 );
+const directivosHookSource = readFileSync(
+  new URL("../src/modules/grupo/hooks/useDirectivos.ts", import.meta.url),
+  "utf8"
+);
 
 test("el formulario consulta el equipo mediante el hook de directivos actuales", () => {
-  assert.match(uctFormSource, /useDirectivos\(grupoId\)/);
+  assert.match(uctFormSource, /useDirectivos\(grupoId, !hasStartedSave\.current\)/);
+  assert.match(directivosHookSource, /enabled: enabled && !!grupoId/);
+  assert.doesNotMatch(directivosHookSource, /invalidateQueries/);
   assert.doesNotMatch(uctFormSource, /uct\?\.directivos/);
 });
 
