@@ -1,5 +1,5 @@
 import Field from "@/components/Field";
-import { applyFieldErrors } from "@/lib/httpError";
+import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
 import { FormEvent, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -44,7 +44,18 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setError(null);
+    const nextErrors: Record<string, string> = {};
+    if (!nombre.trim()) nextErrors.nombre = "Ingrese su nombre de usuario.";
+    if (!email.trim()) nextErrors.email = "Ingrese su correo electrónico.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) nextErrors.email = "Ingrese un correo electrónico válido.";
+    if (password.length < 6) nextErrors.password = "Ingrese una contraseña de al menos 6 caracteres.";
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length) {
+      focusFieldErrors(nextErrors);
+      return;
+    }
     setLoading(true);
     try {
       await register(nombre, email, password);
@@ -171,7 +182,7 @@ export default function RegisterPage() {
                 />
                 <p className="text-xs text-slate-400 mt-1">Mínimo 6 caracteres</p>
               </Field>
-              {error && <p className="text-sm text-rose-600">{error}</p>}
+              {error && <p role="alert" className="text-sm text-rose-600">{error}</p>}
               <button
                 type="submit"
                 disabled={loading}

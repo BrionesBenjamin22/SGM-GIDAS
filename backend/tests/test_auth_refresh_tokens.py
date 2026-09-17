@@ -137,6 +137,17 @@ class AuthRefreshTokenTestCase(unittest.TestCase):
             with self.assertRaisesRegex(Exception, "revocado"):
                 AuthService.refresh_tokens(tokens["refresh_token"])
 
+    def test_cambio_password_permite_renovar_sesion_nueva(self):
+        with self.app.app_context():
+            previous = self._login()
+            user = AuthService.change_password(self.user_id, "password123", "password456")
+            new_tokens = AuthService.generate_tokens(user, persist_refresh=True)
+
+            with self.assertRaisesRegex(Exception, "revocado"):
+                AuthService.refresh_tokens(previous["refresh_token"])
+            renewed = AuthService.refresh_tokens(new_tokens["refresh_token"])
+            self.assertEqual(renewed["user"]["id"], self.user_id)
+
     def test_logout_revoca_refresh_token_actual(self):
         with self.app.app_context():
             tokens = self._login()

@@ -22,7 +22,7 @@ import {
 import { clearAccessToken } from "@/lib/http";
 import SessionExpiryDialog from "@/modules/auth/components/SessionExpiryDialog";
 import { useSessionLifecycle } from "@/modules/auth/hooks/useSessionLifecycle";
-import { rememberSessionPath } from "@/modules/auth/utils/sessionNavigation";
+import { clearSessionNotice, markSessionActive, markSessionEnded, rememberSessionPath } from "@/modules/auth/utils/sessionNavigation";
 import type { SessionTiming } from "@/modules/auth/utils/sessionTiming";
 
 type AuthContextValue = {
@@ -75,7 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSessionTiming(null);
   }, []);
 
-  const expireSession = useCallback(() => clearSession(true), [clearSession]);
+  const expireSession = useCallback(() => {
+    markSessionEnded();
+    clearSession(true);
+  }, [clearSession]);
 
   const renewSession = useCallback(async () => {
     const auth = await renewSessionService();
@@ -83,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(auth.user);
     setToken(auth.token);
     setSessionTiming(auth.sessionTiming);
+    markSessionActive();
     return true;
   }, []);
 
@@ -103,6 +107,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(stored?.user ?? null);
         setToken(stored?.token ?? null);
         setSessionTiming(stored?.sessionTiming ?? null);
+        if (stored) markSessionActive();
+        else markSessionEnded();
       } catch {
         if (!active) return;
         clearAccessToken();
@@ -143,6 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(auth.user);
     setToken(auth.token);
     setSessionTiming(auth.sessionTiming);
+    markSessionActive();
     return auth;
   }
 
@@ -161,14 +168,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     passwordNueva: string;
     passwordActual?: string;
   }) {
-    await cambiarPasswordService({ passwordNueva, passwordActual });
-
-    if (user) {
-      setUser({ ...user, primer_login: false });
-    }
+    const auth = await cambiarPasswordService({ passwordNueva, passwordActual });
+    setUser(auth.user);
+    setToken(auth.token);
+    setSessionTiming(auth.sessionTiming);
+    markSessionActive();
   }
 
   async function logout() {
+    clearSessionNotice();
     setUser(null);
     setToken(null);
     setSessionTiming(null);

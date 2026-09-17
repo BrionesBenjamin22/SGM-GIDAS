@@ -2,6 +2,13 @@
 
 ## Errores por campo (ISS-09)
 
+Al cambiar la contraseña, el service instala el nuevo access token y el
+contexto actualiza usuario y tiempos. El backend reemplaza la cookie de refresh
+revocada para que una recarga conserve la sesión.
+Si una sesión previamente activa ya no puede restaurarse, Login muestra una
+sola vez un aviso claro para iniciar sesión nuevamente. El aviso de vencimiento
+anticipado sigue usando `session_expires_at` del backend.
+
 Los formularios del módulo consumen `error.details.fields` mediante
 `applyFieldErrors` de `src/lib/httpError.ts`, muestran el mensaje junto al control
 y enfocan el primer campo inválido. Los nombres locales de los controles se
@@ -91,3 +98,9 @@ errores, primer administrador, login y conservación de datos durante refetch.
 ## Indicadores de campos obligatorios (ISS-21)
 
 En Mi perfil, nombre de usuario y correo muestran el indicador de campo obligatorio durante la edicion. Login, registro y cambio de contrasena ya lo mostraban.
+
+## Validaciones de formularios (ISS-19)
+
+Registro y cambio de contraseña validan sus campos antes de enviar, conservan los valores y enfocan el primer control inválido. Las validaciones del servidor usan `error.details.fields`; los errores sin campo concreto se anuncian como aviso general. El envío permanece bloqueado mientras se procesa la solicitud.
+
+Usuarios aplica el mismo foco local, bloquea un segundo envío y anuncia los errores generales con `role="alert"`. Si todos los errores del backend tienen control conocido, solo se muestran junto a los campos.

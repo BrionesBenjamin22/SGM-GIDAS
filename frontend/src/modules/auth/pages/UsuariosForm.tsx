@@ -1,4 +1,4 @@
-import { applyFieldErrors, getApiFieldErrors, mapFieldErrors } from "@/lib/httpError";
+import { applyFieldErrors, focusFieldErrors, getApiFieldErrors, mapFieldErrors } from "@/lib/httpError";
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -93,11 +93,13 @@ export default function UsuariosForm() {
     }
 
     setErrors(newErrors);
+    if (Object.keys(newErrors).length) focusFieldErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (crearMutation.isPending) return;
 
     if (!validateForm()) return;
 
@@ -381,7 +383,7 @@ export default function UsuariosForm() {
 
           {crearMutation.isError && (Object.keys(getApiFieldErrors(crearMutation.error)).length === 0 ||
             Object.keys(mapFieldErrors(crearMutation.error, ["nombre", "email", "password", "rol"])).length < Object.keys(getApiFieldErrors(crearMutation.error)).length) && (
-            <div className="bg-rose-50 text-rose-600 text-sm px-4 py-3 rounded-lg border border-rose-200">
+            <div role="alert" className="bg-rose-50 text-rose-600 text-sm px-4 py-3 rounded-lg border border-rose-200">
               {getErrorMessage(
                 crearMutation.error,
                 "Lo sentimos, no pudimos crear el usuario. Verifique los datos e intente nuevamente."

@@ -269,7 +269,7 @@ class AuthService:
         else:
             primer_login = True
             if not rol_id:
-                raise ValidationError('rol_id es obligatorio para crear usuarios', details={"fields": {'rol_id': 'rol_id es obligatorio para crear usuarios'}})
+                raise ValidationError('Seleccione un rol e intente nuevamente.', details={"fields": {'rol_id': 'Seleccione un rol para el usuario.'}})
             rol = RolUsuario.query.get(rol_id)
             if not rol:
                 raise ValidationError('Seleccione un rol disponible.', details={"fields": {'rol_id': 'Seleccione un rol disponible.'}})
@@ -563,7 +563,7 @@ class AuthService:
         if "mail" in data:
             mail = (data["mail"] or "").strip()
             if not mail:
-                raise ValidationError('El mail es obligatorio', details={"fields": {'mail': 'El mail es obligatorio'}})
+                raise ValidationError('Ingrese el correo electrónico e intente nuevamente.', details={"fields": {'mail': 'Ingrese el correo electrónico.'}})
 
             # Verificar que el mail no exista
             existing = Usuario.query.filter(
@@ -571,7 +571,7 @@ class AuthService:
                 Usuario.id != user_id
             ).first()
             if existing:
-                raise ConflictError('El mail ya está en uso', details={"fields": {'mail': 'El mail ya está en uso'}})
+                raise ConflictError('El correo electrónico ya está en uso. Ingrese otro.', details={"fields": {'mail': 'El correo electrónico ya está en uso. Ingrese otro.'}})
             user.mail = mail
         
         if "activo" in data:

@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 
 from flask import Flask
 
@@ -24,6 +25,7 @@ class AuthCookieContractTestCase(unittest.TestCase):
         self.app.add_url_rule("/api/v1/auth/login", view_func=AuthController.login, methods=["POST"])
         self.app.add_url_rule("/api/v1/auth/refresh", view_func=AuthController.refresh, methods=["POST"])
         self.app.add_url_rule("/api/v1/auth/logout", view_func=AuthController.logout, methods=["POST"])
+        self.app.add_url_rule("/api/v1/auth/cambiar-password", view_func=AuthController.change_password, methods=["POST"])
         self.client = self.app.test_client()
 
     @patch("modules.auth.controllers.auth_controller.AuthService.login")
@@ -72,6 +74,31 @@ class AuthCookieContractTestCase(unittest.TestCase):
         self.assertIn("SameSite=Lax", cookie)
         self.assertIn("Path=/api/v1/auth", cookie)
         self.assertEqual(response.headers["Cache-Control"], "no-store")
+
+    @patch("modules.auth.controllers.auth_controller.AuthService.generate_tokens")
+    @patch("modules.auth.controllers.auth_controller.AuthService.change_password")
+    @patch("modules.auth.controllers.auth_controller.AuthService.get_user_by_id")
+    @patch.object(AuthController, "_get_payload_from_request", return_value={"sub": "1"})
+    def test_cambio_password_renueva_cookie_y_access_token(self, payload, get_user, change_password, generate_tokens):
+        user = SimpleNamespace(id=1, nombre_usuario="user", mail="user@example.com", rol=SimpleNamespace(nombre="GESTOR"), primer_login=False)
+        get_user.return_value = user
+        change_password.return_value = user
+        generate_tokens.return_value = {
+            "access_token": "new-access", "refresh_token": "new-refresh",
+            "access_expires_at": "2026-09-10T12:15:00Z",
+            "session_expires_at": "2026-09-17T12:00:00Z",
+            "session_warning_seconds": 300,
+        }
+        response = self.client.post("/api/v1/auth/cambiar-password", json={
+            "password_actual": "password123", "password_nueva": "password456",
+            "password_confirmacion": "password456",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["access_token"], "new-access")
+        self.assertNotIn("refresh_token", response.get_json())
+        self.assertIn("gidas_refresh=new-refresh", response.headers["Set-Cookie"])
+        self.assertEqual(response.headers["Cache-Control"], "no-store")
+        generate_tokens.assert_called_once()
 
     @patch("modules.auth.controllers.auth_controller.AuthService.refresh_tokens")
     def test_refresh_solo_acepta_cookie_y_origen_permitido(self, refresh):

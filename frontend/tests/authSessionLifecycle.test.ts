@@ -8,7 +8,11 @@ import {
   shouldWarnSession,
 } from "../src/modules/auth/utils/sessionTiming.ts";
 import {
+  clearSessionNotice,
+  consumeSessionEnded,
   consumeSessionPath,
+  markSessionActive,
+  markSessionEnded,
   rememberSessionPath,
 } from "../src/modules/auth/utils/sessionNavigation.ts";
 import {
@@ -72,6 +76,18 @@ test("la ruta interna se conserva una vez y descarta destinos externos", () => {
 
   rememberSessionPath("//sitio-externo.example", storage);
   assert.equal(consumeSessionPath(storage), null);
+});
+
+test("una recarga con refresh revocado muestra un aviso de sesión terminada una sola vez", () => {
+  const storage = new MemoryStorage();
+  markSessionActive(storage);
+  markSessionEnded(storage);
+  assert.equal(consumeSessionEnded(storage), true);
+  assert.equal(consumeSessionEnded(storage), false);
+  markSessionActive(storage);
+  clearSessionNotice(storage);
+  markSessionEnded(storage);
+  assert.equal(consumeSessionEnded(storage), false);
 });
 
 test("la expiracion durante una edicion conserva ruta y borrador hasta el nuevo login", () => {

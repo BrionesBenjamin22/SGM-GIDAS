@@ -6,6 +6,7 @@ import { AlertCircle, ArrowLeft, Eye, EyeOff, LoaderCircle, LogIn } from "lucide
 import { useAuth } from "@/context/AuthContext";
 import { useSystemSetup } from "@/modules/auth/hooks/useSystemSetup";
 import {
+  consumeSessionEnded,
   consumeSessionPath,
   isSafeInternalPath,
 } from "@/modules/auth/utils/sessionNavigation";
@@ -30,11 +31,14 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [sessionEnded, setSessionEnded] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!sessionLoading && user) {
       nav(user.primer_login ? "/cambiar-password" : from, { replace: true });
+    } else if (!sessionLoading) {
+      setSessionEnded(consumeSessionEnded());
     }
   }, [from, nav, sessionLoading, user]);
 
@@ -84,6 +88,11 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
+            {sessionEnded && (
+              <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                Su sesión terminó. Inicie sesión nuevamente para continuar.
+              </p>
+            )}
             <Field label="Nombre de usuario" required name="usuario" error={fieldErrors.usuario}>
 
               <input

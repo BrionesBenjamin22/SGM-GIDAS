@@ -130,7 +130,7 @@ type CambiarPasswordParams = {
 export async function cambiarPassword({
   passwordNueva,
   passwordActual,
-}: CambiarPasswordParams): Promise<void> {
+}: CambiarPasswordParams): Promise<AuthResponse> {
   const body: Record<string, string> = {
     password_nueva: passwordNueva,
     password_confirmacion: passwordNueva,
@@ -141,10 +141,15 @@ export async function cambiarPassword({
   }
 
   try {
-    await http("/auth/cambiar-password", {
+    const response = await http<BackendLoginResponse>("/auth/cambiar-password", {
       method: "POST",
       body: JSON.stringify(body),
     });
+    const user = response.user ?? response.usuario;
+    if (!response.access_token || !user) throw new Error(CONNECTION_ERROR_MESSAGE);
+    const auth = toAuthResponse(response, user);
+    setAccessToken(auth.token);
+    return auth;
   } catch (error) {
     if (error instanceof HttpError) {
       throw error;

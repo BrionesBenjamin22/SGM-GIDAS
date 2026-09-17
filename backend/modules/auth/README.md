@@ -11,6 +11,8 @@ claves del payload. Se conservan las cookies, protección de origen y reglas de
 contraseña existentes. El logout mantiene la limpieza de cookies aunque falle
 la revocación. Véase el contrato transversal en `../README.md`.
 
+ISS-19 mantiene las claves HTTP `nombre_usuario`, `mail`, `password`, `rol_id`, `password_actual`, `password_nueva` y `password_confirmacion`. Los mensajes de correo y rol para crear o editar usuarios son públicos y accionables; un fallo no devuelve credenciales ni detalles internos.
+
 ## Responsabilidades
 
 El módulo concentra rutas, controladores, servicios y modelos de identidad. Gestiona usuarios, roles, contraseñas, access tokens de corta duración, sesiones de refresh revocables y el alta controlada del primer administrador.
@@ -51,6 +53,10 @@ Todos los endpoints se publican bajo `/auth`.
 - Los errores inesperados devuelven mensajes genéricos y no exponen detalles internos.
 
 ## Duracion y contrato de sesion
+
+`POST /api/v1/auth/cambiar-password` revoca las sesiones anteriores y entrega
+nuevo access token, tiempos y cookie de refresh `HttpOnly` para la sesión actual.
+El refresh token no aparece en el JSON. Una recarga conserva la sesión nueva.
 
 - `JWT_EXPIRATION_MINUTES` define la vigencia del access token (15 minutos por defecto).
 - `REFRESH_TOKEN_EXPIRATION_MINUTES` define la vigencia renovable de la sesion (10080 minutos, siete dias, por defecto).

@@ -1,5 +1,5 @@
 import Field from "@/components/Field";
-import { applyFieldErrors } from "@/lib/httpError";
+import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -27,27 +27,16 @@ export default function CambiarPasswordPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setError(null);
-
-    if (!esPrimerLogin && !passwordActual.trim()) {
-      setError("Ingrese su contraseña actual para continuar.");
-      return;
-    }
-
-    if (passwordNueva.length < 6) {
-      setError("La nueva contraseña debe tener al menos 6 caracteres.");
-      return;
-    }
-
-    if (passwordNueva !== passwordConfirmacion) {
-      setError(
-        "La nueva contraseña y la confirmación no coinciden. Revise ambos campos."
-      );
-      return;
-    }
-
-    if (!esPrimerLogin && passwordNueva === passwordActual) {
-      setError("La nueva contraseña debe ser diferente a la actual.");
+    const nextErrors: Record<string, string> = {};
+    if (!esPrimerLogin && !passwordActual.trim()) nextErrors.passwordActual = "Ingrese su contraseña actual.";
+    if (passwordNueva.length < 6) nextErrors.passwordNueva = "Ingrese una contraseña de al menos 6 caracteres.";
+    if (passwordNueva !== passwordConfirmacion) nextErrors.passwordConfirmacion = "La confirmación debe coincidir con la nueva contraseña.";
+    if (!esPrimerLogin && passwordNueva === passwordActual) nextErrors.passwordNueva = "Ingrese una contraseña diferente de la actual.";
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length) {
+      focusFieldErrors(nextErrors);
       return;
     }
 

@@ -331,14 +331,29 @@ class AuthController:
             if not es_primer_cambio and not password_actual:
                 return error_response("VALIDATION_ERROR", details={"fields": {"password_actual": "Ingrese su contraseña actual."}}, status_code=400)
 
-            AuthService.change_password(
+            updated_user = AuthService.change_password(
                 user_id=user_id,
                 password_actual=password_actual,
                 password_nueva=password_nueva,
                 es_primer_cambio=es_primer_cambio
             )
-
-            return jsonify({"mensaje": "Contrasena actualizada exitosamente"}), 200
+            tokens = AuthService.generate_tokens(updated_user, persist_refresh=True, metadata=AuthController._request_metadata(req))
+            response = jsonify({
+                "mensaje": "Contrasena actualizada exitosamente",
+                "access_token": tokens["access_token"],
+                "access_expires_at": tokens["access_expires_at"],
+                "session_expires_at": tokens["session_expires_at"],
+                "session_warning_seconds": tokens["session_warning_seconds"],
+                "user": {
+                    "id": updated_user.id,
+                    "nombre_usuario": updated_user.nombre_usuario,
+                    "mail": updated_user.mail,
+                    "rol": updated_user.rol.nombre,
+                    "primer_login": updated_user.primer_login,
+                },
+            })
+            AuthController._set_refresh_cookie(response, tokens["refresh_token"])
+            return response, 200
 
         except DomainError as error:
             return AuthController._no_store(exception_response(error, operation="autenticación"))
