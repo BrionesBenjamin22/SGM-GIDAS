@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
 import Field from "@/components/Field";
 import DatePicker from "@/components/Calendar";
-import { getErrorMessage, applyFieldErrors } from "@/lib/httpError";
+import { getErrorMessage, applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
 import { toCivilDateString } from "@/utils/dateTime";
 import { updateMemoria, type Memoria, type MemoriaPayload } from "@/modules/memorias/services/memoriasService";
 
@@ -28,18 +28,19 @@ export default function MemoriaPeriodoForm({ memoria, onCancel, onSaved }: {
     },
     onError: (error: unknown) => {
       if (applyFieldErrors(error, setErrors, ["grupo_utn_id", "periodo_inicio", "periodo_fin"])) return;
-      setError(getErrorMessage(error, "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."));
+      setError(getErrorMessage(error, "Lo sentimos, no pudimos actualizar el período de la memoria. Revise las fechas e intente nuevamente."));
     },
   });
   return <form noValidate className="space-y-4" onSubmit={async (event) => {
     event.preventDefault();
+    if (isPending) return;
     const next: Record<string, string> = {};
     if (!grupoId) next.grupo_utn_id = "Debe seleccionar una UCT.";
     if (!inicio) next.periodo_inicio = "Debe ingresar el inicio del período.";
     if (!fin) next.periodo_fin = "Debe ingresar el fin del período.";
     if (inicio && fin && fin < inicio) next.periodo_fin = "El fin no puede ser anterior al inicio.";
     setErrors(next); setError("");
-    if (Object.keys(next).length) return;
+    if (Object.keys(next).length) { focusFieldErrors(next); return; }
     const payload: Partial<Pick<MemoriaPayload, "periodo_inicio" | "periodo_fin" | "grupo_utn_id">> = {};
     if (memoria.grupo_utn_id === null) payload.grupo_utn_id = Number(grupoId);
     if (inicio !== memoria.periodo_inicio) payload.periodo_inicio = inicio;

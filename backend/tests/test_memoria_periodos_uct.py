@@ -29,6 +29,18 @@ from modules.shared.models.auditoria_campo import AuditoriaCampo
 
 
 class MemoriaPeriodosUctTest(unittest.TestCase):
+    def test_validaciones_de_periodo_exponen_campos_sin_persistir(self):
+        for payload, field in (
+            ({"grupo_utn_id": 1, "periodo_inicio": "", "periodo_fin": "2025-12-31"}, "periodo_inicio"),
+            ({"grupo_utn_id": 1, "periodo_inicio": "2025-12-31", "periodo_fin": "2025-01-01"}, "periodo_fin"),
+            ({"grupo_utn_id": 0, "periodo_inicio": "2025-01-01", "periodo_fin": "2025-12-31"}, "grupo_utn_id"),
+            ({"grupo_utn_id": 1, "periodo_inicio": "2025-01-01", "periodo_fin": "2025-12-31", "fecha_apertura": "invalida"}, "fecha_apertura"),
+        ):
+            with self.subTest(field=field), self.assertRaises(ValidationError) as caught:
+                MemoriaService.create(payload, 1)
+            self.assertIn(field, caught.exception.details["fields"])
+            self.assertEqual(Memoria.query.count(), 0)
+
     def setUp(self):
         self.app = Flask(__name__)
         self.app.config.update(TESTING=True, SQLALCHEMY_DATABASE_URI="sqlite:///:memory:")

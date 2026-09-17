@@ -31,7 +31,7 @@ function harness(file: string) {
     if (name === "@/components/Button") return { default: "button" };
     if (name === "@/components/Field") return { default: "label" };
     if (name === "@/components/Calendar") return { default: "input" };
-    if (name === "@/lib/httpError") return { applyFieldErrors: () => false, getErrorMessage: (_error: unknown, fallback: string) => fallback };
+    if (name === "@/lib/httpError") return { applyFieldErrors: () => false, focusFieldErrors: () => {}, getErrorMessage: (_error: unknown, fallback: string) => fallback };
     if (name === "@/modules/grupo/services/gruposUtnServices") return { getGruposUtn: async () => [] };
     if (name === "@/modules/memorias/services/memoriasService") return { updateMemoria: async () => {} };
     if (name === "@/utils/dateTime") return {

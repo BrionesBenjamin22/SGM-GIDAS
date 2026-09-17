@@ -81,7 +81,7 @@ class MemoriaService:
     @staticmethod
     def _validar_texto(valor: str, campo: str):
         if not isinstance(valor, str) or not valor.strip():
-            raise ValidationError(f"El campo '{campo}' es obligatorio")
+            raise ValidationError(f"El campo '{campo}' es obligatorio", details={"fields": {campo: "Este campo es obligatorio"}})
         return valor.strip()
 
     @staticmethod
@@ -89,13 +89,16 @@ class MemoriaService:
         valor = MemoriaService._validar_texto(fecha_str, campo)
 
         try:
-            return validate_institutional_date(
-                datetime.strptime(valor, "%Y-%m-%d").date(), campo
-            )
+            fecha = datetime.strptime(valor, "%Y-%m-%d").date()
         except ValueError:
             raise ValidationError(
-                f"El campo '{campo}' debe tener formato YYYY-MM-DD"
+                f"El campo '{campo}' debe tener formato YYYY-MM-DD",
+                details={"fields": {campo: "Ingrese una fecha válida en formato YYYY-MM-DD"}},
             )
+        try:
+            return validate_institutional_date(fecha, campo)
+        except ValidationError as error:
+            raise ValidationError(str(error), details={"fields": {campo: str(error)}}) from error
 
     @staticmethod
     def _validar_periodos(periodo_inicio, periodo_fin):
@@ -108,14 +111,18 @@ class MemoriaService:
 
         if fecha_inicio > fecha_fin:
             raise ValidationError(
-                "La fecha de inicio del periodo no puede ser mayor a la fecha de fin"
+                "La fecha de inicio del periodo no puede ser mayor a la fecha de fin",
+                details={"fields": {"periodo_fin": "La fecha de fin debe ser posterior o igual al inicio"}},
             )
 
         return fecha_inicio, fecha_fin
 
     @staticmethod
     def _validar_grupo(grupo_utn_id):
-        MemoriaService._validar_id(grupo_utn_id, "grupo_utn_id")
+        try:
+            MemoriaService._validar_id(grupo_utn_id, "grupo_utn_id")
+        except ValidationError as error:
+            raise ValidationError(str(error), details={"fields": {"grupo_utn_id": "Seleccione una UCT válida"}}) from error
         grupo = db.session.get(GrupoInvestigacionUtn, grupo_utn_id, with_for_update={"of": GrupoInvestigacionUtn})
         if grupo is None or grupo.deleted_at is not None:
             raise ValidationError("Debe seleccionar una UCT activa", details={"fields": {"grupo_utn_id": "Seleccione una UCT activa"}})
@@ -144,7 +151,8 @@ class MemoriaService:
             query = query.filter(Memoria.id != memoria_id_excluida)
         if query.first() is not None:
             raise ConflictError(
-                "El período se superpone con otra memoria. Verifique las fechas e intente nuevamente."
+                "El período se superpone con otra memoria. Verifique las fechas e intente nuevamente.",
+                details={"fields": {"periodo_inicio": "Revise el período: se superpone con otra memoria", "periodo_fin": "Revise el período: se superpone con otra memoria"}},
             )
 
     @staticmethod
@@ -163,7 +171,8 @@ class MemoriaService:
                 and version_actual.estado != EstadoMemoria.CERRADA
             ):
                 raise ConflictError(
-                    "Solo puede existir una memoria activa a la vez por UCT"
+                    "Solo puede existir una memoria activa a la vez por UCT",
+                    details={"fields": {"grupo_utn_id": "La UCT ya tiene una memoria activa"}},
                 )
 
     @staticmethod
@@ -194,7 +203,8 @@ class MemoriaService:
                 pass
 
         raise ValidationError(
-            "La fecha_apertura debe tener formato YYYY-MM-DD o YYYY-MM-DD HH:MM:SS"
+            "La fecha_apertura debe tener formato YYYY-MM-DD o YYYY-MM-DD HH:MM:SS",
+            details={"fields": {"fecha_apertura": "Ingrese una fecha de apertura válida"}},
         )
 
     @staticmethod
@@ -636,7 +646,7 @@ class MemoriaService:
         elif grupo_id is not None:
             MemoriaService._validar_grupo(grupo_id)
         if grupo_id is None:
-            raise ValidationError("Debe asociar la memoria a una UCT")
+            raise ValidationError("Debe asociar la memoria a una UCT", details={"fields": {"grupo_utn_id": "Seleccione una UCT"}})
         inicio, fin = MemoriaService._validar_periodos(
             data.get("periodo_inicio", memoria.periodo_inicio.isoformat()),
             data.get("periodo_fin", memoria.periodo_fin.isoformat()),

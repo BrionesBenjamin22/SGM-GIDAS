@@ -6,6 +6,10 @@ Los períodos de memoria se validan desde el 01/01/2010 y deben conservar el
 orden cronológico y la pertenencia al rango configurado. Las marcas de
 apertura y cierre son timestamps de workflow y no fechas ingresadas de un ítem.
 
+## ISS-19: validación de formularios
+
+POST `/api/v1/memorias` y PUT `/{id}` mantienen los códigos de dominio y devuelven `error.details.fields` para UCT, inicio y fin del período cuando el dato es corregible. El alta también informa `fecha_apertura` inválida. Un período superpuesto indica ambas fechas; una memoria activa de la UCT indica la selección. Las validaciones fallidas no persisten la memoria ni generan auditoría.
+
 ## ISS-12: autoría de integrantes
 
 Los snapshots de ambos tipos de trabajos almacenan autores como JSON con identidad compuesta (rol, id), nombre y categoría al cierre. La exportación incluye todos los autores; revistas los agrega en la celda de título para conservar las seis columnas de la plantilla. Corregida la resolución de la ruta de la plantilla hacia backend/assets. El cambio de esquema de testing no conserva snapshots anteriores: regenerar datos y cerrar versiones nuevas.

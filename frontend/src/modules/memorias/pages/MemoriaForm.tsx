@@ -1,5 +1,5 @@
 import { getGruposUtn } from "@/modules/grupo/services/gruposUtnServices";
-import { applyFieldErrors } from "@/lib/httpError";
+import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -43,6 +43,7 @@ export default function MemoriaForm() {
     }
 
     setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) focusFieldErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
 
@@ -69,6 +70,7 @@ export default function MemoriaForm() {
           "grupo_utn_id",
           "periodoInicio",
           "periodoFin",
+          "fechaApertura",
         ])
       ) {
         return;
@@ -76,7 +78,7 @@ export default function MemoriaForm() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+          "Lo sentimos, no pudimos crear la memoria. Revise los datos e intente nuevamente."
         )
       );
 
@@ -98,6 +100,7 @@ export default function MemoriaForm() {
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
         onSubmit={async (event) => {
           event.preventDefault();
+          if (isPending) return;
           if (!validate()) return;
           try { await mutateAsync(); } catch { /* onError muestra el mensaje */ }
         }}
@@ -150,13 +153,15 @@ export default function MemoriaForm() {
           />
         </Field>
 
-        <Field label="Fecha de apertura">
+        <Field label="Fecha de apertura" name="fechaApertura" error={errors.fechaApertura}>
           <DatePicker
             value={fechaApertura ? new Date(fechaApertura) : null}
             onChange={(date) => {
               setFechaApertura(date ? date.toISOString().slice(0, 19) : "");
+              setErrors((prev) => ({ ...prev, fechaApertura: "" }));
             }}
             helperText="Opcional. Si no se informa, se usa la fecha actual."
+            className={inputClass("fechaApertura")}
           />
         </Field>
 

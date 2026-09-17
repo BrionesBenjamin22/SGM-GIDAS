@@ -110,3 +110,7 @@ de la versión.
 ## Indicadores de campos obligatorios (ISS-21)
 
 El alta y la correccion de periodos muestran el indicador en UCT e inicio y fin del periodo. La fecha de apertura sigue siendo opcional.
+
+## ISS-19: errores de formularios
+
+El alta y la corrección del período muestran `details.fields` junto a UCT e inicio/fin del período. El alta también asocia errores de `fecha_apertura` con su control opcional. Se conserva el borrador y se impide un segundo envío durante el guardado. Los errores sin campo identificable permanecen en el aviso general.

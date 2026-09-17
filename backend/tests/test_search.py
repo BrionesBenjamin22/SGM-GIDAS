@@ -169,7 +169,7 @@ class SearchControllerTestCase(unittest.TestCase):
             response, status_code = SearchController.buscar()
 
         self.assertEqual(status_code, 400)
-        self.assertEqual(response.get_json()["error"]["message"], 'El parametro "page" debe ser numerico')
+        self.assertEqual(response.get_json()["error"]["message"], 'El parametro "page" debe ser numérico')
 
     def test_buscar_oculta_error_inesperado(self):
         marker = "ruta interna password=secreto"
