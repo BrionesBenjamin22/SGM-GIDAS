@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { getInstitutionalMinDate } from "@/utils/dateTime";
 import { calendarValidationMessage } from "@/utils/calendarValidation";
+import { formatDateInput, replaceDateDigit } from "@/utils/dateInput";
 
 type DatePickerProps = {
   label?: string;
@@ -31,17 +32,6 @@ function fmt(date: Date | null) {
 
 function stripTime(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-function maskDateInput(value: string) {
-  const digits = value.replace(/\D/g, "").slice(0, 8);
-  const day = digits.slice(0, 2);
-  const month = digits.slice(2, 4);
-  const year = digits.slice(4, 8);
-
-  if (digits.length <= 2) return day;
-  if (digits.length <= 4) return `${day}/${month}`;
-  return `${day}/${month}/${year}`;
 }
 
 function parseDateInput(value: string) {
@@ -145,9 +135,13 @@ export default function DatePicker({
     (effectiveMinDate && d < stripTime(effectiveMinDate)) ||
     (maxDate && d > stripTime(maxDate));
 
-  function commitTypedValue(nextValue: string) {
-    const maskedValue = maskDateInput(nextValue);
+  function commitTypedValue(nextValue: string, input?: HTMLInputElement, cursor?: number) {
+    const maskedValue = formatDateInput(nextValue);
     setInputValue(maskedValue);
+    if (input && cursor !== undefined) {
+      const nextCursor = formatDateInput(nextValue.slice(0, cursor)).length;
+      requestAnimationFrame(() => input.setSelectionRange(nextCursor, nextCursor));
+    }
 
     if (!maskedValue) {
       setInputError("");
@@ -186,7 +180,7 @@ export default function DatePicker({
           autoComplete="off"
           inputMode="numeric"
           maxLength={10}
-          onChange={(event) => commitTypedValue(event.target.value)}
+          onChange={(event) => commitTypedValue(event.target.value, event.target, event.target.selectionStart ?? undefined)}
           onBlur={(event) => {
             const parsed = parseDateInput(event.currentTarget.value);
             setInputError(calendarValidationMessage(event.currentTarget.value, parsed, effectiveMinDate, maxDate));
@@ -202,6 +196,19 @@ export default function DatePicker({
             setInputValue(fmt(value));
           }}
           onKeyDown={(event) => {
+            if (/^\d$/.test(event.key) && !event.ctrlKey && !event.metaKey && !event.altKey) {
+              const input = event.currentTarget;
+              if (input.selectionStart === input.selectionEnd) {
+                const replacement = replaceDateDigit(inputValue, input.selectionStart ?? 0, event.key);
+                if (replacement) {
+                  event.preventDefault();
+                  commitTypedValue(replacement.value);
+                  requestAnimationFrame(() => input.setSelectionRange(replacement.cursor, replacement.cursor));
+                  return;
+                }
+              }
+            }
+
             if (event.key === "ArrowDown") {
               event.preventDefault();
               if (!disabled) setOpen(true);
