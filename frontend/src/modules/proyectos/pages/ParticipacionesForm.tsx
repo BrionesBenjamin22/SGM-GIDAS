@@ -1,4 +1,5 @@
 import { applyFieldErrors } from "@/lib/httpError";
+import { hasLetter } from "../../../lib/textValidation";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -71,6 +72,8 @@ export default function ParticipacionesForm() {
 
     if (!nombreEvento.trim()) {
       newErrors.nombreEvento = "Debe ingresar el nombre del evento";
+    } else if (!hasLetter(nombreEvento)) {
+      newErrors.nombreEvento = "El nombre del evento debe contener letras";
     }
 
     if (!formaParticipacion) {
@@ -122,39 +125,9 @@ export default function ParticipacionesForm() {
     },
     onError: (error) => {
       if (applyFieldErrors(error, setErrors, ["investigador","nombreEvento","formaParticipacion","fecha"])) return;
-      const defaultMessage = isEdit
-        ? "No se pudo actualizar la participación."
-        : "No se pudo crear la participación.";
-
-      const backendMessage = getErrorMessage(error, defaultMessage);
-      const lowerMessage = backendMessage.toLowerCase();
-
-      if (lowerMessage.includes("investigador")) {
-          setErrors((prev) => ({
-            ...prev,
-            investigador: backendMessage,
-          }));
-      } else if (lowerMessage.includes("nombre") || lowerMessage.includes("evento")) {
-          setErrors((prev) => ({
-            ...prev,
-            nombreEvento: backendMessage,
-          }));
-      } else if (
-          lowerMessage.includes("forma") ||
-          lowerMessage.includes("participacion")
-        ) {
-          setErrors((prev) => ({
-            ...prev,
-            formaParticipacion: backendMessage,
-          }));
-      } else if (lowerMessage.includes("fecha")) {
-          setErrors((prev) => ({
-            ...prev,
-            fecha: backendMessage,
-          }));
-      }
-
-      setErrorMessage(backendMessage);
+      setErrorMessage(getErrorMessage(error, isEdit
+        ? "Lo sentimos, no pudimos actualizar la participación. Revise los datos e intente nuevamente."
+        : "Lo sentimos, no pudimos crear la participación. Revise los datos e intente nuevamente."));
       setShowError(true);
     },
   });

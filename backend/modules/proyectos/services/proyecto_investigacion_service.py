@@ -6,6 +6,7 @@ import builtins
 import re
 
 from extension import db
+from modules.shared.services.text_validation import has_letter
 from sqlalchemy import func, or_
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
 
@@ -56,8 +57,19 @@ class ProyectoInvestigacionService:
     @staticmethod
     def _validar_id(valor, campo: str):
         if type(valor) is not int or valor <= 0:
-            raise ValueError(f"El campo '{campo}' debe ser un entero positivo")
+            raise ValueError(f"El campo '{campo}' debe ser un entero positivo", details={"fields": {campo: "Seleccione una opción válida"}})
         return valor
+
+    @staticmethod
+    def _validar_fecha_proyecto(valor, campo: str):
+        try:
+            fecha = datetime.strptime(valor, "%Y-%m-%d").date()
+        except (TypeError, builtins.ValueError) as error:
+            raise ValueError("Ingrese una fecha válida.", details={"fields": {campo: "Ingrese una fecha válida en formato YYYY-MM-DD"}}) from error
+        try:
+            return validate_institutional_date(fecha, campo)
+        except ValueError as error:
+            raise ValueError(str(error), details={"fields": {campo: str(error)}}) from error
 
     @staticmethod
     def _validar_bool(valor, campo: str, default=False):
@@ -79,13 +91,16 @@ class ProyectoInvestigacionService:
             return None
 
         try:
-            return validate_institutional_date(
-                datetime.strptime(fecha_str, "%Y-%m-%d").date(), campo
-            )
+            fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
         except (TypeError, builtins.ValueError):
             raise ValueError(
-                f"El campo '{campo}' debe tener formato YYYY-MM-DD"
+                f"El campo '{campo}' debe tener formato YYYY-MM-DD",
+                details={"fields": {campo: "Ingrese una fecha válida en formato YYYY-MM-DD"}},
             )
+        try:
+            return validate_institutional_date(fecha, campo)
+        except ValueError as error:
+            raise ValueError(str(error), details={"fields": {campo: str(error)}}) from error
 
     @staticmethod
     def _validar_investigador_activo(investigador_id):
@@ -256,20 +271,16 @@ class ProyectoInvestigacionService:
         codigo_proyecto = ProyectoInvestigacionService._validar_codigo_proyecto(
             data.get("codigo_proyecto")
         )
+        if not has_letter(data.get("nombre_proyecto")):
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"nombre_proyecto": "El nombre del proyecto debe contener letras."}})
 
-        fecha_inicio = datetime.strptime(
-            data["fecha_inicio"], "%Y-%m-%d"
-        ).date()
-        validate_institutional_date(fecha_inicio, "fecha_inicio")
+        fecha_inicio = ProyectoInvestigacionService._validar_fecha_proyecto(data.get("fecha_inicio"), "fecha_inicio")
 
         fecha_fin = None
         if data.get("fecha_fin"):
-            fecha_fin = datetime.strptime(
-                data["fecha_fin"], "%Y-%m-%d"
-            ).date()
-            validate_institutional_date(fecha_fin, "fecha_fin")
+            fecha_fin = ProyectoInvestigacionService._validar_fecha_proyecto(data["fecha_fin"], "fecha_fin")
             if fecha_fin < fecha_inicio:
-                raise ValueError("La fecha fin no puede ser anterior a la fecha inicio")
+                raise ValueError("La fecha fin no puede ser anterior a la fecha inicio", details={"fields": {"fecha_fin": "La fecha de fin debe ser posterior o igual al inicio"}})
 
         if not TipoProyecto.query.get(data.get("tipo_proyecto_id")):
             raise ValueError('Seleccione un tipo de proyecto disponible e intente nuevamente.', details={"fields": {'tipo_proyecto_id': 'Seleccione un tipo de proyecto disponible e intente nuevamente.'}})
@@ -354,6 +365,8 @@ class ProyectoInvestigacionService:
             "monto_destinado"
         ]:
             if field in data:
+                if field == "nombre_proyecto" and not has_letter(data[field]):
+                    raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"nombre_proyecto": "El nombre del proyecto debe contener letras."}})
                 cambio = AuditoriaService.construir_cambio(
                     getattr(proyecto, field),
                     data[field]
@@ -432,10 +445,7 @@ class ProyectoInvestigacionService:
                     proyecto.fuente_financiamiento_id = fuente_financiamiento_id
 
         if "fecha_inicio" in data:
-            nueva_fecha = datetime.strptime(
-                data["fecha_inicio"], "%Y-%m-%d"
-            ).date()
-            validate_institutional_date(nueva_fecha, "fecha_inicio")
+            nueva_fecha = ProyectoInvestigacionService._validar_fecha_proyecto(data["fecha_inicio"], "fecha_inicio")
             cambio = AuditoriaService.construir_cambio(
                 proyecto.fecha_inicio,
                 nueva_fecha
@@ -445,13 +455,7 @@ class ProyectoInvestigacionService:
                 proyecto.fecha_inicio = nueva_fecha
 
         if "fecha_fin" in data:
-            nueva_fecha_fin = (
-                datetime.strptime(data["fecha_fin"], "%Y-%m-%d").date()
-                if data["fecha_fin"]
-                else None
-            )
-            if nueva_fecha_fin:
-                validate_institutional_date(nueva_fecha_fin, "fecha_fin")
+            nueva_fecha_fin = ProyectoInvestigacionService._validar_fecha_proyecto(data["fecha_fin"], "fecha_fin") if data["fecha_fin"] else None
             cambio = AuditoriaService.construir_cambio(
                 proyecto.fecha_fin,
                 nueva_fecha_fin
@@ -461,13 +465,11 @@ class ProyectoInvestigacionService:
                 proyecto.fecha_fin = nueva_fecha_fin
 
         if proyecto.fecha_fin and proyecto.fecha_fin < proyecto.fecha_inicio:
-            raise ValueError("La fecha fin no puede ser anterior a la fecha inicio")
+            raise ValueError("La fecha fin no puede ser anterior a la fecha inicio", details={"fields": {"fecha_fin": "La fecha de fin debe ser posterior o igual al inicio"}})
 
         if es_cierre_por_update:
             if proyecto.fecha_fin > date.today():
-                raise ValueError(
-                    "No se puede cerrar el proyecto con una fecha futura"
-                )
+                raise ValueError("No se puede cerrar el proyecto con una fecha futura", details={"fields": {"fecha_fin": "Elija una fecha de cierre hasta hoy"}})
             proyecto.soft_delete(user_id)
 
         if cambios and user_id is not None:

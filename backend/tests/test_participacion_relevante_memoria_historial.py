@@ -9,9 +9,24 @@ from modules.memorias.services.memoria_service import MemoriaService
 from modules.proyectos.services.participacion_relevante_service import (
     ParticipacionRelevanteService,
 )
+from modules.shared.exceptions import ValidationError
 
 
 class ParticipacionRelevanteMemoriaHistorialTestCase(unittest.TestCase):
+
+    def test_evento_vacio_identifica_el_campo_sin_persistir(self):
+        with patch("modules.proyectos.services.participacion_relevante_service.db.session.add") as add:
+            with self.assertRaises(ValidationError) as caught:
+                ParticipacionRelevanteService.create({"nombre_evento": ""}, 1)
+            self.assertEqual(caught.exception.details["fields"], {
+                "nombre_evento": "Ingrese nombre del evento."
+            })
+            add.assert_not_called()
+
+    def test_fecha_fuera_del_rango_identifica_el_campo(self):
+        with self.assertRaises(ValidationError) as caught:
+            ParticipacionRelevanteService._validar_fecha("2009-12-31")
+        self.assertIn("fecha", caught.exception.details["fields"])
 
     def setUp(self):
         self.enterContext(patch("modules.memorias.services.memoria_service.MemoriaService._validar_grupo", return_value=1))

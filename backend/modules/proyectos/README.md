@@ -1,5 +1,10 @@
 # Modulo backend de proyectos
 
+Nombre del proyecto y nombre del evento requieren alguna letra. Código, fechas,
+IDs y montos conservan reglas propias. El error indica `details.fields`.
+
+Las fechas inválidas del alta y la edición de proyectos responden con `error.details.fields` para `fecha_inicio` o `fecha_fin`. Una fecha fuera del rango institucional mantiene el código de validación y muestra la indicación junto al control correspondiente.
+
 ## Errores accionables (ISS-09)
 
 Las selecciones inexistentes de tipo de proyecto, fuente de financiamiento,
@@ -97,3 +102,6 @@ relaciones, cierres y reaperturas conservan auditoria e historial.
 ## Snapshots de memorias (ISS-16)
 
 Un proyecto entra cuando pertenece a la UCT y su intervalo desde `fecha_inicio` hasta el primero entre `fecha_fin` y baja lógica solapa el período. Los terminados antes se excluyen. Distinciones y participaciones heredan la UCT del proyecto o investigador y usan su fecha puntual inclusiva.
+## Validaciones de Participaciones (ISS-19)
+
+El service de participaciones devuelve error.details.fields para investigador_id, nombre_evento, forma_participacion y fecha. Un investigador inactivo o inexistente pide elegir otro; una participación duplicada responde CONFLICT con un mensaje público y accionable. Se conservan la auditoría y la transacción de guardado.

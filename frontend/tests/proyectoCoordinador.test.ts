@@ -60,7 +60,8 @@ test("formulario real guarda coordinador en una petición, conserva edición y m
     .replace(/from "[^"]+"/g, `from "${mockUrl}"`));
   const js = compile(readFileSync("src/modules/proyectos/pages/ProyectosForm.tsx", "utf8"))
     .replace(/from "([^"]+)"/g, (_match, path: string) => {
-      const target = path === "@/modules/proyectos/services/proyectosServices" ? serviceUrl
+      const target = path === "../../../lib/textValidation" ? new URL("../src/lib/textValidation.ts", import.meta.url).href
+        : path === "@/modules/proyectos/services/proyectosServices" ? serviceUrl
         : path === "@/lib/httpError" || path === "@/utils/dateTime" || path === "@/modules/proyectos/utils/proyectoValidation"
           ? new URL(`../src/${path.slice(2)}.ts`, import.meta.url).href : mockUrl;
       return `from ${JSON.stringify(target)}`;
@@ -121,11 +122,12 @@ test("formulario real guarda coordinador en una petición, conserva edición y m
 
     h.candidates = [{id: 1, nombre_apellido: "Persona A"}, {id: 2, nombre_apellido: "Persona B"}];
     h.values[10] = 2;
+    h.values[13] = false; h.values[14] = "";
     h.serverError = {body: {error: {message: "Seleccione un investigador disponible.", details: {fields: {coordinador_id: "Coordinador no disponible."}}}}};
     await submit();
     assert.equal(h.values[12].coordinadorId, "Coordinador no disponible.");
-    assert.equal(h.values[13], true);
-    assert.match(h.values[14], /Seleccione un investigador disponible/);
+    assert.equal(h.values[13], false);
+    assert.equal(h.values[14], "");
 
     h.calls = []; h.serverError = undefined; h.values[6] = new Date(2025, 11, 31);
     await submit();

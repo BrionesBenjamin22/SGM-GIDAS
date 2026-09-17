@@ -1,4 +1,5 @@
 import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
+import { hasLetter } from "../../../lib/textValidation";
 import { LoaderCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -235,8 +236,10 @@ export default function ProyectosForm() {
       });
     },
     onError: (error) => {
-      applyFieldErrors(error, setErrors, ["codigoProyecto","nombreProyecto","tipoProyectoId","fechaInicio","montoDestinado","coordinadorId","investigadoresIds","descripcionProyecto","dificultadesProyecto","fuenteId","becariosIds","fechaFin"]);
-      const defaultMessage = "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente.";
+      if (applyFieldErrors(error, setErrors, ["codigoProyecto","nombreProyecto","tipoProyectoId","fechaInicio","montoDestinado","coordinadorId","investigadoresIds","descripcionProyecto","dificultadesProyecto","fuenteId","becariosIds","fechaFin"])) return;
+      const defaultMessage = isEdit
+        ? "Lo sentimos, no pudimos actualizar el proyecto. Revise los datos e intente nuevamente."
+        : "Lo sentimos, no pudimos crear el proyecto. Revise los datos e intente nuevamente.";
 
       setErrorMessage(getErrorMessage(error, defaultMessage));
 
@@ -262,6 +265,8 @@ export default function ProyectosForm() {
 
     if (!nombreProyecto.trim()) {
       newErrors.nombreProyecto = "Debe ingresar nombre del proyecto";
+    } else if (!hasLetter(nombreProyecto)) {
+      newErrors.nombreProyecto = "El nombre del proyecto debe contener letras";
     }
 
     if (!tipoProyectoId) {

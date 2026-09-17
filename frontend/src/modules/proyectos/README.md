@@ -1,5 +1,8 @@
 # Modulo frontend de proyectos
 
+Proyecto y participación rechazan nombres exclusivamente numéricos antes del
+envío y muestran el motivo junto al control.
+
 ## Errores por campo (ISS-09)
 
 Los formularios del módulo consumen `error.details.fields` mediante
@@ -126,3 +129,7 @@ reapertura de una selección bloquea nuevas acciones hasta finalizar.
 ## Indicadores de campos obligatorios (ISS-21)
 
 En proyectos son obligatorios codigo, nombre, tipo y fecha de inicio. El coordinador se indica como obligatorio cuando se seleccionan investigadores. Las relaciones y los datos opcionales no llevan marca. Participaciones marca investigador, evento, forma y fecha.
+
+## Errores de Participaciones (ISS-19)
+
+ParticipacionesForm aplica error.details.fields mediante applyFieldErrors. investigador_id, nombre_evento, forma_participacion y fecha se vinculan a los controles visibles. Los conflictos y campos desconocidos mantienen un aviso general; alta y edición indican cómo reintentar.
