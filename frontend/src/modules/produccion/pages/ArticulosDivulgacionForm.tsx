@@ -116,18 +116,10 @@ export default function ArticulosDivulgacionForm() {
       if (applyFieldErrors(error, setErrors, ["titulo","descripcion","fecha"])) return;
       const backendMessage = getErrorMessage(
         error,
-        "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+        isEdit
+          ? "Lo sentimos, no pudimos actualizar el artículo. Revise los datos e intente nuevamente."
+          : "Lo sentimos, no pudimos crear el artículo. Revise los datos e intente nuevamente."
       );
-      const lowerMessage = backendMessage.toLowerCase();
-
-      if (lowerMessage.includes("titulo")) {
-        setErrors((prev) => ({ ...prev, titulo: backendMessage }));
-      } else if (lowerMessage.includes("descripcion")) {
-        setErrors((prev) => ({ ...prev, descripcion: backendMessage }));
-      } else if (lowerMessage.includes("fecha")) {
-        setErrors((prev) => ({ ...prev, fecha: backendMessage }));
-      }
-
       setErrorMessage(backendMessage);
       setShowError(true);
     },

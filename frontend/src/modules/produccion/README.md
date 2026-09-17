@@ -1,5 +1,8 @@
 # Produccion
 
+Los autores nuevos admiten solo letras Unicode y espacios. Revista, reunión y
+artículo rechazan nombres exclusivamente numéricos antes de guardar.
+
 ## Errores por campo (ISS-09)
 
 Los formularios del módulo consumen `error.details.fields` mediante
@@ -225,3 +228,7 @@ formularios mediante el helper común.
 ## Indicadores de campos obligatorios (ISS-21)
 
 Los formularios de produccion muestran el indicador en los datos obligatorios, incluidos los autores de documentacion y trabajos. Los enlaces opcionales permanecen sin marca.
+
+## Errores de formularios (ISS-19, en curso)
+
+Los formularios no infieren campos inválidos a partir de palabras del mensaje del servidor. Solo `error.details.fields` se asocia a controles mediante `applyFieldErrors`; los demás errores conservan el aviso general. Los servicios de artículos, distinciones, trabajos, docencia, documentación y registros identifican campos conocidos de texto, fecha, catálogos y relaciones. Los formularios de docencia, documentación y registros usan fallbacks distintos para alta y edición.

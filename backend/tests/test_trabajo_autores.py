@@ -29,6 +29,14 @@ from modules.search.services.search_service import SearchService
 
 
 class TrabajoAutoresTest(unittest.TestCase):
+    def test_referencias_invalidas_identifican_autores(self):
+        from modules.produccion.services.trabajo_autores_service import validar_referencias
+        from modules.shared.exceptions import ValidationError
+        for autores in (["invalido"], [{"rol": "investigador", "id": 1}, {"rol": "investigador", "id": 1}]):
+            with self.subTest(autores=autores), self.assertRaises(ValidationError) as caught:
+                validar_referencias(autores)
+            self.assertIn("autores", caught.exception.details["fields"])
+
     def setUp(self):
         self.app = Flask(__name__)
         self.app.config.update(TESTING=True, SQLALCHEMY_DATABASE_URI="sqlite:///:memory:")

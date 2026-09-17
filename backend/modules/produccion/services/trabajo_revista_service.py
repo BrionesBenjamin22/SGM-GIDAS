@@ -19,8 +19,9 @@ from modules.produccion.models.trabajo_revista import (
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
-from modules.shared.services.date_time import validate_institutional_date
+from modules.shared.services.date_time import INSTITUTIONAL_MIN_DATE
 from extension import db
+from modules.shared.services.text_validation import has_letter
 
 
 class TrabajosRevistasReferatoService:
@@ -36,7 +37,9 @@ class TrabajosRevistasReferatoService:
             return None
 
         if not isinstance(valor, int) or valor <= 0:
-            raise ValidationError(f"El campo '{campo}' debe ser un entero positivo")
+            if campo == "tipo_reunion_id":
+                raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: "Seleccione un tipo de revista disponible."}})
+            raise ValidationError("No pudimos procesar la solicitud. Intente nuevamente.")
 
         return valor
 
@@ -46,15 +49,17 @@ class TrabajosRevistasReferatoService:
 
     @staticmethod
     def _validar_texto(valor: str, campo: str, max_len: int = 255):
+        labels = {"titulo_trabajo": "el título del trabajo", "nombre_revista": "el nombre de la revista", "editorial": "la editorial", "issn": "el ISSN", "pais": "el país"}
+        label = labels.get(campo, "este dato")
         if not isinstance(valor, str) or not valor.strip():
-            raise ValidationError(f"El campo '{campo}' es obligatorio")
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"Ingrese {label}."}})
+        if campo == "nombre_revista" and not has_letter(valor):
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: "El nombre de la revista debe contener letras."}})
 
         valor = " ".join(valor.strip().split())
 
         if len(valor) > max_len:
-            raise ValidationError(
-                f"El campo '{campo}' no puede superar los {max_len} caracteres"
-            )
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"Use hasta {max_len} caracteres para {label}."}})
 
         return valor
 
@@ -63,12 +68,14 @@ class TrabajosRevistasReferatoService:
         try:
             fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
         except (TypeError, ValueError):
-            raise ValidationError("La fecha debe tener formato YYYY-MM-DD")
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha": "Ingrese una fecha válida."}})
 
         if fecha > date.today():
-            raise ValidationError("La fecha no puede ser futura")
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha": "Ingrese una fecha que no sea futura."}})
 
-        return validate_institutional_date(fecha, "fecha")
+        if fecha < INSTITUTIONAL_MIN_DATE:
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha": "Ingrese una fecha desde el 01/01/2010."}})
+        return fecha
 
     @staticmethod
     def _normalizar_activos(activos):
@@ -123,7 +130,7 @@ class TrabajosRevistasReferatoService:
         )
         tipo_reunion = db.session.get(TipoReunion, tipo_reunion_id)
         if not tipo_reunion:
-            raise NotFoundError("Tipo de reunion invalido")
+            raise NotFoundError("El tipo de revista ya no está disponible. Elija otro e intente nuevamente.", details={"fields": {"tipo_reunion_id": "Seleccione un tipo de revista disponible."}})
         return tipo_reunion.id
 
     @staticmethod
@@ -173,7 +180,7 @@ class TrabajosRevistasReferatoService:
             query = query.filter(TrabajosRevistasReferato.id != trabajo_id)
 
         if query.first():
-            raise ConflictError("Ya existe un trabajo en revista con los mismos datos")
+            raise ConflictError("Ya existe un trabajo de revista con los mismos datos. Revise el título, la revista y la fecha antes de reintentar.")
 
     @staticmethod
     def get_all(filters: dict = None):

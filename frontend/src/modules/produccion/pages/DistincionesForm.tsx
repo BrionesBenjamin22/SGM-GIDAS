@@ -115,18 +115,10 @@ export default function DistincionesForm() {
       if (applyFieldErrors(error, setErrors, ["fecha","descripcion","proyecto"])) return;
       const backendMessage = getErrorMessage(
         error,
-        "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+        isEdit
+          ? "Lo sentimos, no pudimos actualizar la distinción. Revise los datos e intente nuevamente."
+          : "Lo sentimos, no pudimos crear la distinción. Revise los datos e intente nuevamente."
       );
-      const lowerMessage = backendMessage.toLowerCase();
-
-      if (lowerMessage.includes("fecha")) {
-        setErrors((prev) => ({ ...prev, fecha: backendMessage }));
-      } else if (lowerMessage.includes("descripcion")) {
-        setErrors((prev) => ({ ...prev, descripcion: backendMessage }));
-      } else if (lowerMessage.includes("proyecto")) {
-        setErrors((prev) => ({ ...prev, proyecto: backendMessage }));
-      }
-
       setErrorMessage(backendMessage);
       setShowError(true);
     },

@@ -131,7 +131,9 @@ export default function FormDocenciaInvestigador() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+          isEdit
+            ? "Lo sentimos, no pudimos actualizar la actividad de docencia. Revise los datos e intente nuevamente."
+            : "Lo sentimos, no pudimos crear la actividad de docencia. Revise los datos e intente nuevamente."
         )
       );
 

@@ -19,8 +19,9 @@ from modules.produccion.models.trabajo_reunion import (
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
-from modules.shared.services.date_time import validate_institutional_date
+from modules.shared.services.date_time import INSTITUTIONAL_MIN_DATE
 from extension import db
+from modules.shared.services.text_validation import has_letter
 
 
 class TrabajoReunionCientificaService:
@@ -48,7 +49,9 @@ class TrabajoReunionCientificaService:
             return None
 
         if not isinstance(valor, int) or valor <= 0:
-            raise ValidationError(f"El campo '{campo}' debe ser un entero positivo")
+            if campo == "tipo_reunion_id":
+                raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: "Seleccione un tipo de reunión disponible."}})
+            raise ValidationError("No pudimos procesar la solicitud. Intente nuevamente.")
 
         return valor
 
@@ -58,26 +61,16 @@ class TrabajoReunionCientificaService:
 
     @staticmethod
     def _validar_texto(valor, campo, min_len=2, max_len=255):
-        if valor is None:
-            raise ValidationError(f"El campo '{campo}' es obligatorio")
-
-        if not isinstance(valor, str):
-            raise ValidationError(f"El campo '{campo}' debe ser texto")
+        labels = {"titulo_trabajo": "el título del trabajo", "nombre_reunion": "el nombre de la reunión", "procedencia": "la procedencia"}
+        label = labels.get(campo, "este dato")
+        if not isinstance(valor, str) or not valor.strip():
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"Ingrese {label}."}})
+        if campo == "nombre_reunion" and not has_letter(valor):
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: "El nombre de la reunión debe contener letras."}})
 
         valor = " ".join(valor.strip().split())
-
-        if not valor:
-            raise ValidationError(f"El campo '{campo}' no puede estar vacio")
-
-        if len(valor) < min_len:
-            raise ValidationError(
-                f"El campo '{campo}' debe tener al menos {min_len} caracteres"
-            )
-
-        if len(valor) > max_len:
-            raise ValidationError(
-                f"El campo '{campo}' no puede superar los {max_len} caracteres"
-            )
+        if not min_len <= len(valor) <= max_len:
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"Use entre {min_len} y {max_len} caracteres para {label}."}})
 
         return valor
 
@@ -86,9 +79,11 @@ class TrabajoReunionCientificaService:
         try:
             fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
         except (TypeError, ValueError):
-            raise ValidationError("La fecha debe tener formato YYYY-MM-DD")
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_presentacion": "Ingrese una fecha válida."}})
 
-        return validate_institutional_date(fecha, "fecha_presentacion")
+        if fecha < INSTITUTIONAL_MIN_DATE:
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_presentacion": "Ingrese una fecha desde el 01/01/2010."}})
+        return fecha
 
     @staticmethod
     def _normalizar_activos(activos):
@@ -136,7 +131,7 @@ class TrabajoReunionCientificaService:
         )
         tipo_reunion = db.session.get(TipoReunion, tipo_reunion_id)
         if not tipo_reunion:
-            raise NotFoundError("Tipo de reunion cientifica invalido")
+            raise NotFoundError("El tipo de reunión ya no está disponible. Elija otro e intente nuevamente.", details={"fields": {"tipo_reunion_id": "Seleccione un tipo de reunión disponible."}})
         return tipo_reunion.id
 
     @staticmethod
@@ -177,7 +172,7 @@ class TrabajoReunionCientificaService:
 
         if query.first():
             raise ConflictError(
-                "Ya existe un trabajo en reunion cientifica con los mismos datos"
+                "Ya existe un trabajo de reunión con los mismos datos. Revise el título, la reunión y la fecha antes de reintentar."
             )
 
     @staticmethod

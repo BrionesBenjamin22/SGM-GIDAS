@@ -1,5 +1,11 @@
 # Producción
 
+Los nombres de autores admiten solo letras Unicode y espacios. Los nombres de
+revista, reunión y artículo de propiedad requieren alguna letra. ISSN conserva
+su validación propia.
+
+Los trabajos de reunión y revista identifican la selección de `autores` inválidos, repetidos o inactivos mediante `error.details.fields`. Un autor inexistente conserva el código `NOT_FOUND` y ofrece corrección junto al selector.
+
 ## Contrato de fechas
 
 Las fechas de docencia, publicaciones, reuniones, distinciones, documentación
@@ -133,3 +139,7 @@ y hosts IPv6 válidos mediante los analizadores de URL de cada plataforma.
 ## Pertenencia a memorias (ISS-16)
 
 Los generadores filtran por la UCT. Publicaciones, documentación, registros, distinciones y trabajos usan su fecha puntual dentro del rango inclusivo; docencia usa el intervalo completo y conserva los grados que estuvieron vigentes. Las bajas se interpretan históricamente.
+
+## Errores de formularios (ISS-19, en curso)
+
+Los servicios de artículos, distinciones, trabajos, docencia, documentación y registros de propiedad devuelven `error.details.fields` cuando una validación identifica texto, fecha o selección editable. Las claves son las del payload HTTP, entre ellas `fecha_publicacion`, `proyecto_investigacion_id`, `titulo_trabajo`, `nombre_reunion`, `tipo_reunion_id`, `curso`, `fecha_inicio`, `nombre_articulo` y `fecha_registro`. Los duplicados conservan `CONFLICT` y un mensaje general accionable.

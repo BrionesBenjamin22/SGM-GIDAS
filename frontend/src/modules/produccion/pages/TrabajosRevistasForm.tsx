@@ -1,5 +1,6 @@
 import { errorEnlace, MAX_ENLACE } from "@/modules/produccion/utils/trabajoEnlace";
 import { applyFieldErrors } from "@/lib/httpError";
+import { hasLetter } from "../../../lib/textValidation";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -93,6 +94,8 @@ export default function TrabajosRevistasForm() {
 
     if (!nombreRevista.trim()) {
       newErrors.nombreRevista = "Debe ingresar nombre de revista";
+    } else if (!hasLetter(nombreRevista)) {
+      newErrors.nombreRevista = "El nombre de la revista debe contener letras";
     }
 
     if (!editorial.trim()) {
@@ -157,26 +160,10 @@ export default function TrabajosRevistasForm() {
       if (applyFieldErrors(error, setErrors, ["enlace","titulo","nombreRevista","editorial","issn","pais","tipoId","fecha","autores"])) return;
       const backendMessage = getErrorMessage(
         error,
-        "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+        isEdit
+          ? "Lo sentimos, no pudimos actualizar el trabajo en revista. Revise los datos e intente nuevamente."
+          : "Lo sentimos, no pudimos crear el trabajo en revista. Revise los datos e intente nuevamente."
       );
-      const lowerMessage = backendMessage.toLowerCase();
-
-      if (lowerMessage.includes("titulo")) {
-        setErrors((prev) => ({ ...prev, titulo: backendMessage }));
-      } else if (lowerMessage.includes("revista")) {
-        setErrors((prev) => ({ ...prev, nombreRevista: backendMessage }));
-      } else if (lowerMessage.includes("editorial")) {
-        setErrors((prev) => ({ ...prev, editorial: backendMessage }));
-      } else if (lowerMessage.includes("issn")) {
-        setErrors((prev) => ({ ...prev, issn: backendMessage }));
-      } else if (lowerMessage.includes("pais")) {
-        setErrors((prev) => ({ ...prev, pais: backendMessage }));
-      } else if (lowerMessage.includes("tipo")) {
-        setErrors((prev) => ({ ...prev, tipoId: backendMessage }));
-      } else if (lowerMessage.includes("fecha")) {
-        setErrors((prev) => ({ ...prev, fecha: backendMessage }));
-      }
-
       setErrorMessage(backendMessage);
       setShowError(true);
     },

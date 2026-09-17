@@ -1,5 +1,6 @@
 import { errorEnlace, MAX_ENLACE } from "@/modules/produccion/utils/trabajoEnlace";
 import { applyFieldErrors } from "@/lib/httpError";
+import { hasLetter } from "../../../lib/textValidation";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -100,6 +101,8 @@ export default function TrabajoReunionForm() {
 
     if (!nombreReunion.trim()) {
       newErrors.nombreReunion = "Debe ingresar nombre de reunión";
+    } else if (!hasLetter(nombreReunion)) {
+      newErrors.nombreReunion = "El nombre de la reunión debe contener letras";
     }
 
     if (!procedencia.trim()) {
@@ -148,22 +151,10 @@ export default function TrabajoReunionForm() {
       if (applyFieldErrors(error, setErrors, ["enlace","titulo","nombreReunion","procedencia","tipoId","fechaPresentacion","autores"])) return;
       const backendMessage = getErrorMessage(
         error,
-        "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente.",
+        isEdit
+          ? "Lo sentimos, no pudimos actualizar el trabajo en reunión. Revise los datos e intente nuevamente."
+          : "Lo sentimos, no pudimos crear el trabajo en reunión. Revise los datos e intente nuevamente.",
       );
-      const lowerMessage = backendMessage.toLowerCase();
-
-      if (lowerMessage.includes("titulo")) {
-        setErrors((prev) => ({ ...prev, titulo: backendMessage }));
-      } else if (lowerMessage.includes("reunion")) {
-        setErrors((prev) => ({ ...prev, nombreReunion: backendMessage }));
-      } else if (lowerMessage.includes("procedencia")) {
-        setErrors((prev) => ({ ...prev, procedencia: backendMessage }));
-      } else if (lowerMessage.includes("tipo")) {
-        setErrors((prev) => ({ ...prev, tipoId: backendMessage }));
-      } else if (lowerMessage.includes("fecha")) {
-        setErrors((prev) => ({ ...prev, fechaPresentacion: backendMessage }));
-      }
-
       setErrorMessage(backendMessage);
       setShowError(true);
     },

@@ -14,7 +14,7 @@ from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
-from modules.shared.services.date_time import validate_institutional_date
+from modules.shared.services.date_time import INSTITUTIONAL_MIN_DATE
 
 
 class DistincionRecibidaService:
@@ -27,13 +27,15 @@ class DistincionRecibidaService:
     @staticmethod
     def _validar_id(valor, campo: str):
         if not isinstance(valor, int) or valor <= 0:
-            raise ValidationError(f"El campo '{campo}' debe ser un entero positivo")
+            if campo == "proyecto_investigacion_id":
+                raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: "Seleccione un proyecto disponible."}})
+            raise ValidationError("No pudimos procesar la solicitud. Intente nuevamente.")
         return valor
 
     @staticmethod
     def _validar_texto(valor: str, campo: str):
         if not isinstance(valor, str) or not valor.strip():
-            raise ValidationError(f"El campo '{campo}' es obligatorio")
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: "Ingrese la descripción de la distinción."}})
         return " ".join(valor.strip().split())
 
     @staticmethod
@@ -69,14 +71,14 @@ class DistincionRecibidaService:
         try:
             fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
         except (TypeError, ValueError):
-            raise ValidationError(
-                "La fecha es obligatoria y debe tener formato YYYY-MM-DD"
-            )
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha": "Ingrese una fecha válida."}})
 
         if fecha > date.today():
-            raise ValidationError("La fecha no puede ser futura")
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha": "Ingrese una fecha que no sea futura."}})
 
-        return validate_institutional_date(fecha, "fecha")
+        if fecha < INSTITUTIONAL_MIN_DATE:
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha": "Ingrese una fecha desde el 01/01/2010."}})
+        return fecha
 
     @staticmethod
     def _validar_proyecto(proyecto_id):
@@ -85,7 +87,7 @@ class DistincionRecibidaService:
         )
         proyecto = db.session.get(ProyectoInvestigacion, proyecto_id)
         if not proyecto or proyecto.deleted_at is not None:
-            raise ValidationError("Proyecto de investigacion invalido")
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"proyecto_investigacion_id": "Seleccione un proyecto disponible."}})
         return proyecto.id
 
     @staticmethod
@@ -124,7 +126,7 @@ class DistincionRecibidaService:
 
         if query.first():
             raise ConflictError(
-                "Ya existe una distincion identica para ese proyecto en esa fecha"
+                "Ya existe una distinción igual para ese proyecto y fecha. Revise los datos e intente nuevamente."
             )
 
     @staticmethod

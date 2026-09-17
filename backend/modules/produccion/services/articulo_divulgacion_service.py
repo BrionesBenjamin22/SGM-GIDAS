@@ -11,7 +11,7 @@ from modules.produccion.models.articulo_divulgacion import (
 )
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.shared.services.auditoria_service import AuditoriaService
-from modules.shared.services.date_time import validate_institutional_date
+from modules.shared.services.date_time import INSTITUTIONAL_MIN_DATE
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 
 
@@ -24,7 +24,7 @@ class ArticuloDivulgacionService:
     @staticmethod
     def _validar_user_id(user_id):
         if not isinstance(user_id, int) or user_id <= 0:
-            raise ValidationError("El user_id es invalido")
+            raise ValidationError("No pudimos procesar la solicitud. Intente nuevamente.")
         return user_id
 
     @staticmethod
@@ -35,43 +35,31 @@ class ArticuloDivulgacionService:
 
     @staticmethod
     def _validar_texto(valor, campo, min_len=3, max_len=500):
-        if valor is None:
-            raise ValidationError(f"El campo '{campo}' es obligatorio")
-
-        if not isinstance(valor, str):
-            raise ValidationError(f"El campo '{campo}' debe ser texto")
+        label = "el título" if campo == "titulo" else "la descripción"
+        if not isinstance(valor, str) or not valor.strip():
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"Ingrese {label} del artículo."}})
 
         valor = valor.strip()
-
-        if not valor:
-            raise ValidationError(f"El campo '{campo}' no puede estar vacio")
-
-        if len(valor) < min_len:
-            raise ValidationError(
-                f"El campo '{campo}' debe tener al menos {min_len} caracteres"
-            )
-
-        if len(valor) > max_len:
-            raise ValidationError(
-                f"El campo '{campo}' no puede superar los {max_len} caracteres"
-            )
+        if not min_len <= len(valor) <= max_len:
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"Use entre {min_len} y {max_len} caracteres para {label}."}})
 
         return valor
 
     @staticmethod
     def _validar_fecha(fecha_publicacion):
-        validate_institutional_date(fecha_publicacion, "fecha_publicacion")
+        if fecha_publicacion < INSTITUTIONAL_MIN_DATE:
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_publicacion": "Ingrese una fecha desde el 01/01/2010."}})
         if fecha_publicacion > date.today():
-            raise ValidationError("La fecha de publicacion no puede ser futura")
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_publicacion": "Ingrese una fecha que no sea futura."}})
 
     @staticmethod
     def _validar_grupo(grupo_utn_id):
         if not isinstance(grupo_utn_id, int) or grupo_utn_id <= 0:
-            raise ValidationError("Grupo UTN invalido")
+            raise ValidationError("El grupo ya no está disponible. Recargue el formulario e intente nuevamente.")
 
         grupo = db.session.get(GrupoInvestigacionUtn, grupo_utn_id)
         if not grupo or grupo.deleted_at is not None:
-            raise ValidationError("Grupo UTN invalido")
+            raise ValidationError("El grupo ya no está disponible. Recargue el formulario e intente nuevamente.")
 
         return grupo_utn_id
 
@@ -142,10 +130,8 @@ class ArticuloDivulgacionService:
             fecha_publicacion = datetime.strptime(
                 data["fecha_publicacion"], "%Y-%m-%d"
             ).date()
-        except (KeyError, ValueError):
-            raise ValidationError(
-                "La fecha de publicacion es obligatoria y debe tener formato YYYY-MM-DD"
-            )
+        except (KeyError, TypeError, ValueError):
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_publicacion": "Ingrese una fecha válida."}})
 
         ArticuloDivulgacionService._validar_fecha(fecha_publicacion)
 
@@ -194,8 +180,8 @@ class ArticuloDivulgacionService:
                 nuevo_valor = datetime.strptime(
                     data["fecha_publicacion"], "%Y-%m-%d"
                 ).date()
-            except ValueError:
-                raise ValidationError("La fecha debe tener formato YYYY-MM-DD")
+            except (TypeError, ValueError):
+                raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_publicacion": "Ingrese una fecha válida."}})
 
             ArticuloDivulgacionService._validar_fecha(nuevo_valor)
             cambio = AuditoriaService.construir_cambio(

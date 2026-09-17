@@ -1,4 +1,5 @@
 import { applyFieldErrors } from "@/lib/httpError";
+import { hasLetter } from "../../../lib/textValidation";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -77,6 +78,8 @@ export default function RegistrosPropiedadForm() {
 
     if (!data.nombre_articulo.trim()) {
       newErrors.nombre_articulo = "Debe ingresar el nombre del artículo";
+    } else if (!hasLetter(data.nombre_articulo)) {
+      newErrors.nombre_articulo = "El nombre del artículo debe contener letras";
     }
 
     if (!data.organismo_registrante.trim()) {
@@ -132,7 +135,9 @@ export default function RegistrosPropiedadForm() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+          isEdit
+            ? "Lo sentimos, no pudimos actualizar el registro de propiedad. Revise los datos e intente nuevamente."
+            : "Lo sentimos, no pudimos crear el registro de propiedad. Revise los datos e intente nuevamente."
         )
       );
 

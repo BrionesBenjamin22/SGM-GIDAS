@@ -14,14 +14,14 @@ def validar_referencias(autores):
     referencias = []
     for autor in autores:
         if not isinstance(autor, dict):
-            raise ValidationError("Autor inválido")
+            raise ValidationError("Autor inválido", details={"fields": {"autores": "Revise los autores seleccionados"}})
         rol, identificador = autor.get("rol"), autor.get("id")
         if not isinstance(rol, str) or rol not in MODELOS_AUTORES or type(identificador) is not int or identificador <= 0:
             raise ValidationError("Los autores deben ser investigadores o becarios con id entero positivo",
                                   details={"fields": {"autores": "Seleccione únicamente investigadores o becarios."}})
         clave = (rol, identificador)
         if clave in vistos:
-            raise ValidationError("No se permiten autores duplicados")
+            raise ValidationError("No se permiten autores duplicados", details={"fields": {"autores": "Quite el autor repetido"}})
         vistos.add(clave)
         referencias.append(clave)
     return referencias
@@ -34,10 +34,10 @@ def validar_autores(autores, existentes=()):
     for rol, identificador in referencias:
         persona = db.session.get(MODELOS_AUTORES[rol], identificador)
         if persona is None:
-            raise NotFoundError("Uno o más autores no existen")
+            raise NotFoundError("Uno o más autores ya no están disponibles", details={"fields": {"autores": "Quite los autores no disponibles y vuelva a intentar"}})
         # Una asociación histórica puede conservarse; no se permiten altas inactivas.
         if (rol, identificador) not in actuales and (persona.deleted_at is not None or not persona.activo):
-            raise ValidationError("Solo se pueden agregar integrantes activos y no eliminados")
+            raise ValidationError("Solo se pueden agregar integrantes activos y no eliminados", details={"fields": {"autores": "Seleccione autores activos"}})
         resultado.append((rol, persona))
     return resultado
 

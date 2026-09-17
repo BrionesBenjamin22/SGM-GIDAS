@@ -1,4 +1,5 @@
 import { applyFieldErrors } from "@/lib/httpError";
+import { hasOnlyLettersAndSpaces } from "../../../lib/textValidation";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState, useEffect } from "react";
@@ -109,6 +110,8 @@ export default function DocumentacionForm() {
       autores.some((autor) => autor.id <= 0 && autor.nombre_apellido.trim() === "")
     ) {
       newErrors.autores = "No puede haber autores vacios";
+    } else if (autores.some((autor) => autor.id <= 0 && !hasOnlyLettersAndSpaces(autor.nombre_apellido))) {
+      newErrors.autores = "Use solo letras y espacios en el nombre de cada autor";
     }
 
     setErrors(newErrors);
@@ -232,7 +235,9 @@ export default function DocumentacionForm() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+          isEdit
+            ? "Lo sentimos, no pudimos actualizar la documentación. Revise los datos e intente nuevamente."
+            : "Lo sentimos, no pudimos crear la documentación. Revise los datos e intente nuevamente."
         )
       );
       setShowError(true);
