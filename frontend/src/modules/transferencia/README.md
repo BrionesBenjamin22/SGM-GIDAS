@@ -1,5 +1,9 @@
 # Transferencia frontend
 
+El alta inline de adoptantes exige solo letras Unicode y espacios. El
+formulario de transferencia rechaza denominación y demandante exclusivamente
+numéricos. Ambos conservan el texto para corregirlo.
+
 ## Errores por campo (ISS-09)
 
 Los formularios del módulo consumen `error.details.fields` mediante
@@ -89,3 +93,8 @@ mutateAsync para que el diálogo cubra toda la operación.
 ## Indicadores de campos obligatorios (ISS-21)
 
 El formulario de transferencias indica los datos obligatorios; la fecha de fin permanece opcional.
+
+ISS-19: las validaciones del backend se muestran junto a los controles mediante `applyFieldErrors`; alta y edición usan fallbacks propios. Los errores sin campo visible conservan el aviso general y los cambios de adoptantes permanecen consolidados hasta guardar.
+
+El selector de adoptantes muestra los errores estructurados de `adoptantes_ids` junto a la selección.
+El alta inline del adoptante muestra `error.details.fields.nombre` junto al nombre, conserva el valor para corregirlo, enfoca el control y deja el aviso general para errores sin campo conocido.

@@ -1,4 +1,5 @@
 import { applyFieldErrors } from "@/lib/httpError";
+import { hasLetter } from "../../../lib/textValidation";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -89,10 +90,14 @@ export default function TransferenciasForm() {
 
     if (!data.denominacion.trim() || data.denominacion.trim().length < 3) {
       newErrors.denominacion = "Debe ingresar una denominación válida";
+    } else if (!hasLetter(data.denominacion)) {
+      newErrors.denominacion = "La denominación debe contener letras";
     }
 
     if (!data.demandante.trim() || data.demandante.trim().length < 3) {
       newErrors.demandante = "Debe ingresar un demandante válido";
+    } else if (!hasLetter(data.demandante)) {
+      newErrors.demandante = "El demandante debe contener letras";
     }
 
     if (!data.descripcionActividad.trim() || data.descripcionActividad.trim().length < 10) {
@@ -220,11 +225,13 @@ export default function TransferenciasForm() {
       });
     },
     onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["numeroTransferencia","denominacion","demandante","descripcionActividad","monto","fechaInicio","fechaFin","tipoContratoId"])) return;
+      if (applyFieldErrors(error, setErrors, ["numeroTransferencia","denominacion","demandante","descripcionActividad","monto","fechaInicio","fechaFin","tipoContratoId","adoptantes"])) return;
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+          isEdit
+            ? "Lo sentimos, no pudimos actualizar la transferencia. Revise los datos e intente nuevamente."
+            : "Lo sentimos, no pudimos crear la transferencia. Revise los datos e intente nuevamente."
         )
       );
       setShowError(true);
@@ -411,7 +418,13 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <AdoptanteSelector selected={adoptantes} onChange={setAdoptantes} />
+        <div data-error-field="adoptantes">
+          <AdoptanteSelector selected={adoptantes} onChange={(next) => {
+            setAdoptantes(next);
+            setErrors((previous) => ({ ...previous, adoptantes: "" }));
+          }} />
+          {errors.adoptantes && <p role="alert" className="mt-1 text-sm text-red-600">{errors.adoptantes}</p>}
+        </div>
 
         <div className="flex justify-between pt-6">
           <Button type="button" variant="secondary" size="sm" onClick={() => navigate(-1)}>

@@ -3,9 +3,32 @@ from unittest.mock import patch
 
 from app import create_app
 from modules.shared.exceptions import NotFoundError, ValidationError
+from modules.transferencia.services.transferencia_service import TransferenciaSocioProductivaService
+from modules.transferencia.services.adoptante_service import AdoptanteService
 
 
 class TransferenciaDomainErrorsTestCase(unittest.TestCase):
+    def test_adoptante_invalido_identifica_nombre(self):
+        for nombre in ("", "22", "Empresa 22", "Empresa-Sur"):
+            with self.subTest(nombre=nombre), self.assertRaises(ValidationError) as caught:
+                AdoptanteService.create({"nombre": nombre}, 1)
+            self.assertIn("nombre", caught.exception.details["fields"])
+
+    def test_relacion_de_adoptantes_indica_selector(self):
+        with self.assertRaises(ValidationError) as caught:
+            TransferenciaSocioProductivaService.add_adoptantes(1, [], 1)
+        self.assertIn("adoptantes_ids", caught.exception.details["fields"])
+
+    def test_campos_editables_tienen_validaciones_estructuradas(self):
+        cases = (
+            (lambda: TransferenciaSocioProductivaService._validar_texto("", "demandante"), "demandante"),
+            (lambda: TransferenciaSocioProductivaService._validar_monto("x"), "monto"),
+            (lambda: TransferenciaSocioProductivaService._validar_fecha("2009-12-31", "fecha_inicio"), "fecha_inicio"),
+        )
+        for validate, field in cases:
+            with self.subTest(field=field), self.assertRaises(ValidationError) as caught:
+                validate()
+            self.assertIn(field, caught.exception.details["fields"])
     def setUp(self):
         self.app = create_app()
         self.app.testing = True
