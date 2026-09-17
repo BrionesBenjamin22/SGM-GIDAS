@@ -69,18 +69,3 @@ def public_message(message, fallback):
     for word, accented in ACCENTS.items():
         text = re.sub(rf"\b{word}\b", accented, text)
     return text or fallback
-
-
-def legacy_validation_fields(message):
-    """Only named known keys; never guess a control from SQL or an unknown column."""
-    if not isinstance(message, str) or INTERNAL_DETAIL.search(message):
-        return {}
-    keys = [
-        key for key in FIELD_LABELS
-        if re.search(rf"(?<!\w){re.escape(key)}(?!\w)", message)
-        and ("_" in key or re.search(
-            rf"(?:['\"`]{re.escape(key)}['\"`]|^{re.escape(key)}\s+(?:es|debe|no|invalido))",
-            message, re.IGNORECASE,
-        ))
-    ]
-    return {key: public_message(message, "Revise este campo e intente nuevamente.") for key in keys}

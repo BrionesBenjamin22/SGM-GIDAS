@@ -92,6 +92,16 @@ const fieldAliases: Record<string, string[]> = {
   tipo_id: ["tipoId", "tipo"], tipo_registro_id: ["tipoRegistro", "tipoId"],
   nombre_articulo: ["nombreArticulo", "nombre"], organismo_registrante: ["organismo", "organismoRegistrante"],
   facultad_regional: ["facultadRegional"], nombre_sigla_grupo: ["nombreSigla"], correo_electronico: ["correo"],
+  tipo_visita_id: ["tipoVisita"], nombre_evento: ["nombreEvento"],
+  forma_participacion: ["formaParticipacion"],
+  nombre_unidad_academica: ["facultadRegional"], objetivo_desarrollo: ["objetivos"],
+  proyecto_investigacion_id: ["proyecto"],
+  titulo_trabajo: ["titulo"], nombre_reunion: ["nombreReunion"],
+  tipo_reunion_id: ["tipoId"], fecha_presentacion: ["fechaPresentacion"],
+  periodo_inicio: ["periodoInicio"], periodo_fin: ["periodoFin"],
+  fecha_apertura: ["fechaApertura"],
+  adoptantes_ids: ["adoptantes"],
+  becas: ["becaGlobal"],
 };
 
 export function mapFieldErrors(error: unknown, controls: readonly string[]): Record<string, string> {

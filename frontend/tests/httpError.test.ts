@@ -58,6 +58,54 @@ test("mapea campos y conserva los errores desconocidos", () => {
   assert.deepEqual(mapFieldErrors({ body: { fields: { mail: "Revise el correo." } } }, ["email"]), { email: "Revise el correo." });
 });
 
+test("asocia validaciones de visitas y participaciones por clave HTTP", () => {
+  const visita = { body: { error: { details: { fields: {
+    tipo_visita_id: "Seleccione un tipo de visita disponible.",
+    procedencia: "Ingrese una procedencia con letras.",
+  } } } } };
+  assert.deepEqual(mapFieldErrors(visita, ["razon", "procedencia", "tipoVisita"]), {
+    tipoVisita: "Seleccione un tipo de visita disponible.",
+    procedencia: "Ingrese una procedencia con letras.",
+  });
+
+  const participacion = { body: { error: { details: { fields: {
+    investigador_id: "Seleccione un investigador disponible.",
+    nombre_evento: "Ingrese el nombre del evento.",
+    forma_participacion: "Ingrese la forma de participación.",
+  } } } } };
+  assert.deepEqual(mapFieldErrors(participacion, ["investigador", "nombreEvento", "formaParticipacion"]), {
+    investigador: "Seleccione un investigador disponible.",
+    nombreEvento: "Ingrese el nombre del evento.",
+    formaParticipacion: "Ingrese la forma de participación.",
+  });
+});
+
+test("mapea campos HTTP de UCT sin interpretar mensajes", () => {
+  const error = { body: { error: { details: { fields: {
+    nombre_unidad_academica: "Ingrese la facultad regional.",
+    objetivo_desarrollo: "Ingrese los objetivos del grupo.",
+  } } } } };
+  assert.deepEqual(mapFieldErrors(error, ["facultadRegional", "objetivos"]), {
+    facultadRegional: "Ingrese la facultad regional.",
+    objetivos: "Ingrese los objetivos del grupo.",
+  });
+});
+
+test("mapea campos de trabajos por clave HTTP", () => {
+  const error = { body: { error: { details: { fields: {
+    titulo_trabajo: "Ingrese el título del trabajo.",
+    nombre_reunion: "Ingrese el nombre de la reunión.",
+    tipo_reunion_id: "Seleccione un tipo disponible.",
+    fecha_presentacion: "Ingrese una fecha válida.",
+  } } } } };
+  assert.deepEqual(mapFieldErrors(error, ["titulo", "nombreReunion", "tipoId", "fechaPresentacion"]), {
+    titulo: "Ingrese el título del trabajo.",
+    nombreReunion: "Ingrese el nombre de la reunión.",
+    tipoId: "Seleccione un tipo disponible.",
+    fechaPresentacion: "Ingrese una fecha válida.",
+  });
+});
+
 test("descarta detalles técnicos y nunca muestra el identificador interno", () => {
   const fallback = "Intente nuevamente.";
   assert.equal(getErrorMessage({ body: { error: { message: "SELECT password FROM users", details: { request_id: "req-09" } } } }, fallback),

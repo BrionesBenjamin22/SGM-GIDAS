@@ -4,7 +4,7 @@ from flask import g, has_request_context, jsonify
 
 from modules.shared.exceptions import DomainError
 from modules.shared.services.logging_config import get_logger
-from modules.shared.services.error_messages import public_message, legacy_validation_fields
+from modules.shared.services.error_messages import public_message
 
 
 logger = get_logger(__name__)
@@ -81,8 +81,6 @@ def error_response(code, message=None, details=None, status_code=400):
             key: public_message(value, "Revise este campo e intente nuevamente.")
             for key, value in fields.items() if isinstance(key, str) and isinstance(value, str)
         }
-    elif code == "VALIDATION_ERROR":
-        fields = legacy_validation_fields(message)
     if fields:
         safe_details["fields"] = fields
         safe_message = "Revise los campos indicados e intente nuevamente."
