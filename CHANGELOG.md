@@ -8,6 +8,61 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-19: contextualizar errores de formularios y validar nombres de personas
+
+- Los formularios de Auth, Grupo, Personal, Produccion, Proyectos, Recursos,
+  Transferencia y Memorias muestran errores por campo mediante `details.fields`
+  y mensajes generales accionables, sin clasificar campos por texto libre.
+- Los nombres y apellidos de personas, directivos, autores y adoptantes aceptan
+  letras Unicode y espacios; frontend y backend rechazan cifras y signos.
+- Auth renueva credenciales tras cambiar la contrasena. La creacion y asignacion
+  de directivos usa una transaccion; Erogaciones permite corregir fechas y
+  editar otros campos con cambios parciales.
+- Se corrigio la edicion de segmentos y separadores del calendario. El borrador
+  de Erogaciones y la confirmacion de salida se consolidaron en ISS-22.
+
+Validaciones: 114 pruebas frontend, `typecheck`, build de produccion y pruebas
+backend focalizadas; el usuario confirmo los flujos manuales de nombres,
+sesion, fechas, erogaciones y formularios. La prueba de rollback de directivos
+paso en PostgreSQL. La suite backend completa se ejecuto en Docker; tres
+pruebas de despliegue requieren archivos de la raiz que no se montan en el
+contenedor y pasan desde el host.
+
+### ISS-22: persistir borradores de formularios en backend
+
+- Los formularios principales guardan un único borrador por usuario, módulo y
+  registro en el servidor, con recuperación, descarte y confirmación al salir.
+  La lista identifica los borradores y se actualiza al guardarlos o borrarlos.
+- Se retiró el almacenamiento de borradores y adoptantes de `localStorage`.
+  El backend limita tamaño y vigencia, rechaza claves sensibles y aísla los
+  borradores por usuario y rol.
+- El usuario validó los formularios y el listado, incluida Transferencias tras
+  corregir su ruta en ISS-24.
+
+Validaciones: 111 pruebas frontend, `typecheck`, build de producción, 7 pruebas
+backend de borradores y prueba manual de los módulos. Los borradores vencidos
+se eliminan al consultar o guardar; la limpieza periódica de usuarios inactivos
+queda como límite operativo.
+
+### ISS-23: unificar la paginación de los listados
+
+- Los 18 listados paginados usan páginas numeradas centradas debajo de los
+  resultados; Erogaciones y Planificaciones dejaron de ubicarla al borde inferior.
+
+Validaciones: auditoría de los 18 listados, 111 pruebas frontend, `typecheck`,
+build de producción y validación manual de los módulos.
+
+### ISS-24: corregir Participaciones y la carga de Transferencias
+
+- Participaciones presenta el nombre del evento con mayúsculas consistentes en
+  home y detalle, sin alterar el valor guardado.
+- Transferencias consulta la ruta GET con barra final y evita el 308 que enviaba
+  al navegador al nombre interno de Docker. La prueba de contrato cubre la ruta.
+
+Validaciones: 111 pruebas frontend, `typecheck`, build de producción y prueba
+manual de Transferencias. El proxy respondió directamente desde backend sin
+redirección al usar la ruta corregida.
+
 ### ISS-18: ocultar referencias internas en mensajes visibles de la interfaz
 
 - Los errores visibles usan mensajes publicos seguros o un fallback accionable;
