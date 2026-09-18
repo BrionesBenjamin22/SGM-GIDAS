@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import Button from "@/components/Button";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import DatePicker from "@/components/Calendar";
 import { toCivilDateString } from "@/utils/dateTime";
 import Field from "@/components/Field";
@@ -65,12 +66,13 @@ export default function ErogacionesForm() {
     });
   }, [erogacion]);
 
-  const { availableDraft, restoreDraft, discardDraft, clearDraft } = useFormDraft({
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
     userId: user?.id,
     module: "recursos-erogaciones",
     recordId: id,
     value: data,
     ready: !isEdit || (!loadingErogacion && Boolean(erogacion)),
+    autosave: false,
     hasContent: (draft) => Object.values(draft).some((value) => value.trim() !== ""),
     onRestore: setData,
   });
@@ -239,11 +241,13 @@ export default function ErogacionesForm() {
 
       {availableDraft && (
         <DraftRecoveryNotice
-          savedAt={availableDraft.savedAt}
+          savedAt={availableDraft.saved_at}
+          sourceChanged={sourceChanged}
           onRestore={restoreDraft}
           onDiscard={discardDraft}
         />
       )}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
@@ -397,7 +401,7 @@ export default function ErogacionesForm() {
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => requestLeave(() => navigate(-1))}
           >
             Volver
           </Button>

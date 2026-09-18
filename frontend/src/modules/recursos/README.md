@@ -45,9 +45,6 @@ tipos explicitos. Las llamadas HTTP se concentran en services dedicados.
   negativos; ingresos y egresos no pueden ser ambos cero.
 - En edicion de erogaciones se pueden corregir numero, tipo, fuente, fecha,
   ingresos y egresos. Se envian solo los campos modificados.
-- Erogaciones guarda un borrador local por usuario y registro cuando cambian los
-  campos. Ante una recarga o una sesion terminada, tras volver a ingresar ofrece
-  restaurarlo o descartarlo. El borrador se elimina al guardar correctamente.
 
 ## Seguridad, permisos y errores
 
@@ -56,8 +53,9 @@ backend sin reflejar cuerpos desconocidos. Las operaciones fallidas muestran un
 fallback accionable. Los permisos visuales complementan los controles del backend.
 
 El modulo no usa `any`, HTML no confiable, secretos ni `fetch` directo.
-El borrador de erogaciones usa `localStorage` a traves del hook compartido y
-excluye credenciales del contenido persistido.
+El borrador de erogaciones se guarda en backend por usuario y registro, vence a los
+siete días y nunca se persiste en el almacenamiento del navegador. Al volver con
+cambios, el usuario puede guardarlo, descartarlo o seguir editando.
 React renderiza los datos como texto y los payloads se construyen con campos
 permitidos explicitamente.
 
@@ -96,3 +94,19 @@ digitos al ubicar el cursor en una fecha completa. Se mantienen los limites y
 la validacion de fecha.
 
 Equipamiento y erogaciones dejaron de inferir el campo inválido a partir del texto del error. `applyFieldErrors` utiliza `error.details.fields`; los errores restantes se muestran como aviso general. Alta y edición usan fallbacks propios. Las claves HTTP de fecha, monto, número, tipo y fuente se asocian a controles visibles.
+
+## Borradores de formularios (ISS-22)
+
+En equipamiento y erogaciones, los cambios no se guardan como borrador mientras se escribe.
+Al pulsar Volver con cambios, el dialogo permite guardar el ultimo estado en
+el servidor, descartarlo o seguir editando. La navegacion externa al formulario
+queda sujeta a la misma confirmacion. La lista global muestra el tipo, un dato
+identificable del borrador cuando esta disponible, y la fecha de guardado.
+Al abrirlo se puede recuperar o descartar; un guardado exitoso elimina el
+borrador. El contenido no se almacena en localStorage ni sessionStorage.
+
+## Paginación de listados (ISS-23)
+
+Los resultados paginados muestran controles centrados de anterior, números
+de página y siguiente, inmediatamente debajo de las tarjetas o resultados.
+El máximo de resultados por página conserva el contrato del módulo.

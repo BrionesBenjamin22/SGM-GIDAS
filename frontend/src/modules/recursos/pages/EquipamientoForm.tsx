@@ -3,6 +3,7 @@ import { hasLetter } from "../../../lib/textValidation";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import DatePicker from "@/components/Calendar";
 import Field from "@/components/Field";
 import React, { useState, useEffect } from "react";
@@ -21,12 +22,16 @@ import {
   validateFechaIncorporacion,
 } from "@/modules/recursos/utils/equipamientoValidation";
 import { parseCivilDate, toCivilDateString } from "@/utils/dateTime";
+import { useAuth } from "@/context/AuthContext";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
 
 export default function EquipamientoForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { uct, uctGuard } = useUctGuard();
+  const { user } = useAuth();
 
   const isEdit = Boolean(id);
 
@@ -57,6 +62,17 @@ export default function EquipamientoForm() {
       fecha_incorporacion: initial.fecha_incorporacion ?? "",
     });
   }, [initial]);
+
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "recursos-equipamiento",
+    recordId: id,
+    value: data,
+    ready: !isEdit || (!isLoading && Boolean(initial)),
+    autosave: false,
+    hasContent: (draft) => Boolean(draft.denominacion || draft.descripcion_breve || draft.fecha_incorporacion || draft.monto_invertido),
+    onRestore: setData,
+  });
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -100,6 +116,7 @@ export default function EquipamientoForm() {
         ? updateEquipamiento(Number(id), payload)
         : createEquipamiento(payload as EquipamientoPayload),
     onSuccess: async (saved) => {
+      clearDraft();
       const equipamientoId = isEdit ? Number(id) : saved.id;
 
       await qc.invalidateQueries({ queryKey: ["equipamiento"] });
@@ -164,6 +181,7 @@ export default function EquipamientoForm() {
     );
 
     if (Object.keys(changedPayload).length === 0) {
+      clearDraft();
       navigate(`/equipamiento/${id}`, {
         replace: true,
         state: {
@@ -188,6 +206,9 @@ export default function EquipamientoForm() {
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
         {isEdit ? "Editar equipamiento" : "Nuevo equipamiento"}
       </h2>
+
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
@@ -287,7 +308,7 @@ export default function EquipamientoForm() {
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => requestLeave(() => navigate(-1))}
           >
             Volver
           </Button>
