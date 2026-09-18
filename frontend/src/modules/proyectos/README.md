@@ -1,5 +1,9 @@
 # Modulo frontend de proyectos
 
+En Participaciones relevantes, home, detalle y confirmación de baja presentan
+el nombre del evento con mayúsculas consistentes mediante `toTitleCase`. El
+valor persistido y el formulario conservan la escritura ingresada.
+
 Proyecto y participación rechazan nombres exclusivamente numéricos antes del
 envío y muestran el motivo junto al control.
 
@@ -133,3 +137,19 @@ En proyectos son obligatorios codigo, nombre, tipo y fecha de inicio. El coordin
 ## Errores de Participaciones (ISS-19)
 
 ParticipacionesForm aplica error.details.fields mediante applyFieldErrors. investigador_id, nombre_evento, forma_participacion y fecha se vinculan a los controles visibles. Los conflictos y campos desconocidos mantienen un aviso general; alta y edición indican cómo reintentar.
+
+## Borradores de formularios (ISS-22)
+
+En proyectos y participaciones, los cambios no se guardan como borrador mientras se escribe.
+Al pulsar Volver con cambios, el dialogo permite guardar el ultimo estado en
+el servidor, descartarlo o seguir editando. La navegacion externa al formulario
+queda sujeta a la misma confirmacion. La lista global muestra el tipo, un dato
+identificable del borrador cuando esta disponible, y la fecha de guardado.
+Al abrirlo se puede recuperar o descartar; un guardado exitoso elimina el
+borrador. El contenido no se almacena en localStorage ni sessionStorage.
+
+## Paginación de listados (ISS-23)
+
+Los resultados paginados muestran controles centrados de anterior, números
+de página y siguiente, inmediatamente debajo de las tarjetas o resultados.
+El máximo de resultados por página conserva el contrato del módulo.

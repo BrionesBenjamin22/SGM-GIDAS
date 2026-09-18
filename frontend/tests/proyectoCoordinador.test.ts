@@ -45,7 +45,7 @@ test("formulario real guarda coordinador en una petición, conserva edición y m
     export const useBecarios = () => ({data: []});
     export const useUct = () => ({uct: {id: 1}});
     export const useAuth = () => ({user: {id: 7}});
-    export const useFormDraft = () => ({clearDraft() {}, restoreDraft() {}, discardDraft() {}});
+    export const useFormDraft = () => ({clearDraft() {}, restoreDraft() {}, discardDraft() {}, blocker: {state: 'unblocked', reset() {}}, keepAndLeave: async () => true, discardAndLeave: async () => {}});
     export const getInvestigadores = async () => h.candidates;
     export const http = async (path, options) => {h.calls.push({path, options}); if (h.serverError) throw h.serverError; return {id: 1, tipo_proyecto_id: 1, codigo_proyecto: 'ABC1', nombre_proyecto: 'Proyecto', fecha_inicio: '2026-01-01'};};
     export default function Component() {}`;

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/Button";
 import HistorialCambiosCard from "@/components/HistorialCambiosCard";
 import { formatFechaHora } from "@/utils/dateTime";
+import { toTitleCase } from "@/utils/format";
 import SuccessToast from "@/components/SuccessToast";
 import {
   getHistorialParticipacionById,
@@ -114,7 +115,7 @@ export default function ParticipacionesDetalle() {
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-2">
             <h2 className="text-2xl font-semibold leading-none md:text-3xl">
-              {data.nombre_evento || "-"}
+              {toTitleCase(data.nombre_evento) || "-"}
             </h2>
 
             <span
@@ -144,7 +145,7 @@ export default function ParticipacionesDetalle() {
           <div className="space-y-2 text-sm text-slate-500 md:text-base">
             <p>
               <span className="font-medium text-slate-700">Nombre del evento:</span>{" "}
-              {data.nombre_evento || "-"}
+              {toTitleCase(data.nombre_evento) || "-"}
             </p>
 
             <p>
@@ -172,7 +173,7 @@ export default function ParticipacionesDetalle() {
           <div className="mb-4">
             <h3 className="text-lg font-semibold text-slate-700">Auditoría</h3>
             <p className="mt-1 text-xs text-slate-500">
-              {data.nombre_evento || "-"}
+              {toTitleCase(data.nombre_evento) || "-"}
             </p>
           </div>
 
@@ -204,7 +205,7 @@ export default function ParticipacionesDetalle() {
         </article>
 
         <HistorialCambiosCard
-          subtitle={data.nombre_evento || "-"}
+          subtitle={toTitleCase(data.nombre_evento) || "-"}
           items={historialCambios}
           isLoading={isLoadingHistorial}
           updatedAt={data.updated_at}

@@ -4,11 +4,16 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
 import { getErrorMessage } from "@/lib/httpError";
 import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
+import { toCivilDateString } from "@/utils/dateTime";
+import { useAuth } from "@/context/AuthContext";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
 import {
   actualizarParticipacion,
   crearParticipacion,
@@ -30,6 +35,7 @@ export default function ParticipacionesForm() {
 
   const isEdit = Boolean(id);
   const { data: investigadores = [] } = useInvestigadores();
+  const { user } = useAuth();
 
   const { data: initialData, isLoading } = useQuery({
     queryKey: ["participacion", id],
@@ -54,6 +60,17 @@ export default function ParticipacionesForm() {
     setFormaParticipacion(initialData.forma_participacion ?? "");
     setFecha(initialData.fecha ? new Date(`${initialData.fecha}T00:00:00`) : null);
   }, [initialData]);
+
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "proyectos-participaciones",
+    recordId: id,
+    value: { investigadorId, nombreEvento, formaParticipacion, fecha: toCivilDateString(fecha) },
+    ready: !isEdit || (!isLoading && Boolean(initialData)),
+    autosave: false,
+    hasContent: (draft) => Boolean(draft.investigadorId || draft.nombreEvento || draft.formaParticipacion || draft.fecha),
+    onRestore: (draft) => { setInvestigadorId(draft.investigadorId); setNombreEvento(draft.nombreEvento); setFormaParticipacion(draft.formaParticipacion); setFecha(draft.fecha ? new Date(`${draft.fecha}T00:00:00`) : null); },
+  });
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -106,6 +123,7 @@ export default function ParticipacionesForm() {
         ? actualizarParticipacion(Number(id), input.payload)
         : crearParticipacion(input.payload),
     onSuccess: async (saved) => {
+      clearDraft();
       const participacionId = isEdit ? Number(id) : saved.id;
 
       await qc.invalidateQueries({ queryKey: ["participaciones"] });
@@ -163,6 +181,7 @@ export default function ParticipacionesForm() {
     );
 
     if (Object.keys(changedPayload).length === 0) {
+      clearDraft();
       navigate(`/participaciones/${id}`, {
         replace: true,
         state: {
@@ -187,6 +206,9 @@ export default function ParticipacionesForm() {
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
         {isEdit ? "Editar participación" : "Nueva participación relevante"}
       </h2>
+
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
@@ -287,7 +309,7 @@ export default function ParticipacionesForm() {
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => requestLeave(() => navigate(-1))}
           >
             Volver
           </Button>

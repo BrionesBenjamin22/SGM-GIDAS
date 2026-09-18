@@ -6,6 +6,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import Button from "@/components/Button";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
 import PersonalProyectoField from "@/components/PersonalProyectoField";
@@ -157,12 +158,13 @@ export default function ProyectosForm() {
     montoDestinado, nombreProyecto, tipoProyectoId,
   ]);
 
-  const { availableDraft, restoreDraft, discardDraft, clearDraft } = useFormDraft({
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
     userId: user?.id,
     module: "proyectos",
     recordId: id,
     value: draftValue,
     ready: formInitialized,
+    autosave: false,
     hasContent: (draft) => Boolean(
       draft.nombreProyecto || draft.codigoProyecto || draft.descripcionProyecto ||
       draft.dificultadesProyecto || draft.montoDestinado || draft.fechaInicio ||
@@ -438,11 +440,13 @@ export default function ProyectosForm() {
 
       {availableDraft && (
         <DraftRecoveryNotice
-          savedAt={availableDraft.savedAt}
+          savedAt={availableDraft.saved_at}
+          sourceChanged={sourceChanged}
           onRestore={restoreDraft}
           onDiscard={discardDraft}
         />
       )}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
@@ -712,7 +716,7 @@ export default function ProyectosForm() {
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => requestLeave(() => navigate(-1))}
           >
             Volver
           </Button>

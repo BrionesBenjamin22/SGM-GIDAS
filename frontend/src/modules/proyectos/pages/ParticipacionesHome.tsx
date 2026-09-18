@@ -15,6 +15,7 @@ import {
 } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
 import { getCivilYear } from "@/utils/dateTime";
+import { toTitleCase } from "@/utils/format";
 
 import {
   eliminarParticipacion,
@@ -403,7 +404,7 @@ export default function ParticipacionesHome() {
                 <Tarjeta<Participacion>
                   key={p.id}
                   item={p}
-                  title={(x) => x.nombre_evento || "-"}
+                  title={(x) => toTitleCase(x.nombre_evento) || "-"}
                   subtitle={(x) =>
                     x.investigador
                       ? `${x.investigador} - ${formatDate(x.fecha)}`
@@ -425,30 +426,30 @@ export default function ParticipacionesHome() {
             </div>
 
             {totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-between">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                  disabled={page === 1}
-                >
-                  Anterior
-                </Button>
-
-                <span className="text-sm text-slate-500">
-                  Página {page} de {totalPages}
-                </span>
-
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={page === totalPages}
-                >
-                  Siguiente
-                </Button>
+              <div className="mt-8">
+                <nav aria-label="Paginación" className="flex flex-wrap items-center justify-center gap-2">
+                  <Button type="button" size="sm" variant="secondary" aria-label="Página anterior"
+                    disabled={page === 1} onClick={() => setPage((current) => current - 1)}>
+                    {"<"}
+                  </Button>
+                  {[...Array(totalPages)].map((_, index) => {
+                    const pageNumber = index + 1;
+                    return (
+                      <button type="button" key={pageNumber} aria-label={`Página ${pageNumber}`}
+                        aria-current={page === pageNumber ? "page" : undefined}
+                        onClick={() => setPage(pageNumber)}
+                        className={`rounded-lg px-3 py-1 text-sm ${
+                          page === pageNumber ? "bg-slate-800 text-white" : "bg-slate-100 hover:bg-slate-200"
+                        }`}>
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
+                  <Button type="button" size="sm" variant="secondary" aria-label="Página siguiente"
+                    disabled={page === totalPages} onClick={() => setPage((current) => current + 1)}>
+                    {">"}
+                  </Button>
+                </nav>
               </div>
             )}
           </>
@@ -459,7 +460,7 @@ export default function ParticipacionesHome() {
         open={showConfirm}
         title="Eliminar participaciones"
         message="¿Eliminar las siguientes participaciones?"
-        items={selectedActiveItems.map((p) => p.nombre_evento || "-")}
+        items={selectedActiveItems.map((p) => toTitleCase(p.nombre_evento) || "-")}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
        loadingText="Eliminando..."
