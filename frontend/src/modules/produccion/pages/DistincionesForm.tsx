@@ -18,12 +18,18 @@ import {
   type Proyecto,
 } from "@/modules/proyectos/services/proyectosServices";
 import { useUct } from "@/modules/grupo/hooks/useUct";
+import { toCivilDateString } from "@/utils/dateTime";
+import { useAuth } from "@/context/AuthContext";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 
 export default function DistincionesForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { uct } = useUct();
+  const { user } = useAuth();
 
   const isEdit = Boolean(id);
 
@@ -54,6 +60,17 @@ export default function DistincionesForm() {
     setDescripcion(initialData.descripcion ?? "");
     setProyectoId(initialData.proyecto?.id ?? null);
   }, [initialData]);
+
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "produccion-distinciones",
+    recordId: id,
+    value: { fecha: toCivilDateString(fecha), descripcion, proyectoId },
+    ready: !isEdit || (!isLoading && Boolean(initialData)),
+    autosave: false,
+    hasContent: (draft) => Boolean(draft.fecha || draft.descripcion || draft.proyectoId),
+    onRestore: (draft) => { setFecha(draft.fecha ? new Date(`${draft.fecha}T00:00:00`) : null); setDescripcion(draft.descripcion); setProyectoId(draft.proyectoId); },
+  });
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -96,6 +113,7 @@ export default function DistincionesForm() {
         ? actualizarDistincion(Number(id), payload)
         : crearDistincion(payload as DistincionPayload),
     onSuccess: async (saved) => {
+      clearDraft();
       const distincionId = isEdit ? Number(id) : saved.id;
 
       await qc.invalidateQueries({ queryKey: ["distinciones"] });
@@ -154,6 +172,7 @@ export default function DistincionesForm() {
     );
 
     if (Object.keys(changedPayload).length === 0) {
+      clearDraft();
       navigate(`/distinciones/${id}`, {
         replace: true,
         state: {
@@ -178,6 +197,9 @@ export default function DistincionesForm() {
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
         {isEdit ? "Editar distinción" : "Nueva distinción recibida"}
       </h2>
+
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
@@ -246,7 +268,7 @@ export default function DistincionesForm() {
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => requestLeave(() => navigate(-1))}
           >
             Volver
           </Button>

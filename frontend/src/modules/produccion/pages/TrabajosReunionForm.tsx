@@ -28,6 +28,10 @@ import { useIntegrantesAutores } from "@/modules/produccion/hooks/useIntegrantes
 import { mismasAutorias, type IntegranteAutor } from "@/modules/produccion/services/trabajoAutoresServices";
 import { useAuth } from "@/context/AuthContext";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
+import { toCivilDateString } from "@/utils/dateTime";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 
 export default function TrabajoReunionForm() {
   const { id } = useParams<{ id: string }>();
@@ -37,7 +41,7 @@ export default function TrabajoReunionForm() {
 
   const { uct, uctGuard } = useUctGuard();
   const { tipos = [] } = useTiposReunion();
-  const { canCreateRecords, canEditRecords } = useAuth();
+  const { canCreateRecords, canEditRecords, user } = useAuth();
   const puedeGuardar = isEdit ? canEditRecords() : canCreateRecords();
   const autoresQuery = useIntegrantesAutores();
   const integrantes = autoresQuery.data ?? [];
@@ -75,6 +79,17 @@ export default function TrabajoReunionForm() {
     setTipoId(initialData.tipo_reunion?.id ?? null);
     setAutores(initialData.autores ?? []);
   }, [initialData]);
+
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "produccion-reuniones",
+    recordId: id,
+    value: { enlace, titulo, nombreReunion, procedencia, fechaPresentacion: toCivilDateString(fechaPresentacion), tipoId, autores },
+    ready: !isEdit || (!isLoading && Boolean(initialData)),
+    autosave: false,
+    hasContent: (draft) => Boolean(draft.enlace || draft.titulo || draft.nombreReunion || draft.procedencia || draft.fechaPresentacion || draft.tipoId || draft.autores.length),
+    onRestore: (draft) => { setEnlace(draft.enlace); setTitulo(draft.titulo); setNombreReunion(draft.nombreReunion); setProcedencia(draft.procedencia); setFechaPresentacion(draft.fechaPresentacion ? new Date(`${draft.fechaPresentacion}T00:00:00`) : null); setTipoId(draft.tipoId); setAutores(draft.autores); },
+  });
 
   const formatDateStr = (date: Date | null) => {
     if (!date) return null;
@@ -132,6 +147,7 @@ export default function TrabajoReunionForm() {
       return isEdit ? updateTrabajoReunion(Number(id), payload) : createTrabajoReunion(payload as TrabajoReunionPayload);
     },
     onSuccess: async (saved) => {
+      clearDraft();
       const trabajoId = saved?.id ?? Number(id);
 
       await qc.invalidateQueries({ queryKey: ["trabajos-reunion"] });
@@ -203,6 +219,7 @@ export default function TrabajoReunionForm() {
     );
 
     if (Object.keys(changedPayload).length === 0) {
+      clearDraft();
       navigate(`/trabajos-reunion/${id}`, {
         replace: true,
         state: {
@@ -232,6 +249,9 @@ export default function TrabajoReunionForm() {
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
         {isEdit ? "Editar trabajo" : "Nuevo trabajo"}
       </h2>
+
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
@@ -358,7 +378,7 @@ export default function TrabajoReunionForm() {
         </Field>
 
         <div className="flex justify-between pt-6">
-          <Button type="button" variant="secondary" size="sm" onClick={() => navigate(-1)}>
+          <Button type="button" variant="secondary" size="sm" onClick={() => requestLeave(() => navigate(-1))}>
             Volver
           </Button>
 

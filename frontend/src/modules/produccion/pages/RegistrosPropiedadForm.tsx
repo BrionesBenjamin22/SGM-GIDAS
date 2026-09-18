@@ -20,11 +20,16 @@ import {
 } from "@/modules/produccion/services/registrosPropiedadServices";
 import { toTitleCase } from "@/utils/format";
 import { parseCivilDate, toCivilDateString } from "@/utils/dateTime";
+import { useAuth } from "@/context/AuthContext";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 
 export default function RegistrosPropiedadForm() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { uct, uctGuard } = useUctGuard();
+  const { user } = useAuth();
   const { tipos = [] } = useTiposRegistroPropiedad();
   const { id } = useParams<{ id: string }>();
   const isEdit = Boolean(id);
@@ -64,6 +69,17 @@ export default function RegistrosPropiedadForm() {
       tipo_registro_id: initial.tipo_registro_id?.toString() ?? "",
     });
   }, [initial]);
+
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "produccion-registros",
+    recordId: id,
+    value: data,
+    ready: !isEdit || (!isLoading && Boolean(initial)),
+    autosave: false,
+    hasContent: (draft) => Object.values(draft).some(Boolean),
+    onRestore: setData,
+  });
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -105,6 +121,7 @@ export default function RegistrosPropiedadForm() {
         ? updateRegistroPropiedad(registroId as number, payload)
         : createRegistroPropiedad(payload as RegistroPropiedadPayload),
     onSuccess: async (saved: RegistroPropiedad) => {
+      clearDraft();
       await qc.invalidateQueries({ queryKey: ["registros-propiedad"] });
       await qc.invalidateQueries({ queryKey: ["registro-propiedad", registroId] });
       await qc.invalidateQueries({
@@ -180,6 +197,7 @@ export default function RegistrosPropiedadForm() {
     );
 
     if (Object.keys(changedPayload).length === 0) {
+      clearDraft();
       navigate(`/registros-propiedad/${registroId}`, {
         replace: true,
         state: {
@@ -204,6 +222,9 @@ export default function RegistrosPropiedadForm() {
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
         {isEdit ? "Editar registro" : "Nuevo registro"}
       </h2>
+
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
@@ -324,7 +345,7 @@ export default function RegistrosPropiedadForm() {
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => requestLeave(() => navigate(-1))}
           >
             Volver
           </Button>

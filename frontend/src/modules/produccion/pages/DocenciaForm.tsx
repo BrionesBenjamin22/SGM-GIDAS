@@ -10,6 +10,11 @@ import { getErrorMessage } from "@/lib/httpError";
 import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
 import { useGradosAcademicos } from "@/modules/produccion/hooks/useGradoAcademico";
 import { useRolesActividadDocencia } from "@/modules/produccion/hooks/useActividadDocenciaRol";
+import { toCivilDateString } from "@/utils/dateTime";
+import { useAuth } from "@/context/AuthContext";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import {
   crearActividadDocencia,
   getActividadDocenciaById,
@@ -21,6 +26,7 @@ export default function FormDocenciaInvestigador() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { user } = useAuth();
   const isEdit = Boolean(id);
 
   const { data: investigadores = [] } = useInvestigadores();
@@ -82,6 +88,17 @@ export default function FormDocenciaInvestigador() {
     );
   }, [initialData]);
 
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "produccion-docencia",
+    recordId: id,
+    value: { investigadorId, curso, institucion, fechaInicio: toCivilDateString(fechaInicio), fechaFin: toCivilDateString(fechaFin), gradoAcademicoId, rolActividadId },
+    ready: !isEdit || (!isLoading && Boolean(initialData)),
+    autosave: false,
+    hasContent: (draft) => Boolean(draft.investigadorId || draft.curso || draft.institucion || draft.fechaInicio || draft.fechaFin || draft.gradoAcademicoId || draft.rolActividadId),
+    onRestore: (draft) => { setInvestigadorId(draft.investigadorId); setCurso(draft.curso); setInstitucion(draft.institucion); setFechaInicio(draft.fechaInicio ? new Date(`${draft.fechaInicio}T00:00:00`) : null); setFechaFin(draft.fechaFin ? new Date(`${draft.fechaFin}T00:00:00`) : null); setGradoAcademicoId(draft.gradoAcademicoId); setRolActividadId(draft.rolActividadId); },
+  });
+
   const formatDateStr = (date: Date | null) => {
     if (!date) return null;
     const y = date.getFullYear();
@@ -107,6 +124,7 @@ export default function FormDocenciaInvestigador() {
         ? actualizarActividadDocencia(Number(id), payload)
         : crearActividadDocencia(payload as ActividadDocenciaPayload),
     onSuccess: async () => {
+      clearDraft();
       await qc.invalidateQueries({ queryKey: ["docencia"] });
       await qc.invalidateQueries({ queryKey: ["actividad-docencia", id] });
 
@@ -216,6 +234,7 @@ export default function FormDocenciaInvestigador() {
     );
 
     if (Object.keys(changedPayload).length === 0) {
+      clearDraft();
       navigate(`/docenciaInvestigador/${id}`, {
         replace: true,
         state: {
@@ -240,6 +259,9 @@ export default function FormDocenciaInvestigador() {
           ? "Editar actividad en docencia"
           : "Nueva actividad en docencia"}
       </h2>
+
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
@@ -402,7 +424,7 @@ export default function FormDocenciaInvestigador() {
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => requestLeave(() => navigate(-1))}
           >
             Volver
           </Button>

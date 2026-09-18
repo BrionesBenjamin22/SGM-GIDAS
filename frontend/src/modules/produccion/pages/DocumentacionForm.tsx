@@ -21,12 +21,17 @@ import {
 import { getAutores, createAutor } from "@/modules/produccion/services/autoresService";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 import { toCivilDateString } from "@/utils/dateTime";
+import { useAuth } from "@/context/AuthContext";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 
 export default function DocumentacionForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { uct, uctGuard } = useUctGuard();
+  const { user } = useAuth();
   const isEdit = Boolean(id);
 
   const { data: initial, isLoading } = useQuery({
@@ -64,6 +69,17 @@ export default function DocumentacionForm() {
         : [{ id: -Date.now(), nombre_apellido: "" }]
     );
   }, [initial]);
+
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "produccion-documentacion",
+    recordId: id,
+    value: { data, autores },
+    ready: !isEdit || (!isLoading && Boolean(initial)),
+    autosave: false,
+    hasContent: (draft) => Object.values(draft.data).some(Boolean) || draft.autores.some((autor) => autor.id > 0 || Boolean(autor.nombre_apellido.trim())),
+    onRestore: (draft) => { setData(draft.data); setAutores(draft.autores); },
+  });
 
   const autoresDisponibles = useMemo(() => {
     const map = new Map<number, { id: number; nombre_apellido: string }>();
@@ -186,6 +202,7 @@ export default function DocumentacionForm() {
         toAdd.length === 0 &&
         toRemove.length === 0
       ) {
+        clearDraft();
         navigate(`/documentacion/${id}`, {
           replace: true,
           state: {
@@ -212,6 +229,7 @@ export default function DocumentacionForm() {
     },
     onSuccess: async (saved) => {
       if (!saved) return;
+      clearDraft();
 
       const documentacionId = isEdit ? Number(id) : saved.id;
 
@@ -254,6 +272,9 @@ export default function DocumentacionForm() {
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
         {isEdit ? "Editar documentación" : "Nueva documentación"}
       </h2>
+
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
@@ -325,7 +346,7 @@ export default function DocumentacionForm() {
         </Field>
 
         <div className="flex justify-between pt-6">
-          <Button type="button" variant="secondary" size="sm" onClick={() => navigate(-1)}>
+          <Button type="button" variant="secondary" size="sm" onClick={() => requestLeave(() => navigate(-1))}>
             Volver
           </Button>
 

@@ -28,6 +28,10 @@ import { useIntegrantesAutores } from "@/modules/produccion/hooks/useIntegrantes
 import { mismasAutorias, type IntegranteAutor } from "@/modules/produccion/services/trabajoAutoresServices";
 import { useAuth } from "@/context/AuthContext";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
+import { toCivilDateString } from "@/utils/dateTime";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 
 export default function TrabajosRevistasForm() {
   const { id } = useParams<{ id: string }>();
@@ -37,7 +41,7 @@ export default function TrabajosRevistasForm() {
 
   const { uct, uctGuard } = useUctGuard();
   const { tipos = [] } = useTiposReunion();
-  const { canCreateRecords, canEditRecords } = useAuth();
+  const { canCreateRecords, canEditRecords, user } = useAuth();
   const puedeGuardar = isEdit ? canEditRecords() : canCreateRecords();
   const autoresQuery = useIntegrantesAutores();
   const integrantes = autoresQuery.data ?? [];
@@ -78,6 +82,17 @@ export default function TrabajosRevistasForm() {
     setTipoId(initialData.tipo_reunion?.id ?? null);
     setAutores(initialData.autores ?? []);
   }, [initialData]);
+
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "produccion-revistas",
+    recordId: id,
+    value: { enlace, titulo, nombreRevista, editorial, issn, pais, fecha: toCivilDateString(fecha), tipoId, autores },
+    ready: !isEdit || (!isLoading && Boolean(initialData)),
+    autosave: false,
+    hasContent: (draft) => Boolean(draft.enlace || draft.titulo || draft.nombreRevista || draft.editorial || draft.issn || draft.pais || draft.fecha || draft.tipoId || draft.autores.length),
+    onRestore: (draft) => { setEnlace(draft.enlace); setTitulo(draft.titulo); setNombreRevista(draft.nombreRevista); setEditorial(draft.editorial); setIssn(draft.issn); setPais(draft.pais); setFecha(draft.fecha ? new Date(`${draft.fecha}T00:00:00`) : null); setTipoId(draft.tipoId); setAutores(draft.autores); },
+  });
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -141,6 +156,7 @@ export default function TrabajosRevistasForm() {
       return isEdit ? updateTrabajoRevista(Number(id), payload) : createTrabajoRevista(payload as TrabajoRevistaPayload);
     },
     onSuccess: async (saved) => {
+      clearDraft();
       const trabajoId = saved?.id ?? Number(id);
 
       await qc.invalidateQueries({ queryKey: ["trabajos-revistas"] });
@@ -217,6 +233,7 @@ export default function TrabajosRevistasForm() {
     );
 
     if (Object.keys(changedPayload).length === 0) {
+      clearDraft();
       navigate(`/trabajos-revistas/${id}`, {
         replace: true,
         state: {
@@ -246,6 +263,9 @@ export default function TrabajosRevistasForm() {
       <h2 className="text-2xl font-semibold md:text-3xl">
         {isEdit ? "Editar trabajo en revista" : "Nuevo trabajo en revista"}
       </h2>
+
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
@@ -411,7 +431,7 @@ export default function TrabajosRevistasForm() {
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => requestLeave(() => navigate(-1))}
           >
             Volver
           </Button>

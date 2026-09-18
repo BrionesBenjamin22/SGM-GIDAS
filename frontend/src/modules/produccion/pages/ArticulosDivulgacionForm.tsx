@@ -8,6 +8,11 @@ import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
 import { getErrorMessage } from "@/lib/httpError";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
+import { toCivilDateString } from "@/utils/dateTime";
+import { useAuth } from "@/context/AuthContext";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import {
   createArticulo,
   getArticuloById,
@@ -20,6 +25,7 @@ export default function ArticulosDivulgacionForm() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { uct, uctGuard } = useUctGuard();
+  const { user } = useAuth();
 
   const isEdit = Boolean(id);
 
@@ -48,6 +54,17 @@ export default function ArticulosDivulgacionForm() {
         : null
     );
   }, [initialData]);
+
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "produccion-articulos",
+    recordId: id,
+    value: { titulo, descripcion, fechaPublicacion: toCivilDateString(fechaPublicacion) },
+    ready: !isEdit || (!isLoading && Boolean(initialData)),
+    autosave: false,
+    hasContent: (draft) => Boolean(draft.titulo || draft.descripcion || draft.fechaPublicacion),
+    onRestore: (draft) => { setTitulo(draft.titulo); setDescripcion(draft.descripcion); setFechaPublicacion(draft.fechaPublicacion ? new Date(`${draft.fechaPublicacion}T00:00:00`) : null); },
+  });
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -95,6 +112,7 @@ export default function ArticulosDivulgacionForm() {
         ? updateArticulo(Number(id), payload)
         : createArticulo(payload as ArticuloPayload),
     onSuccess: async (saved) => {
+      clearDraft();
       const articuloId = isEdit ? Number(id) : saved.id;
 
       await qc.invalidateQueries({ queryKey: ["articulos-divulgacion"] });
@@ -157,6 +175,7 @@ export default function ArticulosDivulgacionForm() {
     );
 
     if (Object.keys(changedPayload).length === 0) {
+      clearDraft();
       navigate(`/articulos-divulgacion/${id}`, {
         replace: true,
         state: {
@@ -183,6 +202,9 @@ export default function ArticulosDivulgacionForm() {
           ? "Editar artículo de divulgación"
           : "Nuevo artículo de divulgación"}
       </h2>
+
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
@@ -241,7 +263,7 @@ export default function ArticulosDivulgacionForm() {
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => requestLeave(() => navigate(-1))}
           >
             Volver
           </Button>

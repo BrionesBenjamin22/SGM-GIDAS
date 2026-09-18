@@ -232,3 +232,19 @@ Los formularios de produccion muestran el indicador en los datos obligatorios, i
 ## Errores de formularios (ISS-19, en curso)
 
 Los formularios no infieren campos inválidos a partir de palabras del mensaje del servidor. Solo `error.details.fields` se asocia a controles mediante `applyFieldErrors`; los demás errores conservan el aviso general. Los servicios de artículos, distinciones, trabajos, docencia, documentación y registros identifican campos conocidos de texto, fecha, catálogos y relaciones. Los formularios de docencia, documentación y registros usan fallbacks distintos para alta y edición.
+
+## Borradores de formularios (ISS-22)
+
+En formularios de producci?n, los cambios no se guardan como borrador mientras se escribe.
+Al pulsar Volver con cambios, el dialogo permite guardar el ultimo estado en
+el servidor, descartarlo o seguir editando. La navegacion externa al formulario
+queda sujeta a la misma confirmacion. La lista global muestra el tipo, un dato
+identificable del borrador cuando esta disponible, y la fecha de guardado.
+Al abrirlo se puede recuperar o descartar; un guardado exitoso elimina el
+borrador. El contenido no se almacena en localStorage ni sessionStorage.
+
+## Paginación de listados (ISS-23)
+
+Los resultados paginados muestran controles centrados de anterior, números
+de página y siguiente, inmediatamente debajo de las tarjetas o resultados.
+El máximo de resultados por página conserva el contrato del módulo.

@@ -15,6 +15,8 @@ function load(file: string, mocks: Record<string, unknown> = {}) {
   } }).outputText;
   runInNewContext(code, { URL, module, exports: module.exports, require: (name: string) => {
     if (name in mocks) return mocks[name];
+    if (name === "@/utils/dateTime") return { toCivilDateString: (date: Date | null) => date ? date.toISOString().slice(0, 10) : "" };
+    if (name === "@/modules/shared/hooks/useFormDraft") return { useFormDraft: () => ({ availableDraft: null, clearDraft() {}, saveStatus: "idle", blocker: { state: "unblocked" } }) };
     if (name.startsWith("@/components/") || name.startsWith("@/modules/produccion/components/")) return { default: name.split("/").at(-1) };
     if (name === "@/modules/produccion/utils/trabajoEnlace") return load("src/modules/produccion/utils/trabajoEnlace.ts");
     if (name === "../../../lib/textValidation") return require("../src/lib/textValidation.ts");
