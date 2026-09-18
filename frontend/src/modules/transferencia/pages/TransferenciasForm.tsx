@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import Button from "@/components/Button";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import DatePicker from "@/components/Calendar";
 import Field from "@/components/Field";
 import AdoptanteSelector from "@/components/AdoptanteSelector";
@@ -21,11 +22,15 @@ import type { Adoptante } from "@/modules/transferencia/services/adoptantesServi
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 import { useTiposContrato } from "@/modules/transferencia/hooks/useTransferencias";
 import { toCivilDateString } from "@/utils/dateTime";
+import { useAuth } from "@/context/AuthContext";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
 
 export default function TransferenciasForm() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { uct, uctGuard } = useUctGuard();
+  const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
 
@@ -71,6 +76,17 @@ export default function TransferenciasForm() {
     });
     setAdoptantes(transferencia.adoptantes ?? []);
   }, [transferencia]);
+
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "transferencia",
+    recordId: id,
+    value: { data, adoptantes },
+    ready: !isEdit || (!isLoading && Boolean(transferencia)),
+    autosave: false,
+    hasContent: (draft) => Object.values(draft.data).some(Boolean) || draft.adoptantes.length > 0,
+    onRestore: (draft) => { setData(draft.data); setAdoptantes(draft.adoptantes); },
+  });
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -180,6 +196,7 @@ export default function TransferenciasForm() {
         toAdd.length === 0 &&
         toRemove.length === 0
       ) {
+        clearDraft();
         navigate(`/transferencias/${id}`, {
           replace: true,
           state: {
@@ -206,6 +223,7 @@ export default function TransferenciasForm() {
     },
     onSuccess: async (saved) => {
       if (!saved) return;
+      clearDraft();
 
       const transferenciaId = isEdit ? Number(id) : saved.id;
 
@@ -258,6 +276,9 @@ export default function TransferenciasForm() {
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
         {isEdit ? "Editar transferencia" : "Nueva transferencia"}
       </h2>
+
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
@@ -427,7 +448,7 @@ export default function TransferenciasForm() {
         </div>
 
         <div className="flex justify-between pt-6">
-          <Button type="button" variant="secondary" size="sm" onClick={() => navigate(-1)}>
+          <Button type="button" variant="secondary" size="sm" onClick={() => requestLeave(() => navigate(-1))}>
             Volver
           </Button>
 

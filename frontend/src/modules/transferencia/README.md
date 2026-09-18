@@ -1,5 +1,9 @@
 # Transferencia frontend
 
+El listado consulta `/transferencias/?activos=...` con la barra final exigida
+por la ruta GET del backend. Así el proxy de desarrollo no recibe un 308 hacia
+el nombre interno `backend`, inaccesible desde el navegador.
+
 El alta inline de adoptantes exige solo letras Unicode y espacios. El
 formulario de transferencia rechaza denominación y demandante exclusivamente
 numéricos. Ambos conservan el texto para corregirlo.
@@ -68,9 +72,9 @@ backend sigue siendo la autoridad final y protege los endpoints por rol. Las baj
 son logicas y quedan auditadas. El detalle oculta la edicion de registros inactivos.
 
 El mock de transferencia solo se habilita en desarrollo cuando
-`VITE_ENABLE_TRANSFERENCIA_MOCK=true`. Los datos de `localStorage` se parsean de
-forma defensiva y nunca se usan como fallback automatico por falta de configuracion
-de API ni en builds de produccion.
+`VITE_ENABLE_TRANSFERENCIA_MOCK=true`. Sus datos viven en memoria de la pestaña;
+nunca se guardan en `localStorage` ni se usan como fallback automatico por falta de
+configuracion de API o en builds de produccion.
 
 ## Validaciones de fechas sin duplicados (ISS-09)
 
@@ -98,3 +102,19 @@ ISS-19: las validaciones del backend se muestran junto a los controles mediante 
 
 El selector de adoptantes muestra los errores estructurados de `adoptantes_ids` junto a la selección.
 El alta inline del adoptante muestra `error.details.fields.nombre` junto al nombre, conserva el valor para corregirlo, enfoca el control y deja el aviso general para errores sin campo conocido.
+
+## Borradores de formularios (ISS-22)
+
+En transferencias, los cambios no se guardan como borrador mientras se escribe.
+Al pulsar Volver con cambios, el dialogo permite guardar el ultimo estado en
+el servidor, descartarlo o seguir editando. La navegacion externa al formulario
+queda sujeta a la misma confirmacion. La lista global muestra el tipo, un dato
+identificable del borrador cuando esta disponible, y la fecha de guardado.
+Al abrirlo se puede recuperar o descartar; un guardado exitoso elimina el
+borrador. El contenido no se almacena en localStorage ni sessionStorage.
+
+## Paginación de listados (ISS-23)
+
+Los resultados paginados muestran controles centrados de anterior, números
+de página y siguiente, inmediatamente debajo de las tarjetas o resultados.
+El máximo de resultados por página conserva el contrato del módulo.
