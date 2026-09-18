@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Pencil, Trash2 } from "lucide-react";
 import Button from "@/components/Button";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import Field from "@/components/Field";
 import ErrorText from "@/components/ErrorText";
-import ConfirmDialog from "@/components/ConfirmDialog";
 import { getErrorMessage } from "@/lib/httpError";
 import { useUct } from "@/modules/grupo/hooks/useUct";
 import { useCargos } from "@/modules/grupo/hooks/useCargos";
@@ -130,12 +131,13 @@ export default function UctForm() {
     pendingFinalizations,
     mostrarAltaDirectivos,
   };
-  const { availableDraft, restoreDraft, discardDraft, clearDraft } = useFormDraft({
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
     userId: user?.id,
     module: "grupo-uct",
     recordId: grupoId,
     value: draftValue,
     ready: formInitialized,
+    autosave: false,
     hasContent: (draft) => Boolean(
       draft.data.facultadRegional || draft.data.nombreSigla || draft.data.correo ||
       draft.data.objetivos || draft.data.nombre1 || draft.data.nombre2 ||
@@ -408,11 +410,13 @@ export default function UctForm() {
 
       {availableDraft && (
         <DraftRecoveryNotice
-          savedAt={availableDraft.savedAt}
+          savedAt={availableDraft.saved_at}
+          sourceChanged={sourceChanged}
           onRestore={restoreDraft}
           onDiscard={discardDraft}
         />
       )}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
@@ -760,7 +764,7 @@ export default function UctForm() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => requestLeave(() => navigate(-1))}
             disabled={isSubmitting}
           >
             Volver
