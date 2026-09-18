@@ -4,16 +4,21 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import Field from "@/components/Field";
 import DatePicker from "@/components/Calendar";
 import SuccessToast from "@/components/SuccessToast";
 import { getErrorMessage } from "@/lib/httpError";
 import { createMemoria } from "@/modules/memorias/services/memoriasService";
 import { toCivilDateString } from "@/utils/dateTime";
+import { useAuth } from "@/context/AuthContext";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
 
 export default function MemoriaForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const [grupoId, setGrupoId] = useState("");
   const { data: grupos = [], isLoading: cargandoGrupos, isError: errorGrupos } = useQuery({ queryKey: ["grupos-utn"], queryFn: getGruposUtn });
@@ -23,6 +28,15 @@ export default function MemoriaForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "memorias",
+    value: { grupoId, periodoInicio, periodoFin, fechaApertura },
+    autosave: false,
+    hasContent: (draft) => Boolean(draft.grupoId || draft.periodoInicio || draft.periodoFin || draft.fechaApertura),
+    onRestore: (draft) => { setGrupoId(draft.grupoId); setPeriodoInicio(draft.periodoInicio); setPeriodoFin(draft.periodoFin); setFechaApertura(draft.fechaApertura); },
+  });
 
   const validate = () => {
     const nextErrors: Record<string, string> = {};
@@ -56,6 +70,7 @@ export default function MemoriaForm() {
         fecha_apertura: fechaApertura || undefined,
       }),
     onSuccess: async (memoria) => {
+      clearDraft();
       await queryClient.invalidateQueries({ queryKey: ["memorias"] });
       await queryClient.invalidateQueries({ queryKey: ["memoria", memoria.id] });
 
@@ -94,6 +109,9 @@ export default function MemoriaForm() {
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
         Nueva memoria
       </h2>
+
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
@@ -170,7 +188,7 @@ export default function MemoriaForm() {
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() => navigate("/memorias")}
+            onClick={() => requestLeave(() => navigate("/memorias"))}
           >
             Volver
           </Button>

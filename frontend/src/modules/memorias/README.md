@@ -114,3 +114,19 @@ El alta y la correccion de periodos muestran el indicador en UCT e inicio y fin 
 ## ISS-19: errores de formularios
 
 El alta y la corrección del período muestran `details.fields` junto a UCT e inicio/fin del período. El alta también asocia errores de `fecha_apertura` con su control opcional. Se conserva el borrador y se impide un segundo envío durante el guardado. Los errores sin campo identificable permanecen en el aviso general.
+
+## Borradores de formularios (ISS-22)
+
+En memorias, los cambios no se guardan como borrador mientras se escribe.
+Al pulsar Volver con cambios, el dialogo permite guardar el ultimo estado en
+el servidor, descartarlo o seguir editando. La navegacion externa al formulario
+queda sujeta a la misma confirmacion. La lista global muestra el tipo, un dato
+identificable del borrador cuando esta disponible, y la fecha de guardado.
+Al abrirlo se puede recuperar o descartar; un guardado exitoso elimina el
+borrador. El contenido no se almacena en localStorage ni sessionStorage.
+
+## Paginación de listados (ISS-23)
+
+Los resultados paginados muestran controles centrados de anterior, números
+de página y siguiente, inmediatamente debajo de las tarjetas o resultados.
+El máximo de resultados por página conserva el contrato del módulo.
