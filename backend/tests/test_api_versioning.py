@@ -130,6 +130,7 @@ class ApiVersioningTestCase(unittest.TestCase):
             "equipamiento",
             "erogacion",
             "fuente_financiamiento",
+            "form_draft",
             "grado_academico",
             "grupo_utn",
             "health",
