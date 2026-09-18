@@ -90,6 +90,7 @@ from modules.recursos.models.erogacion import (  # noqa: F401
     TipoErogacion,
 )
 from modules.shared.models.auditoria_campo import AuditoriaCampo  # noqa: F401
+from modules.shared.models.form_draft import FormDraft  # noqa: F401
 from modules.shared.models.audit_mixin import AuditMixin  # noqa: F401
 from modules.transferencia.models.transferencia_socio import (  # noqa: F401
     Adoptante,

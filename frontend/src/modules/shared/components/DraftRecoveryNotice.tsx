@@ -1,15 +1,17 @@
 import { FileClock } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Button from "@/components/Button";
 
 type Props = {
   savedAt: string;
   onRestore: () => void;
-  onDiscard: () => void;
+  onDiscard: () => Promise<void>;
+  sourceChanged?: boolean;
 };
 
-export default function DraftRecoveryNotice({ savedAt, onRestore, onDiscard }: Props) {
+export default function DraftRecoveryNotice({ savedAt, onRestore, onDiscard, sourceChanged = false }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const [error, setError] = useState("");
   const savedLabel = new Intl.DateTimeFormat("es-AR", {
     dateStyle: "short",
     timeStyle: "short",
@@ -45,13 +47,15 @@ export default function DraftRecoveryNotice({ savedAt, onRestore, onDiscard }: P
             Encontramos un borrador sin guardar
           </h2>
           <p id="draft-recovery-description" className="mt-1 text-sm text-sky-800">
-            Guardado localmente el {savedLabel}. Para continuar, elija si desea
+            Guardado en el servidor el {savedLabel}. Para continuar, elija si desea
             recuperarlo o descartarlo.
           </p>
+          {sourceChanged && <p role="alert" className="mt-2 text-sm font-medium text-amber-800">El registro cambió desde que guardó este borrador. Revise los datos antes de guardar.</p>}
           <div className="mt-4 flex flex-wrap gap-2">
             <Button type="button" size="sm" onClick={onRestore}>Recuperar borrador</Button>
-            <Button type="button" size="sm" variant="secondary" onClick={onDiscard}>Descartar</Button>
+            <Button type="button" size="sm" variant="secondary" onClick={() => void onDiscard().catch((cause) => setError(cause instanceof Error ? cause.message : "No pudimos descartar el borrador. Intente nuevamente."))}>Descartar</Button>
           </div>
+          {error && <p role="alert" className="mt-3 text-sm text-rose-700">{error}</p>}
         </div>
       </div>
     </dialog>

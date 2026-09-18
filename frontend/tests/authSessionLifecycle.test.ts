@@ -15,11 +15,6 @@ import {
   markSessionEnded,
   rememberSessionPath,
 } from "../src/modules/auth/utils/sessionNavigation.ts";
-import {
-  buildDraftKey,
-  readFormDraft,
-  saveFormDraft,
-} from "../src/modules/shared/utils/formDraft.ts";
 
 const httpSource = readFileSync(new URL("../src/lib/http.ts", import.meta.url), "utf8");
 const dialogSource = readFileSync(
@@ -90,14 +85,9 @@ test("una recarga con refresh revocado muestra un aviso de sesión terminada una
   assert.equal(consumeSessionEnded(storage), false);
 });
 
-test("la expiracion durante una edicion conserva ruta y borrador hasta el nuevo login", () => {
+test("la expiracion durante una edicion conserva la ruta hasta el nuevo login", () => {
   const storage = new MemoryStorage();
-  const draftKey = buildDraftKey(42, "proyectos", 7);
-  saveFormDraft(storage, draftKey, { nombreProyecto: "Trabajo sin guardar" });
   rememberSessionPath("/proyectos/7/editar", storage);
 
   assert.equal(consumeSessionPath(storage), "/proyectos/7/editar");
-  assert.deepEqual(readFormDraft<{ nombreProyecto: string }>(storage, draftKey)?.data, {
-    nombreProyecto: "Trabajo sin guardar",
-  });
 });

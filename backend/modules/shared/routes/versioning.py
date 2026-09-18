@@ -19,6 +19,7 @@ VERSIONED_PREFIXES = {
     "equipamiento": "/api/v1/recursos/equipamiento",
     "erogacion": "/api/v1/recursos/erogaciones",
     "fuente_financiamiento": "/api/v1/catalogos/fuente-financiamiento",
+    "form_draft": "/api/v1/borradores",
     "grado_academico": "/api/v1/produccion/grado-academico",
     "grupo_utn": "/api/v1/grupo/grupo-utn",
     "health": "/api/v1",

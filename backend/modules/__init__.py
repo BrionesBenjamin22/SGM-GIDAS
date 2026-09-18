@@ -65,6 +65,7 @@ def get_blueprints():
     from modules.recursos.routes.tipo_erogacion_rutas import tipo_erogacion_bp
     from modules.search.routes.search_rutas import search_bp
     from modules.shared.routes.status import health_bp
+    from modules.shared.routes.form_draft_routes import form_draft_bp
     from modules.transferencia.routes.adoptante_rutas import adoptante_bp
     from modules.transferencia.routes.tipo_contrato_rutas import tipo_contrato_bp
     from modules.transferencia.routes.transferencia_socio_rutas import (
@@ -73,6 +74,7 @@ def get_blueprints():
 
     return [
         health_bp,
+        form_draft_bp,
         actividad_docencia_bp,
         articulo_divulgacion_bp,
         adoptante_bp,
