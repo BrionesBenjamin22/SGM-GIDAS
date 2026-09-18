@@ -64,3 +64,9 @@ Corrección de alcance ISS-12: los autores de trabajos son únicamente investiga
 La fecha genérica del resultado de un trabajo en reunión corresponde a
 fecha_presentacion. El enlace abre el detalle con Fecha de presentación;
 se conserva el contrato genérico de SearchPage sin campos nuevos de búsqueda.
+
+## Paginación de listados (ISS-23)
+
+Los resultados paginados muestran controles centrados de anterior, números
+de página y siguiente, inmediatamente debajo de las tarjetas o resultados.
+El máximo de resultados por página conserva el contrato del módulo.

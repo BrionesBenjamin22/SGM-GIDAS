@@ -744,28 +744,30 @@ export default function SearchPage() {
         )}
 
         {!loading && !error && hasSearched && meta.total_pages > 1 && (
-          <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-            >
-              Anterior
-            </Button>
-            <span className="text-sm text-slate-500">
-              Página {meta.page} de {meta.total_pages} · {meta.total} resultados
-            </span>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={page >= meta.total_pages}
-              onClick={() => setPage((current) => Math.min(meta.total_pages, current + 1))}
-            >
-              Siguiente
-            </Button>
+          <div className="mt-8">
+            <nav aria-label="Paginación" className="flex flex-wrap items-center justify-center gap-2">
+              <Button type="button" size="sm" variant="secondary" aria-label="Página anterior"
+                disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>
+                {"<"}
+              </Button>
+              {[...Array(meta.total_pages)].map((_, index) => {
+                const pageNumber = index + 1;
+                return (
+                  <button type="button" key={pageNumber} aria-label={`Página ${pageNumber}`}
+                    aria-current={page === pageNumber ? "page" : undefined}
+                    onClick={() => setPage(pageNumber)}
+                    className={`rounded-lg px-3 py-1 text-sm ${
+                      page === pageNumber ? "bg-slate-800 text-white" : "bg-slate-100 hover:bg-slate-200"
+                    }`}>
+                    {pageNumber}
+                  </button>
+                );
+              })}
+              <Button type="button" size="sm" variant="secondary" aria-label="Página siguiente"
+                disabled={page >= meta.total_pages} onClick={() => setPage((current) => current + 1)}>
+                {">"}
+              </Button>
+            </nav>
           </div>
         )}
       </div>
