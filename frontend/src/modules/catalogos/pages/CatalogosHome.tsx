@@ -1047,36 +1047,30 @@ function CatalogPanel({
           </div>
 
           {totalPages > 1 && (
-            <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-              <span>
-                Mostrando {paginatedItems.length} de {filteredItems.length} valores
-              </span>
-
-              <div className="flex items-center justify-end gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((page) => page - 1)}
-                >
-                  Anterior
+            <div className="mt-8">
+              <nav aria-label="Paginación" className="flex flex-wrap items-center justify-center gap-2">
+                <Button type="button" size="sm" variant="secondary" aria-label="Página anterior"
+                  disabled={currentPage === 1} onClick={() => setCurrentPage((current) => current - 1)}>
+                  {"<"}
                 </Button>
-
-                <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                  Página {currentPage} de {totalPages}
-                </span>
-
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((page) => page + 1)}
-                >
-                  Siguiente
+                {[...Array(totalPages)].map((_, index) => {
+                  const pageNumber = index + 1;
+                  return (
+                    <button type="button" key={pageNumber} aria-label={`Página ${pageNumber}`}
+                      aria-current={currentPage === pageNumber ? "page" : undefined}
+                      onClick={() => setCurrentPage(pageNumber)}
+                      className={`rounded-lg px-3 py-1 text-sm ${
+                        currentPage === pageNumber ? "bg-slate-800 text-white" : "bg-slate-100 hover:bg-slate-200"
+                      }`}>
+                      {pageNumber}
+                    </button>
+                  );
+                })}
+                <Button type="button" size="sm" variant="secondary" aria-label="Página siguiente"
+                  disabled={currentPage === totalPages} onClick={() => setCurrentPage((current) => current + 1)}>
+                  {">"}
                 </Button>
-              </div>
+              </nav>
             </div>
           )}
         </div>

@@ -77,3 +77,9 @@ Muestra Creando, Guardando o Eliminando según la acción.
 ## Indicadores de campos obligatorios (ISS-21)
 
 En altas y ediciones, el nombre muestra el indicador obligatorio. La fuente de financiamiento se indica como obligatoria al crear una beca, conforme a la validacion del formulario.
+
+## Paginación de listados (ISS-23)
+
+Los resultados paginados muestran controles centrados de anterior, números
+de página y siguiente, inmediatamente debajo de las tarjetas o resultados.
+El máximo de resultados por página conserva el contrato del módulo.
