@@ -39,7 +39,11 @@ export default function PersonalForm() {
     enabled: Boolean(inferredRol && id),
   });
 
-  const [tipo, setTipo] = useState<Tipo>("");
+  const requestedTipo = new URLSearchParams(location.search).get("tipo");
+  const [tipo, setTipo] = useState<Tipo>(
+    requestedTipo === "PERSONAL" || requestedTipo === "BECARIO" || requestedTipo === "INVESTIGADOR"
+      ? requestedTipo : ""
+  );
   const [errorTipo, setErrorTipo] = useState(false);
 
   // 🔥 TOAST STATE
@@ -70,6 +74,12 @@ export default function PersonalForm() {
       navigate(location.pathname, { replace: true });
     }
   }, [location.state]);
+
+  useEffect(() => {
+    if (!isEdit && (requestedTipo === "PERSONAL" || requestedTipo === "BECARIO" || requestedTipo === "INVESTIGADOR")) {
+      setTipo(requestedTipo);
+    }
+  }, [isEdit, requestedTipo]);
 
   useEffect(() => {
     const r = inferredRol;

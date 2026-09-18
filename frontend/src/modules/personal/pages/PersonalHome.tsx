@@ -370,43 +370,30 @@ export default function PersonalLanding() {
         </div>
 
         {totalPages > 1 && (
-          <div className="mt-auto pt-8">
-            <div className="flex justify-center items-center gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => p - 1)}
-              >
-                ←
+          <div className="mt-8">
+            <nav aria-label="Paginación" className="flex flex-wrap items-center justify-center gap-2">
+              <Button type="button" size="sm" variant="secondary" aria-label="Página anterior"
+                disabled={currentPage === 1} onClick={() => setCurrentPage((current) => current - 1)}>
+                {"<"}
               </Button>
-
-              {[...Array(totalPages)].map((_, i) => {
-                const page = i + 1;
+              {[...Array(totalPages)].map((_, index) => {
+                const pageNumber = index + 1;
                 return (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-3 py-1 rounded-lg text-sm ${
-                      currentPage === page
-                        ? "bg-slate-800 text-white"
-                        : "bg-slate-100 hover:bg-slate-200"
-                    }`}
-                  >
-                    {page}
+                  <button type="button" key={pageNumber} aria-label={`Página ${pageNumber}`}
+                    aria-current={currentPage === pageNumber ? "page" : undefined}
+                    onClick={() => setCurrentPage(pageNumber)}
+                    className={`rounded-lg px-3 py-1 text-sm ${
+                      currentPage === pageNumber ? "bg-slate-800 text-white" : "bg-slate-100 hover:bg-slate-200"
+                    }`}>
+                    {pageNumber}
                   </button>
                 );
               })}
-
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => p + 1)}
-              >
-                →
+              <Button type="button" size="sm" variant="secondary" aria-label="Página siguiente"
+                disabled={currentPage === totalPages} onClick={() => setCurrentPage((current) => current + 1)}>
+                {">"}
               </Button>
-            </div>
+            </nav>
           </div>
         )}
       </div>

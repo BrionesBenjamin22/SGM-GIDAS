@@ -1,5 +1,21 @@
 # Modulo frontend de personal
 
+## Borradores (ISS-22)
+
+`PersonalForm` abre la clase indicada por `?tipo=PERSONAL|BECARIO|INVESTIGADOR`
+al seguir un enlace desde la lista de borradores. Cada formulario especializado
+usa `useFormDraft` con una clave distinta: `personal-personal`,
+`personal-becario` o `personal-investigador`, y el ID del registro en edición.
+Las fechas se serializan como fechas civiles; al recuperar un becario también
+se reconstruyen las fechas de sus becas. Se conserva un solo borrador por
+usuario, clase y registro. En Personal, Becario e Investigador no hay guardado
+automático: Volver detiene la navegación hasta que el usuario elige guardar el
+borrador, descartarlo o seguir editando. Guardar el registro elimina su borrador.
+La lista del perfil actualiza inmediatamente el elemento al guardar o descartar.
+
+Los tres formularios permanecen separados. Esta funcionalidad no cambia sus
+contratos de alta y edición ni sus validaciones de nombre y relaciones.
+
 Los tres formularios de personas admiten solo letras Unicode y espacios en
 nombre y apellido. Rechazan números y signos antes de guardar y muestran el
 error junto al campo.
@@ -167,3 +183,9 @@ mutateAsync para que el diálogo cubra toda la operación.
 ## Indicadores de campos obligatorios (ISS-21)
 
 La clase de registro y los campos obligatorios de investigadores y becarios muestran el indicador. Al agregar una beca, tipo y fecha de inicio son obligatorios; monto y fecha de fin son opcionales.
+
+## Paginación de listados (ISS-23)
+
+Los resultados paginados muestran controles centrados de anterior, números
+de página y siguiente, inmediatamente debajo de las tarjetas o resultados.
+El máximo de resultados por página conserva el contrato del módulo.

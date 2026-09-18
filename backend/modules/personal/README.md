@@ -1,5 +1,14 @@
 # Modulo backend de personal
 
+## Borradores (ISS-22)
+
+Los formularios Personal, Becario e Investigador usan los módulos permitidos
+`personal-personal`, `personal-becario` y `personal-investigador` del contrato
+compartido `/api/v1/borradores`. El borrador no crea ni modifica una persona;
+los endpoints de este módulo vuelven a validar permisos, campos, relaciones y
+reglas de negocio al guardar definitivamente. La tabla, vencimiento y
+aislamiento por usuario se documentan en `../shared/README.md`.
+
 Los nombres de Personal, Investigador y Becario admiten solo letras Unicode y
 espacios entre palabras. `22`, `Ana 22` y `Ana-María` devuelven
 `details.fields.nombre_apellido`; `Ana María` es válido.

@@ -2,6 +2,11 @@ import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
 import { hasOnlyLettersAndSpaces } from "../../../lib/textValidation";
 import { LoaderCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/context/AuthContext";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
+import { toCivilDateString } from "@/utils/dateTime";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "@/components/Button";
@@ -38,6 +43,7 @@ export default function FormInvestigador({
   const { data: programas = [] } = useProgramasIncentivos();
 
   const isEdit = Boolean(initialData);
+  const { user } = useAuth();
 
   const [nombreApellido, setNombre] = useState("");
   const [horasSemanales, setHoras] = useState<number | "">("");
@@ -48,6 +54,7 @@ export default function FormInvestigador({
   const [activo, setActivo] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [hydrated, setHydrated] = useState(!isEdit);
 
   useEffect(() => {
     if (!initialData) {
@@ -84,7 +91,23 @@ export default function FormInvestigador({
         initialData.programa_incentivos_id ??
         ""
     );
+    setHydrated(true);
   }, [initialData]);
+
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "personal-investigador",
+    recordId: initialData?.id,
+    value: { nombreApellido, horasSemanales, dedicacionId, categoriaId, programaId, fechaAltaGrupo: toCivilDateString(fechaAltaGrupo), activo },
+    ready: hydrated,
+    autosave: false,
+    hasContent: (draft) => Boolean(draft.nombreApellido || draft.horasSemanales || draft.dedicacionId || draft.categoriaId || draft.programaId || draft.fechaAltaGrupo),
+    onRestore: (draft) => {
+      setNombre(draft.nombreApellido); setHoras(draft.horasSemanales); setDedicacionId(draft.dedicacionId);
+      setCategoriaId(draft.categoriaId); setProgramaId(draft.programaId);
+      setFechaAltaGrupo(draft.fechaAltaGrupo ? new Date(`${draft.fechaAltaGrupo}T00:00:00`) : null); setActivo(draft.activo);
+    },
+  });
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -204,6 +227,7 @@ export default function FormInvestigador({
           qc.invalidateQueries({ queryKey: ["personal-edit", "investigador", String(initialData.id)] }),
           qc.invalidateQueries({ queryKey: ["personal-detalle", "investigador", String(initialData.id)] }),
         ]);
+        clearDraft();
         navigate(`/personal/investigador/${initialData.id}`, {
           replace: true,
           state: { successMessage: "¡Actualizado con éxito!" },
@@ -220,6 +244,7 @@ export default function FormInvestigador({
         qc.invalidateQueries({ queryKey: ["proyecto-candidatos"] }),
       ]);
 
+      clearDraft();
       navigate("/personal", {
         state: { successMessage: "¡Creado con éxito!" },
       });
@@ -234,6 +259,7 @@ export default function FormInvestigador({
       onSubmit={submit}
       className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
     >
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
       {errors.grupo && <p role="alert">{errors.grupo}</p>}
       <Field required label="Nombre y apellido" name="nombre" error={errors.nombre}>
         <>
@@ -383,7 +409,7 @@ export default function FormInvestigador({
           type="button"
           variant="secondary"
           size="sm"
-          onClick={onCancel}
+          onClick={() => requestLeave(onCancel)}
         >
           Volver
         </Button>
@@ -393,6 +419,7 @@ export default function FormInvestigador({
           {isSaving ? "Guardando..." : isEdit ? "Actualizar" : "Guardar"}
         </Button>
       </div>
+    <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
     </form>
   );
 }

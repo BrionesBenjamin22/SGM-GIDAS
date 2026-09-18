@@ -13,6 +13,11 @@ import {
   actualizarPersonal,
 } from "@/modules/personal/services/personalServices";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/context/AuthContext";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
+import { toCivilDateString } from "@/utils/dateTime";
 import type { PersonalCompleto } from "@/modules/personal/services/personalCompletoServices";
 import { personalFieldErrors } from "@/modules/personal/utils/personalFieldErrors";
 import { MAX_HORAS_SEMANALES, validWeeklyHours, WEEKLY_HOURS_ERROR } from "@/modules/personal/utils/weeklyHours";
@@ -33,6 +38,7 @@ export default function FormPTAAProfesional({
   const { data: tiposPersonal = [], isLoading: tiposLoading, isFetching: tiposFetching, isError: tiposError, refetch: refetchTipos } = useTiposPersonal();
   const qc = useQueryClient();
   const isEdit = Boolean(initialData);
+  const { user } = useAuth();
 
   const [nombreApellido, setNombre] = useState("");
   const [horasSemanales, setHoras] = useState<number | "">("");
@@ -41,6 +47,7 @@ export default function FormPTAAProfesional({
   const [activo, setActivo] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [hydrated, setHydrated] = useState(!isEdit);
 
   useEffect(() => {
     if (!initialData) {
@@ -65,7 +72,22 @@ export default function FormPTAAProfesional({
         initialData.tipo_personal_id ??
         ""
     );
+    setHydrated(true);
   }, [initialData]);
+
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "personal-personal",
+    recordId: initialData?.id,
+    value: { nombreApellido, horasSemanales, tipoPersonalId, fechaAltaGrupo: toCivilDateString(fechaAltaGrupo), activo },
+    ready: hydrated,
+    autosave: false,
+    hasContent: (draft) => Boolean(draft.nombreApellido || draft.horasSemanales || draft.tipoPersonalId || draft.fechaAltaGrupo),
+    onRestore: (draft) => {
+      setNombre(draft.nombreApellido); setHoras(draft.horasSemanales); setTipoPersonalId(draft.tipoPersonalId);
+      setFechaAltaGrupo(draft.fechaAltaGrupo ? new Date(`${draft.fechaAltaGrupo}T00:00:00`) : null); setActivo(draft.activo);
+    },
+  });
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -178,6 +200,7 @@ export default function FormPTAAProfesional({
           queryKey: ["personal"],
         });
 
+        clearDraft();
         navigate(
           `/personal/personal/${initialData.id}`,
           {
@@ -196,6 +219,7 @@ export default function FormPTAAProfesional({
         queryKey: ["personal"],
       });
 
+      clearDraft();
       navigate("/personal", {
         state: { successMessage: "¡Creado con éxito!" },
       });
@@ -210,6 +234,7 @@ export default function FormPTAAProfesional({
       noValidate
       className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
     >
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
       {errors.grupo && <p id="personal-grupo" tabIndex={-1} role="alert">{errors.grupo}</p>}
 
       <Field label="Nombre y apellido" required error={errors.nombre} name="nombre">
@@ -310,7 +335,7 @@ export default function FormPTAAProfesional({
           type="button"
           variant="secondary"
           size="sm"
-          onClick={onCancel}
+          onClick={() => requestLeave(onCancel)}
         >
           Volver
         </Button>
@@ -320,6 +345,7 @@ export default function FormPTAAProfesional({
           {isSaving ? "Guardando..." : isEdit ? "Actualizar" : "Guardar"}
         </Button>
       </div>
+    <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
     </form>
   );
 }

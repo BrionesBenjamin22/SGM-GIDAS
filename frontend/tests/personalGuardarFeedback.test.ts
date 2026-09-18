@@ -20,6 +20,9 @@ test("formularios Personal, Investigador y Becario enfocan errores y muestran gu
     export const useEffect = () => {}; export const LoaderCircle = () => {};
     export const useNavigate = () => (...args) => h.navigations.push(args);
     export const useQueryClient = () => h.queryClient;
+    export const useAuth = () => ({user: {id: 1}});
+    export const useFormDraft = options => {h.autosaveModes.push(options.autosave); return {availableDraft: null, clearDraft() {}, saveStatus: 'idle', blocker: {state: 'unblocked'}, requestLeave: action => h.leaveActions.push(action)};};
+    export const toCivilDateString = date => date ? date.toISOString().slice(0, 10) : '';
     export const useUct = () => ({uct: {id: 1}});
     export const useTiposPersonal = () => ({data: [{id: 1, nombre: 'Personal'}]});
     export const useDedicaciones = () => ({data: []});
@@ -39,7 +42,7 @@ test("formularios Personal, Investigador y Becario enfocan errores y muestran gu
     ]) {
       const queryClient = new QueryClient({defaultOptions: {queries: {staleTime: 60_000, retry: false}}});
       const key = ["personal", undefined, "true"];
-      const h = {cursor: 0, values: [] as any[], calls: [] as any[], navigations: [] as any[],
+      const h = {cursor: 0, values: [] as any[], calls: [] as any[], navigations: [] as any[], leaveActions: [] as Array<() => void>, autosaveModes: [] as boolean[], cancels: 0,
         errors: [] as any[], queryClient, serverRecords: [{id: 1, nombre_apellido: "Anterior"}], resolve: () => {}, reject: (_error: unknown) => {}};
       globals.__guardarHarness = h;
       queryClient.setQueryData(key, [...h.serverRecords]);
@@ -58,7 +61,14 @@ test("formularios Personal, Investigador y Becario enfocan errores y muestran gu
       });
       try {
         const {default: Form} = await import(url(js));
-        const render = () => {h.cursor = 0; return Form({onCancel() {}, onError: (error: unknown) => h.errors.push(error)});};
+        const render = () => {h.cursor = 0; return Form({onCancel() {h.cancels++;}, onError: (error: unknown) => h.errors.push(error)});};
+        const back = walk(render()).find(n => n.props.onClick && n.children.includes("Volver"));
+        back.props.onClick();
+        assert.equal(h.cancels, 0, `${config.name}: Volver espera la decisión`);
+        assert.equal(h.leaveActions.length, 1);
+        h.leaveActions[0]();
+        assert.equal(h.cancels, 1);
+        assert.ok(h.autosaveModes.every(mode => mode === false), `${config.name}: no guarda sin elección`);
         await render().props.onSubmit({preventDefault() {}});
         assert.equal(h.calls.length, 0, config.name);
         assert.match(h.errors[0].message, /Complete o corrija/);

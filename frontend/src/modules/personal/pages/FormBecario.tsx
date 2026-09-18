@@ -17,6 +17,11 @@ import type { PersonalCompleto } from "@/modules/personal/services/personalCompl
 import { useQueryClient } from "@tanstack/react-query";
 import { useBecas } from "@/modules/recursos/hooks/useBecas";
 import Calendar from "@/components/Calendar";
+import { useAuth } from "@/context/AuthContext";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
+import { toCivilDateString } from "@/utils/dateTime";
 
 interface Props {
   initialData?: PersonalCompleto;
@@ -40,6 +45,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
   const { data: becasLista = [] } = useBecas();
 
   const isEdit = Boolean(initialData);
+  const { user } = useAuth();
 
   const [nombreApellido, setNombre] = useState("");
   const [horasSemanales, setHoras] = useState<number | "">("");
@@ -60,6 +66,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
 
   const [becasVinculadas, setBecasVinculadas] = useState<BecaVinculada[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [hydrated, setHydrated] = useState(!isEdit);
 
   const formatDateStr = (d: Date | null) => {
     if (!d) return undefined;
@@ -117,7 +124,31 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
       setAgregarBeca(false);
       setBecasVinculadas([]);
     }
+    setHydrated(true);
   }, [initialData]);
+
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "personal-becario",
+    recordId: initialData?.id,
+    value: {
+      nombreApellido, horasSemanales, tipoFormacionId, fechaAltaGrupo: toCivilDateString(fechaAltaGrupo), activo, agregarBeca,
+      becasVinculadas: becasVinculadas.map((beca) => ({ ...beca, fechaInicio: toCivilDateString(beca.fechaInicio), fechaFin: toCivilDateString(beca.fechaFin) })),
+    },
+    ready: hydrated,
+    autosave: false,
+    hasContent: (draft) => Boolean(draft.nombreApellido || draft.horasSemanales || draft.tipoFormacionId || draft.fechaAltaGrupo || draft.becasVinculadas.length),
+    onRestore: (draft) => {
+      setNombre(draft.nombreApellido); setHoras(draft.horasSemanales); setTipoFormacionId(draft.tipoFormacionId);
+      setFechaAltaGrupo(draft.fechaAltaGrupo ? new Date(`${draft.fechaAltaGrupo}T00:00:00`) : null);
+      setActivo(draft.activo); setAgregarBeca(draft.agregarBeca);
+      setBecasVinculadas(draft.becasVinculadas.map((beca) => ({
+        ...beca,
+        fechaInicio: beca.fechaInicio ? new Date(`${beca.fechaInicio}T00:00:00`) : null,
+        fechaFin: beca.fechaFin ? new Date(`${beca.fechaFin}T00:00:00`) : null,
+      })));
+    },
+  });
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -257,6 +288,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
           queryKey: ["personal-detalle", "becario", String(initialData.id)],
         });
 
+        clearDraft();
         navigate(`/personal/becario/${initialData.id}`, {
           replace: true,
           state: { successMessage: "¡Actualizado con éxito!" },
@@ -271,6 +303,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
       await qc.invalidateQueries({ queryKey: ["personal"] });
       await qc.invalidateQueries({ queryKey: ["becarios"] });
 
+      clearDraft();
       navigate("/personal", {
         state: { successMessage: "¡Creado con éxito!" },
       });
@@ -285,6 +318,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
       onSubmit={submit}
       className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
     >
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
       {errors.grupo && <p role="alert">{errors.grupo}</p>}
       <Field required label="Nombre y apellido" name="nombre" error={errors.nombre}>
         <>
@@ -566,7 +600,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
           type="button"
           variant="secondary"
           size="sm"
-          onClick={onCancel}
+          onClick={() => requestLeave(onCancel)}
         >
           Volver
         </Button>
@@ -576,6 +610,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
           {isSaving ? "Guardando..." : isEdit ? "Actualizar" : "Guardar"}
         </Button>
       </div>
+    <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
     </form>
   );
 }

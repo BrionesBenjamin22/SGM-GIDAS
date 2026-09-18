@@ -26,6 +26,9 @@ test("formulario real muestra catálogo arbitrario, envía su ID y bloquea 220 h
     export const useUct = () => ({uct: {id: 1}});
     export const useTiposPersonal = () => ({data: h.catalog, isLoading: false, isError: false, refetch: async () => {}});
     export const useQueryClient = () => ({invalidateQueries: async () => {}});
+    export const useAuth = () => ({user: {id: 1}});
+    export const useFormDraft = () => ({availableDraft: null, clearDraft() {}, saveStatus: 'idle', blocker: {state: 'unblocked'}});
+    export const toCivilDateString = date => date ? date.toISOString().slice(0, 10) : '';
     export const upsertPersonal = async payload => { h.calls.push({payload}); return {id: 1}; };
     export const actualizarPersonal = async () => {};
     export default function Component() {}`;
