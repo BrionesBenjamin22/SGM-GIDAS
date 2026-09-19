@@ -1,3 +1,4 @@
+from modules.shared.services.catalog_name_validation import validar_nombre_descriptivo
 from extension import db
 from modules.personal.models.tipo_personal import TipoPersonal
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
@@ -13,6 +14,7 @@ def crear_tipo_personal(data, user_id=None):
         raise ValidationError("El nombre debe ser un texto no vacío.")
 
     nombre = nombre.strip()
+    validar_nombre_descriptivo(nombre)
     if not nombre:
         raise ValidationError("El nombre no puede estar vacío.")
 
@@ -41,6 +43,7 @@ def actualizar_tipo_personal(id, data, user_id=None):
         raise ValidationError("El nombre debe ser un texto no vacío.")
 
     nombre = nombre.strip()
+    validar_nombre_descriptivo(nombre)
     if not nombre:
         raise ValidationError("El nombre no puede estar vacío.")
 

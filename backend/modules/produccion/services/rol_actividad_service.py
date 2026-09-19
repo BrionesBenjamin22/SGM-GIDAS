@@ -1,3 +1,4 @@
+from modules.shared.services.catalog_name_validation import validar_nombre_descriptivo
 from modules.produccion.models.actividad_docencia import RolActividad
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
@@ -28,6 +29,7 @@ class RolActividadService:
             raise ValidationError("El nombre debe ser texto")
 
         nombre = nombre.strip()
+        validar_nombre_descriptivo(nombre)
         if not nombre:
             raise ValidationError("El nombre no puede estar vacio")
 

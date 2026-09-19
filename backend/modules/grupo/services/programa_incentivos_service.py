@@ -1,3 +1,4 @@
+from modules.shared.services.catalog_name_validation import validar_nombre_descriptivo
 from extension import db
 from modules.shared.exceptions import ValidationError as ValueError
 from sqlalchemy import func
@@ -10,6 +11,7 @@ def _validar_nombre(nombre, programa_id=None):
         raise ValueError("El nombre debe ser un texto no vacio.")
 
     nombre = " ".join(nombre.strip().split())
+    validar_nombre_descriptivo(nombre)
     if not nombre:
         raise ValueError("El nombre no puede estar vacio.")
 
@@ -34,6 +36,7 @@ def crear_programa_incentivos(data, user_id=None):
         raise ValueError("El nombre debe ser un texto no vacío.")
 
     nombre = nombre.strip()
+    validar_nombre_descriptivo(nombre)
     if not nombre:
         raise ValueError("El nombre no puede estar vacío.")
 
@@ -62,6 +65,7 @@ def actualizar_programa_incentivos(id, data, user_id=None):
         raise ValueError("El nombre debe ser un texto no vacío.")
 
     nombre = nombre.strip()
+    validar_nombre_descriptivo(nombre)
     if not nombre:
         raise ValueError("El nombre no puede estar vacío.")
 

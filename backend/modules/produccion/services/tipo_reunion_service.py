@@ -1,3 +1,4 @@
+from modules.shared.services.catalog_name_validation import validar_nombre_descriptivo
 from sqlalchemy import func
 
 from extension import db
@@ -20,6 +21,7 @@ class TipoReunionService:
         if not isinstance(nombre, str) or not nombre.strip():
             raise ValidationError("El nombre es obligatorio")
         nombre = " ".join(nombre.strip().split())
+        validar_nombre_descriptivo(nombre)
         query = TipoReunion.query.filter(func.lower(TipoReunion.nombre) == nombre.lower())
         if tipo_id is not None:
             query = query.filter(TipoReunion.id != tipo_id)

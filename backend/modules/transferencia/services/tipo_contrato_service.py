@@ -1,3 +1,4 @@
+from modules.shared.services.catalog_name_validation import validar_nombre_descriptivo
 from modules.transferencia.models.transferencia_socio import TipoContrato
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from extension import db
@@ -36,6 +37,7 @@ class TipoContratoService:
             raise ValueError("El nombre debe ser texto")
 
         nombre = nombre.strip()
+        validar_nombre_descriptivo(nombre)
 
         if not nombre:
             raise ValueError("El nombre no puede estar vacio")

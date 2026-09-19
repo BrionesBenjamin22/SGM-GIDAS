@@ -1,3 +1,4 @@
+from modules.shared.services.catalog_name_validation import validar_nombre_descriptivo
 import builtins
 from datetime import datetime
 from sqlalchemy import func
@@ -39,6 +40,7 @@ def _validar_nombre_beca(nombre):
         raise ValueError("El nombre de la beca es obligatorio.")
 
     nombre = " ".join(nombre.strip().split())
+    validar_nombre_descriptivo(nombre, "nombre_beca")
     if not nombre:
         raise ValueError("El nombre de la beca es obligatorio.")
 

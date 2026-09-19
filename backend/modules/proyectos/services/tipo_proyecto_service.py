@@ -1,3 +1,4 @@
+from modules.shared.services.catalog_name_validation import validar_nombre_descriptivo
 from sqlalchemy import func
 
 from modules.proyectos.models.proyecto_investigacion import TipoProyecto
@@ -40,6 +41,7 @@ class TipoProyectoService:
             raise ValidationError("El nombre debe ser texto")
 
         nombre = " ".join(nombre.strip().split())
+        validar_nombre_descriptivo(nombre)
         if not nombre:
             raise ValidationError("El nombre del tipo de proyecto es obligatorio")
 

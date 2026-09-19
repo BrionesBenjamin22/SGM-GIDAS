@@ -1,3 +1,4 @@
+from modules.shared.services.catalog_name_validation import validar_nombre_descriptivo
 from extension import db
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
 from modules.catalogos.models.categoria_utn import CategoriaUtn
@@ -13,6 +14,7 @@ def crear_categoria_utn(data, user_id=None):
         raise ValueError("El nombre debe ser un texto no vacío.")
 
     nombre = nombre.strip()
+    validar_nombre_descriptivo(nombre)
     if not nombre:
         raise ValueError("El nombre no puede estar vacío.")
 
@@ -41,6 +43,7 @@ def actualizar_categoria_utn(id, data, user_id=None):
         raise ValueError("El nombre debe ser un texto no vacío.")
 
     nombre = nombre.strip()
+    validar_nombre_descriptivo(nombre)
     if not nombre:
         raise ValueError("El nombre no puede estar vacío.")
 

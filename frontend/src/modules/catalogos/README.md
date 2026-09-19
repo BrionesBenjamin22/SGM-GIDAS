@@ -3,9 +3,9 @@
 ## Alcance
 
 El modulo centraliza la consulta y administracion de valores reutilizados por
-personal, proyectos, produccion, recursos y transferencia. `CatalogosHome` agrupa
-los catalogos por dominio, permite buscarlos y presenta sus valores, estados,
-auditoria e historial.
+personal, proyectos, produccion, recursos y transferencia. `CatalogosHome` permite
+seleccionar un tipo de catalogo y buscar sus valores. La tabla compacta muestra el
+nombre vigente, estado, auditoria y acciones permitidas.
 
 `ObjetosFinHome` conserva la vista combinada heredada de equipamientos y erogaciones;
 los flujos principales de esas entidades se documentan en el modulo `recursos`.
@@ -35,7 +35,9 @@ es logica cuando lo implementa el catalogo correspondiente.
 
 ## Validaciones y actualizaciones
 
-- Los nombres se recortan y no pueden quedar vacios.
+- Los nombres se recortan y deben contener al menos una letra Unicode. Pueden
+  incluir numeros y signos junto a texto descriptivo. La validacion se aplica en
+  altas y al cambiar el nombre en edicion; los registros existentes no se migran.
 - Las becas exigen seleccionar su fuente de financiamiento.
 - Las descripciones se recortan antes de persistirse.
 - En edicion se comparan nombre, descripcion y relacion; si no existen diferencias,
@@ -45,9 +47,15 @@ es logica cuando lo implementa el catalogo correspondiente.
 
 ## Paginacion e historial
 
-Cada panel muestra como maximo 9 valores por pagina. El historial de cada valor se
-consume desde `/:id/historial` y se pagina de a 3 eventos, incluyendo cambios de
-campos y eventos de sistema cuando el backend los informa.
+El catalogo seleccionado muestra como maximo 9 valores por pagina. Cada fila ofrece
+una accion `Historial`: al abrirla consulta `/:id/historial` y muestra hasta 3
+eventos por pagina, incluyendo cambios de campos y eventos de sistema cuando el
+backend los informa. La carga inicial no solicita todos los historiales.
+
+Editar un nombre conserva el ID del valor y registra el cambio historico. La baja
+logica se muestra como `Inactivo`; los valores disponibles se indican `Vigente`.
+Las advertencias generales se retiraron de la pantalla. El manual de usuario queda
+fuera de este issue por indicacion del usuario.
 
 ## Contratos relevantes
 

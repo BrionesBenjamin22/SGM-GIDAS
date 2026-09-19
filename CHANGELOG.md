@@ -8,6 +8,22 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-01: simplificar la gestion de Catalogos
+
+- Catalogos muestra un selector de tipo y una grilla compacta de valores; retiro
+  filtros por grupo/etiqueta, contadores y advertencias repetidas.
+- Cada fila consulta su historial al abrir la accion correspondiente y lo pagina
+  de a 3; el listado conserva 9 valores por pagina y distingue Vigente/Inactivo.
+- Altas y cambios de nombre exigen al menos una letra Unicode en frontend y en
+  los servicios backend de los catalogos administrados. Se preservan IDs,
+  referencias y registros anteriores; se actualizaron los README tecnicos.
+
+Validaciones: 112 pruebas frontend, typecheck, build de produccion, 8 pruebas
+backend focalizadas y suite backend completa de 457 pruebas con 1 incidencia
+preexistente de limpieza SQLite en Windows (`test_doble_refresh_concurrente_solo_rota_una_vez`).
+El usuario valido la interfaz y las acciones de crear, editar y eliminar Tipos de Personal.
+El manual de usuario queda a cargo del usuario al finalizar todos los modulos.
+
 ### ISS-19: contextualizar errores de formularios y validar nombres de personas
 
 - Los formularios de Auth, Grupo, Personal, Produccion, Proyectos, Recursos,

@@ -1,11 +1,9 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  AlertTriangle,
   ArrowUp,
-  ChevronDown,
-  Info,
+  History,
   Pencil,
   Plus,
   Search,
@@ -25,28 +23,11 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import ErrorText from "@/components/ErrorText";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
-import Tarjeta from "@/components/Tarjeta";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage as getSafeErrorMessage } from "@/lib/httpError";
-
-type CatalogGroup =
-  | "Institucionales / normativos"
-  | "Operativos"
-  | "Financiamiento y administración"
-  | "Propiedad intelectual";
-
-type CatalogTag =
-  | "Protegido"
-  | "Editable"
-  | "Sensible"
-  | "Impacta memorias"
-  | "Operativo"
-  | "Historico"
-  | "Sistema"
-  | "Institucional";
+import { hasDescriptiveCatalogName } from "@/modules/catalogos/utils/catalogNameValidation";
 
 type StatusFilter = "all" | "active" | "inactive";
-type CatalogGroupFilter = CatalogGroup | "Todos";
 
 type FkField = {
   idField: string;
@@ -59,21 +40,11 @@ type CatalogDef = {
   label: string;
   endpoint: string;
   description: string;
-  helpText: string;
-  group: CatalogGroup;
-  tags: CatalogTag[];
   nameField?: string;
   descField?: string;
   fkField?: FkField;
 };
 
-type CatalogSummary = {
-  total: number;
-  active: number | null;
-  inactive: number | null;
-  latest: string | null;
-  hasInactive: boolean;
-};
 
 type ToastState = {
   open: boolean;
@@ -82,13 +53,6 @@ type ToastState = {
 };
 
 type CatalogHistoryMap = Record<number, CatalogHistoryItem[]>;
-
-const CATALOG_GROUPS: CatalogGroup[] = [
-  "Institucionales / normativos",
-  "Operativos",
-  "Financiamiento y administración",
-  "Propiedad intelectual",
-];
 
 const CATALOG_ITEMS_PER_PAGE = 9;
 const HISTORY_ITEMS_PER_PAGE = 3;
@@ -102,64 +66,36 @@ const CATALOGS: CatalogDef[] = [
     label: "Tipo de Personal",
     endpoint: "/tipo-personal/",
     description: "Clasifica personas dentro de la estructura del sistema.",
-    helpText:
-      "Catálogo estructural. Sus valores clasifican personal; evite modificar nombres usados históricamente.",
-    group: "Institucionales / normativos",
-    tags: ["Sensible", "Impacta memorias", "Institucional"],
   },
   {
     label: "Nivel de Formación",
     endpoint: "/tipo-formacion/",
     description: "Clasifica la formación asociada a becarios.",
-    helpText:
-      "Catálogo institucional. Use la edición solo para correcciones menores.",
-    group: "Institucionales / normativos",
-    tags: ["Sensible", "Impacta memorias", "Institucional"],
   },
   {
     label: "Categoría UTN",
     endpoint: "/categoria-utn/",
     description: "Define categorías institucionales de investigadores.",
-    helpText:
-      "Catálogo institucional sensible. Si cambia el significado, cree un nuevo valor y conserve el anterior.",
-    group: "Institucionales / normativos",
-    tags: ["Protegido", "Sensible", "Impacta memorias", "Institucional"],
   },
   {
     label: "Tipo de Dedicación",
     endpoint: "/tipo-dedicacion/",
     description: "Define dedicaciones usadas por investigadores.",
-    helpText:
-      "Catálogo estructural. Evite reutilizar valores para representar dedicaciones distintas.",
-    group: "Institucionales / normativos",
-    tags: ["Sensible", "Impacta memorias", "Institucional"],
   },
   {
     label: "Grado Académico",
     endpoint: "/grado-academico",
     description: "Define grados académicos usados en actividades docentes.",
-    helpText:
-      "Catálogo institucional. Mantenga nombres estables para preservar visualización histórica.",
-    group: "Institucionales / normativos",
-    tags: ["Sensible", "Impacta memorias", "Institucional"],
   },
   {
     label: "Programa de Incentivos",
     endpoint: "/programas-incentivos/",
     description: "Define programas asociados a investigadores.",
-    helpText:
-      "Catálogo histórico. No elimine programas anteriores si fueron usados; mantenga trazabilidad.",
-    group: "Institucionales / normativos",
-    tags: ["Historico", "Sensible", "Impacta memorias"],
   },
   {
     label: "Becas",
     endpoint: "/becas/",
     description: "Define becas y su fuente de financiamiento asociada.",
-    helpText:
-      "Catálogo operativo. Revise duplicados antes de crear una nueva beca.",
-    group: "Operativos",
-    tags: ["Editable", "Operativo"],
     nameField: "nombre_beca",
     descField: "descripcion",
     fkField: {
@@ -172,73 +108,41 @@ const CATALOGS: CatalogDef[] = [
     label: "Cargos",
     endpoint: "/cargos/",
     description: "Define cargos usados en autoridades y directivos del grupo.",
-    helpText:
-      "Catálogo operativo. Evite renombrar cargos usados históricamente salvo correcciones menores.",
-    group: "Operativos",
-    tags: ["Editable", "Operativo"],
   },
   {
     label: "Tipo de Proyecto",
     endpoint: "/tipos-proyecto/",
     description: "Clasifica proyectos de investigación.",
-    helpText:
-      "Catálogo operativo con impacto en proyectos y memorias. Use nuevos valores ante cambios conceptuales.",
-    group: "Operativos",
-    tags: ["Editable", "Operativo", "Impacta memorias"],
   },
   {
     label: "Rol de Actividad",
     endpoint: "/rol-actividad",
     description: "Clasifica el rol ocupado en actividades docentes.",
-    helpText:
-      "Catálogo operativo. Use la edición para correcciones menores de nombre.",
-    group: "Operativos",
-    tags: ["Editable", "Operativo", "Impacta memorias"],
   },
   {
     label: "Tipo de Reunión Científica",
     endpoint: "/tipos-reunion-cientifica/",
     description: "Clasifica reuniones científicas para trabajos presentados.",
-    helpText:
-      "Catálogo operativo. Revise duplicados antes de crear una nueva clasificación.",
-    group: "Operativos",
-    tags: ["Editable", "Operativo", "Impacta memorias"],
   },
   {
     label: "Fuente de Financiamiento",
     endpoint: "/fuente-financiamiento/",
     description: "Define el origen de fondos usado en becas, proyectos y erogaciones.",
-    helpText:
-      "Catálogo operativo. Puede agregar nuevas fuentes cuando no existan; revise duplicados antes de crear.",
-    group: "Financiamiento y administración",
-    tags: ["Editable", "Operativo", "Impacta memorias"],
   },
   {
     label: "Tipo de Erogación",
     endpoint: "/tipo-erogacion/",
     description: "Clasifica movimientos administrativos y erogaciones.",
-    helpText:
-      "Catálogo administrativo. Evite modificar valores usados en registros contables históricos.",
-    group: "Financiamiento y administración",
-    tags: ["Sensible", "Operativo", "Impacta memorias"],
   },
   {
     label: "Tipo de Contrato",
     endpoint: "/tipo-contrato/",
     description: "Clasifica contratos usados en transferencias socio-productivas.",
-    helpText:
-      "Catálogo operativo. Cambie nombres solo para correcciones menores.",
-    group: "Financiamiento y administración",
-    tags: ["Editable", "Operativo", "Impacta memorias"],
   },
   {
     label: "Tipo de Registro Propiedad",
     endpoint: "/tipo-registro-propiedad/",
     description: "Clasifica registros de propiedad intelectual e industrial.",
-    helpText:
-      "Catálogo sensible. Sus valores impactan reportes de producción y memorias.",
-    group: "Propiedad intelectual",
-    tags: ["Sensible", "Impacta memorias", "Institucional"],
   },
 ];
 
@@ -248,10 +152,6 @@ function normalizeText(text: string) {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
-}
-
-function formatCatalogTag(tag: CatalogTag) {
-  return tag === "Historico" ? "Histórico" : tag;
 }
 
 function formatEntityName(entityName: string) {
@@ -343,25 +243,6 @@ function formatHistoryItem(item: CatalogHistoryItem) {
   )} -> ${formatHistoryValue(item.valor_nuevo)}`;
 }
 
-function getCatalogSummary(items: CatalogItem[]): CatalogSummary {
-  const withStatus = items.filter(hasStatusData);
-  const active = withStatus.filter((item) => !isInactive(item)).length;
-  const inactive = withStatus.filter(isInactive).length;
-  const timestamps = items
-    .map((item) => item.updated_at || item.created_at || item.deleted_at)
-    .filter((value): value is string => typeof value === "string" && !!value)
-    .sort();
-  const latestTimestamp = timestamps[timestamps.length - 1];
-
-  return {
-    total: items.length,
-    active: withStatus.length ? active : null,
-    inactive: withStatus.length ? inactive : null,
-    latest: latestTimestamp ? formatDate(latestTimestamp) : null,
-    hasInactive: inactive > 0,
-  };
-}
-
 function mapBackendMessage(
   rawMessage: string,
   action: "crear" | "actualizar" | "eliminar",
@@ -419,27 +300,13 @@ function getCatalogErrorMessage(
   return fallbackMap[action];
 }
 
-function Badge({ children }: { children: string }) {
-  return (
-    <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-slate-700">
-      {children}
-    </span>
-  );
-}
-
-function Metric({ children }: { children: ReactNode }) {
-  return <span className="text-xs text-slate-500">{children}</span>;
-}
-
 function CatalogPanel({
   def,
-  onSummaryChange,
   canCreate,
   canEdit,
   canDelete,
 }: {
   def: CatalogDef;
-  onSummaryChange: (label: string, summary: CatalogSummary) => void;
   canCreate: boolean;
   canEdit: boolean;
   canDelete: boolean;
@@ -453,7 +320,9 @@ function CatalogPanel({
   const actionInFlight = useRef(false);
   const [fkOptions, setFkOptions] = useState<CatalogItem[]>([]);
   const [historyByItem, setHistoryByItem] = useState<CatalogHistoryMap>({});
-  const [historyLoadFailed, setHistoryLoadFailed] = useState(false);
+  const [openHistoryId, setOpenHistoryId] = useState<number | null>(null);
+  const [historyLoadingId, setHistoryLoadingId] = useState<number | null>(null);
+  const [historyErrorId, setHistoryErrorId] = useState<number | null>(null);
   const [historyPageByItem, setHistoryPageByItem] = useState<Record<number, number>>({});
 
   const [showAdd, setShowAdd] = useState(false);
@@ -490,21 +359,9 @@ function CatalogPanel({
     try {
       const data = await getCatalogItems(def.endpoint);
       setItems(data);
-      onSummaryChange(def.label, getCatalogSummary(data));
-      let historyFailed = false;
-      const histories = await Promise.all(
-        data.map(async (item) => {
-          try {
-            const history = await getCatalogHistory(def.endpoint, item.id);
-            return [item.id, history] as const;
-          } catch {
-            historyFailed = true;
-            return [item.id, []] as const;
-          }
-        })
-      );
-      setHistoryByItem(Object.fromEntries(histories));
-      setHistoryLoadFailed(historyFailed);
+      setHistoryByItem({});
+      setOpenHistoryId(null);
+      setHistoryErrorId(null);
       setErrorMessage("");
     } catch {
       setErrorMessage(
@@ -512,6 +369,26 @@ function CatalogPanel({
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleHistory = async (id: number, retry = false) => {
+    if (openHistoryId === id && !retry) {
+      setOpenHistoryId(null);
+      return;
+    }
+    setOpenHistoryId(id);
+    setHistoryPageByItem((current) => ({ ...current, [id]: 1 }));
+    if (historyByItem[id] && !retry) return;
+    setHistoryLoadingId(id);
+    setHistoryErrorId(null);
+    try {
+      const history = await getCatalogHistory(def.endpoint, id);
+      setHistoryByItem((current) => ({ ...current, [id]: history }));
+    } catch {
+      setHistoryErrorId(id);
+    } finally {
+      setHistoryLoadingId(null);
     }
   };
 
@@ -590,6 +467,10 @@ function CatalogPanel({
       setErrorMessage("Debe ingresar un nombre antes de crear el registro.");
       return;
     }
+    if (!hasDescriptiveCatalogName(newName)) {
+      setErrorMessage("El nombre debe contener al menos una letra.");
+      return;
+    }
 
     if (def.fkField && !newFkId) {
       setErrorMessage(`Debe seleccionar ${fkLabel.toLowerCase()}.`);
@@ -649,6 +530,10 @@ function CatalogPanel({
 
     const body: Record<string, unknown> = {};
     const normalizedName = editName.trim();
+    if (normalizedName !== getDisplayName(item) && !hasDescriptiveCatalogName(normalizedName)) {
+      setErrorMessage("El nombre debe contener al menos una letra.");
+      return;
+    }
     if (normalizedName !== getDisplayName(item)) body[nameField] = normalizedName;
     if (def.descField) {
       const currentDescription =
@@ -729,18 +614,6 @@ function CatalogPanel({
 
   return (
     <div className="space-y-4 pt-4">
-      <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-        <div className="flex items-start gap-2 text-sm text-slate-600">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-          <p>{def.helpText}</p>
-        </div>
-        <p className="mt-2 text-xs text-slate-500">
-          Use la edición solo para correcciones menores de nombre o descripción.
-          Si el significado del valor cambia, cree un nuevo valor y evite
-          reutilizar el anterior.
-        </p>
-      </div>
-
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="relative md:w-80">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -752,7 +625,7 @@ function CatalogPanel({
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2" role="group" aria-label="Estado de valores">
           {(["all", "active", "inactive"] as StatusFilter[]).map((filter) => (
             <button
               key={filter}
@@ -773,11 +646,6 @@ function CatalogPanel({
 
       {loading && <p className="text-sm text-slate-400">Cargando...</p>}
       {!!errorMessage && <ErrorText>{errorMessage}</ErrorText>}
-      {historyLoadFailed && (
-        <ErrorText>
-          Lo sentimos, no pudimos recuperar parte del historial. Intente nuevamente.
-        </ErrorText>
-      )}
 
       {!loading && items.length === 0 && (
         <p className="text-sm text-slate-400 italic">Sin registros</p>
@@ -792,13 +660,7 @@ function CatalogPanel({
       {!loading && filteredItems.length > 0 && (
         <div className="space-y-3">
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-5 py-3">
-              <div className="grid grid-cols-1 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 md:grid-cols-[1fr_160px_220px]">
-                <span>Valor</span>
-                <span>Estado</span>
-                <span className="md:text-right">Acciones</span>
-              </div>
-            </div>
+            <div className="border-b border-slate-100 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Valores y acciones</div>
 
             <div className="divide-y divide-slate-100">
               {paginatedItems.map((item) => (
@@ -812,15 +674,6 @@ function CatalogPanel({
             >
               {editId === item.id ? (
                 <div className="space-y-3">
-                  <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                    <p>
-                      Este valor puede estar asociado a registros existentes y
-                      aparecer en reportes o memorias. Si modifica su nombre,
-                      podria afectar la visualizacion historica.
-                    </p>
-                  </div>
-
                   <Field
                     label={def.nameField === "nombre_beca" ? "Nombre de la beca" : "Nombre"}
                     required
@@ -879,7 +732,7 @@ function CatalogPanel({
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                   <div className="min-w-0">
                     <p className="truncate text-base font-semibold text-slate-800">
                       {getDisplayName(item)}
@@ -901,7 +754,87 @@ function CatalogPanel({
                       </p>
                     ) : null}
 
-                    <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2">
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 md:justify-end">
+                    <div>
+                      {hasStatusData(item) ? (
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider ${
+                            isInactive(item)
+                              ? "bg-rose-100 text-rose-700"
+                              : "bg-emerald-100 text-emerald-700"
+                          }`}
+                        >
+                          {isInactive(item) ? "Inactivo" : "Vigente"}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-400">
+                          Estado no informado
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="text-xs text-slate-500">
+                      {getAuditLabel(item, historyByItem[item.id] ?? [])}
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      aria-expanded={openHistoryId === item.id}
+                      onClick={() => void toggleHistory(item.id)}
+                    >
+                      <span className="flex items-center gap-1.5"><History size={14} aria-hidden="true" /> Historial</span>
+                    </Button>
+
+                    {canEdit && !isInactive(item) && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setEditId(item.id);
+                          setEditName(getDisplayName(item));
+                          setEditDesc(def.descField ? ((item[def.descField] as string) ?? "") : "");
+                          setEditFkId(getFkId(item));
+                          setErrorMessage("");
+                        }}
+                        title="Editar"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Pencil size={14} /> Editar
+                        </span>
+                      </Button>
+                    )}
+
+                    {canDelete && !isInactive(item) && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setDeleteTarget(item)}
+                        className="text-red-600 hover:bg-red-50"
+                        title="Eliminar"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Trash2 size={14} /> Eliminar
+                        </span>
+                      </Button>
+                    )}
+                  </div>
+                  {openHistoryId === item.id && (
+                    <div className="rounded-lg bg-slate-50 px-3 py-3 md:col-span-2" role="region" aria-label={`Historial de ${getDisplayName(item)}`}>
+                      {historyLoadingId === item.id ? (
+                        <p role="status" className="text-sm text-slate-500">Cargando historial...</p>
+                      ) : historyErrorId === item.id ? (
+                        <div>
+                          <ErrorText>Lo sentimos, no pudimos recuperar el historial. Intente nuevamente.</ErrorText>
+                          <Button type="button" variant="secondary" size="sm" onClick={() => void toggleHistory(item.id, true)}>Reintentar</Button>
+                        </div>
+                      ) : (
+                      <>
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Historial de cambios
                       </p>
@@ -977,68 +910,11 @@ function CatalogPanel({
                         <p className="mt-2 text-xs text-slate-400">
                           Sin cambios registrados para este valor.
                         </p>
+                       )}
+                      </>
                       )}
                     </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-3 md:justify-end">
-                    <div>
-                      {hasStatusData(item) ? (
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider ${
-                            isInactive(item)
-                              ? "bg-rose-100 text-rose-700"
-                              : "bg-emerald-100 text-emerald-700"
-                          }`}
-                        >
-                          {isInactive(item) ? "Inactivo" : "Activo"}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-slate-400">
-                          Estado no informado
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="text-xs text-slate-500">
-                      {getAuditLabel(item, historyByItem[item.id] ?? [])}
-                    </div>
-
-                    {canEdit && !isInactive(item) && (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => {
-                          setEditId(item.id);
-                          setEditName(getDisplayName(item));
-                          setEditDesc(def.descField ? ((item[def.descField] as string) ?? "") : "");
-                          setEditFkId(getFkId(item));
-                          setErrorMessage("");
-                        }}
-                        title="Editar"
-                      >
-                        <span className="flex items-center gap-1.5">
-                          <Pencil size={14} /> Editar
-                        </span>
-                      </Button>
-                    )}
-
-                    {canDelete && !isInactive(item) && (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setDeleteTarget(item)}
-                        className="text-red-600 hover:bg-red-50"
-                        title="Eliminar"
-                      >
-                        <span className="flex items-center gap-1.5">
-                          <Trash2 size={14} /> Eliminar
-                        </span>
-                      </Button>
-                    )}
-                  </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1188,266 +1064,41 @@ function CatalogPanel({
 export default function CatalogosHome() {
   const navigate = useNavigate();
   const { canCreateRecords, canEditRecords, canDeleteRecords } = useAuth();
-  const canCreate = canCreateRecords();
-  const canEdit = canEditRecords();
-  const canDelete = canDeleteRecords();
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [catalogSummaries, setCatalogSummaries] = useState<Record<string, CatalogSummary>>(
-    {}
-  );
-  const [pageSearch, setPageSearch] = useState("");
-  const [tagFilter, setTagFilter] = useState<CatalogTag | "Todos">("Todos");
-  const [activeGroup, setActiveGroup] = useState<CatalogGroupFilter>("Todos");
-
-  const availableTags = useMemo(
-    () => Array.from(new Set(CATALOGS.flatMap((catalog) => catalog.tags))),
-    []
-  );
-
-  const catalogMatchesSearchAndTag = useMemo(
-    () =>
-      CATALOGS.filter((catalog) => {
-        const matchesText =
-          normalizeText(catalog.label).includes(normalizeText(pageSearch)) ||
-          normalizeText(catalog.description).includes(normalizeText(pageSearch));
-        const matchesTag = tagFilter === "Todos" || catalog.tags.includes(tagFilter);
-        return matchesText && matchesTag;
-      }),
-    [pageSearch, tagFilter]
-  );
-
-  const visibleCatalogs = useMemo(
-    () =>
-      catalogMatchesSearchAndTag.filter(
-        (catalog) => activeGroup === "Todos" || catalog.group === activeGroup
-      ),
-    [activeGroup, catalogMatchesSearchAndTag]
-  );
-
-  const groupCounts = useMemo(() => {
-    const counts: Record<CatalogGroupFilter, number> = {
-      Todos: catalogMatchesSearchAndTag.length,
-      "Institucionales / normativos": 0,
-      Operativos: 0,
-      "Financiamiento y administración": 0,
-      "Propiedad intelectual": 0,
-    };
-
-    catalogMatchesSearchAndTag.forEach((catalog) => {
-      counts[catalog.group] += 1;
-    });
-
-    return counts;
-  }, [catalogMatchesSearchAndTag]);
-
-  useEffect(() => {
-    if (activeGroup !== "Todos" && groupCounts[activeGroup] === 0) {
-      setActiveGroup("Todos");
-    }
-  }, [activeGroup, groupCounts]);
-
-  const toggle = (label: string) => {
-    setExpanded((prev) => ({ ...prev, [label]: !prev[label] }));
-  };
-
-  const handleSummaryChange = (label: string, summary: CatalogSummary) => {
-    setCatalogSummaries((prev) => ({ ...prev, [label]: summary }));
-  };
+  const [selectedEndpoint, setSelectedEndpoint] = useState(CATALOGS[0].endpoint);
+  const selectedCatalog = CATALOGS.find((catalog) => catalog.endpoint === selectedEndpoint) ?? CATALOGS[0];
 
   return (
     <section className="w-full min-h-[calc(100vh-120px)] px-4 py-4 flex flex-col">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-6">
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold md:text-3xl">
-            Gestionar Catálogos
-          </h2>
+          <h2 className="text-2xl font-semibold md:text-3xl">Gestionar Catálogos</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Organice valores reutilizados por formularios, reportes y memorias.
+            Consulte y administre las opciones que usan los formularios.
           </p>
         </div>
-
-        <Button type="button" variant="secondary" size="sm" onClick={() => navigate(-1)}>
-          Volver
-        </Button>
+        <Button type="button" variant="secondary" size="sm" onClick={() => navigate(-1)}>Volver</Button>
       </div>
 
-      <div className="mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 px-4 py-3">
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {(["Todos", ...CATALOG_GROUPS] as CatalogGroupFilter[]).map((group) => (
-              <button
-                key={group}
-                type="button"
-                disabled={groupCounts[group] === 0}
-                onClick={() => setActiveGroup(group)}
-                className={`shrink-0 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                  activeGroup === group
-                    ? "border-slate-900 bg-slate-900 text-white"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                } disabled:cursor-not-allowed disabled:opacity-40`}
-              >
-                {group}
-                <span
-                  className={`ml-2 rounded-full px-2 py-0.5 text-xs ${
-                    activeGroup === group
-                      ? "bg-white/15 text-white"
-                      : "bg-slate-100 text-slate-500"
-                  }`}
-                >
-                  {groupCounts[group]}
-                </span>
-              </button>
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <Field label="Tipo de catálogo">
+          <select className="input max-w-lg" value={selectedEndpoint} onChange={(event) => setSelectedEndpoint(event.target.value)}>
+            {CATALOGS.map((catalog) => (
+              <option key={catalog.endpoint} value={catalog.endpoint}>{catalog.label}</option>
             ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="relative lg:w-96">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              className="input pl-9"
-              placeholder="Buscar catalogo"
-              value={pageSearch}
-              onChange={(event) => setPageSearch(event.target.value)}
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {(["Todos", ...availableTags] as Array<CatalogTag | "Todos">).map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => setTagFilter(tag)}
-                className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-                  tagFilter === tag
-                    ? "border-sky-200 bg-sky-50 text-sky-700"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                {tag === "Todos" ? tag : formatCatalogTag(tag)}
-              </button>
-            ))}
-          </div>
-        </div>
+          </select>
+        </Field>
+        <p className="mt-3 text-sm text-slate-600">{selectedCatalog.description}</p>
+        <CatalogPanel
+          key={selectedCatalog.endpoint}
+          def={selectedCatalog}
+          canCreate={canCreateRecords()}
+          canEdit={canEditRecords()}
+          canDelete={canDeleteRecords()}
+        />
       </div>
-
-      <div className="space-y-8">
-        {CATALOG_GROUPS.map((group) => {
-          const groupCatalogs = visibleCatalogs.filter(
-            (catalog) => catalog.group === group
-          );
-
-          if (!groupCatalogs.length) return null;
-
-          return (
-            <div key={group} className="space-y-3">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                {group}
-              </h3>
-
-              {groupCatalogs.map((catalog) => {
-                const isOpen = !!expanded[catalog.label];
-                const summary = catalogSummaries[catalog.label];
-
-                return (
-                  <div
-                    key={catalog.label}
-                    className="overflow-hidden rounded-xl"
-                  >
-                    <Tarjeta
-                      item={catalog}
-                      onClick={() => toggle(catalog.label)}
-                      className={isOpen ? "rounded-b-none border-b-0" : ""}
-                      title={() => (
-                        <div className="flex items-center gap-2">
-                          <span>{catalog.label}</span>
-                          <ChevronDown
-                            className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
-                              isOpen ? "rotate-180" : ""
-                            }`}
-                          />
-                        </div>
-                      )}
-                      subtitle={() => (
-                        <div className="space-y-3">
-                          <p>{catalog.description}</p>
-                          <div className="flex flex-wrap gap-2">
-                            {summary?.hasInactive && <Badge>Con inactivos</Badge>}
-                            {catalog.tags.map((tag) => (
-                              <Badge key={tag}>{formatCatalogTag(tag)}</Badge>
-                            ))}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                            {summary ? (
-                              <>
-                                <Metric>{summary.total} valores</Metric>
-                                {summary.active !== null && (
-                                  <Metric>{summary.active} activos</Metric>
-                                )}
-                                {summary.inactive !== null && (
-                                  <Metric>{summary.inactive} inactivos</Metric>
-                                )}
-                                <Metric>usos no disponibles</Metric>
-                                {summary.latest ? (
-                                  <Metric>
-                                    última modificación {summary.latest}
-                                  </Metric>
-                                ) : (
-                                  <Metric>última modificación no disponible</Metric>
-                                )}
-                              </>
-                            ) : (
-                              <Metric>Abrir para cargar metricas disponibles</Metric>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    />
-
-                    <div
-                      className={`overflow-hidden transition-all duration-300 ${
-                        isOpen ? "max-h-[3000px] opacity-100" : "max-h-0 opacity-0"
-                      }`}
-                    >
-                      <div className="rounded-b-xl border border-t-0 border-slate-200 bg-white/80 px-6 pb-6">
-                        {isOpen && (
-                          <CatalogPanel
-                            def={catalog}
-                            onSummaryChange={handleSummaryChange}
-                            canCreate={canCreate}
-                            canEdit={canEdit}
-                            canDelete={canDelete}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
-
-        {visibleCatalogs.length === 0 && (
-          <div className="rounded-lg border border-slate-200 bg-white px-4 py-6 text-sm text-slate-500">
-            No hay catálogos que coincidan con la búsqueda o el filtro
-            seleccionado.
-          </div>
-        )}
-
-        <div className="flex justify-end border-t border-slate-100 pt-4">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={scrollToPageTop}
-            className="flex items-center gap-2"
-          >
-            <ArrowUp className="h-4 w-4" />
-            Volver al inicio
-          </Button>
-        </div>
-      </div>
+      <button type="button" className="mt-8 inline-flex items-center justify-center gap-2 self-center text-sm text-slate-600 hover:text-slate-900" onClick={scrollToPageTop}>
+        <ArrowUp className="h-4 w-4" aria-hidden="true" /> Volver arriba
+      </button>
     </section>
   );
 }
