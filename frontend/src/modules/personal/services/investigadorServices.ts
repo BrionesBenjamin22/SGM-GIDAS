@@ -10,8 +10,8 @@ export interface InvestigadorPayload {
   deleted_at?: string | null | undefined;
   grupo_utn_id: number;
   tipo_dedicacion_id: number;   // 🔥 CORREGIDO
-  categoria_utn_id?: number;
-  programa_incentivos_id?: number;
+  categoria_utn_id?: number | null;
+  programa_incentivos_id?: number | null;
   activo: boolean;
 }
 

@@ -1,5 +1,43 @@
 # Modulo backend de personal
 
+## Listado combinado y relaciones opcionales (ISS-25)
+
+`GET /api/v1/personal/all` es el listado canonico de Personal, Becarios e
+Investigadores. Mantiene compatibilidad: sin `page` ni `per_page` devuelve la
+lista plana anterior; con cualquiera de esos parametros devuelve:
+
+```json
+{
+  "data": [],
+  "meta": { "page": 1, "per_page": 9, "total": 0, "total_pages": 0 },
+  "error": null
+}
+```
+
+Parametros paginados admitidos:
+
+- `page`: entero positivo.
+- `per_page`: entero entre 1 y 9.
+- `search`: busca por nombre, rol, clasificacion o grupo.
+- `tipo`: `personal`, `ptaa`, `profesional`, `becario` o `investigador`.
+- `activos`: `true`, `false` o `all`.
+- `sort`: `nombre`, `clase`, `clasificacion`, `grupo`, `horas`, `estado` o
+  `fecha_alta`.
+- `direction`: `asc` o `desc`.
+- `ids`: lista separada por comas de enteros positivos, usada por el contexto de
+  memorias.
+
+La consulta unifica los tres modelos, aplica filtros, conteo, ordenamiento y
+paginacion en base de datos, y luego serializa `id`, `rol`, `nombre_apellido`,
+`clasificacion`, `grupo`, `horas_semanales`, `activo`, `fecha_alta_grupo` y las
+fechas de auditoria. La lectura requiere `ADMIN`, `GESTOR` o `LECTURA`. Los
+parametros invalidos devuelven el error de validacion seguro del API.
+
+En Investigador, `categoria_utn_id` y `programa_incentivos_id` son opcionales.
+Cuando se reciben valores se validan contra sus catalogos; `null` elimina una
+asignacion existente. Altas, asignaciones y eliminaciones quedan registradas en
+auditoria. Las relaciones ya eran anulables, por lo que no se agrega migracion.
+
 ## Borradores (ISS-22)
 
 Los formularios Personal, Becario e Investigador usan los módulos permitidos

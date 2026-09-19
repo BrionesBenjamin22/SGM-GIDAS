@@ -89,6 +89,24 @@ export default function FormPTAAProfesional({
     },
   });
 
+  const hasUnsavedChanges = () => {
+    if (!initialData) return true;
+    return nombreApellido !== (initialData.nombre_apellido ?? "") ||
+      Number(horasSemanales) !== Number(initialData.horas_semanales) ||
+      Number(tipoPersonalId) !== Number(initialData.relaciones?.tipo_personal?.id ?? initialData.tipo_personal_id) ||
+      toCivilDateString(fechaAltaGrupo) !== (initialData.fecha_alta_grupo ?? "") ||
+      activo !== (initialData.activo ?? true);
+  };
+
+  const handleCancel = () => {
+    if (isEdit && !availableDraft && !hasUnsavedChanges()) {
+      clearDraft();
+      onCancel();
+      return;
+    }
+    requestLeave(onCancel);
+  };
+
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
@@ -299,10 +317,10 @@ export default function FormPTAAProfesional({
           <Button type="button" variant="secondary" onClick={() => void refetchTipos()} loading={tiposFetching} loadingText="Reintentando...">Reintentar</Button>
         </div>}
         {!tiposLoading && !tiposError && !tiposPersonal.length && <p role="alert">No hay tipos de personal disponibles. Agregue un tipo en el catálogo e intente nuevamente.</p>}
-        <Field label="Tipo de personal" required error={errors.tipoPersonal} name="tipoPersonal">
+        <Field label="Función del personal" required error={errors.tipoPersonal} name="tipoPersonal">
           <select
             id="personal-tipoPersonal"
-            aria-label="Tipo de personal"
+            aria-label="Función del personal"
             className={`input ${
               errors.tipoPersonal ? "border-red-500 ring-2 ring-red-500" : ""
             }`}
@@ -335,7 +353,7 @@ export default function FormPTAAProfesional({
           type="button"
           variant="secondary"
           size="sm"
-          onClick={() => requestLeave(onCancel)}
+          onClick={handleCancel}
         >
           Volver
         </Button>

@@ -21,7 +21,7 @@ test("formularios Personal, Investigador y Becario enfocan errores y muestran gu
     export const useNavigate = () => (...args) => h.navigations.push(args);
     export const useQueryClient = () => h.queryClient;
     export const useAuth = () => ({user: {id: 1}});
-    export const useFormDraft = options => {h.autosaveModes.push(options.autosave); return {availableDraft: null, clearDraft() {}, saveStatus: 'idle', blocker: {state: 'unblocked'}, requestLeave: action => h.leaveActions.push(action)};};
+    export const useFormDraft = options => {h.autosaveModes.push(options.autosave); return {availableDraft: null, clearDraft() {h.clearDrafts++;}, saveStatus: 'idle', blocker: {state: 'unblocked'}, requestLeave: action => h.leaveActions.push(action)};};
     export const toCivilDateString = date => date ? date.toISOString().slice(0, 10) : '';
     export const useUct = () => ({uct: {id: 1}});
     export const useTiposPersonal = () => ({data: [{id: 1, nombre: 'Personal'}]});
@@ -36,13 +36,13 @@ test("formularios Personal, Investigador y Becario enfocan errores y muestran gu
     export default function Component() {}`);
   try {
     for (const config of [
-      {name: "FormPTAAProfesional", values: ["Persona", 20, 1, new Date(2026, 0, 1), true, {}, false]},
-      {name: "FormInvestigador", values: ["Persona", 20, 1, 1, 1, new Date(2026, 0, 1), true, {}, false]},
-      {name: "FormBecario", values: ["Persona", 20, 1, new Date(2026, 0, 1), true, {}, false, [], false]},
+      {name: "FormPTAAProfesional", values: ["Persona", 20, 1, new Date(2026, 0, 1), true, {}, false], initialData: {id: 1, nombre_apellido: "Persona", horas_semanales: 20, tipo_personal_id: 1, fecha_alta_grupo: "2026-01-01", activo: true}},
+      {name: "FormInvestigador", values: ["Persona", 20, 1, 1, 1, new Date(2026, 0, 1), true, {}, false], initialData: {id: 1, nombre_apellido: "Persona", horas_semanales: 20, tipo_dedicacion_id: 1, categoria_utn_id: 1, programa_incentivos_id: 1, fecha_alta_grupo: "2026-01-01", activo: true}},
+      {name: "FormBecario", values: ["Persona", 20, 1, new Date(2026, 0, 1), true, {}, false, [], false], initialData: {id: 1, nombre_apellido: "Persona", horas_semanales: 20, tipo_formacion_id: 1, fecha_alta_grupo: "2026-01-01", activo: true, becas: []}},
     ]) {
       const queryClient = new QueryClient({defaultOptions: {queries: {staleTime: 60_000, retry: false}}});
       const key = ["personal", undefined, "true"];
-      const h = {cursor: 0, values: [] as any[], calls: [] as any[], navigations: [] as any[], leaveActions: [] as Array<() => void>, autosaveModes: [] as boolean[], cancels: 0,
+      const h = {cursor: 0, values: [] as any[], calls: [] as any[], navigations: [] as any[], leaveActions: [] as Array<() => void>, autosaveModes: [] as boolean[], cancels: 0, clearDrafts: 0,
         errors: [] as any[], queryClient, serverRecords: [{id: 1, nombre_apellido: "Anterior"}], resolve: () => {}, reject: (_error: unknown) => {}};
       globals.__guardarHarness = h;
       queryClient.setQueryData(key, [...h.serverRecords]);
@@ -61,7 +61,27 @@ test("formularios Personal, Investigador y Becario enfocan errores y muestran gu
       });
       try {
         const {default: Form} = await import(url(js));
-        const render = () => {h.cursor = 0; return Form({onCancel() {h.cancels++;}, onError: (error: unknown) => h.errors.push(error)});};
+        const render = (initialData?: Record<string, unknown>) => {h.cursor = 0; return Form({initialData, onCancel() {h.cancels++;}, onError: (error: unknown) => h.errors.push(error)});};
+        h.values = [...config.values];
+        const unchangedBack = walk(render(config.initialData)).find(n => n.props.onClick && n.children.includes("Volver"));
+        unchangedBack.props.onClick();
+        assert.equal(h.cancels, 1, `${config.name}: vuelve directamente si no hay cambios`);
+        assert.equal(h.leaveActions.length, 0, `${config.name}: no abre el diálogo sin cambios`);
+        assert.equal(h.clearDrafts, 1, `${config.name}: desactiva el bloqueo antes de volver`);
+
+        h.values = [...config.values];
+        h.values[0] = "Persona modificada";
+        h.cancels = 0;
+        h.clearDrafts = 0;
+        const changedBack = walk(render(config.initialData)).find(n => n.props.onClick && n.children.includes("Volver"));
+        changedBack.props.onClick();
+        assert.equal(h.cancels, 0, `${config.name}: no abandona una edición modificada`);
+        assert.equal(h.leaveActions.length, 1, `${config.name}: pide una decisión si hay cambios`);
+
+        h.values = [];
+        h.cancels = 0;
+        h.clearDrafts = 0;
+        h.leaveActions = [];
         const back = walk(render()).find(n => n.props.onClick && n.children.includes("Volver"));
         back.props.onClick();
         assert.equal(h.cancels, 0, `${config.name}: Volver espera la decisión`);

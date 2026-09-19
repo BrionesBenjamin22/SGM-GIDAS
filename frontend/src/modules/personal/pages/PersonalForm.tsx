@@ -118,36 +118,36 @@ export default function PersonalForm() {
 
       <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 space-y-6">
 
-        {!isEdit && (
-          <div>
-            <label htmlFor="personal-clase" className="block text-sm font-medium mb-2">
+        {!isEdit ? (
+          <fieldset>
+            <legend className="block text-sm font-medium mb-3">
               Clase de registro<span className="ml-1 text-rose-500" aria-hidden="true">*</span>
-            </label>
-
-            <select
-              id="personal-clase"
-              aria-invalid={errorTipo}
-              className={`input ${errorTipo ? "border-red-500 ring-2 ring-red-500 bg-red-50" : ""
-                }`}
-              value={tipo}
-              onChange={(e) => handleTipoChange(e.target.value as Tipo)}
-              onBlur={() => {
-                if (!tipo) setErrorTipo(true);
-              }}
-            >
-              <option value="">
-                Selecciona el rol del personal
-              </option>
-              <option value="PERSONAL">Personal</option>
-              <option value="BECARIO">Becario</option>
-              <option value="INVESTIGADOR">Investigador</option>
-            </select>
+            </legend>
+            <div className="grid gap-3 md:grid-cols-3">
+              {([
+                ["PERSONAL", "Personal de apoyo, técnico o administrativo", "Funciones de apoyo y gestión institucional."],
+                ["BECARIO", "Becario", "Integrantes con formación y becas asociadas."],
+                ["INVESTIGADOR", "Investigador", "Integrantes con dedicación y antecedentes de investigación."],
+              ] as const).map(([value, label, description]) => (
+                <button key={value} type="button" aria-pressed={tipo === value} onClick={() => handleTipoChange(value)}
+                  className={`rounded-xl border p-4 text-left outline-none transition motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-slate-500 ${tipo === value ? "border-slate-800 bg-slate-50 ring-1 ring-slate-800" : "border-slate-200 hover:border-slate-400"}`}>
+                  <span className="block text-sm font-semibold text-slate-900">{label}</span>
+                  <span className="mt-1 block text-xs leading-5 text-slate-500">{description}</span>
+                </button>
+              ))}
+            </div>
 
             {errorTipo && (
               <p className="text-red-500 text-sm mt-1">
-                Debe seleccionar el rol del personal
+                Debe seleccionar una clase de registro
               </p>
             )}
+          </fieldset>
+        ) : (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Clase de registro</span>
+            <p className="mt-1 font-medium text-slate-900">{tipo === "PERSONAL" ? "Personal de apoyo, técnico o administrativo" : tipo === "BECARIO" ? "Becario" : "Investigador"}</p>
+            <p className="mt-1 text-xs text-slate-500">La clase no puede cambiarse porque corresponde a un tipo de registro persistente distinto.</p>
           </div>
         )}
 

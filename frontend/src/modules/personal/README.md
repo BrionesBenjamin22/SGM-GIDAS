@@ -1,5 +1,35 @@
 # Modulo frontend de personal
 
+## Tabla y formularios de Personal (ISS-25)
+
+`PersonalHome` consume el listado paginado de servidor mediante `usePersonal` y
+la tabla global controlada. Presenta hasta 9 integrantes por pagina, busqueda,
+chips de clase y estado en una sola hilera, y ordenamiento por nombre, clase,
+clasificacion, grupo, horas, estado o fecha de alta. Al cambiar criterios vuelve
+a la primera pagina. TanStack Query conserva la pagina visible durante el
+refetch y la tabla muestra una transicion discreta.
+
+Una fila completa abre el detalle. Las acciones con iconos permiten ver, editar
+o eliminar segun rol y estado; los controles internos no activan el click de la
+fila. La flecha izquierda expande el historial y lo consulta solo al abrirlo. La
+cache se separa por `rol + id` y cada historial muestra 3 eventos por pagina,
+con carga, error recuperable y estado vacio propios. Los eventos relacionales de
+becas se formatean como informacion legible y no exponen el JSON de auditoria.
+
+`Agregar nuevo` navega a `/personal/nuevo` y conserva la clase seleccionada en
+la URL. El alta permite elegir Personal, Becario o Investigador mediante opciones
+visibles. En edicion la clase es informativa e inmutable. El catalogo antes
+rotulado `Tipo de personal` se presenta como `Funcion del personal`.
+
+Categoria UTN y Programa de Incentivos son opcionales para investigadores. Los
+selectores ofrecen valores explicitos sin relacion y el payload envia `null`
+solo al quitar una asignacion existente. Todos los formularios de edicion envian
+unicamente diferencias reales. `Volver` navega directamente cuando no hubo
+cambios y conserva la confirmacion de borrador cuando existen modificaciones.
+
+Las altas, ediciones y bajas invalidan las consultas de Personal necesarias para
+que el home y el detalle se actualicen al navegar.
+
 ## Borradores (ISS-22)
 
 `PersonalForm` abre la clase indicada por `?tipo=PERSONAL|BECARIO|INVESTIGADOR`

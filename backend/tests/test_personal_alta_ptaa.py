@@ -18,7 +18,7 @@ from modules.personal.services.horas_validation import validar_horas_semanales
 from modules.personal.services.tipo_personal_service import listar_tipos
 from modules.shared.exceptions import ValidationError
 from modules.personal.models.personal import Becario, Investigador
-from modules.personal.services.personal_completo_service import listar_personal_completo
+from modules.personal.services.personal_completo_service import listar_personal_completo, listar_personal_paginado
 from modules.search.services.search_service import SearchService
 
 
@@ -93,6 +93,41 @@ class PersonalAltaPTAATest(unittest.TestCase):
         self.assertEqual([(p["rol"], p["id"]) for p in listing[:3]],
                          [("investigador", 1), ("becario", 1), ("personal", 11)])
         self.assertEqual(listing[:9][0]["nombre_apellido"], "Investigador nuevo")
+
+    def test_listado_paginado_busca_filtra_ordena_y_conserva_contrato_plano(self):
+        db.session.add_all([
+            Personal(id=20, nombre_apellido="Zulema Tecnica", horas_semanales=30,
+                     tipo_personal_id=1, grupo_utn_id=1, activo=True, created_at=datetime(2026, 9, 10)),
+            Personal(id=21, nombre_apellido="Ana Administrativa", horas_semanales=10,
+                     tipo_personal_id=2, grupo_utn_id=1, activo=False, created_at=datetime(2026, 9, 11)),
+            Becario(id=20, nombre_apellido="Becario Visible", horas_semanales=20,
+                    tipo_formacion_id=1, grupo_utn_id=1, activo=True, created_at=datetime(2026, 9, 12)),
+        ])
+        db.session.commit()
+
+        pagina = listar_personal_paginado(page=1, per_page=1, activos="true", sort="nombre", direction="asc")
+        self.assertEqual(pagina["meta"]["per_page"], 1)
+        self.assertEqual(pagina["meta"]["total_pages"], 2)
+        self.assertEqual(pagina["data"][0]["nombre_apellido"], "Becario Visible")
+        self.assertEqual(set(pagina["data"][0]), {"id", "rol", "nombre_apellido", "clasificacion", "grupo", "horas_semanales", "activo", "fecha_alta_grupo", "created_at", "updated_at", "deleted_at"})
+
+        filtrada = listar_personal_paginado(page=1, search="zulema", tipo="personal", ids=[20])
+        self.assertEqual(filtrada["meta"]["total"], 1)
+        self.assertTrue(filtrada["data"][0]["clasificacion"])
+        self.assertIsInstance(listar_personal_completo(), list)
+
+        response = self.client.get("/api/v1/personal/all?page=1&per_page=9&tipo=BECARIO",
+                                   headers={"Authorization": "Bearer test"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["meta"]["total"], 1)
+        self.assertIsNone(response.get_json()["error"])
+
+    def test_listado_paginado_rechaza_parametros_invalidos(self):
+        headers = {"Authorization": "Bearer test"}
+        for query in ("page=1&per_page=10", "page=0", "page=1&sort=desconocido", "page=1&direction=lateral", "page=1&tipo=otro", "page=1&ids=1,no"):
+            with self.subTest(query=query):
+                response = self.client.get(f"/api/v1/personal/all?{query}", headers=headers)
+                self.assertEqual(response.status_code, 400)
 
     def test_referencia_inexistente_o_inactiva(self):
         for field in ("tipo_personal_id", "grupo_utn_id"):

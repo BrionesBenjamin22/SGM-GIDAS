@@ -48,8 +48,8 @@ export default function FormInvestigador({
   const [nombreApellido, setNombre] = useState("");
   const [horasSemanales, setHoras] = useState<number | "">("");
   const [dedicacionId, setDedicacionId] = useState<number | "">("");
-  const [categoriaId, setCategoriaId] = useState<number | "">("");
-  const [programaId, setProgramaId] = useState<number | "">("");
+  const [categoriaId, setCategoriaId] = useState<number | null>(null);
+  const [programaId, setProgramaId] = useState<number | null>(null);
   const [fechaAltaGrupo, setFechaAltaGrupo] = useState<Date | null>(null);
   const [activo, setActivo] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -61,8 +61,8 @@ export default function FormInvestigador({
       setNombre("");
       setHoras("");
       setDedicacionId("");
-      setCategoriaId("");
-      setProgramaId("");
+      setCategoriaId(null);
+      setProgramaId(null);
       setFechaAltaGrupo(null);
       setActivo(true);
       return;
@@ -84,12 +84,12 @@ export default function FormInvestigador({
     setCategoriaId(
       initialData.relaciones?.categoria_utn?.id ??
         initialData.categoria_utn_id ??
-        ""
+        null
     );
     setProgramaId(
       initialData.relaciones?.programa_incentivos?.id ??
         initialData.programa_incentivos_id ??
-        ""
+        null
     );
     setHydrated(true);
   }, [initialData]);
@@ -108,6 +108,26 @@ export default function FormInvestigador({
       setFechaAltaGrupo(draft.fechaAltaGrupo ? new Date(`${draft.fechaAltaGrupo}T00:00:00`) : null); setActivo(draft.activo);
     },
   });
+
+  const hasUnsavedChanges = () => {
+    if (!initialData) return true;
+    return nombreApellido !== (initialData.nombre_apellido ?? "") ||
+      Number(horasSemanales) !== Number(initialData.horas_semanales) ||
+      Number(dedicacionId) !== Number(initialData.relaciones?.tipo_dedicacion?.id ?? initialData.tipo_dedicacion_id) ||
+      categoriaId !== (initialData.relaciones?.categoria_utn?.id ?? initialData.categoria_utn_id ?? null) ||
+      programaId !== (initialData.relaciones?.programa_incentivos?.id ?? initialData.programa_incentivos_id ?? null) ||
+      toCivilDateString(fechaAltaGrupo) !== (initialData.fecha_alta_grupo ?? "") ||
+      activo !== (initialData.activo ?? true);
+  };
+
+  const handleCancel = () => {
+    if (isEdit && !availableDraft && !hasUnsavedChanges()) {
+      clearDraft();
+      onCancel();
+      return;
+    }
+    requestLeave(onCancel);
+  };
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -140,14 +160,6 @@ export default function FormInvestigador({
 
     if (!dedicacionId) {
       newErrors.dedicacion = "Debe seleccionar dedicación";
-    }
-
-    if (!categoriaId) {
-      newErrors.categoria = "Debe seleccionar categoría UTN";
-    }
-
-    if (!programaId) {
-      newErrors.programa = "Debe seleccionar programa";
     }
 
     if (!fechaAltaGrupo) {
@@ -190,8 +202,8 @@ export default function FormInvestigador({
         nombre_apellido: nombreApellido,
         horas_semanales: Number(horasSemanales),
         tipo_dedicacion_id: Number(dedicacionId),
-        categoria_utn_id: Number(categoriaId),
-        programa_incentivos_id: Number(programaId),
+        categoria_utn_id: categoriaId,
+        programa_incentivos_id: programaId,
         fecha_alta_grupo: formatDateStr(fechaAltaGrupo),
         grupo_utn_id: uct!.id,
         activo,
@@ -202,8 +214,8 @@ export default function FormInvestigador({
           nombre_apellido: initialData.nombre_apellido,
           horas_semanales: Number(initialData.horas_semanales),
           tipo_dedicacion_id: Number(initialData.relaciones?.tipo_dedicacion?.id ?? initialData.tipo_dedicacion_id),
-          categoria_utn_id: Number(initialData.relaciones?.categoria_utn?.id ?? initialData.categoria_utn_id),
-          programa_incentivos_id: Number(initialData.relaciones?.programa_incentivos?.id ?? initialData.programa_incentivos_id),
+          categoria_utn_id: initialData.relaciones?.categoria_utn?.id ?? initialData.categoria_utn_id ?? null,
+          programa_incentivos_id: initialData.relaciones?.programa_incentivos?.id ?? initialData.programa_incentivos_id ?? null,
           fecha_alta_grupo: initialData.fecha_alta_grupo,
           grupo_utn_id: Number(initialData.grupo_utn_id ?? uct!.id),
           activo: initialData.activo ?? true,
@@ -334,21 +346,21 @@ export default function FormInvestigador({
         </>
       </Field>
 
-      <Field required label="Categoría UTN" name="categoria" error={errors.categoria}>
+      <Field label="Categoría UTN" name="categoria" error={errors.categoria}>
         <>
           <select
             className={`input ${
               errors.categoria ? "!border-red-500 !ring-2 !ring-red-500" : ""
             } ${!categoriaId ? "text-slate-400" : "text-slate-900"}`}
-            value={categoriaId}
+            value={categoriaId ?? ""}
             onChange={(e) => {
-              const value = e.target.value ? +e.target.value : "";
+              const value = e.target.value ? +e.target.value : null;
               setCategoriaId(value);
-              if (value) clearError("categoria");
+              clearError("categoria");
             }}
           >
-            <option value="" disabled>
-              Seleccionar categoría
+            <option value="">
+              Sin categoría UTN
             </option>
             {categorias.map((c) => (
               <option key={c.id} value={c.id}>
@@ -362,21 +374,21 @@ export default function FormInvestigador({
         </>
       </Field>
 
-      <Field required label="Programa de incentivos" name="programa" error={errors.programa}>
+      <Field label="Programa de incentivos" name="programa" error={errors.programa}>
         <>
           <select
             className={`input ${
               errors.programa ? "!border-red-500 !ring-2 !ring-red-500" : ""
             } ${!programaId ? "text-slate-400" : "text-slate-900"}`}
-            value={programaId}
+            value={programaId ?? ""}
             onChange={(e) => {
-              const value = e.target.value ? +e.target.value : "";
+              const value = e.target.value ? +e.target.value : null;
               setProgramaId(value);
-              if (value) clearError("programa");
+              clearError("programa");
             }}
           >
-            <option value="" disabled>
-              Seleccionar programa
+            <option value="">
+              Sin programa de incentivos
             </option>
             {programas.map((p) => (
               <option key={p.id} value={p.id}>
@@ -409,7 +421,7 @@ export default function FormInvestigador({
           type="button"
           variant="secondary"
           size="sm"
-          onClick={() => requestLeave(onCancel)}
+          onClick={handleCancel}
         >
           Volver
         </Button>

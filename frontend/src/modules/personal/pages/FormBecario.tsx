@@ -150,6 +150,39 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
     },
   });
 
+  const normalizedBecas = becasVinculadas.map((beca) => ({
+    beca_id: Number(beca.becaId),
+    fecha_inicio: formatDateStr(beca.fechaInicio) ?? "",
+    fecha_fin: formatDateStr(beca.fechaFin),
+    monto_percibido: beca.monto !== "" ? Number(beca.monto) : undefined,
+  }));
+
+  const hasUnsavedChanges = () => {
+    if (!initialData) return true;
+    const originalBecas = (initialData.becas ?? []).map((beca) => ({
+      beca_id: Number(beca.id),
+      fecha_inicio: beca.fecha_inicio,
+      fecha_fin: beca.fecha_fin || undefined,
+      monto_percibido: beca.monto_percibido ?? undefined,
+    }));
+    return nombreApellido !== (initialData.nombre_apellido ?? "") ||
+      Number(horasSemanales) !== Number(initialData.horas_semanales) ||
+      Number(tipoFormacionId) !== Number(initialData.relaciones?.tipo_formacion?.id ?? initialData.tipo_formacion_id) ||
+      toCivilDateString(fechaAltaGrupo) !== (initialData.fecha_alta_grupo ?? "") ||
+      activo !== (initialData.activo ?? true) ||
+      agregarBeca !== (originalBecas.length > 0) ||
+      JSON.stringify(normalizedBecas) !== JSON.stringify(originalBecas);
+  };
+
+  const handleCancel = () => {
+    if (isEdit && !availableDraft && !hasUnsavedChanges()) {
+      clearDraft();
+      onCancel();
+      return;
+    }
+    requestLeave(onCancel);
+  };
+
   const clearError = (field: string) => {
     setErrors((prev) => {
       const copy = { ...prev };
@@ -600,7 +633,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
           type="button"
           variant="secondary"
           size="sm"
-          onClick={() => requestLeave(onCancel)}
+          onClick={handleCancel}
         >
           Volver
         </Button>

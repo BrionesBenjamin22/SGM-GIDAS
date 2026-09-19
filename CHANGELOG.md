@@ -8,6 +8,29 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-25: reformular Personal con una tabla reutilizable
+
+- Se incorporo `Table.tsx`, una tabla generica, controlada, responsive y
+  accesible con toolbar, busqueda, chips, orden, expansion, estados uniformes y
+  paginacion. Personal reemplazo las tarjetas por una tabla de 9 filas con
+  navegacion desde la fila, acciones con iconos e historial diferido de 3 eventos.
+- El listado canonico `GET /api/v1/personal/all` pagina, filtra, busca y ordena en
+  base de datos. Sin parametros de paginacion conserva el contrato plano anterior;
+  el contrato paginado devuelve filas normalizadas y metadata estandar.
+- El alta muestra las tres clases de registro de forma visible y la edicion
+  mantiene la clase informativa. Categoria UTN y Programa de Incentivos son
+  opcionales, admiten eliminacion con `null` y registran los cambios en auditoria.
+- Los formularios conservan el envio exclusivo de diferencias y ahora vuelven
+  directamente desde edicion cuando no existen cambios reales; la confirmacion
+  de borrador permanece para modificaciones pendientes.
+- El usuario valido busqueda, filtros, paginacion suavizada, acciones, navegacion
+  por fila, historial y salida de formularios sin cambios. El manual de usuario
+  permanece fuera del alcance de esta etapa.
+
+Validaciones: 32 pruebas backend de Personal, 117 pruebas frontend, `typecheck`,
+build de produccion y `git diff --check` correctos. Se revisaron permisos,
+estados accesibles, foco, responsive y reduccion de movimiento.
+
 ### ISS-01: simplificar la gestion de Catalogos
 
 - Catalogos muestra un selector de tipo y una grilla compacta de valores; retiro

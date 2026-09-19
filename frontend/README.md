@@ -73,6 +73,33 @@ estilos base en `src/styles`.
 - Los filtros de anio usan `getCivilYear` para evitar que `01/01` se atribuya al
   anio anterior en zonas horarias negativas.
 
+## Tabla reutilizable (ISS-25)
+
+`src/components/Table.tsx` expone una tabla generica y controlada. El componente
+solo presenta datos y delega consultas, filtros, permisos, navegacion y acciones
+de dominio al modulo consumidor.
+
+API principal:
+
+- `TableColumn<T>` define `id`, encabezado y renderizador; admite alineacion,
+  prioridad responsive, ordenamiento y clases adicionales.
+- `TableProps<T>` recibe filas, `getRowId`, densidad `compact` o `comfortable`,
+  estados de carga/error/vacio, orden y paginacion controlados.
+- `expandedRowId`, `onToggleRow` y `renderExpanded` permiten contenido diferido
+  por fila sin almacenar estado dentro de la tabla.
+- `onRowClick` y `getRowTitle` hacen navegable una fila; los controles
+  interactivos internos no disparan la navegacion de la fila.
+- `refreshing` conserva las filas durante una recarga y comunica la actualizacion
+  mediante `aria-busy` y un estado accesible.
+- El slot `toolbar` acepta las primitivas exportadas `TableToolbar`,
+  `TableSearch`, `TableFilterChip`, `TableActions` y `TableActionButton`.
+
+La tabla incluye `caption`, encabezados con `scope` y `aria-sort`, expansion con
+`aria-expanded`, paginacion etiquetada, foco visible, soporte de teclado y
+transiciones que respetan `prefers-reduced-motion`. Las columnas `secondary` y
+`tertiary` se ocultan progresivamente y el contenedor admite desplazamiento
+horizontal.
+
 ## Variables de entorno
 
 El frontend usa variables publicas de Vite. Los archivos de referencia son:
