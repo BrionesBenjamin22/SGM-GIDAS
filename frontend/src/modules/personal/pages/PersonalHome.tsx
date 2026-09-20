@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Pencil, X } from "lucide-react";
 import Button from "@/components/Button";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import SuccessToast from "@/components/SuccessToast";
-import Table, { TableActionButton, TableActions, TableFilterChip, TableSearch, TableToolbar } from "@/components/Table";
+import Table, { TableActionButton, TableActions, TableFilterChip, TableRowActionButton, TableSearch, TableToolbar } from "@/components/Table";
 import type { TableColumn, TableSortDirection } from "@/components/Table";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/lib/httpError";
@@ -127,9 +126,9 @@ export default function PersonalLanding() {
     { id: "estado", header: "Estado", sortable: true, render: (item) => <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${item.activo ? "text-emerald-700" : "text-rose-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${item.activo ? "bg-emerald-500" : "bg-rose-500"}`} />{item.activo ? "Activo" : "Inactivo"}</span> },
     { id: "acciones", header: "Acciones", align: "right", render: (item) => {
       return <TableActions>
-        <TableActionButton title="Ver detalle" aria-label={`Ver detalle de ${item.nombre_apellido}`} className="h-8 w-8 p-0" onClick={() => navigate(`/personal/${item.rol}/${item.id}`, { state: buildMemoriaDetailState(location) })}><Eye aria-hidden="true" className="h-4 w-4" /></TableActionButton>
-        {item.activo && canEditRecords() && <TableActionButton title="Editar" aria-label={`Editar ${item.nombre_apellido}`} className="h-8 w-8 p-0" onClick={() => navigate(`/personal/${item.rol}/${item.id}/editar`)}><Pencil aria-hidden="true" className="h-4 w-4" /></TableActionButton>}
-        {item.activo && canDeleteRecords() && <TableActionButton title="Eliminar" aria-label={`Eliminar ${item.nombre_apellido}`} className="h-8 w-8 p-0 text-rose-700 hover:bg-rose-50" onClick={() => setPendingDelete(item)}><X aria-hidden="true" className="h-4 w-4" /></TableActionButton>}
+        <TableRowActionButton action="view" aria-label={`Ver detalle de ${item.nombre_apellido}`} onClick={() => navigate(`/personal/${item.rol}/${item.id}`, { state: buildMemoriaDetailState(location) })} />
+        {item.activo && canEditRecords() && <TableRowActionButton action="edit" aria-label={`Editar ${item.nombre_apellido}`} onClick={() => navigate(`/personal/${item.rol}/${item.id}/editar`)} />}
+        {item.activo && canDeleteRecords() && <TableRowActionButton action="delete" label="Dar de baja" aria-label={`Dar de baja a ${item.nombre_apellido}`} onClick={() => setPendingDelete(item)} />}
       </TableActions>;
     } },
   ], [canDeleteRecords, canEditRecords, location, navigate]);

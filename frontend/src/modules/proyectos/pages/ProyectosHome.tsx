@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Pencil, RotateCcw, X } from "lucide-react";
-
 import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import Field from "@/components/Field";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import SuccessToast from "@/components/SuccessToast";
-import Table, { TableActionButton, TableActions, TableFilterChip, TableSearch, TableToolbar } from "@/components/Table";
+import Table, { TableActionButton, TableActions, TableFilterChip, TableRowActionButton, TableSearch, TableToolbar } from "@/components/Table";
 import type { TableColumn, TableSortDirection } from "@/components/Table";
+import TableFilterSelect from "@/components/TableFilterSelect";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/lib/httpError";
 import { getMemoriaSectionFilter } from "@/lib/memoriaSectionFilter";
@@ -133,10 +132,10 @@ export default function ProyectosLanding() {
     { id: "fecha_inicio", header: "Inicio", sortable: true, priority: "tertiary", render: (project) => formatFecha(project.fechaInicio) },
     { id: "estado", header: "Estado", sortable: true, render: (project) => <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${project.cerrado ? "text-amber-700" : "text-emerald-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${project.cerrado ? "bg-amber-500" : "bg-emerald-500"}`} />{project.cerrado ? "Cerrado" : "Activo"}</span> },
     { id: "acciones", header: "Acciones", align: "right", render: (project) => <TableActions>
-      <TableActionButton title="Ver detalle" aria-label={`Ver detalle de ${project.nombreProyecto}`} className="h-8 w-8 p-0" onClick={() => navigate(`/proyectos/${project.id}`, { state: buildMemoriaDetailState(location) })}><Eye aria-hidden="true" className="h-4 w-4" /></TableActionButton>
-      {!project.cerrado && canEditRecords() && <TableActionButton title="Editar" aria-label={`Editar ${project.nombreProyecto}`} className="h-8 w-8 p-0" onClick={() => navigate(`/proyectos/editar/${project.id}`)}><Pencil aria-hidden="true" className="h-4 w-4" /></TableActionButton>}
-      {!project.cerrado && canDeleteRecords() && <TableActionButton title="Cerrar" aria-label={`Cerrar ${project.nombreProyecto}`} className="h-8 w-8 p-0 text-rose-700 hover:bg-rose-50" onClick={() => { setCloseDate(new Date()); setPendingClose(project); }}><X aria-hidden="true" className="h-4 w-4" /></TableActionButton>}
-      {project.cerrado && canEditRecords() && <TableActionButton title="Reabrir" aria-label={`Reabrir ${project.nombreProyecto}`} className="h-8 w-8 p-0" onClick={() => setPendingReopen(project)}><RotateCcw aria-hidden="true" className="h-4 w-4" /></TableActionButton>}
+      <TableRowActionButton action="view" aria-label={`Ver detalle de ${project.nombreProyecto}`} onClick={() => navigate(`/proyectos/${project.id}`, { state: buildMemoriaDetailState(location) })} />
+      {!project.cerrado && canEditRecords() && <TableRowActionButton action="edit" aria-label={`Editar ${project.nombreProyecto}`} onClick={() => navigate(`/proyectos/editar/${project.id}`)} />}
+      {!project.cerrado && canDeleteRecords() && <TableRowActionButton action="delete" label="Cerrar" aria-label={`Cerrar ${project.nombreProyecto}`} onClick={() => { setCloseDate(new Date()); setPendingClose(project); }} />}
+      {project.cerrado && canEditRecords() && <TableRowActionButton action="restore" label="Reabrir" aria-label={`Reabrir ${project.nombreProyecto}`} onClick={() => setPendingReopen(project)} />}
     </TableActions> },
   ], [canDeleteRecords, canEditRecords, location, navigate]);
 
@@ -191,8 +190,8 @@ export default function ProyectosLanding() {
           <TableFilterChip className="shrink-0" active={activeFilter === "true"} onClick={() => setActiveFilter("true")}>Activos</TableFilterChip>
           <TableFilterChip className="shrink-0" active={activeFilter === "all"} onClick={() => setActiveFilter("all")}>Todos</TableFilterChip>
           <TableFilterChip className="shrink-0" active={activeFilter === "false"} onClick={() => setActiveFilter("false")}>Cerrados</TableFilterChip>
-          <select aria-label="Filtrar por tipo de proyecto" className="h-8 shrink-0 rounded-lg border border-slate-300 bg-white px-2 text-xs text-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-slate-500" value={typeFilter ?? ""} onChange={(event) => setTypeFilter(event.target.value ? Number(event.target.value) : undefined)}><option value="">Todos los tipos</option>{(tiposQuery.data ?? []).map((type) => <option key={type.id} value={type.id}>{type.nombre}</option>)}</select>
-          <select aria-label="Filtrar por fuente de financiamiento" className="h-8 shrink-0 rounded-lg border border-slate-300 bg-white px-2 text-xs text-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-slate-500" value={sourceFilter ?? ""} onChange={(event) => setSourceFilter(event.target.value ? Number(event.target.value) : undefined)}><option value="">Todas las fuentes</option>{fuentes.map((source) => <option key={source.id} value={source.id}>{source.nombre}</option>)}</select>
+          <TableFilterSelect label="Filtrar por tipo de proyecto" placeholder="Todos los tipos" value={typeFilter === undefined ? undefined : String(typeFilter)} onValueChange={(value) => setTypeFilter(value === undefined ? undefined : Number(value))} options={(tiposQuery.data ?? []).map((type) => ({ value: String(type.id), label: type.nombre }))} />
+          <TableFilterSelect label="Filtrar por fuente de financiamiento" placeholder="Todas las fuentes" value={sourceFilter === undefined ? undefined : String(sourceFilter)} onValueChange={(value) => setSourceFilter(value === undefined ? undefined : Number(value))} className="min-w-52" options={fuentes.map((source) => ({ value: String(source.id), label: source.nombre }))} />
         </div>
       </div></TableToolbar>}
     />

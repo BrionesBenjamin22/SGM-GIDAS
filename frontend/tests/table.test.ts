@@ -15,6 +15,7 @@ const code = ts.transpileModule(source, { compilerOptions: {
 const module = { exports: {} as any };
 runInNewContext(code, { module, exports: module.exports, require });
 const Table = module.exports.default;
+const TableRowActionButton = module.exports.TableRowActionButton;
 
 const columns = [
   { id: "name", header: "Nombre", sortable: true, render: (row: { name: string }) => row.name },
@@ -61,4 +62,13 @@ test("Table conserva el contenido y anuncia una actualizacion paginada", () => {
   assert.match(html, /aria-busy="true"/);
   assert.match(html, /opacity-60/);
   assert.match(html, /Actualizando resultados/);
+});
+
+test("las acciones de fila muestran icono y una leyenda configurable", () => {
+  const defaultDelete = renderToStaticMarkup(createElement(TableRowActionButton, { action: "delete" }));
+  const personalDelete = renderToStaticMarkup(createElement(TableRowActionButton, { action: "delete", label: "Dar de baja" }));
+
+  assert.match(defaultDelete, />Eliminar<\/span>/);
+  assert.match(defaultDelete, /text-rose-700/);
+  assert.match(personalDelete, />Dar de baja<\/span>/);
 });

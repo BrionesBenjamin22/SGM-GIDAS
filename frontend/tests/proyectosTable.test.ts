@@ -24,13 +24,26 @@ test("el historial de Proyectos presenta cambios y relaciones sin JSON", () => {
 
 test("Proyectos usa la tabla comun y nomenclatura de acciones consistente", () => {
   const home = readFileSync("src/modules/proyectos/pages/ProyectosHome.tsx", "utf8");
+  const personalHome = readFileSync("src/modules/personal/pages/PersonalHome.tsx", "utf8");
   const field = readFileSync("src/modules/proyectos/components/PersonalProyectoField.tsx", "utf8");
+  const table = readFileSync("src/components/Table.tsx", "utf8");
+  const filterSelect = readFileSync("src/components/TableFilterSelect.tsx", "utf8");
 
   assert.match(home, /<Table/);
   assert.match(home, />Agregar nuevo<\/Button>/);
-  assert.match(home, /title="Editar"/);
-  assert.match(home, /title="Cerrar"/);
-  assert.match(home, /title="Reabrir"/);
+  assert.match(home, /<TableRowActionButton action="view"/);
+  assert.match(home, /<TableRowActionButton action="edit"/);
+  assert.match(home, /action="delete" label="Cerrar"/);
+  assert.match(home, /action="restore" label="Reabrir"/);
+  assert.match(home, /<TableFilterSelect label="Filtrar por tipo de proyecto"/);
+  assert.doesNotMatch(home, /<select aria-label="Filtrar por tipo de proyecto"/);
+  assert.match(table, /delete: \{ label: "Eliminar"/);
+  assert.match(table, /<span>\{visibleLabel\}<\/span>/);
+  assert.match(personalHome, /action="delete" label="Dar de baja"/);
+  assert.doesNotMatch(personalHome, /title="Eliminar"/);
+  assert.match(filterSelect, /import \{ Select \} from "radix-ui"/);
+  assert.match(filterSelect, /Select\.Content/);
+  assert.match(filterSelect, /data-\[highlighted\]:bg-slate-100/);
   assert.match(field, /import \{ X \} from "lucide-react"/);
   assert.match(field, /title="Quitar"/);
   assert.doesNotMatch(field, />\s*[Ã—✕xX]\s*<\/Button>/);

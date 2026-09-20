@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Eye, Pencil, RotateCcw, X } from "lucide-react";
 
 export type TableSortDirection = "asc" | "desc";
 
@@ -88,6 +88,37 @@ export function TableActions({ children }: { children: ReactNode }) {
 
 export function TableActionButton({ className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return <button type="button" className={`rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 outline-none transition motion-reduce:transition-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 ${className}`} {...props} />;
+}
+
+export type TableRowAction = "view" | "edit" | "delete" | "restore";
+
+const rowActionConfig = {
+  view: { label: "Ver detalle", icon: Eye, className: "" },
+  edit: { label: "Editar", icon: Pencil, className: "" },
+  delete: { label: "Eliminar", icon: X, className: "text-rose-700 hover:bg-rose-50" },
+  restore: { label: "Restaurar", icon: RotateCcw, className: "" },
+} satisfies Record<TableRowAction, { label: string; icon: typeof Eye; className: string }>;
+
+type TableRowActionButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
+  action: TableRowAction;
+  label?: string;
+};
+
+export function TableRowActionButton({ action, label, className = "", title, ...props }: TableRowActionButtonProps) {
+  const config = rowActionConfig[action];
+  const Icon = config.icon;
+  const visibleLabel = label ?? config.label;
+
+  return (
+    <TableActionButton
+      title={title ?? visibleLabel}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap ${config.className} ${className}`}
+      {...props}
+    >
+      <Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+      <span>{visibleLabel}</span>
+    </TableActionButton>
+  );
 }
 
 export default function Table<T>({
