@@ -56,13 +56,18 @@ también se admite en alta y conserva el proyecto abierto; las participaciones
 nuevas quedan sin cierre efectivo. Se mantiene la validación inicio-fin.
 
 El cambio de rol modifica `es_coordinador` en la participación existente;
-conserva ID y fechas. Las bajas usan soft delete. Se registran diferencias de
-`coordinador_id`, eventos de altas/bajas relacionales y actor de auditoría, dentro
-de la misma transacción que los campos. Cualquier fallo anterior al commit
-revierte proyecto, relaciones e historial. PUT bloquea la fila del proyecto
-con `FOR UPDATE`; las rutas relacionales existentes también obtienen ese bloqueo
-para serializar cambios del agregado en PostgreSQL. No se modifican snapshots
-ni versiones de memorias. No se requiere migración para el contrato agregado.
+conserva ID y fechas. Las bajas usan soft delete. La composición inicial de
+investigadores, coordinador y becarios forma parte del alta y no genera entradas
+de historial. Las vinculaciones y desvinculaciones posteriores registran el ID y
+el nombre de la persona para presentar un evento legible sin exponer el payload
+interno. También se registran las diferencias posteriores de `coordinador_id` y
+el actor de auditoría, dentro de la misma transacción que los campos. Cualquier
+fallo anterior al commit revierte proyecto, relaciones e historial. PUT bloquea
+solo la fila de `proyecto_investigacion` mediante `FOR UPDATE OF`, evitando que
+PostgreSQL intente bloquear las relaciones opcionales cargadas con `LEFT JOIN`.
+Las rutas relacionales existentes reutilizan ese bloqueo para serializar cambios
+del agregado. No se modifican snapshots ni versiones de memorias. No se requiere
+migración para el contrato agregado.
 
 Pruebas de API y persistencia SQLite: `tests/test_proyecto_coordinador.py`.
 El bloqueo concurrente PostgreSQL requiere comprobación en el entorno Docker;

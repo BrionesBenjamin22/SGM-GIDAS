@@ -20,6 +20,60 @@ class ProyectoInvestigacionController:
                 filters["tiene_distinciones"] = True
             if args.get("orden") in ("asc", "monto_asc", "monto_desc"):
                 filters["orden"] = args.get("orden")
+            if "page" in args or "per_page" in args:
+                def entero(nombre, predeterminado):
+                    try:
+                        return int(args.get(nombre, predeterminado))
+                    except (TypeError, ValueError) as error:
+                        raise ValidationError(
+                            f"El parámetro {nombre} debe ser un entero."
+                        ) from error
+
+                def entero_opcional(nombre):
+                    valor = args.get(nombre)
+                    if valor in (None, ""):
+                        return None
+                    try:
+                        valor_entero = int(valor)
+                    except (TypeError, ValueError) as error:
+                        raise ValidationError(
+                            f"El parámetro {nombre} debe ser un entero positivo."
+                        ) from error
+                    if valor_entero <= 0:
+                        raise ValidationError(
+                            f"El parámetro {nombre} debe ser un entero positivo."
+                        )
+                    return valor_entero
+
+                ids_param = args.get("ids")
+                ids = None
+                if ids_param is not None:
+                    try:
+                        ids = [
+                            int(value)
+                            for value in ids_param.split(",")
+                            if value.strip()
+                        ]
+                    except ValueError as error:
+                        raise ValidationError(
+                            "Los IDs deben ser enteros positivos."
+                        ) from error
+
+                return jsonify(ProyectoInvestigacionService.get_page(
+                    activos=filters["activos"],
+                    page=entero("page", 1),
+                    per_page=entero("per_page", 9),
+                    search=args.get("search"),
+                    sort=args.get("sort", "fecha_inicio"),
+                    direction=args.get("direction", "desc"),
+                    tipo_proyecto_id=entero_opcional("tipo_proyecto_id"),
+                    fuente_financiamiento_id=entero_opcional(
+                        "fuente_financiamiento_id"
+                    ),
+                    investigador_id=entero_opcional("investigador_id"),
+                    becario_id=entero_opcional("becario_id"),
+                    ids=ids,
+                )), 200
             return jsonify(ProyectoInvestigacionService.get_all(filters)), 200
         except Exception as error:
             return exception_response(error, operation="listar proyectos de investigacion")

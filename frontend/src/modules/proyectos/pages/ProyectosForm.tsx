@@ -9,7 +9,7 @@ import Button from "@/components/Button";
 import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
-import PersonalProyectoField from "@/components/PersonalProyectoField";
+import PersonalProyectoField from "@/modules/proyectos/components/PersonalProyectoField";
 import SuccessToast from "@/components/SuccessToast";
 import { useBecarios } from "@/modules/personal/hooks/useBecarios";
 import { useFuentesFinanciamiento } from "@/modules/catalogos/hooks/useFuenteFinanciamiento";

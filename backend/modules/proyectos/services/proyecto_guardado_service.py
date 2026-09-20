@@ -7,7 +7,7 @@ from modules.proyectos.models.proyecto_investigacion import (
     ProyectoInvestigacion, InvestigadorProyecto, BecarioProyecto,
 )
 from modules.proyectos.services.proyecto_investigacion_service import ProyectoInvestigacionService
-from modules.shared.exceptions import ValidationError, NotFoundError
+from modules.shared.exceptions import ValidationError
 from modules.shared.services.auditoria_service import AuditoriaService
 
 
@@ -19,11 +19,9 @@ class ProyectoGuardadoService:
         try:
             if proyecto_id is not None:
                 # Serializa cambios del agregado incluso entre peticiones concurrentes.
-                proyecto = ProyectoInvestigacion.query.filter_by(
-                    id=proyecto_id, deleted_at=None
-                ).with_for_update().first()
-                if not proyecto:
-                    raise NotFoundError("Proyecto no encontrado")
+                proyecto = ProyectoInvestigacionService._get_proyecto_activo_or_404(
+                    proyecto_id
+                )
                 ProyectoInvestigacionService._validar_proyecto_abierto(proyecto)
             campos = {k: v for k, v in data.items() if k not in (
                 "investigadores_ids", "becarios_ids", "coordinador_id"
@@ -62,28 +60,44 @@ class ProyectoGuardadoService:
                     if i not in ids:
                         p.fecha_fin = max(date.today(), p.fecha_inicio)
                         p.soft_delete(user_id)
-                        ProyectoGuardadoService._evento(proyecto.id, key, "desvincular", i, user_id)
+                        if proyecto_id is not None:
+                            persona = db.session.get(model, i)
+                            ProyectoGuardadoService._evento(
+                                proyecto.id,
+                                key,
+                                "desvincular",
+                                persona,
+                                user_id,
+                            )
                         changed = True
                 for i in ids:
                     if i not in actuales:
+                        persona = db.session.get(model, i)
                         values = {fk: i, "id_proyecto": proyecto.id, "fecha_inicio": proyecto.fecha_inicio, "created_by": user_id}
                         if proyecto_id is None and proyecto.fecha_fin and proyecto.fecha_fin <= date.today():
                             values["fecha_fin"] = proyecto.fecha_fin
                         if model is Investigador:
                             values["es_coordinador"] = i == coordinator
                         db.session.add(relation(**values))
-                        ProyectoGuardadoService._evento(proyecto.id, key, "vincular", i, user_id)
+                        if proyecto_id is not None:
+                            ProyectoGuardadoService._evento(
+                                proyecto.id,
+                                key,
+                                "vincular",
+                                persona,
+                                user_id,
+                            )
                         changed = True
                     elif model is Investigador and actuales[i].es_coordinador != (i == coordinator):
                         actuales[i].es_coordinador = i == coordinator
                         actuales[i].mark_updated(user_id)
                         changed = True
-                if model is Investigador and previo != coordinator:
+                if proyecto_id is not None and model is Investigador and previo != coordinator:
                     AuditoriaService.registrar_cambios("proyecto_investigacion", proyecto.id, {
                         "coordinador_id": AuditoriaService.construir_cambio(previo, coordinator)
                     }, user_id)
                     changed = True
-                if changed:
+                if proyecto_id is not None and changed:
                     proyecto.mark_updated(user_id)
             db.session.commit()
             db.session.expire(proyecto)
@@ -93,8 +107,12 @@ class ProyectoGuardadoService:
             raise
 
     @staticmethod
-    def _evento(proyecto_id, relacion, accion, persona_id, user_id):
+    def _evento(proyecto_id, relacion, accion, persona, user_id):
         AuditoriaService.registrar_evento_relacion(
             "proyecto_investigacion", proyecto_id, relacion, accion,
-            {"id": persona_id}, user_id,
+            {
+                "id": persona.id,
+                "nombre_apellido": persona.nombre_apellido,
+            },
+            user_id,
         )

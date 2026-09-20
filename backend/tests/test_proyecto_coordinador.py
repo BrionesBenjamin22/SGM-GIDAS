@@ -4,10 +4,12 @@ from unittest.mock import patch
 
 from flask import Flask
 from extension import db
+from sqlalchemy.dialects import postgresql
 from modules import models_registry  # noqa: F401
 from modules.personal.models.personal import Investigador, Becario
 from modules.proyectos.models.proyecto_investigacion import ProyectoInvestigacion, InvestigadorProyecto, TipoProyecto
 from modules.proyectos.routes.proyecto_investigacion_rutas import proyecto_investigacion_bp
+from modules.proyectos.services.proyecto_investigacion_service import ProyectoInvestigacionService
 from modules.shared.models.auditoria_campo import AuditoriaCampo
 from modules.personal.services.investigador_service import listar_investigadores
 
@@ -52,13 +54,92 @@ class ProyectoCoordinadorTest(unittest.TestCase):
     def update(self, id, data):
         return self.client.put(f"/api/v1/proyectos/{id}", headers=self.headers, json=data)
 
+    def test_bloqueo_de_edicion_solo_afecta_la_tabla_proyecto(self):
+        query = ProyectoInvestigacionService._query_proyecto_activo_bloqueado(1)
+        sql = str(query.statement.compile(dialect=postgresql.dialect()))
+
+        self.assertIn("FOR UPDATE OF proyecto_investigacion", sql)
+
     def test_asignacion_y_consulta_posterior(self):
         response = self.create()
         self.assertEqual(response.status_code, 201, response.get_json())
         id = response.get_json()["id"]
         detail = self.client.get(f"/api/v1/proyectos/{id}", headers=self.headers).get_json()
         self.assertEqual(next(i["id"] for i in detail["investigadores"] if i["es_coordinador"]), 1)
-        self.assertTrue(AuditoriaCampo.query.filter_by(campo="coordinador_id").first())
+        self.assertEqual(AuditoriaCampo.query.count(), 0)
+
+        response = self.update(id, {"becarios_ids": [5]})
+        self.assertEqual(response.status_code, 200, response.get_json())
+        evento = AuditoriaCampo.query.filter_by(campo="becarios_ids").one()
+        self.assertEqual(evento.valor_nuevo, {
+            "accion": "vincular",
+            "detalle": {"id": 5, "nombre_apellido": "Becario"},
+        })
+
+    def test_listado_paginado_busca_ordena_y_conserva_contrato_plano(self):
+        for index in range(1, 11):
+            response = self.create(
+                codigo_proyecto=f"COD{index}",
+                nombre_proyecto=f"Proyecto {index:02d}",
+            )
+            self.assertEqual(response.status_code, 201, response.get_json())
+
+        page = self.client.get(
+            "/api/v1/proyectos?page=2&per_page=9&sort=nombre&direction=asc",
+            headers=self.headers,
+        )
+        self.assertEqual(page.status_code, 200, page.get_json())
+        self.assertEqual(page.get_json()["meta"]["total"], 10)
+        self.assertEqual(page.get_json()["meta"]["total_pages"], 2)
+        self.assertEqual(len(page.get_json()["data"]), 1)
+
+        search = self.client.get(
+            "/api/v1/proyectos?page=1&per_page=9&search=Proyecto%2007",
+            headers=self.headers,
+        )
+        self.assertEqual(search.status_code, 200, search.get_json())
+        self.assertEqual(search.get_json()["meta"]["total"], 1)
+        self.assertEqual(search.get_json()["data"][0]["codigo_proyecto"], "COD7")
+
+        legacy = self.client.get("/api/v1/proyectos", headers=self.headers)
+        self.assertEqual(legacy.status_code, 200, legacy.get_json())
+        self.assertIsInstance(legacy.get_json(), list)
+
+    def test_listado_paginado_distingue_activos_y_cerrados(self):
+        active = self.create(codigo_proyecto="ABIERTO", nombre_proyecto="Proyecto activo")
+        closed = self.create(
+            codigo_proyecto="CERRADO",
+            nombre_proyecto="Proyecto cerrado",
+            fecha_fin="2026-02-01",
+        )
+        self.assertEqual(active.status_code, 201, active.get_json())
+        self.assertEqual(closed.status_code, 201, closed.get_json())
+
+        active_page = self.client.get(
+            "/api/v1/proyectos?page=1&per_page=9&activos=true",
+            headers=self.headers,
+        ).get_json()
+        closed_page = self.client.get(
+            "/api/v1/proyectos?page=1&per_page=9&activos=false",
+            headers=self.headers,
+        ).get_json()
+        self.assertEqual([item["codigo_proyecto"] for item in active_page["data"]], ["ABIERTO"])
+        self.assertEqual([item["codigo_proyecto"] for item in closed_page["data"]], ["CERRADO"])
+
+    def test_listado_paginado_rechaza_limite_superior_a_nueve(self):
+        response = self.client.get(
+            "/api/v1/proyectos?page=1&per_page=10",
+            headers=self.headers,
+        )
+        self.assertEqual(response.status_code, 400, response.get_json())
+        self.assertEqual(response.get_json()["error"]["code"], "VALIDATION_ERROR")
+
+        invalid_filter = self.client.get(
+            "/api/v1/proyectos?page=1&tipo_proyecto_id=no-valido",
+            headers=self.headers,
+        )
+        self.assertEqual(invalid_filter.status_code, 400, invalid_filter.get_json())
+        self.assertEqual(invalid_filter.get_json()["error"]["code"], "VALIDATION_ERROR")
 
     def test_candidatos_invalidos_no_dejan_proyecto_parcial(self):
         for id in (999, 3, 4, 5, 0, True):

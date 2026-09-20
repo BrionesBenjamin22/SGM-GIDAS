@@ -19,6 +19,7 @@ import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,
 } from "@/lib/memoriaNavigation";
+import { presentProyectoHistoryItem } from "@/modules/proyectos/utils/proyectoHistory";
 
 export default function ProyectoDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -264,7 +265,7 @@ export default function ProyectoDetalle() {
 
       <HistorialCambiosCard
         subtitle={data.nombreProyecto}
-        items={historialCambios}
+        items={historialCambios.map((item) => presentProyectoHistoryItem(item, data))}
         isLoading={isLoadingHistorial}
         updatedAt={data.updated_at}
         updatedByName={data.updated_by_nombre}

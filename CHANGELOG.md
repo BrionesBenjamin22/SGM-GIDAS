@@ -8,6 +8,27 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-26: reformular Proyectos con tabla e historial legible
+
+- Proyectos reemplazó el listado anterior por la tabla compartida de 9 filas, con
+  búsqueda, filtros, ordenamiento, acciones por registro e historial diferido de
+  3 eventos por página. El formulario conserva la nomenclatura y el icono de
+  remoción utilizados en Personal.
+- El listado backend admite paginación, filtros y ordenamiento sin romper el
+  contrato plano anterior. Edición y cierre bloquean exclusivamente la fila del
+  proyecto, corrigiendo el error de PostgreSQL causado por `FOR UPDATE` sobre
+  relaciones opcionales cargadas mediante `LEFT JOIN`.
+- La composición inicial del personal ya no se registra como un cambio. Las
+  vinculaciones y desvinculaciones posteriores conservan y muestran el nombre de
+  la persona sin exponer JSON ni identificadores internos.
+- El usuario validó manualmente la estructura visual, las acciones de edición,
+  cierre y el historial sin vinculaciones iniciales. La comprobación visual final
+  permaneció a cargo del usuario.
+
+Validaciones: 31 pruebas backend de Proyectos, 119 pruebas frontend, `typecheck`,
+build de producción, consulta real de bloqueo en PostgreSQL y `git diff --check`
+correctos.
+
 ### ISS-25: reformular Personal con una tabla reutilizable
 
 - Se incorporo `Table.tsx`, una tabla generica, controlada, responsive y

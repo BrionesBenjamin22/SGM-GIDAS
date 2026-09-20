@@ -1,6 +1,28 @@
 import { http } from "@/lib/http";
 
 export type ProyectosActivosFilter = "true" | "false" | "all";
+export type ProyectoSort =
+  | "codigo"
+  | "nombre"
+  | "tipo"
+  | "fuente"
+  | "fecha_inicio"
+  | "fecha_fin"
+  | "estado";
+
+export type ProyectoListParams = {
+  page: number;
+  perPage?: number;
+  search?: string;
+  activos?: ProyectosActivosFilter;
+  sort?: ProyectoSort;
+  direction?: "asc" | "desc";
+  tipoProyectoId?: number;
+  fuenteFinanciamientoId?: number;
+  investigadorId?: number;
+  becarioId?: number;
+  ids?: Array<number | string>;
+};
 
 export type InvestigadorProyecto = {
   activo?: boolean;
@@ -112,6 +134,12 @@ type ProyectoApiResponse = {
   becarios?: BecarioProyecto[];
 };
 
+export type ProyectoPage = {
+  data: ProyectoApiResponse[];
+  meta: { page: number; per_page: number; total: number; total_pages: number };
+  error: null;
+};
+
 function mapProyecto(p: ProyectoApiResponse): Proyecto {
   return {
     id: String(p.id),
@@ -171,6 +199,31 @@ export async function getProyectos(
 
   const data = await http<ProyectoApiResponse[]>(`/proyectos?activos=${activosParam}`);
   return data.map(mapProyecto);
+}
+
+export async function getProyectosPage(
+  params: ProyectoListParams
+): Promise<{ data: Proyecto[]; meta: ProyectoPage["meta"]; error: null }> {
+  const query = new URLSearchParams({
+    page: String(params.page),
+    per_page: String(params.perPage ?? 9),
+    activos: params.activos ?? "true",
+    sort: params.sort ?? "fecha_inicio",
+    direction: params.direction ?? "desc",
+  });
+  if (params.search?.trim()) query.set("search", params.search.trim());
+  if (params.tipoProyectoId) query.set("tipo_proyecto_id", String(params.tipoProyectoId));
+  if (params.fuenteFinanciamientoId) query.set("fuente_financiamiento_id", String(params.fuenteFinanciamientoId));
+  if (params.investigadorId) query.set("investigador_id", String(params.investigadorId));
+  if (params.becarioId) query.set("becario_id", String(params.becarioId));
+  if (params.ids) query.set("ids", params.ids.join(","));
+
+  const response = await http<ProyectoPage>(`/proyectos?${query.toString()}`);
+  return {
+    data: response.data.map(mapProyecto),
+    meta: response.meta,
+    error: null,
+  };
 }
 
 export async function upsertProyectos(payload: ProyectoPayload): Promise<Proyecto> {

@@ -36,6 +36,18 @@ por permisos y estado activo.
 
 ## Proyectos
 
+### Tabla e historial (ISS-26)
+
+El home utiliza la tabla compartida con hasta 9 proyectos por página, búsqueda,
+filtros, ordenamiento y acciones por fila para ver, editar, cerrar o reabrir según
+estado y permisos. El historial expandible conserva 3 eventos por página.
+
+Los eventos relacionales `investigadores_ids` y `becarios_ids` se presentan como
+vinculaciones o desvinculaciones legibles. Se muestra el nombre conservado por el
+backend o, para eventos anteriores, el nombre disponible en el detalle actual;
+no se renderizan JSON ni identificadores internos. Las asociaciones incluidas en
+el alta son estado inicial y no aparecen como cambios posteriores.
+
 ### Coordinador y guardado consolidado (ISS-10)
 
 El coordinador se elige entre investigadores del proyecto. Las nuevas

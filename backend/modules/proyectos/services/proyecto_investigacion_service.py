@@ -7,7 +7,8 @@ import re
 
 from extension import db
 from modules.shared.services.text_validation import has_letter
-from sqlalchemy import func, or_
+from sqlalchemy import and_, case, false, func, or_
+from sqlalchemy.orm import joinedload, selectinload
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
 
 from modules.produccion.models.distinciones import DistincionRecibida
@@ -30,6 +31,25 @@ class ProyectoInvestigacionService:
 
     CODIGO_PROYECTO_MAX_LENGTH = 50
     CODIGO_PROYECTO_PATTERN = re.compile(r"^[A-Za-z0-9]+$")
+    LIST_SORTS = {
+        "codigo": ProyectoInvestigacion.codigo_proyecto,
+        "nombre": ProyectoInvestigacion.nombre_proyecto,
+        "tipo": TipoProyecto.nombre,
+        "fuente": FuenteFinanciamiento.nombre,
+        "fecha_inicio": ProyectoInvestigacion.fecha_inicio,
+        "fecha_fin": ProyectoInvestigacion.fecha_fin,
+        "estado": case(
+            (
+                or_(
+                    ProyectoInvestigacion.deleted_at.isnot(None),
+                    ProyectoInvestigacion.activo.is_(False),
+                    ProyectoInvestigacion.fecha_fin <= func.current_date(),
+                ),
+                1,
+            ),
+            else_=0,
+        ),
+    }
 
     @staticmethod
     def _validar_codigo_proyecto(valor):
@@ -113,11 +133,17 @@ class ProyectoInvestigacionService:
         return investigador_id
 
     @staticmethod
-    def _get_proyecto_activo_or_404(proyecto_id: int):
-        proyecto = ProyectoInvestigacion.query.filter_by(
+    def _query_proyecto_activo_bloqueado(proyecto_id: int):
+        return ProyectoInvestigacion.query.filter_by(
             id=proyecto_id,
             deleted_at=None
-        ).with_for_update().first()
+        ).with_for_update(of=ProyectoInvestigacion)
+
+    @staticmethod
+    def _get_proyecto_activo_or_404(proyecto_id: int):
+        proyecto = ProyectoInvestigacionService._query_proyecto_activo_bloqueado(
+            proyecto_id
+        ).first()
 
         if not proyecto:
             raise NotFoundError("Proyecto no encontrado.")
@@ -249,6 +275,155 @@ class ProyectoInvestigacionService:
             query = query.order_by(ProyectoInvestigacion.fecha_inicio.desc())
 
         return [p.serialize() for p in query.all()]
+
+    @staticmethod
+    def get_page(
+        *,
+        activos="true",
+        page=1,
+        per_page=9,
+        search=None,
+        sort="fecha_inicio",
+        direction="desc",
+        tipo_proyecto_id=None,
+        fuente_financiamiento_id=None,
+        investigador_id=None,
+        becario_id=None,
+        ids=None,
+    ):
+        activos = ProyectoInvestigacionService._normalizar_activos(activos)
+        sort = str(sort or "fecha_inicio").strip().lower()
+        direction = str(direction or "desc").strip().lower()
+
+        if activos not in {"true", "false", "all"}:
+            raise ValueError("El filtro de estado no es válido.")
+        if sort not in ProyectoInvestigacionService.LIST_SORTS:
+            raise ValueError("El campo de ordenamiento no es válido.")
+        if direction not in {"asc", "desc"}:
+            raise ValueError("La dirección de ordenamiento no es válida.")
+        if not isinstance(page, int) or page <= 0:
+            raise ValueError("La página debe ser un entero positivo.")
+        if not isinstance(per_page, int) or per_page <= 0 or per_page > 9:
+            raise ValueError("La cantidad por página debe estar entre 1 y 9.")
+        if ids is not None and (
+            not isinstance(ids, list)
+            or any(type(item) is not int or item <= 0 for item in ids)
+        ):
+            raise ValueError("Los IDs deben ser enteros positivos.")
+
+        query = ProyectoInvestigacion.query.outerjoin(
+            TipoProyecto,
+            ProyectoInvestigacion.tipo_proyecto_id == TipoProyecto.id,
+        ).outerjoin(
+            FuenteFinanciamiento,
+            ProyectoInvestigacion.fuente_financiamiento_id
+            == FuenteFinanciamiento.id,
+        ).options(
+            joinedload(ProyectoInvestigacion.tipo_proyecto),
+            joinedload(ProyectoInvestigacion.fuente_financiamiento),
+            joinedload(ProyectoInvestigacion.grupo_utn),
+            selectinload(
+                ProyectoInvestigacion.participaciones_investigador
+            ).joinedload(InvestigadorProyecto.investigador),
+            selectinload(
+                ProyectoInvestigacion.participaciones_becario
+            ).joinedload(BecarioProyecto.becario),
+        )
+
+        if activos == "true":
+            query = query.filter(
+                ProyectoInvestigacion.deleted_at.is_(None),
+                ProyectoInvestigacion.activo.is_(True),
+                or_(
+                    ProyectoInvestigacion.fecha_fin.is_(None),
+                    ProyectoInvestigacion.fecha_fin > func.current_date(),
+                ),
+            )
+        elif activos == "false":
+            query = query.filter(or_(
+                ProyectoInvestigacion.deleted_at.isnot(None),
+                ProyectoInvestigacion.activo.is_(False),
+                ProyectoInvestigacion.fecha_fin <= func.current_date(),
+            ))
+
+        term = str(search or "").strip().lower()
+        if term:
+            pattern = f"%{term}%"
+            query = query.filter(or_(
+                func.lower(ProyectoInvestigacion.codigo_proyecto).like(pattern),
+                func.lower(ProyectoInvestigacion.nombre_proyecto).like(pattern),
+                func.lower(ProyectoInvestigacion.descripcion_proyecto).like(pattern),
+                func.lower(func.coalesce(TipoProyecto.nombre, "")).like(pattern),
+                func.lower(func.coalesce(FuenteFinanciamiento.nombre, "")).like(pattern),
+                ProyectoInvestigacion.participaciones_investigador.any(
+                    and_(
+                        InvestigadorProyecto.deleted_at.is_(None),
+                        InvestigadorProyecto.investigador.has(
+                            func.lower(Investigador.nombre_apellido).like(pattern)
+                        ),
+                    ),
+                ),
+                ProyectoInvestigacion.participaciones_becario.any(
+                    and_(
+                        BecarioProyecto.deleted_at.is_(None),
+                        BecarioProyecto.becario.has(
+                            func.lower(Becario.nombre_apellido).like(pattern)
+                        ),
+                    ),
+                ),
+            ))
+
+        if tipo_proyecto_id:
+            query = query.filter(
+                ProyectoInvestigacion.tipo_proyecto_id == tipo_proyecto_id
+            )
+        if fuente_financiamiento_id:
+            query = query.filter(
+                ProyectoInvestigacion.fuente_financiamiento_id
+                == fuente_financiamiento_id
+            )
+        if investigador_id:
+            query = query.filter(
+                ProyectoInvestigacion.participaciones_investigador.any(
+                    and_(
+                        InvestigadorProyecto.id_investigador == investigador_id,
+                        InvestigadorProyecto.deleted_at.is_(None),
+                    )
+                )
+            )
+        if becario_id:
+            query = query.filter(
+                ProyectoInvestigacion.participaciones_becario.any(
+                    and_(
+                        BecarioProyecto.id_becario == becario_id,
+                        BecarioProyecto.deleted_at.is_(None),
+                    )
+                )
+            )
+        if ids is not None:
+            query = query.filter(
+                ProyectoInvestigacion.id.in_(ids) if ids else false()
+            )
+
+        total = query.count()
+        column = ProyectoInvestigacionService.LIST_SORTS[sort]
+        order = column.asc() if direction == "asc" else column.desc()
+        items = (
+            query.order_by(order, ProyectoInvestigacion.id.asc())
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+            .all()
+        )
+        return {
+            "data": [item.serialize() for item in items],
+            "meta": {
+                "page": page,
+                "per_page": per_page,
+                "total": total,
+                "total_pages": (total + per_page - 1) // per_page,
+            },
+            "error": None,
+        }
 
     # =========================
     # GET BY ID
