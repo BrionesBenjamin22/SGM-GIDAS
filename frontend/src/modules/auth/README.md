@@ -55,6 +55,8 @@ alias heredado `LECTOR` no forma parte de los tipos ni de las vistas nuevas.
   proximo a vencer y las solicitudes concurrentes comparten una unica renovacion.
 - Antes del vencimiento definitivo se muestra un dialogo accesible con las acciones
   `Continuar sesion` y `Cerrar sesion`.
+- Mientras se renueva la sesion, `Continuar sesion` queda bloqueado y muestra el
+  indicador de carga a la derecha del texto, con anuncio de estado accesible.
 - Si la sesion vence, se conserva una ruta interna con `pathname`, busqueda y hash;
   el login la restaura sin aceptar redirecciones externas.
 

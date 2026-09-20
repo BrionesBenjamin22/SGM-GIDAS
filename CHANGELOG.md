@@ -466,6 +466,9 @@ No se crearon herramientas auxiliares en esta continuación.
 - La renovación mantiene la sesión ante fallos de red, errores HTTP distintos
   de 401 y respuestas malformadas; ofrece diálogo con reintento. Mantiene el
   vencimiento definitivo y la invalidación por 401, sin eludir permisos backend.
+- El indicador de renovación se alineó a la derecha de `Continuar sesión`; mantiene
+  bloqueo, anuncio accesible y respeto por reducción de movimiento. El usuario
+  validó manualmente la aparición del diálogo y la renovación.
 - Se documentaron los comportamientos en frontend Personal, auth y módulos.
 - Validaciones: 73 tests frontend, TypeScript, build producción y 17 tests backend
   correctos. Test concurrente adicional falla en limpieza SQLite por WinError 32;

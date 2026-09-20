@@ -61,6 +61,9 @@ test("el aviso y la renovacion por actividad respetan los umbrales", () => {
   assert.equal(remainingSessionSeconds(timing, now), 240);
   assert.match(dialogSource, /Continuar sesión/);
   assert.match(dialogSource, /Cerrar sesión/);
+  assert.match(dialogSource, /aria-busy=\{extending\}/);
+  assert.match(dialogSource, /Continuar sesión\s+\{extending && \(/);
+  assert.match(dialogSource, /inline-flex items-center gap-2/);
 });
 
 test("la ruta interna se conserva una vez y descarta destinos externos", () => {

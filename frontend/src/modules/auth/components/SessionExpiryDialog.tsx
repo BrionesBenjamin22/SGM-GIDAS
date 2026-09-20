@@ -52,9 +52,25 @@ export default function SessionExpiryDialog({
           <Button type="button" variant="secondary" onClick={onLogout} disabled={extending}>
             Cerrar sesión
           </Button>
-          <Button type="button" onClick={onContinue} disabled={extending}>
-            {extending && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />}
-            Continuar sesión
+          <Button
+            type="button"
+            onClick={onContinue}
+            disabled={extending}
+            aria-busy={extending}
+            className="inline-flex items-center justify-center"
+          >
+            <span
+              role={extending ? "status" : undefined}
+              className="inline-flex items-center gap-2"
+            >
+              Continuar sesión
+              {extending && (
+                <LoaderCircle
+                  className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
+              )}
+            </span>
           </Button>
         </div>
       </section>
