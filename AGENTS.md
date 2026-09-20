@@ -16,8 +16,9 @@ Establecer reglas de trabajo consistentes para acelerar el desarrollo y reducir 
 - Al iniciar una sesion de trabajo, revisar primero `tasks/in-progress/` y luego `tasks/pendient/` antes de modificar codigo.
 - No modificar codigo antes de leer la tarea activa y comprender su estado actual.
 - Al pausar una tarea, dejarla en `tasks/in-progress/` y registrar archivos modificados, estado exacto, validaciones hechas y proximo paso.
-- Al finalizar una tarea, moverla a `tasks/finished/`, completar metadata de cierre y proponer mensaje de commit sin ejecutarlo.
-- Al finalizar cada tarea resuelta, actualizar `CHANGELOG.md` con el identificador y nombre del issue o tarea, los cambios realizados y las validaciones ejecutadas, incluyendo cualquier limitacion o incidencia ajena detectada.
+- No cerrar ni mover una tarea a `tasks/finished/` mientras su validacion visual o manual siga pendiente de aceptacion por el usuario. Durante ese periodo debe permanecer en `tasks/in-progress/` con su estado y proximo paso actualizados.
+- Las actualizaciones de documentacion tecnica y `CHANGELOG.md` se realizan unicamente despues de que el usuario termine y acepte la validacion visual o manual del modulo. Deben ser la ultima tarea del agente antes de ejecutar un commit solicitado expresamente por el usuario o, si no solicita ejecutarlo, antes de proponer el mensaje de commit final.
+- Una vez completada la aceptacion y la documentacion final, mover la tarea a `tasks/finished/`, completar metadata de cierre y proponer el mensaje de commit. No ejecutar commits automaticamente.
 - Al finalizar una tarea, preguntar si existen tareas faltantes para agregar a `tasks/pendient/`.
 
 ## Convenciones de navegacion
@@ -105,6 +106,8 @@ No modificar sin pedir permiso:
 ## Commits
 
 Por cada modulo actualizado se debe proponer un mensaje de commit, pero no ejecutar el commit automaticamente.
+
+Si el usuario solicita expresamente ejecutar el commit, primero completar la validacion visual o manual, actualizar como ultimo paso la documentacion tecnica y `CHANGELOG.md`, cerrar la tarea y recien entonces ejecutar el commit solicitado.
 
 Formato:
 
