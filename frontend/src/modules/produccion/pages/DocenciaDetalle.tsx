@@ -15,6 +15,10 @@ import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { toTitleCase } from "@/utils/format";
 import { useAuth } from "@/context/AuthContext";
 import {
+  getActividadDocenciaHistoryCatalogName,
+  presentActividadDocenciaHistoryItems,
+} from "@/modules/produccion/utils/actividadDocenciaHistory";
+import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,
 } from "@/lib/memoriaNavigation";
@@ -91,26 +95,8 @@ export default function ActividadDocenciaDetalle() {
       return "-";
     }
 
-    if (item.tipo === "historial_grado" && typeof value === "object" && value) {
-      const record = value as {
-        grado_academico?: string;
-        fecha_inicio?: string | null;
-        fecha_fin?: string | null;
-        activo?: boolean;
-      };
-
-      return [
-        record.grado_academico ? `Grado: ${record.grado_academico}` : null,
-        record.fecha_inicio || record.fecha_fin
-          ? `Período: ${formatFecha(record.fecha_inicio)} - ${formatFecha(
-              record.fecha_fin
-            )}`
-          : null,
-        record.activo !== undefined ? `Activo: ${record.activo ? "Si" : "No"}` : null,
-      ]
-        .filter(Boolean)
-        .join(" | ");
-    }
+    const catalogName = getActividadDocenciaHistoryCatalogName(value);
+    if (catalogName) return catalogName;
 
     const asNumber =
       typeof value === "number"
@@ -249,7 +235,7 @@ export default function ActividadDocenciaDetalle() {
         subtitle={`${toTitleCase(data.curso) || "-"} - ${
           toTitleCase(investigadorNombre) || "-"
         }`}
-        items={historialCambios}
+        items={presentActividadDocenciaHistoryItems(historialCambios)}
         isLoading={isLoadingHistorial}
         updatedAt={data.updated_at}
         updatedByName={data.updated_by_nombre}

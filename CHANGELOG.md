@@ -8,6 +8,25 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-27: estandarizar Actividades en Docencia con la grilla comun
+
+- Actividades en Docencia reemplazo las tarjetas y la seleccion masiva por la
+  tabla compartida de Personal y Proyectos, con 9 filas por pagina, busqueda,
+  filtros, ordenamiento, navegacion desde la fila y acciones por registro segun
+  permisos y estado.
+- Rol y grado academico se normalizan desde el contrato `{ id, nombre }`; los
+  filtros usan un desplazamiento horizontal compacto y mantienen los chips
+  centrados.
+- El historial diferido muestra 3 eventos por pagina y, al igual que la tarjeta
+  del detalle, permanece informativo. El grado inicial ya no se presenta como un
+  cambio y los cambios reales muestran los nombres anterior y nuevo.
+- Editar y eliminar conservaron sus contratos. PUT y DELETE respondieron 200 en
+  pruebas, y la eliminacion mantiene baja logica y confirmacion transaccional.
+
+Validaciones: aceptacion visual del usuario, 125 pruebas frontend, `typecheck`,
+build de produccion, 38 pruebas backend de Produccion/Docencia y
+`git diff --check` correctos.
+
 ### ISS-26: reformular Proyectos con tabla e historial legible
 
 - Proyectos reemplazó el listado anterior por la tabla compartida de 9 filas, con

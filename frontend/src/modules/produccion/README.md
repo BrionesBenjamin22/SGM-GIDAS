@@ -248,3 +248,22 @@ borrador. El contenido no se almacena en localStorage ni sessionStorage.
 Los resultados paginados muestran controles centrados de anterior, números
 de página y siguiente, inmediatamente debajo de las tarjetas o resultados.
 El máximo de resultados por página conserva el contrato del módulo.
+
+## ISS-27: grilla de Actividades en Docencia
+
+El home de Actividades en Docencia usa la tabla compartida con Personal y
+Proyectos. Presenta hasta 9 filas por pagina, busqueda local, filtros por estado,
+curso, institucion, investigador, grado y rol, ordenamiento y navegacion desde la
+fila. Ver detalle, Editar y Eliminar se muestran por registro segun permisos;
+editar y eliminar solo estan disponibles para actividades activas.
+
+El service normaliza `grado_academico` y `rol_actividad`, compatibles con texto
+heredado y con el contrato `{ id, nombre }`. El historial se consulta al expandir
+una fila y muestra 3 eventos por pagina. El desplegable y la tarjeta del detalle
+son informativos, omiten campos heredados de acciones y presentan los cambios de
+grado con nombres legibles. El grado asignado durante el alta no se considera un
+cambio.
+
+La baja sigue siendo logica y conserva confirmacion, invalidacion de consultas y
+mensajes seguros. La barra horizontal de filtros usa un scrollbar compacto local,
+sin modificar estilos globales.

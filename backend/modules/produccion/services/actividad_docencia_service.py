@@ -273,7 +273,14 @@ class ActividadDocenciaService:
         eventos = []
         grado_anterior = None
 
-        for orden, item in enumerate(historial, start=1):
+        for orden, item in enumerate(historial):
+            grado_actual = ActividadDocenciaService._serializar_grado(
+                item.grado_academico
+            )
+            if orden == 0:
+                grado_anterior = grado_actual
+                continue
+
             eventos.append({
                 "id": f"historial-grado-{item.id}",
                 "tipo": "historial_grado",
@@ -281,9 +288,7 @@ class ActividadDocenciaService:
                 "registro_id": getattr(actividad, "id", None),
                 "campo": "grado_academico_id",
                 "valor_anterior": grado_anterior,
-                "valor_nuevo": ActividadDocenciaService._serializar_grado(
-                    item.grado_academico
-                ),
+                "valor_nuevo": grado_actual,
                 "fecha_cambio": item.fecha_inicio.isoformat(),
                 "usuario_id": item.created_by,
                 "usuario_nombre": (
@@ -299,9 +304,7 @@ class ActividadDocenciaService:
                 "orden_historial": orden,
                 "detalle": item.serialize()
             })
-            grado_anterior = ActividadDocenciaService._serializar_grado(
-                item.grado_academico
-            )
+            grado_anterior = grado_actual
 
         return eventos
 

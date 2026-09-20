@@ -143,3 +143,15 @@ Los generadores filtran por la UCT. Publicaciones, documentación, registros, di
 ## Errores de formularios (ISS-19, en curso)
 
 Los servicios de artículos, distinciones, trabajos, docencia, documentación y registros de propiedad devuelven `error.details.fields` cuando una validación identifica texto, fecha o selección editable. Las claves son las del payload HTTP, entre ellas `fecha_publicacion`, `proyecto_investigacion_id`, `titulo_trabajo`, `nombre_reunion`, `tipo_reunion_id`, `curso`, `fecha_inicio`, `nombre_articulo` y `fecha_registro`. Los duplicados conservan `CONFLICT` y un mensaje general accionable.
+
+## Historial y acciones de Docencia (ISS-27)
+
+El historial de grados omite la asociacion inicial creada junto con la actividad,
+porque forma parte del alta y no representa una modificacion. Los cambios
+posteriores exponen `valor_anterior` y `valor_nuevo` como `{ id, nombre }` para su
+presentacion legible.
+
+Las pruebas de regresion verifican que `PUT /actividades-docencia/<id>` y
+`DELETE /actividades-docencia/<id>` propagan el usuario autenticado y responden
+200 en operaciones correctas. La eliminacion aplica `soft_delete` y confirma la
+transaccion.
