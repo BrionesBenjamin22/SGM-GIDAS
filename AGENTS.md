@@ -99,9 +99,24 @@ No modificar sin pedir permiso:
 
 ## Validacion esperada
 
-- prueba manual cuando aplique
+- las validaciones tecnicas automatizadas corresponden al agente
+- la validacion visual y del comportamiento del modulo corresponde al usuario
 - test backend para el modulo actualizado
 - prueba completa al final del modulo
+
+## Aceptacion, documentacion y cierre
+
+- La validacion tecnica del agente no reemplaza la aceptacion visual y funcional
+  del usuario.
+- Mientras el usuario no confirme expresamente que el modulo y su comportamiento
+  fueron aprobados, la tarea debe permanecer en `tasks/in-progress/`.
+- Antes de esa aprobacion no se debe actualizar la documentacion tecnica del
+  modulo, `CHANGELOG.md`, cerrar la tarea ni ejecutar el commit.
+- Despues de la aprobacion, y cuando el usuario solicite finalizar el trabajo,
+  actualizar como ultimo paso la documentacion tecnica y `CHANGELOG.md`, mover la
+  tarea a `tasks/finished/` y completar sus datos de cierre.
+- Ejecutar el commit unicamente cuando el usuario lo solicite expresamente y
+  siempre despues de completar la documentacion y el cierre de la tarea.
 
 ## Commits
 

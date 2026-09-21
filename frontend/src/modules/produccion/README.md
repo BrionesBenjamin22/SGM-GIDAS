@@ -267,3 +267,24 @@ cambio.
 La baja sigue siendo logica y conserva confirmacion, invalidacion de consultas y
 mensajes seguros. La barra horizontal de filtros usa un scrollbar compacto local,
 sin modificar estilos globales.
+
+## ISS-28: grilla de Registros de propiedad
+
+El home de Registros de propiedad usa la tabla compartida con Proyectos,
+Personal y Actividades en Docencia. Presenta hasta 9 filas por pagina, busqueda
+local, chips de estado y selectores de tipo y fecha dentro de una barra con
+desplazamiento horizontal cuando el ancho disponible lo requiere.
+
+Cada fila permite ver el detalle y, para registros activos, editar o eliminar
+segun los permisos vigentes. La baja conserva su confirmacion individual, el
+soft delete, los mensajes seguros y la invalidacion de la consulta.
+
+El historial se consulta de forma diferida al expandir una fila y muestra 3
+eventos por pagina, con estados de carga, error recuperable y vacio. Home y
+detalle omiten campos de acciones, inicializaciones y valores sin diferencias.
+Los valores estructurados se presentan mediante nombres conocidos y nunca por
+coercion implicita, evitando `[object Object]`.
+
+El contrato normal de lectura entrega `tipo_registro` y `grupo` como cadenas. La
+presentacion aplica una normalizacion defensiva compatible con respuestas
+heredadas que incluyan objetos con nombre, sin alterar el payload de escritura.

@@ -8,6 +8,26 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-28: estandarizar Registros de propiedad con la grilla comun
+
+- Registros de propiedad reemplazo las tarjetas, la seleccion masiva y el panel
+  lateral por la tabla compartida, con 9 filas por pagina, busqueda, chips de
+  estado, filtros de tipo y fecha, navegacion y acciones por registro segun
+  permisos y estado.
+- La barra de filtros mantiene el espaciado y desplazamiento horizontal del
+  patron de Proyectos cuando el ancho disponible no alcanza.
+- Cada fila permite expandir un historial diferido de 3 eventos por pagina. Home
+  y detalle omiten acciones, inicializaciones y valores sin cambios.
+- Se verifico el contrato plano de `tipo_registro` y `grupo`; la presentacion
+  defensiva de valores estructurados evita mostrar `[object Object]` en columnas,
+  filtros, etiquetas e historial.
+- El alta no genera cambios de inicializacion y una actualizacion sin diferencias
+  no persiste auditoria. Se agregaron regresiones backend para ambas garantias.
+
+Validaciones: aceptacion visual y funcional del usuario, 130 pruebas frontend,
+`typecheck`, build de produccion, 6 pruebas backend de Registros de propiedad y
+`git diff --check` correctos.
+
 ### ISS-27: estandarizar Actividades en Docencia con la grilla comun
 
 - Actividades en Docencia reemplazo las tarjetas y la seleccion masiva por la

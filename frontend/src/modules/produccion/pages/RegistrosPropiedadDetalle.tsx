@@ -14,6 +14,7 @@ import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import { toTitleCase } from "@/utils/format";
 import { useTiposRegistroPropiedad } from "@/modules/produccion/hooks/useTipoRegistroPropiedad";
+import { presentRegistroPropiedadHistoryItems } from "@/modules/produccion/utils/registroPropiedadHistory";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,
@@ -200,7 +201,7 @@ export default function RegistrosPropiedadDetalle() {
 
         <HistorialCambiosCard
           subtitle={data.nombre_articulo || "-"}
-          items={historialCambios}
+          items={presentRegistroPropiedadHistoryItems(historialCambios)}
           isLoading={isLoadingHistorial}
           updatedAt={data.updated_at}
           updatedByName={data.updated_by_nombre}

@@ -155,3 +155,21 @@ Las pruebas de regresion verifican que `PUT /actividades-docencia/<id>` y
 `DELETE /actividades-docencia/<id>` propagan el usuario autenticado y responden
 200 en operaciones correctas. La eliminacion aplica `soft_delete` y confirma la
 transaccion.
+
+## Contrato de Registros de propiedad (ISS-28)
+
+`RegistrosPropiedad.serialize()` expone las relaciones de lectura como valores
+planos: `tipo_registro` contiene el nombre del tipo y `grupo` la sigla de la UCT.
+Los identificadores permanecen en `tipo_registro_id` y `grupo_utn_id`; los
+consumidores no deben depender de la representacion interna de SQLAlchemy.
+
+El alta no registra inicializaciones como cambios de campos. En edicion,
+`RegistrosPropiedadService.update` construye y persiste auditoria unicamente
+cuando existe una diferencia real; enviar el mismo valor no actualiza la marca
+de modificacion ni genera historial. El endpoint de historial conserva valores
+JSON para compatibilidad con registros anteriores, por lo que el frontend debe
+presentarlos mediante el contrato tipado y no por coercion a texto.
+
+`tests/test_registro_propiedad_memoria_historial.py` cubre las garantias de alta
+sin inicializaciones, edicion sin diferencias, lectura del historial y snapshots
+de memorias.
