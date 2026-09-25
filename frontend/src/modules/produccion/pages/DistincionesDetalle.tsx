@@ -1,6 +1,6 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/Button";
 import HistorialCambiosCard from "@/components/HistorialCambiosCard";
 import { formatFechaHora } from "@/utils/dateTime";
@@ -9,6 +9,11 @@ import {
   getDistincionById,
   getHistorialDistincionById,
 } from "@/modules/produccion/services/distincionesServices";
+import { getProyectos } from "@/modules/proyectos/services/proyectosServices";
+import {
+  formatDistincionHistoryEntry,
+  presentDistincionHistoryItems,
+} from "@/modules/produccion/utils/distincionHistory";
 import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -32,16 +37,38 @@ export default function DistincionesDetalle() {
     refetchOnMount: "always",
   });
 
-  const { data: historialCambios = [], isLoading: isLoadingHistorial } = useQuery({
+  const historial = useQuery({
     queryKey: ["distincion-historial", distincionId],
     queryFn: () => getHistorialDistincionById(distincionId as number),
     enabled: !!distincionId,
     refetchOnMount: "always",
   });
 
+  const { data: proyectos = [] } = useQuery({
+    queryKey: ["proyectos", "all"],
+    queryFn: () => getProyectos("all"),
+    staleTime: 5 * 60_000,
+  });
+
   const auditoria = useAuditoria(data);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const projectNames = useMemo(
+    () =>
+      Object.fromEntries(
+        proyectos
+          .filter((proyecto) => proyecto.id)
+          .map((proyecto) => [
+            Number(proyecto.id),
+            `${proyecto.codigoProyecto} - ${proyecto.nombreProyecto}`,
+          ])
+      ),
+    [proyectos]
+  );
+  const historialVisible = useMemo(
+    () => presentDistincionHistoryItems(historial.data ?? []),
+    [historial.data]
+  );
 
   useEffect(() => {
     if (location.state?.successMessage) {
@@ -84,42 +111,12 @@ export default function DistincionesDetalle() {
     return dateStr;
   };
 
-  if (isLoading) return <p className="text-slate-500">Cargando...</p>;
+  if (isLoading) return <p role="status" className="text-slate-500">Cargando distinción...</p>;
   if (isError || !data) {
-    return <p className="text-slate-500">No se encontró la distinción.</p>;
+    return <p role="alert" className="text-slate-500">Lo sentimos, no pudimos recuperar la información. Intente nuevamente.</p>;
   }
 
-  const isDeleted = !!data.deleted_at;
-
-  const formatHistorialValue = (item: { campo?: string }, value: unknown) => {
-    if (value === null || value === undefined || value === "") {
-      return "-";
-    }
-
-    if (item.campo === "proyecto_investigacion_id") {
-      const proyectoActual = data.proyecto;
-      const asNumber =
-        typeof value === "number"
-          ? value
-          : typeof value === "string" && value.trim() !== ""
-            ? Number(value)
-            : NaN;
-
-      if (proyectoActual?.id === asNumber) {
-        return `${proyectoActual.codigo} - ${proyectoActual.nombre}`;
-      }
-    }
-
-    if (typeof value === "object") {
-      try {
-        return JSON.stringify(value);
-      } catch {
-        return "-";
-      }
-    }
-
-    return String(value);
-  };
+  const isDeleted = !!data.deleted_at || data.activo === false;
 
   return (
     <>
@@ -209,14 +206,33 @@ export default function DistincionesDetalle() {
           </div>
         </article>
 
-        <HistorialCambiosCard
-          subtitle={data.descripcion || "-"}
-          items={historialCambios}
-          isLoading={isLoadingHistorial}
-          updatedAt={data.updated_at}
-          updatedByName={data.updated_by_nombre}
-          formatItemValue={(item, value) => formatHistorialValue(item, value)}
-        />
+        {historial.isError ? (
+          <article role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-6 shadow-sm">
+            <h3 className="text-lg font-semibold text-rose-800">Historial de cambios</h3>
+            <p className="mt-2 text-sm text-rose-700">
+              Lo sentimos, no pudimos recuperar el historial. Intente nuevamente.
+            </p>
+            <Button
+              className="mt-4"
+              variant="secondary"
+              size="sm"
+              onClick={() => historial.refetch()}
+            >
+              Reintentar
+            </Button>
+          </article>
+        ) : (
+          <HistorialCambiosCard
+            subtitle={data.descripcion || "-"}
+            items={historialVisible}
+            isLoading={historial.isLoading}
+            updatedAt={data.updated_at}
+            updatedByName={data.updated_by_nombre}
+            formatItemPresentation={(item) =>
+              formatDistincionHistoryEntry(item, projectNames)
+            }
+          />
+        )}
 
         <div className="flex justify-start pt-4">
           <Button

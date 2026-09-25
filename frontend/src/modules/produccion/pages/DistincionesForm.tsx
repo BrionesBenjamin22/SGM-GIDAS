@@ -33,13 +33,14 @@ export default function DistincionesForm() {
 
   const isEdit = Boolean(id);
 
-  const { data: proyectos = [] } = useQuery({
-    queryKey: ["proyectos"],
+  const proyectosQuery = useQuery({
+    queryKey: ["proyectos", "activos"],
     queryFn: () => getProyectos(),
     staleTime: 60_000,
   });
+  const proyectos = proyectosQuery.data ?? [];
 
-  const { data: initialData, isLoading } = useQuery({
+  const { data: initialData, isLoading, isError } = useQuery({
     queryKey: ["distincion", id],
     queryFn: () => (id ? getDistincionById(Number(id)) : null),
     enabled: isEdit,
@@ -99,14 +100,6 @@ export default function DistincionesForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const formatDateStr = (date: Date | null) => {
-    if (!date) return null;
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  };
-
   const mutation = useMutation({
     mutationFn: (payload: Partial<DistincionPayload>) =>
       isEdit
@@ -149,7 +142,7 @@ export default function DistincionesForm() {
     if (!uct) return;
 
     const payload = {
-      fecha: formatDateStr(fecha)!,
+      fecha: toCivilDateString(fecha)!,
       descripcion: descripcion.trim(),
       proyecto_investigacion_id: proyectoId!,
     };
@@ -186,7 +179,15 @@ export default function DistincionesForm() {
   };
 
   if (isEdit && isLoading) {
-    return <p className="text-slate-500">Cargando distinción...</p>;
+    return <p role="status" className="text-slate-500">Cargando distinción...</p>;
+  }
+
+  if ((isEdit && isError) || proyectosQuery.isError) {
+    return (
+      <p role="alert" className="text-slate-500">
+        Lo sentimos, no pudimos recuperar la información. Intente nuevamente.
+      </p>
+    );
   }
 
   const inputClass = (field: string) =>
@@ -219,48 +220,38 @@ export default function DistincionesForm() {
         </Field>
 
         <Field required label="Descripción" name="descripcion" error={errors.descripcion}>
-          <>
-            <textarea
-              className={`${inputClass("descripcion")} min-h-[80px]`}
-              value={descripcion}
-              onChange={(e) => {
-                setDescripcion(e.target.value);
-                if (e.target.value.trim()) clearError("descripcion");
-              }}
-              placeholder="Ej: Reconocimiento por aporte cientifico"
-            />
-            {errors.descripcion && (
-              <p className="mt-1 text-sm text-red-500">{errors.descripcion}</p>
-            )}
-          </>
+          <textarea
+            className={`${inputClass("descripcion")} min-h-[80px]`}
+            value={descripcion}
+            onChange={(e) => {
+              setDescripcion(e.target.value);
+              if (e.target.value.trim()) clearError("descripcion");
+            }}
+            placeholder="Ej.: Reconocimiento por aporte científico"
+          />
         </Field>
 
         <Field required label="Proyecto de investigación" name="proyecto" error={errors.proyecto}>
-          <>
-            <select
-              className={`${inputClass("proyecto")} ${
-                !proyectoId ? "text-slate-400" : "text-slate-900"
-              }`}
-              value={proyectoId ?? ""}
-              onChange={(e) => {
-                const value = e.target.value ? Number(e.target.value) : null;
-                setProyectoId(value);
-                if (value) clearError("proyecto");
-              }}
-            >
-              <option value="" disabled>
-                Seleccionar proyecto
+          <select
+            className={`${inputClass("proyecto")} ${
+              !proyectoId ? "text-slate-400" : "text-slate-900"
+            }`}
+            value={proyectoId ?? ""}
+            onChange={(e) => {
+              const value = e.target.value ? Number(e.target.value) : null;
+              setProyectoId(value);
+              if (value) clearError("proyecto");
+            }}
+          >
+            <option value="" disabled>
+              Seleccionar proyecto
+            </option>
+            {proyectos.map((p: Proyecto) => (
+              <option key={p.id} value={p.id}>
+                {p.codigoProyecto} - {p.nombreProyecto}
               </option>
-              {proyectos.map((p: Proyecto) => (
-                <option key={p.id} value={p.id}>
-                  {p.codigoProyecto} - {p.nombreProyecto}
-                </option>
-              ))}
-            </select>
-            {errors.proyecto && (
-              <p className="mt-1 text-sm text-red-500">{errors.proyecto}</p>
-            )}
-          </>
+            ))}
+          </select>
         </Field>
 
         <div className="flex justify-between pt-6">
