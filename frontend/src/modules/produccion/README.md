@@ -365,3 +365,27 @@ vez junto al control correspondiente.
 Validación: aceptación visual y funcional del usuario, prueba focalizada 5/5,
 145 pruebas frontend, `typecheck`, build de producción, 28 pruebas backend
 focalizadas y `git diff --check` correctos.
+
+## ISS-34: grilla de Artículos de divulgación
+
+El home de Artículos de divulgación usa la tabla compartida con 9 filas por
+página, búsqueda por título, descripción, UCT o fecha y filtros horizontales por
+estado, UCT y año. Cada fila navega al detalle y ofrece acciones individuales de
+edición y baja lógica según el estado y los permisos vigentes. Se retiraron las
+tarjetas, la selección masiva y el panel lateral de filtros.
+
+El historial se consulta al expandir una fila y muestra 3 eventos por página,
+con estados de carga, error recuperable y vacío. Home y detalle comparten
+`articuloDivulgacionHistory.ts`: omiten acciones técnicas, inicializaciones y
+valores equivalentes, y presentan fechas, UCT y objetos con etiquetas legibles
+sin exponer IDs ni estructuras serializadas.
+
+El formulario mantiene las altas con retorno al home y las ediciones con retorno
+al detalle mediante `successMessage`. En edición envía únicamente diferencias
+reales, asocia `fecha_publicacion` al control visible y muestra cada error una
+sola vez. El título identifica al artículo, pero no es único: se admiten varios
+artículos con el mismo título.
+
+Validación: aceptación visual y funcional del usuario, prueba focalizada 5/5,
+150 pruebas frontend, `typecheck`, build de producción, 5 pruebas backend de
+Artículos de divulgación y `git diff --check` correctos.

@@ -29,11 +29,12 @@ export default function ArticulosDivulgacionForm() {
 
   const isEdit = Boolean(id);
 
-  const { data: initialData, isLoading } = useQuery({
+  const initialQuery = useQuery({
     queryKey: ["articulo-divulgacion", id],
     queryFn: () => (id ? getArticuloById(Number(id)) : null),
     enabled: isEdit,
   });
+  const { data: initialData, isLoading } = initialQuery;
 
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -131,7 +132,13 @@ export default function ArticulosDivulgacionForm() {
       });
     },
     onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["titulo","descripcion","fecha"])) return;
+      if (
+        applyFieldErrors(
+          error,
+          setErrors,
+          ["titulo", "descripcion", "fecha"]
+        )
+      ) return;
       const backendMessage = getErrorMessage(
         error,
         isEdit
@@ -189,7 +196,18 @@ export default function ArticulosDivulgacionForm() {
   };
 
   if (isEdit && isLoading) {
-    return <p className="text-slate-500">Cargando artículo...</p>;
+    return <p role="status" className="text-slate-500">Cargando artículo...</p>;
+  }
+
+  if (isEdit && (initialQuery.isError || !initialData)) {
+    return (
+      <div role="alert" className="space-y-3 text-slate-600">
+        <p>Lo sentimos, no pudimos recuperar la información. Intente nuevamente.</p>
+        <Button type="button" variant="secondary" size="sm" onClick={() => initialQuery.refetch()}>
+          Reintentar
+        </Button>
+      </div>
+    );
   }
 
   const inputClass = (field: string) =>
@@ -212,8 +230,7 @@ export default function ArticulosDivulgacionForm() {
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
         <Field required label="Título" name="titulo" error={errors.titulo}>
-          <>
-            <input
+          <input
               type="text"
               className={inputClass("titulo")}
               value={titulo}
@@ -223,15 +240,10 @@ export default function ArticulosDivulgacionForm() {
               }}
               placeholder="Ej: Impacto de la investigación en la comunidad"
             />
-            {errors.titulo && (
-              <p className="mt-1 text-sm text-red-500">{errors.titulo}</p>
-            )}
-          </>
         </Field>
 
         <Field required label="Descripción" name="descripcion" error={errors.descripcion}>
-          <>
-            <textarea
+          <textarea
               className={`${inputClass("descripcion")} min-h-[100px]`}
               value={descripcion}
               onChange={(e) => {
@@ -240,10 +252,6 @@ export default function ArticulosDivulgacionForm() {
               }}
               placeholder="Ej: Artículo orientado a la divulgación de resultados científicos para público general"
             />
-            {errors.descripcion && (
-              <p className="mt-1 text-sm text-red-500">{errors.descripcion}</p>
-            )}
-          </>
         </Field>
 
         <Field required label="Fecha de publicación" name="fecha" error={errors.fecha}>

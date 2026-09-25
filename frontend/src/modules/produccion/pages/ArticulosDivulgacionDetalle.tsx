@@ -1,6 +1,6 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/Button";
 import HistorialCambiosCard from "@/components/HistorialCambiosCard";
 import { formatFechaHora } from "@/utils/dateTime";
@@ -9,6 +9,10 @@ import {
   getArticuloById,
   getHistorialArticuloById,
 } from "@/modules/produccion/services/articulosDivulgacionServices";
+import {
+  formatArticuloHistoryEntry,
+  presentArticuloHistoryItems,
+} from "@/modules/produccion/utils/articuloDivulgacionHistory";
 import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -32,7 +36,7 @@ export default function ArticulosDivulgacionDetalle() {
     refetchOnMount: "always",
   });
 
-  const { data: historialCambios = [], isLoading: isLoadingHistorial } = useQuery({
+  const historial = useQuery({
     queryKey: ["articulo-divulgacion-historial", articuloId],
     queryFn: () => getHistorialArticuloById(articuloId as number),
     enabled: !!articuloId,
@@ -42,6 +46,17 @@ export default function ArticulosDivulgacionDetalle() {
   const auditoria = useAuditoria(data);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const groupNames = useMemo(
+    () =>
+      data?.grupo_utn?.id && data.grupo_utn.nombre
+        ? { [data.grupo_utn.id]: data.grupo_utn.nombre }
+        : {},
+    [data]
+  );
+  const historialVisible = useMemo(
+    () => presentArticuloHistoryItems(historial.data ?? []),
+    [historial.data]
+  );
 
   useEffect(() => {
     if (location.state?.successMessage) {
@@ -84,10 +99,10 @@ export default function ArticulosDivulgacionDetalle() {
     return dateStr;
   };
 
-  if (isLoading) return <p className="text-slate-500">Cargando...</p>;
+  if (isLoading) return <p role="status" className="text-slate-500">Cargando artículo...</p>;
 
   if (isError || !data) {
-    return <p className="text-slate-500">No se encontró el artículo de divulgación.</p>;
+    return <p role="alert" className="text-slate-500">Lo sentimos, no pudimos recuperar la información. Intente nuevamente.</p>;
   }
 
   const isDeleted = !!data.deleted_at;
@@ -185,13 +200,28 @@ export default function ArticulosDivulgacionDetalle() {
           </div>
         </article>
 
-        <HistorialCambiosCard
-          subtitle={data.titulo || "-"}
-          items={historialCambios}
-          isLoading={isLoadingHistorial}
-          updatedAt={data.updated_at}
-          updatedByName={data.updated_by_nombre}
-        />
+        {historial.isError ? (
+          <article role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-6 shadow-sm">
+            <h3 className="text-lg font-semibold text-rose-800">Historial de cambios</h3>
+            <p className="mt-2 text-sm text-rose-700">
+              Lo sentimos, no pudimos recuperar el historial. Intente nuevamente.
+            </p>
+            <Button className="mt-4" variant="secondary" size="sm" onClick={() => historial.refetch()}>
+              Reintentar
+            </Button>
+          </article>
+        ) : (
+          <HistorialCambiosCard
+            subtitle={data.titulo || "-"}
+            items={historialVisible}
+            isLoading={historial.isLoading}
+            updatedAt={data.updated_at}
+            updatedByName={data.updated_by_nombre}
+            formatItemPresentation={(item) =>
+              formatArticuloHistoryEntry(item, groupNames)
+            }
+          />
+        )}
 
         <div className="flex justify-start pt-4">
           <Button

@@ -8,6 +8,25 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-34: estandarizar Artículos de divulgación
+
+- Artículos de divulgación reemplazó las tarjetas, la selección masiva y el
+  panel lateral por la tabla compartida con 9 filas, búsqueda y filtros
+  horizontales por estado, UCT y año.
+- Cada fila conserva la navegación al detalle y ofrece acciones individuales de
+  edición y baja lógica según el estado y los permisos vigentes.
+- El historial se carga al expandir, pagina de a 3 eventos y distingue carga,
+  error recuperable y vacío. Home y detalle presentan fechas y UCT con etiquetas
+  legibles, sin acciones técnicas, inicializaciones, IDs ni JSON.
+- El formulario conserva el envío exclusivo de diferencias, vincula los errores
+  del contrato a sus controles y evita mensajes duplicados.
+- Se verificó y cubrió mediante regresión que el título de un artículo puede
+  repetirse y no constituye una restricción de unicidad.
+
+Validaciones: aceptación visual y funcional del usuario, prueba focalizada 5/5,
+150 pruebas frontend, `typecheck`, build de producción, 5 pruebas backend de
+Artículos de divulgación y `git diff --check` correctos.
+
 ### ISS-33: estandarizar Distinciones recibidas con la grilla común
 
 - Distinciones recibidas reemplazó las tarjetas, la selección masiva y el panel

@@ -3,6 +3,7 @@ from datetime import date, datetime
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from modules import models_registry  # noqa: F401
 from modules.shared.models.auditoria_campo import AuditoriaCampo
 from modules.memorias.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
 from modules.produccion.services.articulo_divulgacion_service import ArticuloDivulgacionService
@@ -67,6 +68,43 @@ class ArticuloDivulgacionMemoriaHistorialTestCase(unittest.TestCase):
         self.assertEqual(snapshots[0].grupo_utn_nombre, "GIDAS")
         self.assertEqual(snapshots[0].created_by, 27)
         self.mock_add.assert_called()
+
+    def test_create_admite_titulos_repetidos(self):
+        creados = []
+
+        def construir_articulo(**datos):
+            articulo = SimpleNamespace(
+                **datos,
+                serialize=lambda: {
+                    "id": len(creados) + 1,
+                    "titulo": datos["titulo"],
+                }
+            )
+            creados.append(articulo)
+            return articulo
+
+        payload = {
+            "titulo": "Un mismo título de divulgación",
+            "descripcion": "Descripción suficientemente extensa",
+            "fecha_publicacion": "2026-04-15",
+            "grupo_utn_id": 4,
+        }
+
+        with patch(
+            "modules.produccion.services.articulo_divulgacion_service.ArticuloDivulgacion",
+            side_effect=construir_articulo,
+        ), patch.object(
+            ArticuloDivulgacionService,
+            "_validar_grupo",
+            return_value=4,
+        ):
+            primero = ArticuloDivulgacionService.create(payload, user_id=27)
+            segundo = ArticuloDivulgacionService.create(payload, user_id=27)
+
+        self.assertEqual(primero["titulo"], segundo["titulo"])
+        self.assertEqual(len(creados), 2)
+        self.assertEqual(self.mock_add.call_count, 2)
+        self.assertEqual(self.mock_commit.call_count, 2)
 
     def test_change_status_a_cerrada_genera_snapshot_articulos_divulgacion(self):
         memoria = Memoria(

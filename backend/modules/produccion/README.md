@@ -202,3 +202,21 @@ entorno de prueba fue regenerado después de aplicar la revisión.
 
 Validación: 50 pruebas backend focalizadas cubren catálogo, fechas, autorías,
 rollback, historial, snapshots y errores de dominio.
+
+## ISS-34: Artículos de divulgación
+
+`ArticuloDivulgacionService` administra alta, listado, detalle, actualización,
+baja lógica, historial y snapshots de Memorias. El payload de escritura requiere
+`titulo`, `descripcion`, `fecha_publicacion` y `grupo_utn_id`; las fechas respetan
+el rango institucional, el grupo debe existir y las validaciones identificables
+se devuelven mediante `error.details.fields`.
+
+El título no posee una restricción de unicidad en el modelo, las migraciones ni
+el service. Dos artículos pueden compartir el mismo título porque cada registro
+se identifica por su ID y conserva auditoría e historial independientes. La
+regresión de servicio cubre expresamente dos altas con el mismo valor de
+`titulo`.
+
+El endpoint `GET /articulos-divulgacion/<id>/historial` entrega los cambios de
+campo del artículo. El frontend consume este contrato en el home de forma
+diferida y en el detalle, con paginación visual de 3 eventos.
