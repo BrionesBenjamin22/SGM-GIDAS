@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import { formatProyectoHistoryEntry, presentProyectoHistoryItem } from "../src/modules/proyectos/utils/proyectoHistory.ts";
+import { formatProyectoHistoryEntry, formatProyectoRelationHistoryEntry } from "../src/modules/proyectos/utils/proyectoHistory.ts";
 
 test("el historial de Proyectos presenta cambios y relaciones sin JSON", () => {
   assert.deepEqual(
@@ -14,12 +14,20 @@ test("el historial de Proyectos presenta cambios y relaciones sin JSON", () => {
     { title: "Investigador vinculado", description: "Ada Lovelace" }
   );
   assert.deepEqual(
-    presentProyectoHistoryItem(
+    formatProyectoRelationHistoryEntry(
       { id: 3, campo: "becarios_ids", valor_nuevo: { accion: "vincular", detalle: { id: 2 } } },
       { becarios: [{ id: 2, nombre_apellido: "Grace Hopper" }] }
     ),
-    { id: 3, campo: "Becario vinculado", valor_anterior: null, valor_nuevo: "Grace Hopper" }
+    { title: "Becario vinculado", description: "Grace Hopper" }
   );
+  assert.deepEqual(
+    formatProyectoRelationHistoryEntry(
+      { id: 4, campo: "coordinador_id", valor_anterior: null, valor_nuevo: 2 },
+      { investigadores: [{ id: 2, nombre_apellido: "Dra. Ana Pérez" }] }
+    ),
+    { title: "Coordinador asignado", description: "Dra. Ana Pérez" }
+  );
+  assert.equal(formatProyectoRelationHistoryEntry({ id: 5, campo: "nombre_proyecto", valor_nuevo: "Proyecto" }), null);
 });
 
 test("Proyectos usa la tabla comun y nomenclatura de acciones consistente", () => {

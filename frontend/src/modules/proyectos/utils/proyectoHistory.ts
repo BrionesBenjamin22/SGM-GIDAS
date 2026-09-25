@@ -60,29 +60,54 @@ function relationEvent(
   return { title: `${singular} ${action}`, description: storedName || currentName || singular };
 }
 
+function coordinatorEvent(
+  entry: HistorialProyectoItem,
+  personal?: ProyectoPersonal
+): HistoryPresentation | null {
+  if (entry.campo !== "coordinador_id") return null;
+
+  const value = entry.valor_nuevo;
+  if (value === null || value === undefined || value === "") return null;
+
+  const detail = isRecord(value) ? value : null;
+  const idValue = detail?.id ?? value;
+  const id = typeof idValue === "number"
+    ? idValue
+    : typeof idValue === "string" && idValue.trim()
+      ? Number(idValue)
+      : NaN;
+  const storedName = typeof detail?.nombre_apellido === "string"
+    ? detail.nombre_apellido.trim()
+    : "";
+  const currentName = Number.isFinite(id)
+    ? personal?.investigadores?.find((item) => item.id === id)?.nombre_apellido ?? ""
+    : "";
+
+  return {
+    title: "Coordinador asignado",
+    description: storedName || currentName || "Coordinador actualizado",
+  };
+}
+
+export function formatProyectoRelationHistoryEntry(
+  entry: HistorialProyectoItem,
+  personal?: ProyectoPersonal
+): HistoryPresentation | null {
+  const coordinator = coordinatorEvent(entry, personal);
+  if (coordinator) return coordinator;
+
+  if (!["investigadores", "investigadores_ids", "becarios", "becarios_ids"].includes(entry.campo ?? "")) {
+    return null;
+  }
+
+  return relationEvent(entry, personal);
+}
+
 export function formatProyectoHistoryEntry(
   entry: HistorialProyectoItem,
   personal?: ProyectoPersonal
 ): HistoryPresentation {
-  if (["investigadores", "investigadores_ids", "becarios", "becarios_ids"].includes(entry.campo ?? "")) {
-    const relation = relationEvent(entry, personal);
-    if (relation) return relation;
-  }
+  const relation = formatProyectoRelationHistoryEntry(entry, personal);
+  if (relation) return relation;
   return { title: label(entry.campo || entry.tipo), description: `${valueLabel(entry.valor_anterior, entry.campo)} → ${valueLabel(entry.valor_nuevo, entry.campo)}` };
-}
-
-export function presentProyectoHistoryItem(
-  entry: HistorialProyectoItem,
-  personal?: ProyectoPersonal
-): HistorialProyectoItem {
-  const isRelation = ["investigadores", "investigadores_ids", "becarios", "becarios_ids"].includes(entry.campo ?? "");
-  if (!isRelation || !isRecord(entry.valor_nuevo) || typeof entry.valor_nuevo.accion !== "string") return entry;
-
-  const presentation = formatProyectoHistoryEntry(entry, personal);
-  return {
-    ...entry,
-    campo: presentation.title,
-    valor_anterior: null,
-    valor_nuevo: presentation.description,
-  };
 }
