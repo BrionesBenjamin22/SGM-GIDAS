@@ -60,6 +60,11 @@ Los componentes reutilizables globales permanecen en `src/components`, el layout
 global en `src/layouts`, el contexto de autenticacion en `src/context` y los
 estilos base en `src/styles`.
 
+El contrato transversal para adaptar homes, formularios, detalles e historiales
+se encuentra en [`CONVENCIONES_PANTALLAS.md`](CONVENCIONES_PANTALLAS.md). Incluye
+paginacion, filtros, acciones, permisos, estados, accesibilidad y la presentacion
+directa de eventos relacionales sin exponer IDs ni JSON.
+
 ## Contrato de fechas y horas
 
 - Las fechas civiles recibidas como `YYYY-MM-DD` se parsean con

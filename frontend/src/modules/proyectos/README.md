@@ -48,6 +48,17 @@ backend o, para eventos anteriores, el nombre disponible en el detalle actual;
 no se renderizan JSON ni identificadores internos. Las asociaciones incluidas en
 el alta son estado inicial y no aparecen como cambios posteriores.
 
+Home y detalle comparten la misma utilidad de presentacion. Los eventos de
+investigadores y becarios muestran directamente la accion y el nombre, sin las
+etiquetas `Valor anterior` y `Valor nuevo`. La asignacion registrada como
+`coordinador_id` se presenta como `Coordinador asignado` seguida del nombre del
+investigador; nunca se muestra el ID como descripcion. Fecha y usuario permanecen
+visibles y los cambios no relacionales conservan el formato anterior/nuevo.
+
+La presentacion directa usa la opcion optativa de `HistorialCambiosCard`, por lo
+que no altera los historiales de otros modulos. Las reglas transversales se
+documentan en `frontend/CONVENCIONES_PANTALLAS.md`.
+
 ### Coordinador y guardado consolidado (ISS-10)
 
 El coordinador se elige entre investigadores del proyecto. Las nuevas

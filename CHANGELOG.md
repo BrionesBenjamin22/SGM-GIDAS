@@ -8,6 +8,39 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-31: presentar relaciones legibles en el historial de Proyectos
+
+- Home y detalle muestran vinculaciones y desvinculaciones de investigadores y
+  becarios como acciones directas acompanadas por el nombre correspondiente, sin
+  etiquetas de valor anterior/nuevo, IDs ni JSON.
+- Las asignaciones de `coordinador_id` se presentan como `Coordinador asignado`
+  seguido del nombre del investigador. Los cambios ordinarios conservan su
+  comparacion anterior/nuevo.
+- Se incorporo una opcion optativa en la tarjeta compartida de historial para que
+  cada modulo presente eventos de accion sin modificar a los demas consumidores.
+
+Validaciones: aceptacion funcional del usuario, prueba focalizada 2/2, 135
+pruebas frontend, `typecheck`, build de produccion y `git diff --check` correctos.
+
+### ISS-30: estandarizar Trabajos en reuniones con la grilla comun
+
+- Trabajos en reuniones reemplazo las tarjetas, seleccion masiva y panel lateral
+  por la tabla compartida con 9 filas, busqueda, filtros, navegacion y acciones
+  por registro condicionadas por estado y permisos.
+- La barra horizontal alinea chips y selectores y reutiliza el scrollbar compacto
+  local del patron aprobado.
+- El historial se carga al expandir, pagina de a 3 eventos y distingue carga,
+  error recuperable y vacio. Omite acciones tecnicas, inicializaciones y valores
+  equivalentes, y normaliza objetos para evitar representaciones invalidas.
+- Las vinculaciones y desvinculaciones de autores muestran la accion, el nombre y
+  la categoria directamente, sin pares de valor anterior/nuevo.
+- Se agrego `frontend/CONVENCIONES_PANTALLAS.md` como contrato transversal para
+  adaptar homes, formularios, detalles e historiales de los modulos restantes.
+
+Validaciones: aceptacion visual y funcional del usuario, prueba focalizada 5/5,
+135 pruebas frontend, `typecheck`, build de produccion, 46 pruebas backend
+focalizadas y `git diff --check` correctos.
+
 ### ISS-28: estandarizar Registros de propiedad con la grilla comun
 
 - Registros de propiedad reemplazo las tarjetas, la seleccion masiva y el panel

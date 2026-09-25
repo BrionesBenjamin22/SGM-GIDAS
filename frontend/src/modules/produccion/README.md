@@ -288,3 +288,29 @@ coercion implicita, evitando `[object Object]`.
 El contrato normal de lectura entrega `tipo_registro` y `grupo` como cadenas. La
 presentacion aplica una normalizacion defensiva compatible con respuestas
 heredadas que incluyan objetos con nombre, sin alterar el payload de escritura.
+
+## ISS-30: grilla de Trabajos en reuniones
+
+El home de Trabajos en reuniones usa la tabla compartida con 9 filas por pagina,
+busqueda y filtros por estado, tipo, procedencia, autor y anio. La barra mantiene
+chips y selectores alineados y usa el scrollbar horizontal compacto local del
+patron aprobado. Cada fila navega al detalle y ofrece acciones individuales segun
+estado y permisos; se retiraron la seleccion masiva y el panel lateral anterior.
+
+El historial se carga al expandir una fila y muestra 3 eventos por pagina con
+estados de carga, error recuperable y vacio. Se omiten acciones tecnicas,
+inicializaciones y valores equivalentes; los valores estructurados se normalizan
+para evitar IDs, JSON y `[object Object]`.
+
+Los eventos de autor usan presentacion directa tanto en home como en detalle:
+`Autor vinculado` o `Autor desvinculado`, nombre y categoria, fecha y usuario. No
+muestran `Valor anterior` ni `Valor nuevo`. El detalle utiliza la opcion optativa
+de presentacion de `HistorialCambiosCard`; los demas consumidores mantienen su
+formato ordinario.
+
+El hook del listado expone carga inicial, actualizacion y reintento. Se conservan
+el contrato de autores investigadores/becarios, la fecha de presentacion, el
+contexto de Memorias, la baja logica y los permisos vigentes.
+
+Validacion: 135 pruebas frontend, prueba focalizada 5/5, typecheck, build de
+produccion, 46 pruebas backend focalizadas y `git diff --check` correctos.
