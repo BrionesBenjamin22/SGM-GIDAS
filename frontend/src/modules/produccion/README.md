@@ -343,3 +343,25 @@ rutas de Producción.
 Validación: aceptación visual y funcional del usuario, 140 pruebas frontend,
 `typecheck`, build de producción, 50 pruebas backend focalizadas y
 `git diff --check` correctos.
+
+## ISS-33: grilla de Distinciones recibidas
+
+El home de Distinciones recibidas usa la tabla compartida con 9 filas por
+página, búsqueda por descripción, proyecto o fecha y filtros horizontales por
+estado, proyecto y año. Cada fila conserva la navegación al detalle y ofrece
+acciones individuales de edición y baja lógica según el estado y los permisos.
+
+El historial se consulta al expandir una fila y muestra 3 eventos por página,
+con estados de carga, error recuperable y vacío. Home y detalle comparten
+`distincionHistory.ts`: omiten acciones técnicas, inicializaciones y valores
+equivalentes, y presentan las fechas y los proyectos con etiquetas legibles sin
+exponer IDs ni estructuras serializadas.
+
+El formulario mantiene las altas con retorno al home y las ediciones con retorno
+al detalle mediante `successMessage`. En edición envía únicamente diferencias
+reales; las validaciones de fecha, descripción y proyecto se muestran una sola
+vez junto al control correspondiente.
+
+Validación: aceptación visual y funcional del usuario, prueba focalizada 5/5,
+145 pruebas frontend, `typecheck`, build de producción, 28 pruebas backend
+focalizadas y `git diff --check` correctos.

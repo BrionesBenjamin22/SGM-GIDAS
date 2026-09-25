@@ -8,6 +8,23 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-33: estandarizar Distinciones recibidas con la grilla común
+
+- Distinciones recibidas reemplazó las tarjetas, la selección masiva y el panel
+  lateral por la tabla compartida con 9 filas, búsqueda y filtros horizontales
+  por estado, proyecto y año.
+- Cada fila conserva la navegación al detalle y ofrece acciones individuales de
+  edición y baja lógica según el estado y los permisos vigentes.
+- El historial se carga al expandir, pagina de a 3 eventos y distingue carga,
+  error recuperable y vacío. Home y detalle presentan fechas y proyectos con
+  etiquetas legibles, sin acciones técnicas, inicializaciones, IDs ni JSON.
+- El formulario conserva el envío exclusivo de diferencias y muestra cada error
+  de validación una sola vez junto al control correspondiente.
+
+Validaciones: aceptación visual y funcional del usuario, prueba focalizada 5/5,
+145 pruebas frontend, `typecheck`, build de producción, 28 pruebas backend
+focalizadas y `git diff --check` correctos.
+
 ### ISS-32: separar el contrato y estandarizar Trabajos en revistas
 
 - Se incorporó el catálogo independiente Tipo de revista con los valores de
