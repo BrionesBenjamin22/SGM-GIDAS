@@ -22,7 +22,7 @@ import {
   type TrabajoRevistaPayload,
 } from "@/modules/produccion/services/trabajosRevistasServices";
 
-import { useTiposReunion } from "@/modules/produccion/hooks/useTiposReunion";
+import { useTiposRevista } from "@/modules/produccion/hooks/useTiposRevista";
 import AutoresQueryFeedback from "@/modules/produccion/components/AutoresQueryFeedback";
 import { useIntegrantesAutores } from "@/modules/produccion/hooks/useIntegrantesAutores";
 import { mismasAutorias, type IntegranteAutor } from "@/modules/produccion/services/trabajoAutoresServices";
@@ -40,7 +40,7 @@ export default function TrabajosRevistasForm() {
   const isEdit = Boolean(id);
 
   const { uct, uctGuard } = useUctGuard();
-  const { tipos = [] } = useTiposReunion();
+  const { tipos = [] } = useTiposRevista();
   const { canCreateRecords, canEditRecords, user } = useAuth();
   const puedeGuardar = isEdit ? canEditRecords() : canCreateRecords();
   const autoresQuery = useIntegrantesAutores();
@@ -78,8 +78,8 @@ export default function TrabajosRevistasForm() {
     setEditorial(initialData.editorial ?? "");
     setIssn(initialData.issn ?? "");
     setPais(initialData.pais ?? "");
-    setFecha(initialData.fecha ? new Date(`${initialData.fecha}T00:00:00`) : null);
-    setTipoId(initialData.tipo_reunion?.id ?? null);
+    setFecha(initialData.fecha_publicacion ? new Date(`${initialData.fecha_publicacion}T00:00:00`) : null);
+    setTipoId(initialData.tipo_revista?.id ?? null);
     setAutores(initialData.autores ?? []);
   }, [initialData]);
 
@@ -126,11 +126,11 @@ export default function TrabajosRevistasForm() {
     }
 
     if (!tipoId) {
-      newErrors.tipoId = "Debe seleccionar tipo";
+      newErrors.tipoId = "Debe seleccionar un tipo de revista";
     }
 
     if (!fecha) {
-      newErrors.fecha = "Debe seleccionar fecha";
+      newErrors.fecha = "Debe seleccionar la fecha de publicación";
     }
 
     if (autores.length === 0) {
@@ -202,8 +202,8 @@ export default function TrabajosRevistasForm() {
       editorial: toTitleCase(editorial.trim()),
       issn: issn.trim(),
       pais: toTitleCase(pais.trim()),
-      fecha: formatDateStr(fecha)!,
-      tipo_reunion_id: tipoId!,
+      fecha_publicacion: formatDateStr(fecha)!,
+      tipo_revista_id: tipoId!,
       grupo_utn_id: uct.id,
     };
 
@@ -220,8 +220,8 @@ export default function TrabajosRevistasForm() {
       editorial: initialData?.editorial ?? "",
       issn: initialData?.issn ?? "",
       pais: initialData?.pais ?? "",
-      fecha: initialData?.fecha ?? null,
-      tipo_reunion_id: initialData?.tipo_reunion?.id ?? null,
+      fecha_publicacion: initialData?.fecha_publicacion ?? null,
+      tipo_revista_id: initialData?.tipo_revista?.id ?? null,
       grupo_utn_id: uct.id,
     };
 
@@ -371,7 +371,7 @@ export default function TrabajosRevistasForm() {
           </>
         </Field>
 
-        <Field required label="Tipo" name="tipoId" error={errors.tipoId}>
+        <Field required label="Tipo de revista" name="tipoId" error={errors.tipoId}>
           <>
             <select
               className={`${inputClass("tipoId")} ${
@@ -385,7 +385,7 @@ export default function TrabajosRevistasForm() {
               }}
             >
               <option value="" disabled>
-                Seleccionar tipo
+                Seleccionar tipo de revista
               </option>
               {tipos.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -414,7 +414,7 @@ export default function TrabajosRevistasForm() {
           </>
         </Field>
 
-        <Field required label="Fecha" name="fecha" error={errors.fecha}>
+        <Field required label="Fecha de publicación" name="fecha" error={errors.fecha}>
           <Calendar
             value={fecha}
             onChange={(date) => {

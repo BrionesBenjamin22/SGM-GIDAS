@@ -67,6 +67,7 @@ for (const page of ["TrabajosReunionForm", "TrabajosRevistasForm"]) {
         useMutation: () => ({ isPending: false, mutateAsync: () => { throw new Error("No debe guardar"); } }) },
       "@/modules/grupo/hooks/useUctGuard": { useUctGuard: () => ({ uct: { id: 1 } }) },
       "@/modules/produccion/hooks/useTiposReunion": { useTiposReunion: () => ({ tipos: [] }) },
+      "@/modules/produccion/hooks/useTiposRevista": { useTiposRevista: () => ({ tipos: [] }) },
       "@/modules/produccion/hooks/useIntegrantesAutores": { useIntegrantesAutores: () => query },
       "@/modules/produccion/components/IntegrantesAutoresField": { default: "IntegrantesAutoresField" },
       "@/context/AuthContext": { useAuth: () => ({ canCreateRecords: () => true, canEditRecords: () => true }) },

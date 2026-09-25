@@ -125,6 +125,11 @@ const CATALOGS: CatalogDef[] = [
     description: "Clasifica reuniones científicas para trabajos presentados.",
   },
   {
+    label: "Tipo de Revista",
+    endpoint: "/tipos-revista/",
+    description: "Clasifica el alcance nacional o internacional de las revistas.",
+  },
+  {
     label: "Fuente de Financiamiento",
     endpoint: "/fuente-financiamiento/",
     description: "Define el origen de fondos usado en becas, proyectos y erogaciones.",

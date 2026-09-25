@@ -37,6 +37,7 @@ const LEGACY_PATH_PREFIXES: Array<[string, string]> = [
   ["/tipo-registro-propiedad", "/produccion/tipo-registro-propiedad"],
   ["/tipos-proyecto", "/proyectos/tipos-proyecto"],
   ["/tipos-reunion-cientifica", "/produccion/tipos-reunion-cientifica"],
+  ["/tipos-revista", "/produccion/tipos-revista"],
   ["/trabajos-reunion-cientifica", "/produccion/trabajos-reunion-cientifica"],
   ["/trabajos-revistas", "/produccion/trabajos-revistas"],
   ["/transferencias", "/transferencia/transferencias"],

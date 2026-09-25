@@ -19,9 +19,9 @@ export interface TrabajoRevista {
   editorial: string;
   issn: string;
   pais: string;
-  fecha: string;
+  fecha_publicacion: string;
   grupo: string | null;
-  tipo_reunion?: {
+  tipo_revista?: {
     id: number;
     nombre: string;
   } | null;
@@ -46,8 +46,8 @@ export interface TrabajoRevistaPayload {
   editorial: string;
   issn: string;
   pais: string;
-  fecha: string;
-  tipo_reunion_id?: number | null;
+  fecha_publicacion: string;
+  tipo_revista_id?: number | null;
   grupo_utn_id?: number | null;
 }
 
@@ -77,9 +77,9 @@ const normalizeTrabajoRevista = (item: TrabajoRevistaBackend): TrabajoRevista =>
   editorial: item.editorial ?? "",
   issn: item.issn ?? "",
   pais: item.pais ?? "",
-  fecha: item.fecha ?? "",
+  fecha_publicacion: item.fecha_publicacion ?? "",
   grupo: item.grupo ?? null,
-  tipo_reunion: item.tipo_reunion ?? null,
+  tipo_revista: item.tipo_revista ?? null,
   autores: Array.isArray(item.autores) ? item.autores : [],
 });
 
@@ -164,8 +164,8 @@ export const updateTrabajoRevista = async (
   if ("editorial" in data) body.editorial = data.editorial;
   if ("issn" in data) body.issn = data.issn;
   if ("pais" in data) body.pais = data.pais;
-  if ("fecha" in data) body.fecha = data.fecha;
-  if ("tipo_reunion_id" in data) body.tipo_reunion_id = data.tipo_reunion_id;
+  if ("fecha_publicacion" in data) body.fecha_publicacion = data.fecha_publicacion;
+  if ("tipo_revista_id" in data) body.tipo_revista_id = data.tipo_revista_id;
   if ("grupo_utn_id" in data) body.grupo_utn_id = data.grupo_utn_id;
 
   const response = await http<TrabajoRevistaBackend>(`/trabajos-revistas/${id}`, {

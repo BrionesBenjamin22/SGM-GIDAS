@@ -2,7 +2,7 @@ import { enlaceSeguro } from "@/modules/produccion/utils/trabajoEnlace";
 import { autorEtiqueta } from "@/modules/produccion/services/trabajoAutoresServices";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/Button";
 import HistorialCambiosCard from "@/components/HistorialCambiosCard";
 import SuccessToast from "@/components/SuccessToast";
@@ -15,7 +15,11 @@ import {
   type TrabajoRevista,
 } from "@/modules/produccion/services/trabajosRevistasServices";
 import { useAuth } from "@/context/AuthContext";
-import { useTiposReunion } from "@/modules/produccion/hooks/useTiposReunion";
+import { useTiposRevista } from "@/modules/produccion/hooks/useTiposRevista";
+import {
+  formatTrabajoRevistaHistoryEntry,
+  presentTrabajoRevistaHistoryItems,
+} from "@/modules/produccion/utils/trabajoRevistaHistory";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,
@@ -26,7 +30,7 @@ export default function TrabajoRevistaDetalle() {
   const navigate = useNavigate();
   const location = useLocation();
   const { canEditRecords } = useAuth();
-  const { tipos = [] } = useTiposReunion();
+  const { tipos = [] } = useTiposRevista();
 
   const puedeEditar = canEditRecords();
   const trabajoId = id ? Number(id) : undefined;
@@ -49,6 +53,14 @@ export default function TrabajoRevistaDetalle() {
   });
 
   const auditoria = useAuditoria(data);
+  const tipoNames = useMemo(
+    () => Object.fromEntries(tipos.map((tipo) => [tipo.id, tipo.nombre])),
+    [tipos]
+  );
+  const historialVisible = useMemo(
+    () => presentTrabajoRevistaHistoryItems(historialCambios),
+    [historialCambios]
+  );
 
   useEffect(() => {
     if (location.state?.successMessage) {
@@ -68,49 +80,6 @@ export default function TrabajoRevistaDetalle() {
 
   const enlace = enlaceSeguro(data.enlace);
   const isDeleted = !!data.deleted_at || data.activo === false;
-
-  const formatHistorialValue = (
-    item: { campo?: string },
-    value: unknown,
-    kind: "anterior" | "nuevo"
-  ) => {
-    if (value === null || value === undefined || value === "") {
-      return "-";
-    }
-
-    const asNumber =
-      typeof value === "number"
-        ? value
-        : typeof value === "string" && value.trim() !== ""
-          ? Number(value)
-          : NaN;
-
-    if (item.campo === "tipo_reunion_id") {
-      return tipos.find((tipo) => tipo.id === asNumber)?.nombre ?? String(value);
-    }
-
-    if (item.campo === "autores" && typeof value === "object" && value !== null) {
-      const payload = value as {
-        accion?: string;
-        detalle?: { nombre_apellido?: string; tipo?: string };
-      };
-      if (kind === "anterior") {
-        return "-";
-      }
-      return payload.detalle?.nombre_apellido
-        ? `${payload.accion === "desvincular" ? "Desvinculado" : "Vinculado"}: ${payload.detalle.nombre_apellido}${payload.detalle.tipo ? ` (${payload.detalle.tipo})` : ""}` : "Autor";
-    }
-
-    if (typeof value === "object") {
-      try {
-        return JSON.stringify(value);
-      } catch {
-        return "-";
-      }
-    }
-
-    return String(value);
-  };
 
   const autores = data.autores?.length ? data.autores.map(autorEtiqueta).join(", ") : "-";
 
@@ -164,13 +133,13 @@ export default function TrabajoRevistaDetalle() {
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Tipo:</span>{" "}
-              {toTitleCase(data.tipo_reunion?.nombre) || "-"}
+              <span className="font-medium text-slate-700">Tipo de revista:</span>{" "}
+              {toTitleCase(data.tipo_revista?.nombre) || "-"}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha:</span>{" "}
-              {formatFecha(data.fecha)}
+              <span className="font-medium text-slate-700">Fecha de publicación:</span>{" "}
+              {formatFecha(data.fecha_publicacion)}
             </p>
 
             {enlace && <p className="break-words">
@@ -221,12 +190,12 @@ export default function TrabajoRevistaDetalle() {
 
         <HistorialCambiosCard
           subtitle={toTitleCase(data.titulo_trabajo) || "-"}
-          items={historialCambios}
+          items={historialVisible}
           isLoading={isLoadingHistorial}
           updatedAt={data.updated_at}
           updatedByName={data.updated_by_nombre}
-          formatItemValue={(item, value, kind) =>
-            formatHistorialValue(item, value, kind)
+          formatItemPresentation={(item) =>
+            formatTrabajoRevistaHistoryEntry(item, tipoNames)
           }
         />
 

@@ -129,6 +129,11 @@ for (const [page, route] of [
       "@/modules/produccion/services/trabajoAutoresServices": contratos,
       "@/context/AuthContext": { useAuth: () => ({ canEditRecords: () => true }) },
       "@/modules/produccion/hooks/useTiposReunion": { useTiposReunion: () => ({ tipos: [] }) },
+      "@/modules/produccion/hooks/useTiposRevista": { useTiposRevista: () => ({ tipos: [] }) },
+      "@/modules/produccion/utils/trabajoRevistaHistory": {
+        presentTrabajoRevistaHistoryItems: (items: unknown[]) => items,
+        formatTrabajoRevistaHistoryEntry: () => null,
+      },
       "@/modules/shared/hooks/useAuditoria": { useAuditoria: () => ({ nombreCreador: "Gestor" }) },
       "@/utils/format": { toTitleCase: (text: string) => text },
       "@/utils/dateTime": { formatFecha: () => "-", formatFechaHora: () => "-" },
@@ -158,7 +163,8 @@ for (const [page, serviceFile, getName, updateName, createName, route] of [
     const states: any[] = [], refs: any[] = [], effects: Array<() => void> = [];
     let initialData: any = { id: 8, titulo_trabajo: "Estudio", nombre_reunion: "Congreso", nombre_revista: "Revista",
       procedencia: "Argentina", editorial: "Editorial", issn: "1234-5678", pais: "Argentina",
-      fecha_presentacion: "2026-03-20", fecha: "2026-03-20", tipo_reunion: { id: 1 }, autores: [investigador], activo: true };
+      fecha_presentacion: "2026-03-20", fecha_publicacion: "2026-03-20",
+      tipo_reunion: { id: 1 }, tipo_revista: { id: 1 }, autores: [investigador], activo: true };
     let params: any = { id: "8" };
     let mutation: any;
     let calls = 0;
@@ -182,6 +188,7 @@ for (const [page, serviceFile, getName, updateName, createName, route] of [
       "@/modules/produccion/services/trabajoAutoresServices": contratos,
       "@/modules/produccion/hooks/useIntegrantesAutores": { useIntegrantesAutores: () => ({ data: [investigador, becario] }) },
       "@/modules/produccion/hooks/useTiposReunion": { useTiposReunion: () => ({ tipos: [] }) },
+      "@/modules/produccion/hooks/useTiposRevista": { useTiposRevista: () => ({ tipos: [] }) },
       "@/modules/grupo/hooks/useUctGuard": { useUctGuard: () => ({ uct: { id: 1 } }) },
       "@/context/AuthContext": { useAuth: () => ({ canCreateRecords: () => true, canEditRecords: () => true }) },
       "@/utils/format": { toTitleCase: (text: string) => text },
