@@ -12,19 +12,12 @@ import {
   getMemorias,
   type Memoria,
 } from "@/modules/memorias/services/memoriasService";
-import { formatFecha } from "@/utils/formatFecha";
+import { formatFecha, formatFechaHora } from "@/utils/dateTime";
 
 const ITEMS_PER_PAGE = 9;
 
-const formatFechaHora = (fecha?: string | null) => {
-  if (!fecha) return "-";
-  const date = new Date(fecha);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString("es-AR");
-};
-
 const buildTitle = (memoria: Memoria) =>
-  `Memoria ${new Date(`${memoria.periodo_fin}T00:00:00`).getFullYear()}`;
+  `Memoria ${formatFecha(memoria.periodo_inicio)}–${formatFecha(memoria.periodo_fin)}`;
 
 const renderEstadoBadge = (estado?: string, inactiva?: boolean) => {
   if (inactiva) {
@@ -62,9 +55,9 @@ export default function MemoriasHome() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isGestor } = useAuth();
 
-  const puedeCrear = isAdmin();
+  const puedeCrear = isAdmin() || isGestor();
   const puedeEliminar = isAdmin();
 
   const [estadoRapido, setEstadoRapido] = useState<"activas" | "todas" | "cerradas">("activas");
@@ -111,6 +104,7 @@ export default function MemoriasHome() {
       const numeroVersion = memoria.version_actual?.numero_version || "";
 
       return [
+        memoria.grupo_utn_nombre || "",
         memoria.periodo_inicio,
         memoria.periodo_fin,
         estado,
@@ -146,7 +140,7 @@ export default function MemoriasHome() {
     mutationFn: (memoriaId: number) => deleteMemoria(memoriaId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["memorias"] });
-      setSuccessMessage("Memoria eliminada con exito.");
+      setSuccessMessage("Memoria eliminada con éxito.");
       setShowSuccess(true);
       setSelectedIds([]);
       setSelectMode(false);
@@ -156,7 +150,7 @@ export default function MemoriasHome() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 
@@ -233,7 +227,7 @@ export default function MemoriasHome() {
           <div className="relative w-full sm:w-72">
             <input
               type="text"
-              placeholder="Buscar por estado o periodo..."
+              placeholder="Buscar por estado o período..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
@@ -279,7 +273,7 @@ export default function MemoriasHome() {
           <p className="py-10 text-center text-slate-500">Cargando...</p>
         ) : isError ? (
           <p className="py-10 text-center text-slate-500">
-            Error al cargar memorias.
+            Lo sentimos, no pudimos recuperar la información. Intente nuevamente.
           </p>
         ) : memoriasFiltradas.length === 0 ? (
           <p className="py-10 text-center text-slate-500">
@@ -288,20 +282,20 @@ export default function MemoriasHome() {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {paginatedItems.map((memoria) => {
-              const anioMemoria = new Date(`${memoria.periodo_fin}T00:00:00`).getFullYear();
               const snapshotListo = memoria.version_actual?.estado === "cerrada";
 
               return (
                 <Tarjeta
                   key={memoria.id}
                   item={memoria}
-                  title={() => `Memoria ${anioMemoria}`}
+                  title={buildTitle}
                   subtitle={(item) =>
                     [
-                      `Periodo: ${formatFecha(item.periodo_inicio)} - ${formatFecha(
+                      `UCT: ${item.grupo_utn_nombre || "Pendiente de asociar"}`,
+                      `Período: ${formatFecha(item.periodo_inicio)} - ${formatFecha(
                         item.periodo_fin
                       )}`,
-                      `Version actual: ${item.version_actual?.numero_version ?? "-"}`,
+                      `Versión actual: ${item.version_actual?.numero_version ?? "-"}`,
                       `Elementos: ${
                         snapshotListo
                           ? item.cantidad_elementos ?? 0
@@ -323,32 +317,30 @@ export default function MemoriasHome() {
         )}
 
         {totalPages > 1 && (
-          <div className="mt-auto pt-8">
-            <div className="flex items-center justify-between">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                Anterior
+          <div className="mt-8">
+            <nav aria-label="Paginación" className="flex flex-wrap items-center justify-center gap-2">
+              <Button type="button" size="sm" variant="secondary" aria-label="Página anterior"
+                disabled={currentPage === 1} onClick={() => setCurrentPage((current) => current - 1)}>
+                {"<"}
               </Button>
-
-              <span className="text-sm text-slate-500">
-                Pagina {currentPage} de {totalPages}
-              </span>
-
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                }
-                disabled={currentPage === totalPages}
-              >
-                Siguiente
+              {[...Array(totalPages)].map((_, index) => {
+                const pageNumber = index + 1;
+                return (
+                  <button type="button" key={pageNumber} aria-label={`Página ${pageNumber}`}
+                    aria-current={currentPage === pageNumber ? "page" : undefined}
+                    onClick={() => setCurrentPage(pageNumber)}
+                    className={`rounded-lg px-3 py-1 text-sm ${
+                      currentPage === pageNumber ? "bg-slate-800 text-white" : "bg-slate-100 hover:bg-slate-200"
+                    }`}>
+                    {pageNumber}
+                  </button>
+                );
+              })}
+              <Button type="button" size="sm" variant="secondary" aria-label="Página siguiente"
+                disabled={currentPage === totalPages} onClick={() => setCurrentPage((current) => current + 1)}>
+                {">"}
               </Button>
-            </div>
+            </nav>
           </div>
         )}
       </div>
@@ -356,7 +348,7 @@ export default function MemoriasHome() {
       <ConfirmDialog
         open={showConfirm}
         title="Eliminar memoria"
-        message="Eliminar las memorias seleccionadas?"
+        message="¿Eliminar las memorias seleccionadas?"
         items={selectedMemorias.map((memoria) => buildTitle(memoria))}
         onCancel={cancelSelection}
         onConfirm={async () => {
@@ -365,7 +357,8 @@ export default function MemoriasHome() {
           }
         }}
         confirmText={isDeleting ? "Eliminando..." : "Confirmar"}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}

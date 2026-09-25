@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import Button from "@/components/Button";
 import HistorialCambiosCard from "@/components/HistorialCambiosCard";
+import { formatFechaHora } from "@/utils/dateTime";
 import SuccessToast from "@/components/SuccessToast";
 import {
   getProyectoById,
@@ -18,6 +19,7 @@ import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,
 } from "@/lib/memoriaNavigation";
+import { formatProyectoRelationHistoryEntry } from "@/modules/proyectos/utils/proyectoHistory";
 
 export default function ProyectoDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -64,13 +66,13 @@ export default function ProyectoDetalle() {
     onSuccess: async (_, proyectoId) => {
       await qc.invalidateQueries({ queryKey: ["proyectos"] });
       await qc.invalidateQueries({ queryKey: ["proyecto", proyectoId] });
-      setSuccessMessage("Proyecto reabierto con exito.");
+      setSuccessMessage("Proyecto reabierto con éxito.");
       setShowSuccess(true);
     },
   });
 
   if (isLoading) return <p className="text-slate-500">Cargando...</p>;
-  if (!data) return <p className="text-slate-500">No se encontro el proyecto.</p>;
+  if (!data) return <p className="text-slate-500">No se encontró el proyecto.</p>;
 
   const formatFecha = (fecha?: string | null) => {
     if (!fecha) return "-";
@@ -78,13 +80,10 @@ export default function ProyectoDetalle() {
     return date.toLocaleDateString("es-AR");
   };
 
-  const formatFechaHora = (fecha?: string | null) => {
-    if (!fecha) return "-";
-    return new Date(fecha).toLocaleString("es-AR");
-  };
-
-  const coordinador =
-    data.investigadores?.find((inv) => inv.es_coordinador)?.nombre_apellido || "-";
+  const investigadorCoordinador = data.investigadores?.find((inv) => inv.es_coordinador);
+  const coordinador = investigadorCoordinador
+    ? `${investigadorCoordinador.nombre_apellido}${investigadorCoordinador.activo === false ? " (inactivo, asignación conservada)" : ""}`
+    : "-";
 
   const investigadores = data.investigadores?.length
     ? data.investigadores
@@ -154,7 +153,9 @@ export default function ProyectoDetalle() {
               size="sm"
               onClick={() => reabrirMutation.mutate(String(data.id))}
               disabled={reabrirMutation.isPending}
-            >
+             loading={reabrirMutation.isPending}
+             loadingText="Reabriendo..."
+           >
               {reabrirMutation.isPending ? "Reabriendo..." : "Reabrir"}
             </Button>
           ) : null}
@@ -173,7 +174,7 @@ export default function ProyectoDetalle() {
       <article className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
         <div className="space-y-3 text-sm text-slate-500 md:text-base">
           <p>
-            <span className="font-medium text-slate-700">Codigo del proyecto:</span>{" "}
+            <span className="font-medium text-slate-700">Código del proyecto:</span>{" "}
             {data.codigoProyecto}
           </p>
 
@@ -193,7 +194,7 @@ export default function ProyectoDetalle() {
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Descripcion:</span>{" "}
+            <span className="font-medium text-slate-700">Descripción:</span>{" "}
             {data.descripcionProyecto || "-"}
           </p>
 
@@ -238,7 +239,7 @@ export default function ProyectoDetalle() {
 
       <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-slate-700">Auditoria</h3>
+          <h3 className="text-lg font-semibold text-slate-700">Auditoría</h3>
           <p className="mt-1 text-xs text-slate-500">{data.nombreProyecto}</p>
         </div>
 
@@ -248,7 +249,7 @@ export default function ProyectoDetalle() {
             {auditoria.nombreCreador}
           </p>
           <p>
-            <span className="font-medium text-slate-700">Fecha de creacion:</span>{" "}
+            <span className="font-medium text-slate-700">Fecha de creación:</span>{" "}
             {formatFechaHora(data.created_at)}
           </p>
           <p>
@@ -256,7 +257,7 @@ export default function ProyectoDetalle() {
             {auditoria.nombreEliminador}
           </p>
           <p>
-            <span className="font-medium text-slate-700">Fecha de eliminacion:</span>{" "}
+            <span className="font-medium text-slate-700">Fecha de eliminación:</span>{" "}
             {formatFechaHora(data.deleted_at)}
           </p>
         </div>
@@ -269,6 +270,9 @@ export default function ProyectoDetalle() {
         updatedAt={data.updated_at}
         updatedByName={data.updated_by_nombre}
         formatItemValue={(item, value) => formatHistorialValue(item, value)}
+        formatItemPresentation={(item) =>
+          formatProyectoRelationHistoryEntry(item, data)
+        }
       />
 
       <div className="flex justify-start pt-4">

@@ -77,7 +77,7 @@ export type SerieAnual = {
 
 export type ProyectoPorVencer = {
   id: number;
-  codigo_proyecto: number;
+  codigo_proyecto: string;
   nombre_proyecto: string;
   fecha_fin: string;
   dias_restantes: number;

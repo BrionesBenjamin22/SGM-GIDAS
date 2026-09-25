@@ -1,7 +1,9 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
@@ -15,6 +17,10 @@ import {
   type VisitantePayload,
 } from "@/modules/grupo/services/visitantesServices";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
+import { toCivilDateString } from "@/utils/dateTime";
+import { useAuth } from "@/context/AuthContext";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
 
 export default function VisitantesForm() {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +29,7 @@ export default function VisitantesForm() {
 
   const isEdit = Boolean(id);
   const { uct, uctGuard } = useUctGuard();
+  const { user } = useAuth();
 
   const { data: tiposVisita = [] } = useQuery({
     queryKey: ["tipos-visita"],
@@ -53,6 +60,17 @@ export default function VisitantesForm() {
     setProcedencia(initialData.procedencia ?? "");
     setTipoVisitaId(initialData.tipo_visita_id ?? null);
   }, [initialData]);
+
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "grupo-visitantes",
+    recordId: id,
+    value: { razon, fecha: toCivilDateString(fecha), procedencia, tipoVisitaId },
+    ready: !isEdit || (!isLoading && Boolean(initialData)),
+    autosave: false,
+    hasContent: (draft) => Boolean(draft.razon || draft.fecha || draft.procedencia || draft.tipoVisitaId),
+    onRestore: (draft) => { setRazon(draft.razon); setFecha(draft.fecha ? new Date(`${draft.fecha}T00:00:00`) : null); setProcedencia(draft.procedencia); setTipoVisitaId(draft.tipoVisitaId); },
+  });
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -105,6 +123,7 @@ export default function VisitantesForm() {
         ? actualizarVisitante(Number(id), input.payload)
         : crearVisitante(input.payload),
     onSuccess: async (saved) => {
+      clearDraft();
       const visitanteId = isEdit ? Number(id) : saved.id;
 
       await qc.invalidateQueries({ queryKey: ["visitantes"] });
@@ -117,48 +136,23 @@ export default function VisitantesForm() {
         replace: true,
         state: {
           successMessage: isEdit
-            ? "Visitante actualizado con exito."
-            : "Visitante creado con exito.",
+            ? "Visitante actualizado con éxito."
+            : "Visitante creado con éxito.",
         },
       });
     },
     onError: (error) => {
-      const defaultMessage = isEdit
-        ? "No se pudo actualizar la visita."
-        : "No se pudo crear la visita.";
-
-      const backendMessage = getErrorMessage(error, defaultMessage);
-      const lowerMessage = backendMessage.toLowerCase();
-
-      if (lowerMessage.includes("razon")) {
-          setErrors((prev) => ({
-            ...prev,
-            razon: backendMessage,
-          }));
-      } else if (lowerMessage.includes("procedencia")) {
-          setErrors((prev) => ({
-            ...prev,
-            procedencia: backendMessage,
-          }));
-      } else if (lowerMessage.includes("fecha")) {
-          setErrors((prev) => ({
-            ...prev,
-            fecha: backendMessage,
-          }));
-      } else if (lowerMessage.includes("tipo")) {
-          setErrors((prev) => ({
-            ...prev,
-            tipoVisita: backendMessage,
-          }));
-      }
-
-      setErrorMessage(backendMessage);
+      if (applyFieldErrors(error, setErrors, ["razon","fecha","procedencia","tipoVisita"])) return;
+      setErrorMessage(getErrorMessage(error, isEdit
+        ? "Lo sentimos, no pudimos actualizar la visita. Revise los datos e intente nuevamente."
+        : "Lo sentimos, no pudimos crear la visita. Revise los datos e intente nuevamente."));
       setShowError(true);
     },
   });
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mutation.isPending) return;
     if (!uct) return;
     if (!validate()) return;
 
@@ -190,6 +184,7 @@ export default function VisitantesForm() {
     );
 
     if (Object.keys(changedPayload).length === 0) {
+      clearDraft();
       navigate(`/visitantes/${id}`, {
         replace: true,
         state: {
@@ -212,15 +207,18 @@ export default function VisitantesForm() {
   return (
     <section className="w-full">
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
-        {isEdit ? "Editar visitante" : "Nueva visita academica"}
+        {isEdit ? "Editar visitante" : "Nueva visita académica"}
       </h2>
+
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Razon de la visita">
+        <Field required label="Razon de la visita" name="razon" error={errors.razon}>
           <>
             <textarea
               className={`${inputClass("razon")} min-h-[80px]`}
@@ -236,7 +234,7 @@ export default function VisitantesForm() {
           </>
         </Field>
 
-        <Field label="Fecha">
+        <Field required label="Fecha" name="fecha" error={errors.fecha}>
           <Calendar
             value={fecha}
             onChange={(date) => {
@@ -244,11 +242,11 @@ export default function VisitantesForm() {
               if (date) clearError("fecha");
             }}
             className={inputClass("fecha")}
-            helperText={errors.fecha ?? "DD/MM/AAAA"}
+            helperText="DD/MM/AAAA"
           />
         </Field>
 
-        <Field label="Procedencia">
+        <Field required label="Procedencia" name="procedencia" error={errors.procedencia}>
           <>
             <input
               type="text"
@@ -266,7 +264,7 @@ export default function VisitantesForm() {
           </>
         </Field>
 
-        <Field label="Tipo de visita">
+        <Field required label="Tipo de visita" name="tipoVisita" error={errors.tipoVisita}>
           <>
             <select
               className={`${inputClass("tipoVisita")} ${
@@ -299,12 +297,12 @@ export default function VisitantesForm() {
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => requestLeave(() => navigate(-1))}
           >
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={mutation.isPending || !uct}>
+          <Button type="submit" size="sm" disabled={mutation.isPending || !uct} loading={mutation.isPending} loadingText="Guardando...">
             {mutation.isPending
               ? isEdit
                 ? "Actualizando..."

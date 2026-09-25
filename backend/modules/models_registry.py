@@ -63,12 +63,11 @@ from modules.produccion.models.trabajo_reunion import (  # noqa: F401
     TipoReunion,
     TrabajoReunionCientifica,
     TrabajoReunionCientificaMemoriaVersion,
-    investigador_x_trabajo_reunion,
 )
 from modules.produccion.models.trabajo_revista import (  # noqa: F401
+    TipoRevista,
     TrabajosRevistasReferato,
     TrabajosRevistasReferatoMemoriaVersion,
-    investigador_x_trabajo_revista,
 )
 from modules.proyectos.models.participacion_relevante import (  # noqa: F401
     ParticipacionRelevante,
@@ -92,6 +91,7 @@ from modules.recursos.models.erogacion import (  # noqa: F401
     TipoErogacion,
 )
 from modules.shared.models.auditoria_campo import AuditoriaCampo  # noqa: F401
+from modules.shared.models.form_draft import FormDraft  # noqa: F401
 from modules.shared.models.audit_mixin import AuditMixin  # noqa: F401
 from modules.transferencia.models.transferencia_socio import (  # noqa: F401
     Adoptante,
@@ -101,3 +101,5 @@ from modules.transferencia.models.transferencia_socio import (  # noqa: F401
     TransferenciaSocioProductiva,
     TransferenciaSocioProductivaMemoriaVersion,
 )
+
+from modules.produccion.models.trabajo_autor import TrabajoReunionAutor, TrabajoRevistaAutor  # noqa: F401

@@ -161,7 +161,7 @@ export async function getTransferencias(
   }
 
   const response = await http<TransferenciasResponse>(
-    `/transferencias?activos=${activos}`
+    `/transferencias/?activos=${activos}`
   );
   const items = Array.isArray(response)
     ? response

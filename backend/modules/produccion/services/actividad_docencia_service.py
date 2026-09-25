@@ -1,3 +1,6 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, fin_vigencia,
+)
 from datetime import date, datetime
 
 from modules.produccion.models.actividad_docencia import (
@@ -13,6 +16,7 @@ from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
+from modules.shared.services.date_time import INSTITUTIONAL_MIN_DATE
 
 
 class ActividadDocenciaService:
@@ -25,58 +29,47 @@ class ActividadDocenciaService:
     @staticmethod
     def _validar_user_id(user_id):
         if not isinstance(user_id, int) or user_id <= 0:
-            raise ValidationError("El user_id es invalido")
+            raise ValidationError("No pudimos procesar la solicitud. Intente nuevamente.")
         return user_id
 
     @staticmethod
     def _validar_id(valor, campo):
         if not isinstance(valor, int) or valor <= 0:
-            raise ValidationError(f"El campo '{campo}' debe ser un entero positivo")
+            if campo in {"investigador_id", "grado_academico_id", "rol_actividad_id"}:
+                raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: "Seleccione una opción disponible."}})
+            raise ValidationError("No pudimos procesar la solicitud. Intente nuevamente.")
         return valor
 
     @staticmethod
     def _validar_texto(valor, campo, min_len=2, max_len=255):
-        if valor is None:
-            raise ValidationError(f"El campo '{campo}' es obligatorio")
-
-        if not isinstance(valor, str):
-            raise ValidationError(f"El campo '{campo}' debe ser texto")
+        labels = {"curso": "el curso", "institucion": "la institución"}
+        label = labels.get(campo, "este dato")
+        if not isinstance(valor, str) or not valor.strip():
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"Ingrese {label}."}})
 
         valor = " ".join(valor.strip().split())
-
-        if not valor:
-            raise ValidationError(f"El campo '{campo}' no puede estar vacio")
-
-        if len(valor) < min_len:
-            raise ValidationError(
-                f"El campo '{campo}' debe tener al menos {min_len} caracteres"
-            )
-
-        if len(valor) > max_len:
-            raise ValidationError(
-                f"El campo '{campo}' no puede superar los {max_len} caracteres"
-            )
+        if not min_len <= len(valor) <= max_len:
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"Use entre {min_len} y {max_len} caracteres para {label}."}})
 
         return valor
 
     @staticmethod
     def _parse_fecha(valor, campo):
         try:
-            return datetime.strptime(valor, "%Y-%m-%d").date()
+            fecha = datetime.strptime(valor, "%Y-%m-%d").date()
         except (TypeError, ValueError):
-            raise ValidationError(
-                f"El campo '{campo}' es obligatorio y debe tener formato YYYY-MM-DD"
-            )
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: "Ingrese una fecha válida."}})
+        if fecha < INSTITUTIONAL_MIN_DATE:
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: "Ingrese una fecha desde el 01/01/2010."}})
+        return fecha
 
     @staticmethod
     def _validar_fechas(fecha_inicio, fecha_fin):
         if fecha_inicio > date.today():
-            raise ValidationError("La fecha de inicio no puede ser futura")
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_inicio": "Ingrese una fecha de inicio que no sea futura."}})
 
         if fecha_fin < fecha_inicio:
-            raise ValidationError(
-                "La fecha de fin no puede ser anterior a la fecha de inicio"
-            )
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_fin": "Ingrese una fecha de fin igual o posterior al inicio."}})
 
     @staticmethod
     def _normalizar_activos(activos):
@@ -87,9 +80,10 @@ class ActividadDocenciaService:
     @staticmethod
     def _get_or_404(model, obj_id, message, permitir_eliminado=False):
         obj = db.session.get(model, obj_id)
-        if not obj:
-            raise NotFoundError(message)
-        if not permitir_eliminado and getattr(obj, "deleted_at", None) is not None:
+        if not obj or (not permitir_eliminado and getattr(obj, "deleted_at", None) is not None):
+            fields = {Investigador: "investigador_id", GradoAcademico: "grado_academico_id", RolActividad: "rol_actividad_id"}
+            if model in fields:
+                raise NotFoundError("La opción seleccionada ya no está disponible. Elija otra e intente nuevamente.", details={"fields": {fields[model]: "Seleccione una opción disponible."}})
             raise NotFoundError(message)
         return obj
 
@@ -279,7 +273,14 @@ class ActividadDocenciaService:
         eventos = []
         grado_anterior = None
 
-        for orden, item in enumerate(historial, start=1):
+        for orden, item in enumerate(historial):
+            grado_actual = ActividadDocenciaService._serializar_grado(
+                item.grado_academico
+            )
+            if orden == 0:
+                grado_anterior = grado_actual
+                continue
+
             eventos.append({
                 "id": f"historial-grado-{item.id}",
                 "tipo": "historial_grado",
@@ -287,9 +288,7 @@ class ActividadDocenciaService:
                 "registro_id": getattr(actividad, "id", None),
                 "campo": "grado_academico_id",
                 "valor_anterior": grado_anterior,
-                "valor_nuevo": ActividadDocenciaService._serializar_grado(
-                    item.grado_academico
-                ),
+                "valor_nuevo": grado_actual,
                 "fecha_cambio": item.fecha_inicio.isoformat(),
                 "usuario_id": item.created_by,
                 "usuario_nombre": (
@@ -305,9 +304,7 @@ class ActividadDocenciaService:
                 "orden_historial": orden,
                 "detalle": item.serialize()
             })
-            grado_anterior = ActividadDocenciaService._serializar_grado(
-                item.grado_academico
-            )
+            grado_anterior = grado_actual
 
         return eventos
 
@@ -546,15 +543,14 @@ class ActividadDocenciaService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        actividades = ActividadDocencia.query.filter().all()
+        actividades = consultar_entidades_memoria(ActividadDocencia, memoria_version, relacion="investigador")
 
         snapshots = []
         for actividad in actividades:
             if not estuvo_activo_en_periodo_memoria(
                 memoria_version,
                 actividad.fecha_inicio,
-                getattr(actividad, "fecha_fin", None)
-                or getattr(actividad, "deleted_at", None)
+                fin_vigencia(actividad)
             ):
                 continue
             grado_activo = (
@@ -591,6 +587,8 @@ class ActividadDocenciaService:
             db.session.flush()
 
             for historial in getattr(actividad, "investigadores_grado", []):
+                if not estuvo_activo_en_periodo_memoria(memoria_version, historial.fecha_inicio, fin_vigencia(historial)):
+                    continue
                 historial_snapshot = ActividadDocenciaGradoMemoriaVersion(
                     actividad_docencia_memoria_version=snapshot,
                     investigador_actividad_grado_id=historial.id,

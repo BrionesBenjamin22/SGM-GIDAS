@@ -1,8 +1,25 @@
 # Autenticación y usuarios en backend
 
+## Errores de autenticación (ISS-09)
+
+Las credenciales inválidas y los tokens no utilizables responden `AUTH_REQUIRED`
+(401); los diagnósticos internos de token no se reflejan en la respuesta.
+Usuario inexistente: 404; conflictos de usuario/correo o protección del último
+administrador: 409; permisos: 403; fallas inesperadas: 500.
+Los campos requeridos, contraseña y rol usan `error.details.fields` con las
+claves del payload. Se conservan las cookies, protección de origen y reglas de
+contraseña existentes. El logout mantiene la limpieza de cookies aunque falle
+la revocación. Véase el contrato transversal en `../README.md`.
+
+ISS-19 mantiene las claves HTTP `nombre_usuario`, `mail`, `password`, `rol_id`, `password_actual`, `password_nueva` y `password_confirmacion`. Los mensajes de correo y rol para crear o editar usuarios son públicos y accionables; un fallo no devuelve credenciales ni detalles internos.
+
 ## Responsabilidades
 
 El módulo concentra rutas, controladores, servicios y modelos de identidad. Gestiona usuarios, roles, contraseñas, access tokens de corta duración, sesiones de refresh revocables y el alta controlada del primer administrador.
+
+Los nombres canonicos de rol son `ADMIN`, `GESTOR` y `LECTURA`. La migracion
+`d7e4a2c9f1b6` renombra el valor heredado `LECTOR`, reasigna sus usuarios si ambos
+valores coexistieran y conserva un unico rol lector.
 
 ## Endpoints
 
@@ -24,6 +41,7 @@ Todos los endpoints se publican bajo `/auth`.
 ## Controles de seguridad
 
 - La autorización se valida en controller/service; no depende del frontend.
+- Los seeds generales y de testing crean exclusivamente los tres roles canonicos.
 - Las credenciales se validan y almacenan mediante hash, nunca en texto plano.
 - La cookie de refresh usa las opciones seguras configuradas por entorno y las operaciones con cookie validan origen.
 - Las respuestas de autenticación se marcan `no-store`.
@@ -33,6 +51,22 @@ Todos los endpoints se publican bajo `/auth`.
 - Las sesiones vencidas o revocadas se purgan conservando el periodo de evidencia
   definido por `REFRESH_SESSION_RETENTION_DAYS`.
 - Los errores inesperados devuelven mensajes genéricos y no exponen detalles internos.
+
+## Duracion y contrato de sesion
+
+`POST /api/v1/auth/cambiar-password` revoca las sesiones anteriores y entrega
+nuevo access token, tiempos y cookie de refresh `HttpOnly` para la sesión actual.
+El refresh token no aparece en el JSON. Una recarga conserva la sesión nueva.
+
+- `JWT_EXPIRATION_MINUTES` define la vigencia del access token (15 minutos por defecto).
+- `REFRESH_TOKEN_EXPIRATION_MINUTES` define la vigencia renovable de la sesion (10080 minutos, siete dias, por defecto).
+- `SESSION_WARNING_SECONDS` define con cuanta anticipacion el frontend muestra el aviso de vencimiento (300 segundos por defecto).
+- Login, registro y refresh devuelven `access_expires_at`, `session_expires_at` y
+  `session_warning_seconds`. Son metadatos de temporizacion; los tokens siguen sin
+  persistirse en el navegador y el refresh permanece exclusivamente en cookie `HttpOnly`.
+- Cada refresh valido rota el token, extiende el vencimiento renovable y rechaza el
+  token anterior, por lo que la actividad del usuario puede sostener la sesion sin
+  enviar una renovacion por cada evento del navegador.
 
 ## Despliegue
 

@@ -15,6 +15,7 @@ import {
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
+import { getCivilYear } from "@/utils/dateTime";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -71,7 +72,8 @@ export default function EquipamientoLanding() {
   const aniosDisponibles = useMemo(() => {
     const years = scopedList
       .filter((e) => e.fecha_incorporacion)
-      .map((e) => new Date(e.fecha_incorporacion).getFullYear());
+      .map((e) => getCivilYear(e.fecha_incorporacion))
+      .filter((year): year is number => year !== null);
 
     return [...new Set(years)].sort((a, b) => b - a);
   }, [scopedList]);
@@ -93,7 +95,7 @@ export default function EquipamientoLanding() {
 
       const matchAnio =
         !filters.anio ||
-        new Date(e.fecha_incorporacion).getFullYear().toString() === filters.anio;
+        getCivilYear(e.fecha_incorporacion)?.toString() === filters.anio;
 
       return matchSearch && matchMontoMin && matchMontoMax && matchAnio;
     });
@@ -180,7 +182,7 @@ export default function EquipamientoLanding() {
       setErrorMessage(
         invalidItems.length === 1
           ? "El equipamiento seleccionado ya fue eliminado."
-          : "Uno o mas equipamientos seleccionados ya fueron eliminados."
+          : "Uno o más equipamientos seleccionados ya fueron eliminados."
       );
       setShowError(true);
       return;
@@ -196,8 +198,8 @@ export default function EquipamientoLanding() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Equipamiento eliminado con exito."
-          : "Equipamientos eliminados con exito."
+          ? "Equipamiento eliminado con éxito."
+          : "Equipamientos eliminados con éxito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -205,7 +207,7 @@ export default function EquipamientoLanding() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 
@@ -267,7 +269,7 @@ export default function EquipamientoLanding() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por denominacion o descripcion..."
+              placeholder="Buscar por denominación o descripción..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -366,7 +368,7 @@ export default function EquipamientoLanding() {
                 key={e.id}
                 item={e}
                 title={(x) => x.denominacion || "-"}
-                subtitle={(x) => x.descripcion_breve || "Sin descripcion"}
+                subtitle={(x) => x.descripcion_breve || "Sin descripción"}
                 badge={(x) => (x.deleted_at ? "INACTIVO" : "ACTIVO")}
                 selectable={puedeEliminar && selectMode}
                 selectDisabled={!!e.deleted_at}
@@ -384,34 +386,30 @@ export default function EquipamientoLanding() {
         )}
 
         {totalPages > 1 && (
-          <div className="mt-auto pt-8">
-            <div className="flex items-center justify-between">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                Anterior
+          <div className="mt-8">
+            <nav aria-label="Paginación" className="flex flex-wrap items-center justify-center gap-2">
+              <Button type="button" size="sm" variant="secondary" aria-label="Página anterior"
+                disabled={currentPage === 1} onClick={() => setCurrentPage((current) => current - 1)}>
+                {"<"}
               </Button>
-
-              <span className="text-sm text-slate-500">
-                Pagina {currentPage} de {totalPages}
-              </span>
-
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                }
-                disabled={currentPage === totalPages}
-              >
-                Siguiente
+              {[...Array(totalPages)].map((_, index) => {
+                const pageNumber = index + 1;
+                return (
+                  <button type="button" key={pageNumber} aria-label={`Página ${pageNumber}`}
+                    aria-current={currentPage === pageNumber ? "page" : undefined}
+                    onClick={() => setCurrentPage(pageNumber)}
+                    className={`rounded-lg px-3 py-1 text-sm ${
+                      currentPage === pageNumber ? "bg-slate-800 text-white" : "bg-slate-100 hover:bg-slate-200"
+                    }`}>
+                    {pageNumber}
+                  </button>
+                );
+              })}
+              <Button type="button" size="sm" variant="secondary" aria-label="Página siguiente"
+                disabled={currentPage === totalPages} onClick={() => setCurrentPage((current) => current + 1)}>
+                {">"}
               </Button>
-            </div>
+            </nav>
           </div>
         )}
       </div>
@@ -419,15 +417,16 @@ export default function EquipamientoLanding() {
       <ConfirmDialog
         open={showConfirm}
         title="Eliminar equipamiento"
-        message="¿Eliminar los siguientes items?"
+        message="¿Eliminar los siguientes ítems?"
         items={selectedActiveItems.map((e) => e.denominacion || "-")}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}
-        message={successMessage || "Eliminado con exito."}
+        message={successMessage || "Eliminado con éxito."}
         onClose={() => setShowSuccess(false)}
       />
 
@@ -471,7 +470,7 @@ export default function EquipamientoLanding() {
 
               <div>
                 <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
-                  Monto minimo
+                  Monto mínimo
                 </label>
                 <input
                   type="number"
@@ -489,7 +488,7 @@ export default function EquipamientoLanding() {
 
               <div>
                 <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
-                  Monto maximo
+                  Monto máximo
                 </label>
                 <input
                   type="number"
@@ -507,7 +506,7 @@ export default function EquipamientoLanding() {
 
               <div>
                 <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
-                  Ano de incorporacion
+                  Año de incorporación
                 </label>
                 <select
                   className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"

@@ -3,9 +3,25 @@ from unittest.mock import patch
 
 from app import create_app
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
+from modules.recursos.services.equipamiento_service import EquipamientoService
+from modules.recursos.services.erogacion_service import ErogacionService
 
 
 class RecursosDomainErrorsTestCase(unittest.TestCase):
+
+    def test_equipamiento_y_erogacion_identifican_campos_invalidos(self):
+        cases = (
+            (lambda: EquipamientoService._validar_texto("", "denominacion"), "denominacion"),
+            (lambda: EquipamientoService._validar_monto("x"), "monto_invertido"),
+            (lambda: EquipamientoService._validar_fecha("2009-12-31"), "fecha_incorporacion"),
+            (lambda: ErogacionService.vaLidar_numero_erogacion("x", 1), "numero_erogacion"),
+            (lambda: ErogacionService._validar_monto(-1, "egresos"), "egresos"),
+            (lambda: ErogacionService._validar_fecha("2009-12-31"), "fecha"),
+        )
+        for validate, field in cases:
+            with self.subTest(field=field), self.assertRaises(ValidationError) as caught:
+                validate()
+            self.assertIn(field, caught.exception.details["fields"])
 
     def setUp(self):
         self.app = create_app()

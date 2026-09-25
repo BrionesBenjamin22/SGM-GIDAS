@@ -34,3 +34,15 @@ python tools/verify_search_retrieval.py
 
 El resultado esperado es `Recuperacion validada para 24 modulos.`. Ejecutar el
 seed nuevamente no debe aumentar la cantidad de registros ficticios.
+
+## ISS-12: autoría de integrantes
+
+Los trabajos en reuniones y revistas se recuperan por nombres de investigadores y becarios a través de autorías. El resultado expone extra.autores con id, rol, nombre_apellido, tipo y activo. Se actualizan las cargas ORM de trabajos e investigadores al esquema nuevo, manteniendo paginación y permisos.
+
+Corrección de alcance ISS-12: los autores de trabajos son únicamente investigadores y becarios. Personal (PTAA/profesional) no puede vincularse como autor. Se mantiene la etiqueta Autores.
+
+## ISS-13: fecha de presentación
+
+Los resultados de trabajos en reuniones usan fecha_presentacion como fecha
+de referencia del resultado y del registro del buscador. Identidad, autores,
+paginación y permisos se conservan; fechas de otras entidades no cambian.

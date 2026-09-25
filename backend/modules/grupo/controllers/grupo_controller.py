@@ -4,7 +4,8 @@ from modules.grupo.services.grupo_service import (
     obtener_grupo_utn,
     actualizar_grupo_utn,
     eliminar_grupo_utn,
-    restaurar_grupo_utn
+    restaurar_grupo_utn,
+    listar_grupos_utn_activos,
 )
 from modules.memorias.services.exportacion_service_impl import ExportService
 from modules.shared.controllers.responses import error_response, exception_response
@@ -14,6 +15,13 @@ from modules.shared.services.logging_config import get_logger
 logger = get_logger(__name__)
 
 class GrupoUtnController:
+
+    @staticmethod
+    def listar_opciones():
+        try:
+            return jsonify(listar_grupos_utn_activos()), 200
+        except Exception as error:
+            return exception_response(error, operation="listar grupos UTN")
 
     @staticmethod
     def crear():

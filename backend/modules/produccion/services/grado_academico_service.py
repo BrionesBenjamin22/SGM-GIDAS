@@ -1,3 +1,4 @@
+from modules.shared.services.catalog_name_validation import validar_nombre_descriptivo
 from extension import db
 from sqlalchemy import func
 from modules.produccion.models.actividad_docencia import GradoAcademico
@@ -26,6 +27,7 @@ class GradoAcademicoService:
         if not isinstance(nombre, str) or not nombre.strip():
             raise ValidationError("El nombre es obligatorio")
         nombre = nombre.strip()
+        validar_nombre_descriptivo(nombre)
         if len(nombre) < 2:
             raise ValidationError("El nombre debe tener al menos 2 caracteres")
         return nombre

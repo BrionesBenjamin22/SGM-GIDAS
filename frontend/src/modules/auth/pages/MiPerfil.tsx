@@ -1,10 +1,21 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, KeyRound, Pencil, Save, X } from "lucide-react";
+import {
+  Ban,
+  CheckCircle2,
+  KeyRound,
+  Pencil,
+  Save,
+  ShieldCheck,
+  User,
+  X,
+} from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { actualizarUsuario } from "@/modules/auth/services/usuariosService";
-import { getErrorMessage } from "@/lib/httpError";
+import { getRoleCapabilities } from "@/modules/auth/utils/roleCapabilities";
+import { applyFieldErrors, getErrorMessage } from "@/lib/httpError";
+import Field from "@/components/Field";
 import Button from "@/components/Button";
 
 function isValidEmail(email: string): boolean {
@@ -30,6 +41,7 @@ export default function MiPerfil() {
   const [nombreUsuario, setNombreUsuario] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [guardado, setGuardado] = useState(false);
 
   useEffect(() => {
@@ -63,6 +75,7 @@ export default function MiPerfil() {
       setTimeout(() => setGuardado(false), 2000);
     },
     onError: (err) => {
+      if (applyFieldErrors(err, setFieldErrors, ["nombreUsuario", "email"])) return;
       setError(getErrorMessage(err, "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."));
     },
   });
@@ -118,6 +131,8 @@ export default function MiPerfil() {
 
   if (!user) return null;
 
+  const roleCapabilities = getRoleCapabilities(user.rol);
+
   return (
     <section className="w-full max-w-3xl mx-auto">
       <h2 className="text-2xl md:text-3xl font-semibold leading-none">
@@ -156,15 +171,17 @@ export default function MiPerfil() {
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           {/* Nombre de usuario */}
           <div className="rounded-xl border border-slate-200 p-4">
-            <p className="text-sm text-slate-500 mb-1">Nombre de usuario</p>
+            {!editando && <p className="text-sm text-slate-500 mb-1">Nombre de usuario</p>}
 
             {editando ? (
+              <Field required label="Nombre de usuario" name="nombreUsuario" error={fieldErrors.nombreUsuario}>
               <input
                 className="input"
                 value={nombreUsuario}
-                onChange={(e) => setNombreUsuario(e.target.value)}
+                onChange={(e) => { setNombreUsuario(e.target.value); setFieldErrors(previous => ({ ...previous, nombreUsuario: "" })); }}
                 placeholder="Nombre de usuario"
               />
+              </Field>
             ) : (
               <p className="font-medium text-slate-900">{user.nombre_usuario}</p>
             )}
@@ -180,16 +197,18 @@ export default function MiPerfil() {
 
           {/* Email ocupa todo el ancho */}
           <div className="rounded-xl border border-slate-200 p-4 md:col-span-2">
-            <p className="text-sm text-slate-500 mb-1">Email</p>
+            {!editando && <p className="text-sm text-slate-500 mb-1">Email</p>}
 
             {editando ? (
+              <Field required label="Correo electrónico" name="email" error={fieldErrors.email}>
               <input
                 className="input"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); setFieldErrors(previous => ({ ...previous, email: "" })); }}
                 placeholder="Email"
               />
+              </Field>
             ) : (
               <p className="font-medium text-slate-900">{user.mail}</p>
             )}
@@ -249,6 +268,71 @@ export default function MiPerfil() {
             Volver
           </Button>
         </div>
+      </div>
+
+      <div
+        className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        aria-labelledby="permisos-sesion-title"
+      >
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100">
+            <ShieldCheck className="h-6 w-6 text-slate-700" aria-hidden="true" />
+          </div>
+
+          <div>
+            <h3
+              id="permisos-sesion-title"
+              className="text-lg font-semibold text-slate-900"
+            >
+              Permisos de la sesión
+            </h3>
+            <p className="mt-1 text-sm text-slate-600">
+              Rol activo: <strong>{roleCapabilities.label}</strong>.{" "}
+              {roleCapabilities.summary}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-5 md:grid-cols-2">
+          <div>
+            <h4 className="text-sm font-semibold text-slate-800">
+              Acciones disponibles
+            </h4>
+            <ul className="mt-3 space-y-2 text-sm text-slate-600">
+              {roleCapabilities.allowed.map((item) => (
+                <li key={item} className="flex items-start gap-2">
+                  <CheckCircle2
+                    className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
+                    aria-hidden="true"
+                  />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold text-slate-800">
+              Acciones restringidas
+            </h4>
+            <ul className="mt-3 space-y-2 text-sm text-slate-600">
+              {roleCapabilities.restricted.map((item) => (
+                <li key={item} className="flex items-start gap-2">
+                  <Ban
+                    className="mt-0.5 h-4 w-4 shrink-0 text-amber-600"
+                    aria-hidden="true"
+                  />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <p className="mt-5 border-t border-slate-100 pt-4 text-xs text-slate-500">
+          Algunas acciones también pueden depender del estado del registro o de
+          la memoria correspondiente.
+        </p>
       </div>
     </section>
   );

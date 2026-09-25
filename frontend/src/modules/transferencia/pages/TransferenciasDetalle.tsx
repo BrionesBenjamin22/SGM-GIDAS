@@ -11,7 +11,7 @@ import {
 } from "@/modules/transferencia/services/transferenciasServices";
 import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
-import { formatFecha } from "@/utils/formatFecha";
+import { formatFecha, formatFechaHora } from "@/utils/dateTime";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,
@@ -66,11 +66,6 @@ export default function TransferenciasDetalle() {
     }
   }, [location.state, navigate, location.pathname]);
 
-  const formatFechaHora = (fecha?: string | null) => {
-    if (!fecha) return "-";
-    return new Date(fecha).toLocaleString("es-AR");
-  };
-
   if (isLoading) {
     return <p className="text-slate-500">Cargando...</p>;
   }
@@ -78,13 +73,13 @@ export default function TransferenciasDetalle() {
   if (isError) {
     return (
       <p className="text-slate-500">
-        Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente.
+        Lo sentimos, no pudimos recuperar la información. Intente nuevamente.
       </p>
     );
   }
 
   if (!data) {
-    return <p className="text-slate-500">No se encontro la transferencia.</p>;
+    return <p className="text-slate-500">No se encontró la transferencia.</p>;
   }
 
   const isDeleted = data.activo === false || !!data.deletedAt;
@@ -120,12 +115,12 @@ export default function TransferenciasDetalle() {
         <article className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
           <div className="space-y-2 text-sm text-slate-500 md:text-base">
             <p>
-              <span className="font-medium text-slate-700">Numero de transferencia:</span>{" "}
+              <span className="font-medium text-slate-700">Número de transferencia:</span>{" "}
               {data.numeroTransferencia || "-"}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Denominacion:</span>{" "}
+              <span className="font-medium text-slate-700">Denominación:</span>{" "}
               {data.denominacion || "-"}
             </p>
 
@@ -135,7 +130,7 @@ export default function TransferenciasDetalle() {
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Descripcion de la actividad:</span>{" "}
+              <span className="font-medium text-slate-700">Descripción de la actividad:</span>{" "}
               {data.descripcionActividad || "-"}
             </p>
 
@@ -175,7 +170,7 @@ export default function TransferenciasDetalle() {
 
         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-700">Auditoria</h3>
+            <h3 className="text-lg font-semibold text-slate-700">Auditoría</h3>
             <p className="mt-1 text-xs text-slate-500">{titulo}</p>
           </div>
 
@@ -186,7 +181,7 @@ export default function TransferenciasDetalle() {
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha de creacion:</span>{" "}
+              <span className="font-medium text-slate-700">Fecha de creación:</span>{" "}
               {formatFechaHora(data.created_at)}
             </p>
 
@@ -196,7 +191,7 @@ export default function TransferenciasDetalle() {
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha de eliminacion:</span>{" "}
+              <span className="font-medium text-slate-700">Fecha de eliminación:</span>{" "}
               {formatFechaHora(data.deletedAt)}
             </p>
           </div>

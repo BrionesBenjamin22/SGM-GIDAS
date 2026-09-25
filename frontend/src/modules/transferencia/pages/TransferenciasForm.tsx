@@ -1,7 +1,10 @@
+import { applyFieldErrors } from "@/lib/httpError";
+import { hasLetter } from "../../../lib/textValidation";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import Button from "@/components/Button";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import DatePicker from "@/components/Calendar";
 import Field from "@/components/Field";
 import AdoptanteSelector from "@/components/AdoptanteSelector";
@@ -18,11 +21,16 @@ import {
 import type { Adoptante } from "@/modules/transferencia/services/adoptantesServices";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 import { useTiposContrato } from "@/modules/transferencia/hooks/useTransferencias";
+import { toCivilDateString } from "@/utils/dateTime";
+import { useAuth } from "@/context/AuthContext";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
 
 export default function TransferenciasForm() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { uct, uctGuard } = useUctGuard();
+  const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
 
@@ -69,6 +77,17 @@ export default function TransferenciasForm() {
     setAdoptantes(transferencia.adoptantes ?? []);
   }, [transferencia]);
 
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "transferencia",
+    recordId: id,
+    value: { data, adoptantes },
+    ready: !isEdit || (!isLoading && Boolean(transferencia)),
+    autosave: false,
+    hasContent: (draft) => Object.values(draft.data).some(Boolean) || draft.adoptantes.length > 0,
+    onRestore: (draft) => { setData(draft.data); setAdoptantes(draft.adoptantes); },
+  });
+
   const clearError = (field: string) => {
     setErrors((prev) => {
       const copy = { ...prev };
@@ -86,16 +105,20 @@ export default function TransferenciasForm() {
     }
 
     if (!data.denominacion.trim() || data.denominacion.trim().length < 3) {
-      newErrors.denominacion = "Debe ingresar una denominacion valida";
+      newErrors.denominacion = "Debe ingresar una denominación válida";
+    } else if (!hasLetter(data.denominacion)) {
+      newErrors.denominacion = "La denominación debe contener letras";
     }
 
     if (!data.demandante.trim() || data.demandante.trim().length < 3) {
-      newErrors.demandante = "Debe ingresar un demandante valido";
+      newErrors.demandante = "Debe ingresar un demandante válido";
+    } else if (!hasLetter(data.demandante)) {
+      newErrors.demandante = "El demandante debe contener letras";
     }
 
     if (!data.descripcionActividad.trim() || data.descripcionActividad.trim().length < 10) {
       newErrors.descripcionActividad =
-        "La descripcion debe tener al menos 10 caracteres";
+        "La descripción debe tener al menos 10 caracteres";
     }
 
     const monto = Number(data.monto);
@@ -173,6 +196,7 @@ export default function TransferenciasForm() {
         toAdd.length === 0 &&
         toRemove.length === 0
       ) {
+        clearDraft();
         navigate(`/transferencias/${id}`, {
           replace: true,
           state: {
@@ -199,6 +223,7 @@ export default function TransferenciasForm() {
     },
     onSuccess: async (saved) => {
       if (!saved) return;
+      clearDraft();
 
       const transferenciaId = isEdit ? Number(id) : saved.id;
 
@@ -212,16 +237,19 @@ export default function TransferenciasForm() {
         replace: true,
         state: {
           successMessage: isEdit
-            ? "Transferencia actualizada con exito."
-            : "Transferencia creada con exito.",
+            ? "Transferencia actualizada con éxito."
+            : "Transferencia creada con éxito.",
         },
       });
     },
     onError: (error) => {
+      if (applyFieldErrors(error, setErrors, ["numeroTransferencia","denominacion","demandante","descripcionActividad","monto","fechaInicio","fechaFin","tipoContratoId","adoptantes"])) return;
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+          isEdit
+            ? "Lo sentimos, no pudimos actualizar la transferencia. Revise los datos e intente nuevamente."
+            : "Lo sentimos, no pudimos crear la transferencia. Revise los datos e intente nuevamente."
         )
       );
       setShowError(true);
@@ -235,7 +263,7 @@ export default function TransferenciasForm() {
   if (isTiposError || isTransferenciaError) {
     return (
       <p className="text-slate-500">
-        Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente.
+        Lo sentimos, no pudimos recuperar la información. Intente nuevamente.
       </p>
     );
   }
@@ -249,17 +277,21 @@ export default function TransferenciasForm() {
         {isEdit ? "Editar transferencia" : "Nueva transferencia"}
       </h2>
 
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
+
       <form
         noValidate
         onSubmit={async (e) => {
           e.preventDefault();
+    if (isPending) return;
           if (!uct) return;
           if (!validate()) return;
           await mutateAsync();
         }}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Numero de transferencia">
+        <Field required label="Número de transferencia" name="numeroTransferencia" error={errors.numeroTransferencia}>
           <>
             <input
               type="number"
@@ -277,12 +309,12 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <Field label="Denominacion">
+        <Field required label="Denominación" name="denominacion" error={errors.denominacion}>
           <>
             <input
               className={inputClass("denominacion")}
               value={data.denominacion}
-              placeholder="Ej: Convenio de asistencia tecnica"
+              placeholder="Ej: Convenio de asistencia técnica"
               onChange={(e) => {
                 setData((prev) => ({ ...prev, denominacion: e.target.value }));
                 if (e.target.value.trim()) clearError("denominacion");
@@ -294,7 +326,7 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <Field label="Demandante">
+        <Field required label="Demandante" name="demandante" error={errors.demandante}>
           <>
             <input
               className={inputClass("demandante")}
@@ -311,7 +343,7 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <Field label="Descripcion de la actividad">
+        <Field required label="Descripción de la actividad" name="descripcionActividad" error={errors.descripcionActividad}>
           <>
             <textarea
               rows={5}
@@ -332,7 +364,7 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <Field label="Monto">
+        <Field required label="Monto" name="monto" error={errors.monto}>
           <>
             <input
               type="number"
@@ -350,37 +382,37 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <Field label="Fecha de inicio">
+        <Field required label="Fecha de inicio" name="fechaInicio" error={errors.fechaInicio}>
           <DatePicker
             value={data.fechaInicio ? new Date(`${data.fechaInicio}T00:00:00`) : null}
             onChange={(dt) => {
               setData((prev) => ({
                 ...prev,
-                fechaInicio: dt ? dt.toISOString().split("T")[0] : "",
+                fechaInicio: toCivilDateString(dt) ?? "",
               }));
               if (dt) clearError("fechaInicio");
             }}
-            helperText={errors.fechaInicio ?? "DD/MM/AAAA"}
+            helperText="DD/MM/AAAA"
             className={inputClass("fechaInicio")}
           />
         </Field>
 
-        <Field label="Fecha de fin">
+        <Field label="Fecha de fin" name="fechaFin" error={errors.fechaFin}>
           <DatePicker
             value={data.fechaFin ? new Date(`${data.fechaFin}T00:00:00`) : null}
             onChange={(dt) => {
               setData((prev) => ({
                 ...prev,
-                fechaFin: dt ? dt.toISOString().split("T")[0] : "",
+                fechaFin: toCivilDateString(dt) ?? "",
               }));
               clearError("fechaFin");
             }}
-            helperText={errors.fechaFin ?? "Opcional"}
+            helperText="Opcional"
             className={inputClass("fechaFin")}
           />
         </Field>
 
-        <Field label="Tipo de contrato">
+        <Field required label="Tipo de contrato" name="tipoContratoId" error={errors.tipoContratoId}>
           <>
             <select
               className={`${inputClass("tipoContratoId")} ${
@@ -407,14 +439,20 @@ export default function TransferenciasForm() {
           </>
         </Field>
 
-        <AdoptanteSelector selected={adoptantes} onChange={setAdoptantes} />
+        <div data-error-field="adoptantes">
+          <AdoptanteSelector selected={adoptantes} onChange={(next) => {
+            setAdoptantes(next);
+            setErrors((previous) => ({ ...previous, adoptantes: "" }));
+          }} />
+          {errors.adoptantes && <p role="alert" className="mt-1 text-sm text-red-600">{errors.adoptantes}</p>}
+        </div>
 
         <div className="flex justify-between pt-6">
-          <Button type="button" variant="secondary" size="sm" onClick={() => navigate(-1)}>
+          <Button type="button" variant="secondary" size="sm" onClick={() => requestLeave(() => navigate(-1))}>
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={isPending || !uct}>
+          <Button type="submit" size="sm" disabled={isPending || !uct} loading={isPending} loadingText="Guardando...">
             {isPending ? "Guardando..." : isEdit ? "Actualizar" : "Guardar"}
           </Button>
         </div>

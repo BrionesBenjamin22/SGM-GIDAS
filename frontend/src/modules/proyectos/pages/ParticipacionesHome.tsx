@@ -14,6 +14,8 @@ import {
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
+import { getCivilYear } from "@/utils/dateTime";
+import { toTitleCase } from "@/utils/format";
 
 import {
   eliminarParticipacion,
@@ -123,7 +125,7 @@ export default function ParticipacionesHome() {
 
       const matchAnio =
         !filters.anio ||
-        new Date(p.fecha).getFullYear() === Number(filters.anio);
+        getCivilYear(p.fecha) === Number(filters.anio);
 
       return (
         matchSearch &&
@@ -184,7 +186,7 @@ export default function ParticipacionesHome() {
 
     if (item?.deleted_at) {
       setErrorMessage(
-        "No se puede eliminar una participacion que ya fue eliminada."
+        "No se puede eliminar una participación que ya fue eliminada."
       );
       setShowError(true);
       return;
@@ -213,8 +215,8 @@ export default function ParticipacionesHome() {
       setShowConfirm(false);
       setErrorMessage(
         invalidItems.length === 1
-          ? "La participacion seleccionada ya fue eliminada."
-          : "Una o mas participaciones seleccionadas ya fueron eliminadas."
+          ? "La participación seleccionada ya fue eliminada."
+          : "Una o más participaciones seleccionadas ya fueron eliminadas."
       );
       setShowError(true);
       return;
@@ -231,8 +233,8 @@ export default function ParticipacionesHome() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Participacion eliminada con exito."
-          : "Participaciones eliminadas con exito."
+          ? "Participación eliminada con éxito."
+          : "Participaciones eliminadas con éxito."
       );
       setShowSuccess(true);
     } catch (error: unknown) {
@@ -241,7 +243,7 @@ export default function ParticipacionesHome() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 
@@ -402,7 +404,7 @@ export default function ParticipacionesHome() {
                 <Tarjeta<Participacion>
                   key={p.id}
                   item={p}
-                  title={(x) => x.nombre_evento || "-"}
+                  title={(x) => toTitleCase(x.nombre_evento) || "-"}
                   subtitle={(x) =>
                     x.investigador
                       ? `${x.investigador} - ${formatDate(x.fecha)}`
@@ -424,30 +426,30 @@ export default function ParticipacionesHome() {
             </div>
 
             {totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-between">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                  disabled={page === 1}
-                >
-                  Anterior
-                </Button>
-
-                <span className="text-sm text-slate-500">
-                  Pagina {page} de {totalPages}
-                </span>
-
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={page === totalPages}
-                >
-                  Siguiente
-                </Button>
+              <div className="mt-8">
+                <nav aria-label="Paginación" className="flex flex-wrap items-center justify-center gap-2">
+                  <Button type="button" size="sm" variant="secondary" aria-label="Página anterior"
+                    disabled={page === 1} onClick={() => setPage((current) => current - 1)}>
+                    {"<"}
+                  </Button>
+                  {[...Array(totalPages)].map((_, index) => {
+                    const pageNumber = index + 1;
+                    return (
+                      <button type="button" key={pageNumber} aria-label={`Página ${pageNumber}`}
+                        aria-current={page === pageNumber ? "page" : undefined}
+                        onClick={() => setPage(pageNumber)}
+                        className={`rounded-lg px-3 py-1 text-sm ${
+                          page === pageNumber ? "bg-slate-800 text-white" : "bg-slate-100 hover:bg-slate-200"
+                        }`}>
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
+                  <Button type="button" size="sm" variant="secondary" aria-label="Página siguiente"
+                    disabled={page === totalPages} onClick={() => setPage((current) => current + 1)}>
+                    {">"}
+                  </Button>
+                </nav>
               </div>
             )}
           </>
@@ -458,10 +460,11 @@ export default function ParticipacionesHome() {
         open={showConfirm}
         title="Eliminar participaciones"
         message="¿Eliminar las siguientes participaciones?"
-        items={selectedActiveItems.map((p) => p.nombre_evento || "-")}
+        items={selectedActiveItems.map((p) => toTitleCase(p.nombre_evento) || "-")}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}
@@ -526,7 +529,7 @@ export default function ParticipacionesHome() {
 
               <div>
                 <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
-                  Forma de participacion
+                  Forma de participación
                 </label>
                 <input
                   className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
@@ -543,7 +546,7 @@ export default function ParticipacionesHome() {
 
               <div>
                 <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
-                  Ano
+                  Año
                 </label>
                 <input
                   type="number"

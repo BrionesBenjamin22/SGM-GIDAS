@@ -20,6 +20,7 @@ import {
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
+import { getCivilYear } from "@/utils/dateTime";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -115,7 +116,7 @@ export default function TransferenciasHome() {
       const fechaBase = item.fechaInicio || item.fechaFin || "";
       const matchAnio =
         !filters.anio ||
-        (fechaBase && new Date(fechaBase).getFullYear().toString() === filters.anio);
+        (fechaBase && getCivilYear(fechaBase)?.toString() === filters.anio);
 
       return (
         matchSearch &&
@@ -151,7 +152,8 @@ export default function TransferenciasHome() {
     const years = scopedList
       .map((item) => item.fechaInicio || item.fechaFin)
       .filter(Boolean)
-      .map((fecha) => new Date(fecha as string).getFullYear())
+      .map((fecha) => getCivilYear(fecha as string))
+      .filter((year): year is number => year !== null)
       .filter((year) => !Number.isNaN(year));
 
     return [...new Set(years)].sort((a, b) => b - a);
@@ -207,7 +209,7 @@ export default function TransferenciasHome() {
       setErrorMessage(
         invalidItems.length === 1
           ? "La transferencia seleccionada ya fue eliminada."
-          : "Una o mas transferencias seleccionadas ya fueron eliminadas."
+          : "Una o más transferencias seleccionadas ya fueron eliminadas."
       );
       setShowError(true);
       return;
@@ -223,8 +225,8 @@ export default function TransferenciasHome() {
 
       setSuccessMessage(
         selectedActiveTransfers.length === 1
-          ? "Transferencia eliminada con exito."
-          : "Transferencias eliminadas con exito."
+          ? "Transferencia eliminada con éxito."
+          : "Transferencias eliminadas con éxito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -233,7 +235,7 @@ export default function TransferenciasHome() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 
@@ -253,7 +255,7 @@ export default function TransferenciasHome() {
       <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h2 className="text-2xl font-semibold leading-none text-slate-800 md:text-3xl">
-            Vinculacion socio-productiva
+            Vinculación socio-productiva
           </h2>
           <p className="mt-2 text-xs text-slate-500">
             {transferenciasFiltradas.length} de {scopedList.length} resultados
@@ -302,7 +304,7 @@ export default function TransferenciasHome() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por denominacion, actividad o demandante..."
+              placeholder="Buscar por denominación, actividad o demandante..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -378,7 +380,7 @@ export default function TransferenciasHome() {
           <p className="py-10 text-center text-slate-500">Cargando...</p>
         ) : isError ? (
           <p className="py-10 text-center text-slate-500">
-            Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente.
+            Lo sentimos, no pudimos recuperar la información. Intente nuevamente.
           </p>
         ) : transferenciasFiltradas.length === 0 ? (
           <p className="py-10 text-center text-slate-500">
@@ -415,32 +417,30 @@ export default function TransferenciasHome() {
         )}
 
         {totalPages > 1 && (
-          <div className="mt-auto pt-8">
-            <div className="flex items-center justify-between">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                Anterior
+          <div className="mt-8">
+            <nav aria-label="Paginación" className="flex flex-wrap items-center justify-center gap-2">
+              <Button type="button" size="sm" variant="secondary" aria-label="Página anterior"
+                disabled={currentPage === 1} onClick={() => setCurrentPage((current) => current - 1)}>
+                {"<"}
               </Button>
-
-              <span className="text-sm text-slate-500">
-                Pagina {currentPage} de {totalPages}
-              </span>
-
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Siguiente
+              {[...Array(totalPages)].map((_, index) => {
+                const pageNumber = index + 1;
+                return (
+                  <button type="button" key={pageNumber} aria-label={`Página ${pageNumber}`}
+                    aria-current={currentPage === pageNumber ? "page" : undefined}
+                    onClick={() => setCurrentPage(pageNumber)}
+                    className={`rounded-lg px-3 py-1 text-sm ${
+                      currentPage === pageNumber ? "bg-slate-800 text-white" : "bg-slate-100 hover:bg-slate-200"
+                    }`}>
+                    {pageNumber}
+                  </button>
+                );
+              })}
+              <Button type="button" size="sm" variant="secondary" aria-label="Página siguiente"
+                disabled={currentPage === totalPages} onClick={() => setCurrentPage((current) => current + 1)}>
+                {">"}
               </Button>
-            </div>
+            </nav>
           </div>
         )}
       </div>
@@ -454,11 +454,12 @@ export default function TransferenciasHome() {
         )}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}
-        message={successMessage || "Eliminado con exito."}
+        message={successMessage || "Eliminado con éxito."}
         onClose={() => setShowSuccess(false)}
       />
 
@@ -553,7 +554,7 @@ export default function TransferenciasHome() {
 
               <div>
                 <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
-                  Ano
+                  Año
                 </label>
                 <select
                   className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"

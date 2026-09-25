@@ -11,7 +11,7 @@ import {
 } from "@/modules/recursos/services/erogacionesServices";
 import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
-import { formatFecha } from "@/utils/formatFecha";
+import { formatFecha, formatFechaHora } from "@/utils/dateTime";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,
@@ -65,15 +65,10 @@ export default function ErogacionesDetalle() {
 
   if (isLoading) return <p className="text-slate-500">Cargando...</p>;
   if (isError || !data) {
-    return <p className="text-slate-500">No se encontro la erogacion.</p>;
+    return <p className="text-slate-500">No se encontró la erogación.</p>;
   }
 
-  const formatFechaHora = (fecha?: string | null) => {
-    if (!fecha) return "-";
-    return new Date(fecha).toLocaleString("es-AR");
-  };
-
-  const nroErogacionFmt = `Erogacion Nro ${String(data.numero_erogacion).padStart(6, "0")}`;
+  const nroErogacionFmt = `Erogación N.º ${String(data.numero_erogacion).padStart(6, "0")}`;
   const isDeleted = !!data.deleted_at;
 
   return (
@@ -114,7 +109,7 @@ export default function ErogacionesDetalle() {
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Tipo de erogacion:</span>{" "}
+              <span className="font-medium text-slate-700">Tipo de erogación:</span>{" "}
               {data.tipo_erogacion?.nombre || "-"}
             </p>
 
@@ -139,7 +134,7 @@ export default function ErogacionesDetalle() {
 
         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-700">Auditoria</h3>
+            <h3 className="text-lg font-semibold text-slate-700">Auditoría</h3>
             <p className="mt-1 text-xs text-slate-500">{nroErogacionFmt}</p>
           </div>
 
@@ -150,7 +145,7 @@ export default function ErogacionesDetalle() {
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha de creacion:</span>{" "}
+              <span className="font-medium text-slate-700">Fecha de creación:</span>{" "}
               {formatFechaHora(data.created_at)}
             </p>
 
@@ -161,7 +156,7 @@ export default function ErogacionesDetalle() {
 
             <p>
               <span className="font-medium text-slate-700">
-                Fecha de eliminacion:
+                Fecha de eliminación:
               </span>{" "}
               {formatFechaHora(data.deleted_at)}
             </p>

@@ -103,7 +103,7 @@ export default function ObjetosLanding() {
 
   const confirmItemsText = selectedItems.map((item) =>
     item.tipo === "Erogacion"
-      ? `Erogacion N° ${String(item.numero_erogacion).padStart(6, "0")}`
+      ? `Erogación N° ${String(item.numero_erogacion).padStart(6, "0")}`
       : item.denominacion
   );
 
@@ -141,7 +141,7 @@ export default function ObjetosLanding() {
 
         {!isLoading && items.length === 0 && (
           <p className="text-slate-500">
-            Aun no hay erogaciones ni equipamientos cargados.
+            Aún no hay erogaciones ni equipamientos cargados.
           </p>
         )}
 
@@ -153,7 +153,7 @@ export default function ObjetosLanding() {
                 item={item}
                 title={() =>
                   item.tipo === "Erogacion"
-                    ? `Erogacion N° ${String(item.numero_erogacion).padStart(6, "0")}`
+                    ? `Erogación N° ${String(item.numero_erogacion).padStart(6, "0")}`
                     : item.denominacion
                 }
                 subtitle={() =>
@@ -188,11 +188,12 @@ export default function ObjetosLanding() {
         onConfirm={confirmDelete}
         confirmText={isDeleting ? "Eliminando..." : "Aceptar"}
         confirmDisabled={isDeleting}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}
-        message="Eliminado con exito."
+        message="Eliminado con éxito."
         onClose={() => setShowSuccess(false)}
       />
 

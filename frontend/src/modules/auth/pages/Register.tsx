@@ -1,3 +1,5 @@
+import Field from "@/components/Field";
+import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
 import { FormEvent, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -14,6 +16,7 @@ export default function RegisterPage() {
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [esPrimero, setEsPrimero] = useState<boolean | null>(null);
@@ -41,7 +44,18 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setError(null);
+    const nextErrors: Record<string, string> = {};
+    if (!nombre.trim()) nextErrors.nombre = "Ingrese su nombre de usuario.";
+    if (!email.trim()) nextErrors.email = "Ingrese su correo electrónico.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) nextErrors.email = "Ingrese un correo electrónico válido.";
+    if (password.length < 6) nextErrors.password = "Ingrese una contraseña de al menos 6 caracteres.";
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length) {
+      focusFieldErrors(nextErrors);
+      return;
+    }
     setLoading(true);
     try {
       await register(nombre, email, password);
@@ -52,6 +66,7 @@ export default function RegisterPage() {
         nav("/login", { replace: true });
       }, 2000);
     } catch (err: unknown) {
+      if (applyFieldErrors(err, setFieldErrors, ["nombre","email","password"])) return;
       setError(getErrorMessage(err, "Lo sentimos, no pudimos crear la cuenta. Verifique los datos e intente nuevamente."));
     } finally {
       setLoading(false);
@@ -133,8 +148,8 @@ export default function RegisterPage() {
             </div>
 
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Nombre de usuario</label>
+              <Field label="Nombre de usuario" required name="nombre" error={fieldErrors.nombre}>
+
                 <input
                   className="input"
                   required
@@ -142,9 +157,9 @@ export default function RegisterPage() {
                   onChange={(e) => setNombre(e.target.value)}
                   placeholder="Ingresa tu nombre de usuario"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
+              </Field>
+              <Field label="Email" required name="email" error={fieldErrors.email}>
+
                 <input
                   className="input"
                   type="email"
@@ -153,9 +168,9 @@ export default function RegisterPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="ingresa tu email"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Contraseña</label>
+              </Field>
+              <Field label="Contraseña" required name="password" error={fieldErrors.password}>
+
                 <input
                   className="input"
                   type="password"
@@ -166,8 +181,8 @@ export default function RegisterPage() {
                   placeholder="Ingresa tu contraseña"
                 />
                 <p className="text-xs text-slate-400 mt-1">Mínimo 6 caracteres</p>
-              </div>
-              {error && <p className="text-sm text-rose-600">{error}</p>}
+              </Field>
+              {error && <p role="alert" className="text-sm text-rose-600">{error}</p>}
               <button
                 type="submit"
                 disabled={loading}

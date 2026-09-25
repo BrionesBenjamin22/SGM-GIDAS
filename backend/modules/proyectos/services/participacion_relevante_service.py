@@ -1,3 +1,6 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, registro_puntual_en_memoria,
+)
 import builtins
 from datetime import date, datetime
 import unicodedata
@@ -10,7 +13,9 @@ from modules.personal.models.personal import Investigador
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
+from modules.shared.services.text_validation import has_letter
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
+from modules.shared.services.date_time import INSTITUTIONAL_MIN_DATE
 
 
 def normalizar_texto(texto: str) -> str:
@@ -31,7 +36,9 @@ class ParticipacionRelevanteService:
     @staticmethod
     def _validar_id(valor, campo: str):
         if not isinstance(valor, int) or valor <= 0:
-            raise ValueError(f"El campo '{campo}' debe ser un entero positivo")
+            if campo == "investigador_id":
+                raise ValueError("Revise el investigador e intente nuevamente.", details={"fields": {"investigador_id": "Seleccione un investigador disponible."}})
+            raise ValueError("No pudimos procesar la solicitud. Intente nuevamente.")
         return valor
 
     @staticmethod
@@ -61,7 +68,10 @@ class ParticipacionRelevanteService:
     @staticmethod
     def _validar_texto(valor: str, campo: str):
         if not isinstance(valor, str) or not valor.strip():
-            raise ValueError(f"El campo '{campo}' es obligatorio")
+            nombres = {"nombre_evento": "nombre del evento", "forma_participacion": "forma de participación"}
+            raise ValueError(f"Revise {nombres[campo]} e intente nuevamente.", details={"fields": {campo: f"Ingrese {nombres[campo]}."}})
+        if campo == "nombre_evento" and not has_letter(valor):
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: "El nombre del evento debe contener letras."}})
         return valor.strip()
 
     @staticmethod
@@ -73,13 +83,13 @@ class ParticipacionRelevanteService:
         try:
             fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
         except (TypeError, builtins.ValueError):
-            raise ValueError(
-                "La fecha es obligatoria y debe tener formato YYYY-MM-DD"
-            )
+            raise ValueError("Revise la fecha e intente nuevamente.", details={"fields": {"fecha": "Ingrese una fecha válida."}})
 
         if fecha > date.today():
-            raise ValueError("La fecha no puede ser futura")
+            raise ValueError("Revise la fecha e intente nuevamente.", details={"fields": {"fecha": "Ingrese una fecha que no sea futura."}})
 
+        if fecha < INSTITUTIONAL_MIN_DATE:
+            raise ValueError("Revise la fecha e intente nuevamente.", details={"fields": {"fecha": "Ingrese una fecha desde el 01/01/2010."}})
         return fecha
 
     @staticmethod
@@ -89,7 +99,7 @@ class ParticipacionRelevanteService:
         )
         investigador = db.session.get(Investigador, investigador_id)
         if not investigador or investigador.deleted_at is not None:
-            raise NotFoundError("Investigador invalido")
+            raise NotFoundError("El investigador seleccionado ya no está disponible. Elija otro e intente nuevamente.", details={"fields": {"investigador_id": "Seleccione un investigador disponible."}})
         return investigador.id
 
     @staticmethod
@@ -132,7 +142,7 @@ class ParticipacionRelevanteService:
 
         if query.first():
             raise ConflictError(
-                "El investigador ya tiene una participacion relevante identica en esa fecha"
+                "Ya existe una participación igual para ese investigador y fecha. Revise los datos e intente nuevamente."
             )
 
     @staticmethod
@@ -317,11 +327,11 @@ class ParticipacionRelevanteService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        participaciones = ParticipacionRelevante.query.filter().all()
+        participaciones = consultar_entidades_memoria(ParticipacionRelevante, memoria_version, relacion="investigador")
 
         snapshots = []
         for participacion in participaciones:
-            if not esta_en_periodo_memoria(memoria_version, participacion.fecha):
+            if not registro_puntual_en_memoria(memoria_version, participacion, participacion.fecha):
                 continue
             snapshot = ParticipacionRelevanteMemoriaVersion(
                 memoria_version_id=memoria_version.id,

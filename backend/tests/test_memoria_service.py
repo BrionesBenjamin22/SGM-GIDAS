@@ -11,13 +11,15 @@ from modules.shared.exceptions import ConflictError
 class MemoriaServiceTestCase(unittest.TestCase):
 
     def setUp(self):
+        self.enterContext(patch("modules.memorias.services.memoria_service.MemoriaService._validar_grupo", return_value=1))
+        self.enterContext(patch("modules.memorias.services.memoria_service.snapshot_contexto_institucional", return_value=None))
         self.add_patcher = patch("modules.memorias.services.memoria_service.db.session.add")
         self.flush_patcher = patch("modules.memorias.services.memoria_service.db.session.flush")
         self.commit_patcher = patch("modules.memorias.services.memoria_service.db.session.commit")
         self.rollback_patcher = patch("modules.memorias.services.memoria_service.db.session.rollback")
         self.get_patcher = patch("modules.memorias.services.memoria_service.db.session.get")
         self.validar_unicidad_patcher = patch(
-            "modules.memorias.services.memoria_service.MemoriaService._validar_unicidad_anual"
+            "modules.memorias.services.memoria_service.MemoriaService._validar_solapamiento"
         )
         self.validar_activa_patcher = patch(
             "modules.memorias.services.memoria_service.MemoriaService._validar_unica_memoria_activa"
@@ -41,6 +43,7 @@ class MemoriaServiceTestCase(unittest.TestCase):
 
     def _make_memoria(self):
         memoria = Memoria(
+            grupo_utn_id=1,
             id=1,
             periodo_inicio=date(2026, 1, 1),
             periodo_fin=date(2026, 12, 31),
@@ -110,18 +113,47 @@ class MemoriaServiceTestCase(unittest.TestCase):
         self.assertEqual(resultado["version_actual"]["estado"], "abierta")
         self.assertEqual(resultado["cantidad_versiones"], 1)
         self.assertEqual(created_objects["memoria"].created_by, 7)
-        self.mock_validar_unicidad.assert_called_once_with(date(2026, 12, 31))
-        self.mock_validar_activa.assert_called_once_with()
+        self.mock_validar_unicidad.assert_called_once_with(date(2026, 1, 1), date(2026, 12, 31), 1)
+        self.mock_validar_activa.assert_called_once_with(1)
         self.mock_commit.assert_called_once()
 
-    def test_update_falla_porque_memoria_es_inmutable(self):
-        with self.assertRaises(ConflictError) as ctx:
-            MemoriaService.update(1, {"periodo_inicio": "2026-01-01"})
+    def test_update_bloquea_periodo_con_version_cerrada(self):
+        memoria = self._make_memoria()
+        memoria.versiones = [self._make_version(memoria, estado=EstadoMemoria.CERRADA)]
+        self.mock_get.return_value = memoria
+        with self.assertRaises(ConflictError):
+            MemoriaService.update(1, {"periodo_inicio": "2026-02-01"}, 8)
+        self.mock_commit.assert_not_called()
 
-        self.assertEqual(
-            str(ctx.exception),
-            "La memoria no puede modificarse una vez creada"
-        )
+    def test_update_solo_diferencias_y_auditoria(self):
+        memoria = self._make_memoria()
+        self.mock_get.return_value = memoria
+        resultado = MemoriaService.update(1, {"periodo_fin": "2027-06-30"}, 8)
+        self.assertEqual(resultado["periodo_fin"], "2027-06-30")
+        self.assertEqual(memoria.updated_by, 8)
+        self.mock_validar_unicidad.assert_called_once_with(date(2026, 1, 1), date(2027, 6, 30), 1, 1)
+        auditoria = self.mock_add.call_args.args[0]
+        self.assertEqual(auditoria.campo, "periodo_fin")
+        self.assertEqual(auditoria.valor_anterior, "2026-12-31")
+        self.assertEqual(auditoria.valor_nuevo, "2027-06-30")
+        self.assertEqual(auditoria.usuario_id, 8)
+
+    def test_update_sin_cambios_no_persiste(self):
+        self.mock_get.return_value = self._make_memoria()
+        MemoriaService.update(1, {"periodo_inicio": "2026-01-01"}, 8)
+        self.mock_commit.assert_not_called()
+        self.mock_add.assert_not_called()
+
+    def test_update_bloquea_despues_de_reapertura(self):
+        memoria = self._make_memoria()
+        cerrada = self._make_version(memoria, estado=EstadoMemoria.CERRADA)
+        abierta = self._make_version(memoria, numero=2)
+        memoria.versiones = [cerrada, abierta]
+        memoria.version_actual = abierta
+        self.mock_get.return_value = memoria
+        with self.assertRaises(ConflictError):
+            MemoriaService.update(1, {"periodo_fin": "2027-06-30"}, 8)
+        self.mock_commit.assert_not_called()
 
     def test_change_status_a_en_revision_actualiza_estado_sin_fecha_cierre(self):
         memoria = self._make_memoria()
@@ -217,7 +249,7 @@ class MemoriaServiceTestCase(unittest.TestCase):
         self.assertEqual(memoria.version_actual_id, nueva_version.id)
         self.assertEqual(resultado["version_actual"]["numero_version"], 2)
         self.assertEqual(resultado["version_actual"]["estado"], "abierta")
-        self.mock_validar_activa.assert_called_once_with(memoria_id_excluida=memoria.id)
+        self.mock_validar_activa.assert_called_once_with(1, memoria_id_excluida=memoria.id)
         self.mock_commit.assert_called_once()
 
     def test_reopen_falla_si_la_version_actual_no_esta_cerrada(self):

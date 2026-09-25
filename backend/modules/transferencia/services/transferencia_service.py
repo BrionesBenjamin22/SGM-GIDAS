@@ -1,6 +1,11 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, fin_vigencia, relacion_vigente_en_memoria,
+)
 import builtins
+import math
 from datetime import datetime
 from extension import db
+from modules.shared.services.text_validation import has_letter
 
 from modules.transferencia.models.transferencia_socio import (
     Adoptante,
@@ -12,6 +17,7 @@ from modules.transferencia.models.transferencia_socio import (
 )
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.shared.services.auditoria_service import AuditoriaService
+from modules.shared.services.date_time import INSTITUTIONAL_MIN_DATE
 from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
 
@@ -24,21 +30,16 @@ class TransferenciaSocioProductivaService:
 
     @staticmethod
     def _validar_texto(valor, campo, min_len=3):
-        if valor is None:
-            raise ValueError(f"El campo '{campo}' es obligatorio")
-
-        if not isinstance(valor, str):
-            raise ValueError(f"El campo '{campo}' debe ser texto")
+        labels = {"denominacion": "la denominación", "demandante": "el demandante", "descripcion_actividad": "la descripción de la actividad"}
+        label = labels.get(campo, "este dato")
+        if not isinstance(valor, str) or not valor.strip():
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"Ingrese {label}."}})
+        if campo in {"denominacion", "demandante"} and not has_letter(valor):
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"{label.capitalize()} debe contener letras."}})
 
         valor = valor.strip()
-
-        if not valor:
-            raise ValueError(f"El campo '{campo}' no puede estar vacío")
-
         if len(valor) < min_len:
-            raise ValueError(
-                f"El campo '{campo}' debe tener al menos {min_len} caracteres"
-            )
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"Use al menos {min_len} caracteres para {label}."}})
 
         return valor
 
@@ -48,12 +49,22 @@ class TransferenciaSocioProductivaService:
         try:
             monto = float(monto)
         except (TypeError, builtins.ValueError):
-            raise ValueError("El monto debe ser numérico")
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"monto": "Ingrese un monto numérico válido."}})
 
-        if monto <= 0:
-            raise ValueError("El monto debe ser mayor a 0")
+        if not math.isfinite(monto) or monto <= 0:
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"monto": "Ingrese un monto mayor que cero."}})
 
         return monto
+
+    @staticmethod
+    def _validar_fecha(valor, campo):
+        try:
+            fecha = datetime.strptime(valor, "%Y-%m-%d").date()
+        except (TypeError, builtins.ValueError):
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: "Ingrese una fecha válida."}})
+        if fecha < INSTITUTIONAL_MIN_DATE:
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: "Ingrese una fecha desde el 01/01/2010."}})
+        return fecha
 
 
     # =================================================
@@ -130,10 +141,12 @@ class TransferenciaSocioProductivaService:
 
     @staticmethod
     def create(data: dict, user_id: int):
+        if not isinstance(data, dict) or not data:
+            raise ValueError("Envíe los datos de la transferencia e intente nuevamente.")
 
         numero_transferencia = data.get("numero_transferencia")
-        if not isinstance(numero_transferencia, int) or numero_transferencia <= 0:
-            raise ValueError("El número de transferencia debe ser un entero positivo")
+        if isinstance(numero_transferencia, bool) or not isinstance(numero_transferencia, int) or numero_transferencia <= 0:
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"numero_transferencia": "Ingrese un número entero positivo."}})
 
         denominacion = TransferenciaSocioProductivaService._validar_texto(
             data.get("denominacion"), "denominacion"
@@ -153,29 +166,23 @@ class TransferenciaSocioProductivaService:
             data.get("monto")
         )
 
-        fecha_inicio = datetime.strptime(
-            data["fecha_inicio"],
-            "%Y-%m-%d"
-        ).date()
+        fecha_inicio = TransferenciaSocioProductivaService._validar_fecha(data.get("fecha_inicio"), "fecha_inicio")
 
         fecha_fin = None
         if data.get("fecha_fin"):
-            fecha_fin = datetime.strptime(
-                data["fecha_fin"],
-                "%Y-%m-%d"
-            ).date()
+            fecha_fin = TransferenciaSocioProductivaService._validar_fecha(data["fecha_fin"], "fecha_fin")
 
             if fecha_fin < fecha_inicio:
-                raise ValueError("La fecha_fin no puede ser anterior a fecha_inicio")
+                raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_fin": "Ingrese una fecha de fin igual o posterior al inicio."}})
 
         # Validar relaciones
         tipo_contrato_id = data.get("tipo_contrato_id")
         if not tipo_contrato_id or not TipoContrato.query.get(tipo_contrato_id):
-            raise ValueError("Tipo de contrato inválido")
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"tipo_contrato_id": "Seleccione un tipo de contrato disponible."}})
 
         grupo_utn_id = data.get("grupo_utn_id")
         if not grupo_utn_id or not GrupoInvestigacionUtn.query.get(grupo_utn_id):
-            raise ValueError("Grupo UTN inválido")
+            raise ValueError("El grupo ya no está disponible. Recargue el formulario e intente nuevamente.")
 
         transferencia = TransferenciaSocioProductiva(
             numero_transferencia=numero_transferencia,
@@ -267,10 +274,7 @@ class TransferenciaSocioProductivaService:
                 transferencia.monto = nuevo_valor
 
         if "fecha_inicio" in data:
-            nuevo_valor = datetime.strptime(
-                data["fecha_inicio"],
-                "%Y-%m-%d"
-            ).date()
+            nuevo_valor = TransferenciaSocioProductivaService._validar_fecha(data["fecha_inicio"], "fecha_inicio")
             cambio = AuditoriaService.construir_cambio(
                 transferencia.fecha_inicio,
                 nuevo_valor
@@ -281,7 +285,7 @@ class TransferenciaSocioProductivaService:
 
         if "fecha_fin" in data:
             nuevo_valor = (
-                datetime.strptime(data["fecha_fin"], "%Y-%m-%d").date()
+                TransferenciaSocioProductivaService._validar_fecha(data["fecha_fin"], "fecha_fin")
                 if data["fecha_fin"] else None
             )
             cambio = AuditoriaService.construir_cambio(
@@ -291,6 +295,12 @@ class TransferenciaSocioProductivaService:
             if cambio:
                 cambios["fecha_fin"] = cambio
                 transferencia.fecha_fin = nuevo_valor
+
+        if (
+            transferencia.fecha_fin
+            and transferencia.fecha_fin < transferencia.fecha_inicio
+        ):
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_fin": "Ingrese una fecha de fin igual o posterior al inicio."}})
 
         if cambios:
             transferencia.mark_updated(user_id)
@@ -361,7 +371,7 @@ class TransferenciaSocioProductivaService:
     def add_adoptantes(transferencia_id: int, adoptantes_ids: list[int], user_id: int):
 
         if not isinstance(adoptantes_ids, list) or not adoptantes_ids:
-            raise ValueError("adoptantes_ids debe ser una lista no vacía")
+            raise ValueError("Seleccione al menos un adoptante.", details={"fields": {"adoptantes_ids": "Seleccione al menos un adoptante"}})
 
         transferencia = db.session.get(
             TransferenciaSocioProductiva,
@@ -381,7 +391,7 @@ class TransferenciaSocioProductivaService:
         )
 
         if len(adoptantes) != len(adoptantes_ids):
-            raise NotFoundError("Uno o más adoptantes no existen o están eliminados")
+            raise NotFoundError("Uno o más adoptantes ya no están disponibles", details={"fields": {"adoptantes_ids": "Quite los adoptantes no disponibles y vuelva a intentar"}})
 
         hubo_cambios = False
         for adoptante in adoptantes:
@@ -431,7 +441,7 @@ class TransferenciaSocioProductivaService:
     def remove_adoptantes(transferencia_id: int, adoptantes_ids: list[int], user_id: int):
 
         if not isinstance(adoptantes_ids, list) or not adoptantes_ids:
-            raise ValueError("adoptantes_ids debe ser una lista no vacía")
+            raise ValueError("Seleccione al menos un adoptante.", details={"fields": {"adoptantes_ids": "Seleccione al menos un adoptante"}})
 
         transferencia = db.session.get(
             TransferenciaSocioProductiva,
@@ -475,15 +485,14 @@ class TransferenciaSocioProductivaService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        transferencias = TransferenciaSocioProductiva.query.filter().all()
+        transferencias = consultar_entidades_memoria(TransferenciaSocioProductiva, memoria_version)
 
         snapshots = []
         for transferencia in transferencias:
             if not estuvo_activo_en_periodo_memoria(
                 memoria_version,
                 transferencia.fecha_inicio,
-                getattr(transferencia, "fecha_fin", None)
-                or getattr(transferencia, "deleted_at", None)
+                fin_vigencia(transferencia)
             ):
                 continue
             snapshot = TransferenciaSocioProductivaMemoriaVersion(
@@ -512,9 +521,9 @@ class TransferenciaSocioProductivaService:
             db.session.flush()
 
             for participacion in transferencia.participaciones:
-                if participacion.deleted_at is not None or participacion.adoptante is None:
+                if not relacion_vigente_en_memoria(memoria_version, participacion) or participacion.adoptante is None:
                     continue
-                if getattr(participacion.adoptante, "deleted_at", None) is not None:
+                if not relacion_vigente_en_memoria(memoria_version, participacion.adoptante):
                     continue
 
                 participacion_snapshot = AdoptanteTransferenciaMemoriaVersion(

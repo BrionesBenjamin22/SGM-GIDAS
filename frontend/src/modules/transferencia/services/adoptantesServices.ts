@@ -16,38 +16,22 @@ export type AdoptantePayload = Omit<Adoptante, "id">;
 
 // ─── Mock helpers ────────────────────────────────────────────
 
-const MOCK_KEY = "gidas_adoptantes_mock";
+let mockItems: Adoptante[] | null = null;
 
 const delay = (ms = 300) => new Promise((r) => setTimeout(r, ms));
 
 function readMock(): Adoptante[] {
-    const raw = localStorage.getItem(MOCK_KEY);
-    if (!raw) return [];
-
-    try {
-        const parsed: unknown = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return [];
-
-        return parsed.filter(
-            (item): item is Adoptante =>
-                Boolean(item) &&
-                typeof item === "object" &&
-                typeof (item as { id?: unknown }).id === "number" &&
-                typeof (item as { nombre?: unknown }).nombre === "string"
-        );
-    } catch {
-        return [];
-    }
+    return mockItems ? [...mockItems] : [];
 }
 
 function writeMock(items: Adoptante[]) {
-    localStorage.setItem(MOCK_KEY, JSON.stringify(items));
+    mockItems = [...items];
 }
 
 let _mockIdCounter = 100;
 
 function ensureSeed() {
-    if (localStorage.getItem(MOCK_KEY) !== null) {
+    if (mockItems !== null) {
         const current = readMock();
         _mockIdCounter = Math.max(100, ...current.map((item) => item.id));
         return;

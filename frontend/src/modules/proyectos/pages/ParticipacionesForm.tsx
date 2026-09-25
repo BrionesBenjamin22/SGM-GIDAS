@@ -1,12 +1,19 @@
+import { applyFieldErrors } from "@/lib/httpError";
+import { hasLetter } from "../../../lib/textValidation";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
 import { getErrorMessage } from "@/lib/httpError";
 import { useInvestigadores } from "@/modules/personal/hooks/useInvestigadores";
+import { toCivilDateString } from "@/utils/dateTime";
+import { useAuth } from "@/context/AuthContext";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
 import {
   actualizarParticipacion,
   crearParticipacion,
@@ -28,6 +35,7 @@ export default function ParticipacionesForm() {
 
   const isEdit = Boolean(id);
   const { data: investigadores = [] } = useInvestigadores();
+  const { user } = useAuth();
 
   const { data: initialData, isLoading } = useQuery({
     queryKey: ["participacion", id],
@@ -53,6 +61,17 @@ export default function ParticipacionesForm() {
     setFecha(initialData.fecha ? new Date(`${initialData.fecha}T00:00:00`) : null);
   }, [initialData]);
 
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "proyectos-participaciones",
+    recordId: id,
+    value: { investigadorId, nombreEvento, formaParticipacion, fecha: toCivilDateString(fecha) },
+    ready: !isEdit || (!isLoading && Boolean(initialData)),
+    autosave: false,
+    hasContent: (draft) => Boolean(draft.investigadorId || draft.nombreEvento || draft.formaParticipacion || draft.fecha),
+    onRestore: (draft) => { setInvestigadorId(draft.investigadorId); setNombreEvento(draft.nombreEvento); setFormaParticipacion(draft.formaParticipacion); setFecha(draft.fecha ? new Date(`${draft.fecha}T00:00:00`) : null); },
+  });
+
   const clearError = (field: string) => {
     setErrors((prev) => {
       const copy = { ...prev };
@@ -70,10 +89,12 @@ export default function ParticipacionesForm() {
 
     if (!nombreEvento.trim()) {
       newErrors.nombreEvento = "Debe ingresar el nombre del evento";
+    } else if (!hasLetter(nombreEvento)) {
+      newErrors.nombreEvento = "El nombre del evento debe contener letras";
     }
 
     if (!formaParticipacion) {
-      newErrors.formaParticipacion = "Debe seleccionar una forma de participacion";
+      newErrors.formaParticipacion = "Debe seleccionar una forma de participación";
     }
 
     if (!fecha) {
@@ -102,6 +123,7 @@ export default function ParticipacionesForm() {
         ? actualizarParticipacion(Number(id), input.payload)
         : crearParticipacion(input.payload),
     onSuccess: async (saved) => {
+      clearDraft();
       const participacionId = isEdit ? Number(id) : saved.id;
 
       await qc.invalidateQueries({ queryKey: ["participaciones"] });
@@ -114,51 +136,23 @@ export default function ParticipacionesForm() {
         replace: true,
         state: {
           successMessage: isEdit
-            ? "Participacion actualizada con exito."
-            : "Participacion creada con exito.",
+            ? "Participación actualizada con éxito."
+            : "Participación creada con éxito.",
         },
       });
     },
     onError: (error) => {
-      const defaultMessage = isEdit
-        ? "No se pudo actualizar la participacion."
-        : "No se pudo crear la participacion.";
-
-      const backendMessage = getErrorMessage(error, defaultMessage);
-      const lowerMessage = backendMessage.toLowerCase();
-
-      if (lowerMessage.includes("investigador")) {
-          setErrors((prev) => ({
-            ...prev,
-            investigador: backendMessage,
-          }));
-      } else if (lowerMessage.includes("nombre") || lowerMessage.includes("evento")) {
-          setErrors((prev) => ({
-            ...prev,
-            nombreEvento: backendMessage,
-          }));
-      } else if (
-          lowerMessage.includes("forma") ||
-          lowerMessage.includes("participacion")
-        ) {
-          setErrors((prev) => ({
-            ...prev,
-            formaParticipacion: backendMessage,
-          }));
-      } else if (lowerMessage.includes("fecha")) {
-          setErrors((prev) => ({
-            ...prev,
-            fecha: backendMessage,
-          }));
-      }
-
-      setErrorMessage(backendMessage);
+      if (applyFieldErrors(error, setErrors, ["investigador","nombreEvento","formaParticipacion","fecha"])) return;
+      setErrorMessage(getErrorMessage(error, isEdit
+        ? "Lo sentimos, no pudimos actualizar la participación. Revise los datos e intente nuevamente."
+        : "Lo sentimos, no pudimos crear la participación. Revise los datos e intente nuevamente."));
       setShowError(true);
     },
   });
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mutation.isPending) return;
     if (!validate()) return;
 
     const payload = {
@@ -187,6 +181,7 @@ export default function ParticipacionesForm() {
     );
 
     if (Object.keys(changedPayload).length === 0) {
+      clearDraft();
       navigate(`/participaciones/${id}`, {
         replace: true,
         state: {
@@ -200,7 +195,7 @@ export default function ParticipacionesForm() {
   };
 
   if (isEdit && isLoading) {
-    return <p className="text-slate-500">Cargando participacion...</p>;
+    return <p className="text-slate-500">Cargando participación...</p>;
   }
 
   const inputClass = (field: string) =>
@@ -209,15 +204,18 @@ export default function ParticipacionesForm() {
   return (
     <section className="w-full">
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
-        {isEdit ? "Editar participacion" : "Nueva participacion relevante"}
+        {isEdit ? "Editar participación" : "Nueva participación relevante"}
       </h2>
+
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Investigador">
+        <Field required label="Investigador" name="investigador" error={errors.investigador}>
           <>
             <select
               className={`${inputClass("investigador")} ${
@@ -246,7 +244,7 @@ export default function ParticipacionesForm() {
           </>
         </Field>
 
-        <Field label="Nombre del evento">
+        <Field required label="Nombre del evento" name="nombreEvento" error={errors.nombreEvento}>
           <>
             <input
               type="text"
@@ -256,7 +254,7 @@ export default function ParticipacionesForm() {
                 setNombreEvento(e.target.value);
                 if (e.target.value.trim()) clearError("nombreEvento");
               }}
-              placeholder="Ej: Congreso Argentino de Ingenieria"
+              placeholder="Ej: Congreso Argentino de Ingeniería"
             />
             {errors.nombreEvento && (
               <p className="mt-1 text-sm text-red-500">{errors.nombreEvento}</p>
@@ -264,7 +262,7 @@ export default function ParticipacionesForm() {
           </>
         </Field>
 
-        <Field label="Forma de participacion">
+        <Field required label="Forma de participación" name="formaParticipacion" error={errors.formaParticipacion}>
           <>
             <select
               className={`${inputClass("formaParticipacion")} ${
@@ -277,7 +275,7 @@ export default function ParticipacionesForm() {
               }}
             >
               <option value="" disabled>
-                Seleccionar forma de participacion
+                Seleccionar forma de participación
               </option>
               {FORMAS_PARTICIPACION.map((f) => (
                 <option key={f.value} value={f.value}>
@@ -294,7 +292,7 @@ export default function ParticipacionesForm() {
           </>
         </Field>
 
-        <Field label="Fecha">
+        <Field required label="Fecha" name="fecha" error={errors.fecha}>
           <Calendar
             value={fecha}
             onChange={(date) => {
@@ -302,7 +300,7 @@ export default function ParticipacionesForm() {
               if (date) clearError("fecha");
             }}
             className={inputClass("fecha")}
-            helperText={errors.fecha ?? "DD/MM/AAAA"}
+            helperText="DD/MM/AAAA"
           />
         </Field>
 
@@ -311,12 +309,12 @@ export default function ParticipacionesForm() {
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => requestLeave(() => navigate(-1))}
           >
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={mutation.isPending}>
+          <Button type="submit" size="sm" disabled={mutation.isPending} loading={mutation.isPending} loadingText="Guardando...">
             {mutation.isPending
               ? isEdit
                 ? "Actualizando..."

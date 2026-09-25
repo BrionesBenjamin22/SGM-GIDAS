@@ -1,3 +1,4 @@
+from modules.shared.services.catalog_name_validation import validar_nombre_descriptivo
 from sqlalchemy import func
 from modules.produccion.models.registro_patente import TipoRegistroPropiedad
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
@@ -13,6 +14,7 @@ class TipoRegistroPropiedadService:
             raise ValidationError("El nombre es obligatorio")
 
         nombre = " ".join(nombre.strip().split())
+        validar_nombre_descriptivo(nombre)
         if not nombre:
             raise ValidationError("El nombre es obligatorio")
 

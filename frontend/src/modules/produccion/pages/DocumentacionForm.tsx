@@ -1,3 +1,5 @@
+import { applyFieldErrors } from "@/lib/httpError";
+import { hasOnlyLettersAndSpaces } from "../../../lib/textValidation";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState, useEffect } from "react";
@@ -18,12 +20,18 @@ import {
 } from "@/modules/produccion/services/documentacionServices";
 import { getAutores, createAutor } from "@/modules/produccion/services/autoresService";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
+import { toCivilDateString } from "@/utils/dateTime";
+import { useAuth } from "@/context/AuthContext";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 
 export default function DocumentacionForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { uct, uctGuard } = useUctGuard();
+  const { user } = useAuth();
   const isEdit = Boolean(id);
 
   const { data: initial, isLoading } = useQuery({
@@ -62,6 +70,17 @@ export default function DocumentacionForm() {
     );
   }, [initial]);
 
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "produccion-documentacion",
+    recordId: id,
+    value: { data, autores },
+    ready: !isEdit || (!isLoading && Boolean(initial)),
+    autosave: false,
+    hasContent: (draft) => Object.values(draft.data).some(Boolean) || draft.autores.some((autor) => autor.id > 0 || Boolean(autor.nombre_apellido.trim())),
+    onRestore: (draft) => { setData(draft.data); setAutores(draft.autores); },
+  });
+
   const autoresDisponibles = useMemo(() => {
     const map = new Map<number, { id: number; nombre_apellido: string }>();
 
@@ -95,7 +114,7 @@ export default function DocumentacionForm() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!data.titulo.trim()) newErrors.titulo = "Debe ingresar titulo";
+    if (!data.titulo.trim()) newErrors.titulo = "Debe ingresar título";
     if (!data.editorial.trim()) newErrors.editorial = "Debe ingresar editorial";
     if (!data.fecha) newErrors.fecha = "Debe ingresar fecha";
 
@@ -107,6 +126,8 @@ export default function DocumentacionForm() {
       autores.some((autor) => autor.id <= 0 && autor.nombre_apellido.trim() === "")
     ) {
       newErrors.autores = "No puede haber autores vacios";
+    } else if (autores.some((autor) => autor.id <= 0 && !hasOnlyLettersAndSpaces(autor.nombre_apellido))) {
+      newErrors.autores = "Use solo letras y espacios en el nombre de cada autor";
     }
 
     setErrors(newErrors);
@@ -181,6 +202,7 @@ export default function DocumentacionForm() {
         toAdd.length === 0 &&
         toRemove.length === 0
       ) {
+        clearDraft();
         navigate(`/documentacion/${id}`, {
           replace: true,
           state: {
@@ -207,6 +229,7 @@ export default function DocumentacionForm() {
     },
     onSuccess: async (saved) => {
       if (!saved) return;
+      clearDraft();
 
       const documentacionId = isEdit ? Number(id) : saved.id;
 
@@ -220,16 +243,19 @@ export default function DocumentacionForm() {
         replace: true,
         state: {
           successMessage: isEdit
-            ? "Documentacion actualizada con exito."
-            : "Documentacion creada con exito.",
+            ? "Documentación actualizada con éxito."
+            : "Documentación creada con éxito.",
         },
       });
     },
     onError: (error) => {
+      if (applyFieldErrors(error, setErrors, ["titulo","editorial","fecha","autores"])) return;
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+          isEdit
+            ? "Lo sentimos, no pudimos actualizar la documentación. Revise los datos e intente nuevamente."
+            : "Lo sentimos, no pudimos crear la documentación. Revise los datos e intente nuevamente."
         )
       );
       setShowError(true);
@@ -244,20 +270,24 @@ export default function DocumentacionForm() {
   return (
     <section className="w-full">
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
-        {isEdit ? "Editar documentacion" : "Nueva documentacion"}
+        {isEdit ? "Editar documentación" : "Nueva documentación"}
       </h2>
+
+      {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
         onSubmit={async (e) => {
           e.preventDefault();
+    if (isPending) return;
           if (!validate()) return;
           if (!uct) return;
           await mutateAsync();
         }}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Titulo">
+        <Field required label="Título" name="titulo" error={errors.titulo}>
           <>
             <input
               className={inputClass("titulo")}
@@ -273,7 +303,7 @@ export default function DocumentacionForm() {
           </>
         </Field>
 
-        <div>
+        <Field required label="Autores" name="autores" error={errors.autores}>
           <AutoresField
             value={autores}
             options={autoresDisponibles}
@@ -281,14 +311,10 @@ export default function DocumentacionForm() {
               setAutores(updatedAutores);
               if (updatedAutores.length > 0) clearError("autores");
             }}
-            label="Autores"
           />
-          {errors.autores && (
-            <p className="mt-1 text-sm text-red-500">{errors.autores}</p>
-          )}
-        </div>
+        </Field>
 
-        <Field label="Editorial">
+        <Field required label="Editorial" name="editorial" error={errors.editorial}>
           <>
             <input
               className={inputClass("editorial")}
@@ -304,27 +330,27 @@ export default function DocumentacionForm() {
           </>
         </Field>
 
-        <Field label="Fecha">
+        <Field required label="Fecha" name="fecha" error={errors.fecha}>
           <DatePicker
             value={data.fecha ? new Date(`${data.fecha}T00:00:00`) : null}
             onChange={(dt) => {
               setData((prev) => ({
                 ...prev,
-                fecha: dt ? dt.toISOString().split("T")[0] : "",
+                fecha: toCivilDateString(dt) ?? "",
               }));
               if (dt) clearError("fecha");
             }}
-            helperText={errors.fecha ?? "DD/MM/AAAA"}
+            helperText="DD/MM/AAAA"
             className={inputClass("fecha")}
           />
         </Field>
 
         <div className="flex justify-between pt-6">
-          <Button type="button" variant="secondary" size="sm" onClick={() => navigate(-1)}>
+          <Button type="button" variant="secondary" size="sm" onClick={() => requestLeave(() => navigate(-1))}>
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={isPending}>
+          <Button type="submit" size="sm" disabled={isPending} loading={isPending} loadingText="Guardando...">
             {isPending ? "Guardando..." : isEdit ? "Actualizar" : "Guardar"}
           </Button>
         </div>

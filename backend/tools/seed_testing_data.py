@@ -43,7 +43,7 @@ from modules.produccion.models.registro_patente import (
     TipoRegistroPropiedad,
 )
 from modules.produccion.models.trabajo_reunion import TipoReunion, TrabajoReunionCientifica
-from modules.produccion.models.trabajo_revista import TrabajosRevistasReferato
+from modules.produccion.models.trabajo_revista import TipoRevista, TrabajosRevistasReferato
 from modules.proyectos.models.participacion_relevante import ParticipacionRelevante
 from modules.recursos.models.becas import Beca
 from modules.recursos.models.equipamiento import Equipamiento
@@ -82,7 +82,7 @@ def _get_or_create(model, defaults=None, **filters):
 
 def _seed_roles():
     roles = {}
-    for nombre in ["ADMIN", "GESTOR", "LECTOR"]:
+    for nombre in ["ADMIN", "GESTOR", "LECTURA"]:
         rol, _ = _get_or_create(RolUsuario, nombre=nombre)
         roles[nombre] = rol
     return roles
@@ -302,11 +302,11 @@ def _seed_manual_people(grupo, catalogs, admin_user_id):
 
 def _seed_project(grupo, catalogs, investigador, becario, admin_user_id):
     proyecto = ProyectoInvestigacion.query.filter_by(
-        codigo_proyecto=2026001
+        codigo_proyecto="2026001"
     ).first()
     if not proyecto:
         proyecto = ProyectoInvestigacion(
-            codigo_proyecto=2026001,
+            codigo_proyecto="2026001",
             nombre_proyecto="Plataforma de gestion academica de prueba",
             descripcion_proyecto="Proyecto ficticio para operar el entorno testing.",
             fecha_inicio=date(2024, 1, 1),
@@ -393,6 +393,8 @@ def _seed_search_coverage(grupo, catalogs, investigador, admin_user_id):
         nombre="Convenio de asistencia TEST",
     )
     tipo_reunion, _ = _get_or_create(TipoReunion, nombre="Jornada academica TEST")
+    tipo_revista, _ = _get_or_create(TipoRevista, nombre="Nacional")
+    _get_or_create(TipoRevista, nombre="Internacional")
 
     _get_or_create(
         Beca,
@@ -495,7 +497,7 @@ def _seed_search_coverage(grupo, catalogs, investigador, admin_user_id):
         defaults={
             "nombre_reunion": "Jornada Ficticia",
             "procedencia": "Universidad de Prueba",
-            "fecha_inicio": date(2024, 9, 1),
+            "fecha_presentacion": date(2024, 9, 1),
             "tipo_reunion_id": tipo_reunion.id,
             "grupo_utn_id": grupo.id,
             "created_by": admin_user_id,
@@ -509,9 +511,9 @@ def _seed_search_coverage(grupo, catalogs, investigador, admin_user_id):
             "editorial": "Editorial de Prueba",
             "issn": "0000-0000",
             "pais": "Argentina",
-            "fecha": date(2024, 9, 15),
+            "fecha_publicacion": date(2024, 9, 15),
             "grupo_utn_id": grupo.id,
-            "tipo_reunion_id": tipo_reunion.id,
+            "tipo_revista_id": tipo_revista.id,
             "created_by": admin_user_id,
         },
     )
@@ -520,7 +522,7 @@ def _seed_search_coverage(grupo, catalogs, investigador, admin_user_id):
         nombre_apellido="Directiva Ficticia TEST",
         defaults={"created_by": admin_user_id},
     )
-    cargo, _ = _get_or_create(Cargo, nombre="Director TEST")
+    cargo, _ = _get_or_create(Cargo, nombre="Director")
     _get_or_create(
         DirectivoGrupo,
         id_directivo=directivo.id,
@@ -587,6 +589,10 @@ def _seed_manual_testing_dataset(grupo, catalogs, investigador, admin_user_id):
             "Jornada TEST",
             "Seminario TEST",
         ]
+    ]
+    tipos_revista = [
+        _get_or_create(TipoRevista, nombre=nombre)[0]
+        for nombre in ["Nacional", "Internacional"]
     ]
 
     instituciones = [
@@ -707,7 +713,7 @@ def _seed_manual_testing_dataset(grupo, catalogs, investigador, admin_user_id):
             defaults={
                 "nombre_reunion": f"{tipos_reunion[tipo_index].nombre} {year}",
                 "procedencia": instituciones[tipo_index],
-                "fecha_inicio": date(year, month, 18),
+                "fecha_presentacion": date(year, month, 18),
                 "tipo_reunion_id": tipos_reunion[tipo_index].id,
                 "grupo_utn_id": grupo.id,
                 "created_by": admin_user_id,
@@ -721,9 +727,9 @@ def _seed_manual_testing_dataset(grupo, catalogs, investigador, admin_user_id):
                 "editorial": f"Editorial {tipo_index + 1}",
                 "issn": f"{1000 + index:04d}-{2000 + index:04d}",
                 "pais": paises[tipo_index],
-                "fecha": date(year, month, 19),
+                "fecha_publicacion": date(year, month, 19),
                 "grupo_utn_id": grupo.id,
-                "tipo_reunion_id": tipos_reunion[tipo_index].id,
+                "tipo_revista_id": tipos_revista[tipo_index % 2].id,
                 "created_by": admin_user_id,
             },
         )
@@ -772,17 +778,31 @@ def seed_testing_data():
         "lector.testing@example.com",
         "Lector Testing",
         99000003,
-        roles["LECTOR"],
+        roles["LECTURA"],
     )
 
     catalogs = _seed_catalogs()
     grupo = _seed_group()
-    investigador, becario, _personal = _seed_people(grupo, catalogs, admin.id)
+    investigador, becario, personal = _seed_people(grupo, catalogs, admin.id)
     _seed_manual_people(grupo, catalogs, admin.id)
     _seed_project(grupo, catalogs, investigador, becario, admin.id)
     _seed_memoria(admin.id)
     _seed_search_coverage(grupo, catalogs, investigador, admin.id)
     _seed_manual_testing_dataset(grupo, catalogs, investigador, admin.id)
+
+    # ISS-12: dataset mixto e idempotente para ambos tipos de trabajos.
+    from modules.produccion.models.trabajo_autor import TrabajoReunionAutor, TrabajoRevistaAutor
+    from modules.produccion.services.trabajo_autores_service import sincronizar_autores
+
+    db.session.flush()
+    autores = [("investigador", investigador), ("becario", becario)]
+    for modelo, asociacion, entidad in (
+        (TrabajoReunionCientifica, TrabajoReunionAutor, "trabajo_reunion_cientifica"),
+        (TrabajosRevistasReferato, TrabajoRevistaAutor, "trabajo_revista_referato"),
+    ):
+        for trabajo in modelo.query.filter_by(grupo_utn_id=grupo.id, deleted_at=None).all():
+            if not trabajo.autorias:
+                sincronizar_autores(trabajo, autores, asociacion, entidad, admin.id)
 
     db.session.commit()
 

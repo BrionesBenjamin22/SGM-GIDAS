@@ -1,5 +1,6 @@
 from modules.transferencia.models.transferencia_socio import Adoptante
 from extension import db
+from modules.shared.services.text_validation import has_only_letters_and_spaces
 from datetime import datetime
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
 
@@ -51,7 +52,10 @@ class AdoptanteService:
         nombre = data.get("nombre")
 
         if not isinstance(nombre, str) or not nombre.strip():
-            raise ValueError("El nombre es obligatorio y debe ser una cadena no vacía.")
+            raise ValueError("El nombre es obligatorio.", details={"fields": {"nombre": "Ingrese el nombre del adoptante"}})
+
+        if not has_only_letters_and_spaces(nombre):
+            raise ValueError("Use solo letras y espacios en el nombre.", details={"fields": {"nombre": "Use solo letras y espacios en el nombre"}})
 
         nombre = nombre.strip()
 
@@ -66,7 +70,7 @@ class AdoptanteService:
         )
 
         if existente:
-            raise ConflictError("Ya existe un adoptante con ese nombre.")
+            raise ConflictError("Ya existe un adoptante con ese nombre.", details={"fields": {"nombre": "Elija otro nombre o seleccione el adoptante existente"}})
 
         adoptante = Adoptante(
             nombre=nombre,
@@ -93,7 +97,10 @@ class AdoptanteService:
             nombre = data["nombre"]
 
             if not isinstance(nombre, str) or not nombre.strip():
-                raise ValueError("El nombre debe ser una cadena no vacía.")
+                raise ValueError("El nombre es obligatorio.", details={"fields": {"nombre": "Ingrese el nombre del adoptante"}})
+
+            if not has_only_letters_and_spaces(nombre):
+                raise ValueError("Use solo letras y espacios en el nombre.", details={"fields": {"nombre": "Use solo letras y espacios en el nombre"}})
 
             adoptante.nombre = nombre.strip()
 

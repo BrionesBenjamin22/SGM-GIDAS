@@ -1,11 +1,16 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria,
+)
 import builtins
 from datetime import datetime, date
 
 from modules.recursos.models.equipamiento import Equipamiento, EquipamientoMemoriaVersion
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.shared.services.auditoria_service import AuditoriaService
+from modules.shared.services.date_time import INSTITUTIONAL_MIN_DATE
 from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
+from modules.shared.services.text_validation import has_letter
 from modules.shared.exceptions import NotFoundError, ValidationError as ValueError
 
 
@@ -23,13 +28,16 @@ class EquipamientoService:
     @staticmethod
     def _validar_id(valor, campo: str):
         if not isinstance(valor, int) or valor <= 0:
-            raise ValueError(f"El campo '{campo}' debe ser un entero positivo")
+            raise ValueError("No pudimos procesar la solicitud. Intente nuevamente.")
         return valor
 
     @staticmethod
     def _validar_texto(valor: str, campo: str):
         if not isinstance(valor, str) or not valor.strip():
-            raise ValueError(f"{campo} es obligatorio")
+            label = "la denominación" if campo == "denominacion" else "la descripción"
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"Ingrese {label} del equipamiento."}})
+        if campo.casefold() in {"denominacion", "la denominacion"} and not has_letter(valor):
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"denominacion": "La denominación debe contener letras."}})
         return valor.strip()
 
     @staticmethod
@@ -37,10 +45,10 @@ class EquipamientoService:
         try:
             monto = float(monto)
         except (TypeError, builtins.ValueError):
-            raise ValueError("El monto debe ser numerico.")
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"monto_invertido": "Ingrese un monto numérico válido."}})
 
         if monto <= 0:
-            raise ValueError("El monto debe ser mayor a 0.")
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"monto_invertido": "Ingrese un monto mayor que cero."}})
 
         return monto
 
@@ -49,11 +57,13 @@ class EquipamientoService:
         try:
             fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
         except (TypeError, builtins.ValueError):
-            raise ValueError("Formato de fecha invalido. Usar YYYY-MM-DD.")
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_incorporacion": "Ingrese una fecha válida."}})
 
         if fecha > date.today():
-            raise ValueError("La fecha de incorporacion no puede ser futura.")
+            raise ValueError("La fecha de incorporación no puede ser futura. Revise el dato e intente nuevamente.", details={"fields": {"fecha_incorporacion": "Ingrese una fecha que no sea futura."}})
 
+        if fecha < INSTITUTIONAL_MIN_DATE:
+            raise ValueError("La fecha de incorporación debe ser posterior al 01/01/2010. Revise el dato e intente nuevamente.", details={"fields": {"fecha_incorporacion": "Ingrese una fecha desde el 01/01/2010."}})
         return fecha
 
     @staticmethod
@@ -61,7 +71,7 @@ class EquipamientoService:
         grupo_id = EquipamientoService._validar_id(grupo_id, "grupo_utn_id")
         grupo = db.session.get(GrupoInvestigacionUtn, grupo_id)
         if not grupo or grupo.deleted_at is not None:
-            raise ValueError("Grupo no valido.")
+            raise ValueError("El grupo ya no está disponible. Recargue el formulario e intente nuevamente.")
         return grupo.id
 
     @staticmethod
@@ -267,7 +277,7 @@ class EquipamientoService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        equipamientos = Equipamiento.query.filter().all()
+        equipamientos = consultar_entidades_memoria(Equipamiento, memoria_version)
 
         snapshots = []
         for equipamiento in equipamientos:

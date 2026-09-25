@@ -1,3 +1,4 @@
+from modules.shared.services.catalog_name_validation import validar_nombre_descriptivo
 import builtins
 from datetime import datetime
 from sqlalchemy import func
@@ -10,6 +11,7 @@ from modules.recursos.models.becas import (
 from modules.personal.models.personal import Becario
 from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
 from modules.shared.services.auditoria_service import AuditoriaService
+from modules.shared.services.date_time import validate_institutional_date
 from modules.memorias.services.memoria_periodo_service import validar_fecha_alta_grupo
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
 
@@ -38,6 +40,7 @@ def _validar_nombre_beca(nombre):
         raise ValueError("El nombre de la beca es obligatorio.")
 
     nombre = " ".join(nombre.strip().split())
+    validar_nombre_descriptivo(nombre, "nombre_beca")
     if not nombre:
         raise ValueError("El nombre de la beca es obligatorio.")
 
@@ -57,7 +60,9 @@ def _validar_fuente_financiamiento(fuente_financiamiento_id):
 
 def _parsear_fecha(valor, campo):
     try:
-        return datetime.strptime(valor, "%Y-%m-%d").date()
+        return validate_institutional_date(
+            datetime.strptime(valor, "%Y-%m-%d").date(), campo
+        )
     except (TypeError, builtins.ValueError):
         raise ValueError(f"Formato de {campo} invalido.")
 

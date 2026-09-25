@@ -4,7 +4,7 @@ import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/rea
 import Button from "@/components/Button";
 import SuccessToast from "@/components/SuccessToast";
 import { useAuth } from "@/context/AuthContext";
-import { useUct } from "@/modules/grupo/hooks/useUct";
+
 import {
   exportarExcelMemoria,
   getActividadesDocenciaSnapshot,
@@ -33,7 +33,7 @@ import {
   updatePlanificacion,
   type PlanificacionGrupo,
 } from "@/modules/grupo/services/planificacionGrupoServices";
-import { formatFecha } from "@/utils/formatFecha";
+import { formatFecha, getCivilYear } from "@/utils/dateTime";
 
 type SnapshotSection = {
   key: string;
@@ -91,7 +91,7 @@ const sections: SnapshotSection[] = [
   },
   {
     key: "documentacion-bibliografica",
-    label: "Documentacion bibliografica",
+    label: "Documentación bibliográfica",
     queryKey: "memoria-snapshot-documentacion",
     queryFn: getDocumentacionBibliograficaSnapshot,
     homePath: "/documentacion",
@@ -119,7 +119,7 @@ const sections: SnapshotSection[] = [
   },
   {
     key: "trabajos-reunion-cientifica",
-    label: "Trabajos en reunion cientifica",
+    label: "Trabajos en reunión científica",
     queryKey: "memoria-snapshot-reunion",
     queryFn: getTrabajosReunionCientificaSnapshot,
     homePath: "/trabajos-reunion",
@@ -147,14 +147,14 @@ const sections: SnapshotSection[] = [
   },
   {
     key: "articulos-divulgacion",
-    label: "Articulos de divulgacion",
+    label: "Artículos de divulgación",
     queryKey: "memoria-snapshot-articulos",
     queryFn: getArticulosDivulgacionSnapshot,
     homePath: "/articulos-divulgacion",
   },
   {
     key: "visitas-academicas",
-    label: "Visitas academicas",
+    label: "Visitas académicas",
     queryKey: "memoria-snapshot-visitas",
     queryFn: getVisitasAcademicasSnapshot,
     homePath: "/visitantes",
@@ -162,8 +162,7 @@ const sections: SnapshotSection[] = [
 ];
 
 function buildMemoriaLabel(memoria: Memoria | null | undefined) {
-  const year = memoria?.periodo_fin ? new Date(memoria.periodo_fin).getFullYear() : "";
-  return year ? `Memoria ${year}` : "Memoria";
+  return memoria ? `Memoria ${formatFecha(memoria.periodo_inicio)}–${formatFecha(memoria.periodo_fin)}` : "Memoria";
 }
 
 const snapshotEntityIdKeys: Record<string, string> = {
@@ -203,7 +202,7 @@ export default function MemoriaVersionDetalle() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAdmin, isGestor, canEditRecords } = useAuth();
-  const { uct, isLoading: isLoadingUct } = useUct();
+
 
   const memoriaId = Number(id);
   const memoriaVersionId = Number(versionId);
@@ -245,24 +244,23 @@ export default function MemoriaVersionDetalle() {
   const sectionsWithItems = sectionData.filter((section) => section.items.length > 0);
   const numeroVersionMemoria = versionActual?.numero_version ?? memoriaVersionId;
   const puedeExportarExcel = versionCerrada && (isAdmin() || isGestor());
-  const anioPrograma = memoria?.periodo_fin
-    ? new Date(`${memoria.periodo_fin}T00:00:00`).getFullYear() + 1
-    : undefined;
+  const anioFinMemoria = getCivilYear(memoria?.periodo_fin);
+  const anioPrograma = anioFinMemoria ? anioFinMemoria + 1 : undefined;
   const puedeEditarPrograma = versionCerrada && canEditRecords();
 
   const { data: planificacionesPage, isLoading: isLoadingPlanificaciones } = useQuery({
     queryKey: ["planificaciones", "true"],
     queryFn: () => getPlanificaciones("true"),
-    enabled: puedeEditarPrograma && !!anioPrograma && !!uct?.id,
+    enabled: puedeEditarPrograma && !!anioPrograma && !!memoria?.grupo_utn_id,
   });
   const planificaciones = planificacionesPage?.data ?? [];
 
   const planificacionActual = useMemo<PlanificacionGrupo | undefined>(
     () =>
       planificaciones.find(
-        (item) => item.anio === anioPrograma && item.grupo_id === uct?.id && item.activo
+        (item) => item.anio === anioPrograma && item.grupo_id === memoria?.grupo_utn_id && item.activo
       ),
-    [anioPrograma, planificaciones, uct?.id]
+    [anioPrograma, planificaciones, memoria?.grupo_utn_id]
   );
 
   useEffect(() => {
@@ -274,7 +272,7 @@ export default function MemoriaVersionDetalle() {
   const { mutate: descargarExcel, isPending: isExportingExcel } = useMutation({
     mutationFn: () => exportarExcelMemoria(memoriaId, memoriaVersionId),
     onSuccess: (result) => {
-      setMessage(`Excel generado con exito: ${result.filename}`);
+      setMessage(`Excel generado con éxito: ${result.filename}`);
       setShowSuccess(true);
     },
     onError: (error) => {
@@ -291,24 +289,24 @@ export default function MemoriaVersionDetalle() {
     mutationFn: async () => {
       const descripcion = programaDescripcion.trim();
       if (!descripcion) {
-        throw new Error("Debe ingresar una descripcion para el programa de actividades.");
+        throw new Error("Debe ingresar una descripción para el programa de actividades.");
       }
-      if (!anioPrograma || !uct?.id) {
-        throw new Error("No se pudo resolver el anio o el grupo de investigacion.");
+      if (!anioPrograma || !memoria?.grupo_utn_id) {
+        throw new Error("No se pudo resolver el año o el grupo de investigación.");
       }
 
       if (planificacionActual) {
         return updatePlanificacion(planificacionActual.id, {
           descripcion,
           anio: anioPrograma,
-          grupo_id: uct.id,
+          grupo_id: memoria!.grupo_utn_id!,
         });
       }
 
       return createPlanificacion({
         descripcion,
         anio: anioPrograma,
-        grupo_id: uct.id,
+        grupo_id: memoria!.grupo_utn_id!,
       });
     },
     onSuccess: () => {
@@ -317,8 +315,8 @@ export default function MemoriaVersionDetalle() {
       setProgramaError("");
       setMessage(
         planificacionActual
-          ? "Programa de actividades actualizado con exito."
-          : "Programa de actividades guardado con exito."
+          ? "Programa de actividades actualizado con éxito."
+          : "Programa de actividades guardado con éxito."
       );
       setShowSuccess(true);
     },
@@ -355,9 +353,8 @@ export default function MemoriaVersionDetalle() {
   };
 
   const abrirProgramaActividades = () => {
-    if (isLoadingUct) return;
-    if (!uct?.id) {
-      setMessage("No hay un grupo de investigacion configurado para guardar la planificacion.");
+    if (!memoria?.grupo_utn_id) {
+      setMessage("No hay un grupo de investigación configurado para guardar la planificación.");
       setShowError(true);
       return;
     }
@@ -366,7 +363,7 @@ export default function MemoriaVersionDetalle() {
 
   const handleGuardarPrograma = () => {
     if (!programaDescripcion.trim()) {
-      setProgramaError("Debe ingresar una descripcion para el programa de actividades.");
+      setProgramaError("Debe ingresar una descripción para el programa de actividades.");
       return;
     }
     guardarPrograma();
@@ -377,7 +374,7 @@ export default function MemoriaVersionDetalle() {
   }
 
   if (!memoria) {
-    return <p className="text-slate-500">No se encontro la memoria.</p>;
+    return <p className="text-slate-500">No se encontró la memoria.</p>;
   }
 
   return (
@@ -390,7 +387,8 @@ export default function MemoriaVersionDetalle() {
           <p className="mt-2 text-sm text-slate-500">
             Memoria {formatFecha(memoria.periodo_inicio)} - {formatFecha(memoria.periodo_fin)}
           </p>
-          <p className="mt-1 text-xs text-slate-500">Version {numeroVersionMemoria}</p>
+          <p className="mt-1 text-xs text-slate-500">Versión {numeroVersionMemoria}</p>
+          <p className="mt-1 text-sm text-slate-500">UCT: {memoria.grupo_utn_nombre || "Pendiente de asociar"}</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -399,14 +397,14 @@ export default function MemoriaVersionDetalle() {
               size="sm"
               variant="secondary"
               onClick={abrirProgramaActividades}
-              disabled={isLoadingPlanificaciones || isLoadingUct}
+              disabled={isLoadingPlanificaciones}
             >
-              Programa Actividades
+              Planificación actual
             </Button>
           )}
 
           {puedeExportarExcel && (
-            <Button size="sm" onClick={() => descargarExcel()} disabled={isExportingExcel}>
+            <Button size="sm" onClick={() => descargarExcel()} disabled={isExportingExcel} loading={isExportingExcel} loadingText="Generando Excel...">
               {isExportingExcel ? "Generando Excel..." : "Generar Excel"}
             </Button>
           )}
@@ -426,7 +424,7 @@ export default function MemoriaVersionDetalle() {
       ) : !versionCerrada ? (
         <div className="flex flex-col gap-6">
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-            Esta version aun no fue cerrada. Los elementos registrados estaran
+            Esta versión aún no fue cerrada. Los elementos registrados estarán
             disponibles una vez generado el snapshot al cerrar la memoria.
           </div>
 
@@ -443,7 +441,7 @@ export default function MemoriaVersionDetalle() {
       ) : sectionsWithItems.length === 0 ? (
         <div className="flex flex-col gap-6">
           <div className="rounded-2xl border border-slate-200 bg-white/90 px-5 py-6 text-sm text-slate-500 shadow-sm">
-            Esta version no contiene elementos registrados.
+            Esta versión no contiene elementos registrados.
           </div>
 
           <div className="flex justify-start">
@@ -494,9 +492,9 @@ export default function MemoriaVersionDetalle() {
                       {section.items.length}
                     </p>
                     <p className="mt-2 text-sm text-slate-500">
-                      Esta seccion aporta {section.items.length} elemento
+                      Esta sección aporta {section.items.length} elemento
                       {section.items.length === 1 ? "" : "s"} al snapshot de esta
-                      version.
+                      versión.
                     </p>
                   </div>
                 </div>
@@ -507,7 +505,7 @@ export default function MemoriaVersionDetalle() {
                     onClick={() => handleNavigateToSection(section)}
                     className="mt-3 text-xs font-semibold uppercase tracking-wider text-slate-500 transition-colors hover:text-slate-700"
                   >
-                    Ver registros en el modulo
+                    Ver registros en el módulo
                   </button>
                 )}
               </article>
@@ -558,17 +556,17 @@ export default function MemoriaVersionDetalle() {
                 Programa de Actividades {anioPrograma ?? ""}
               </h3>
               <p className="mt-1 text-sm text-slate-500">
-                Registra los objetivos y actividades del grupo para la proxima memoria.
+                Registra los objetivos y actividades actuales del grupo para el año siguiente al fin del período. Los cambios no modifican los datos históricos ni el Excel de esta versión cerrada.
               </p>
             </div>
 
             <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              <span className="font-medium text-slate-700">Periodo:</span>{" "}
+              <span className="font-medium text-slate-700">Período:</span>{" "}
               {anioPrograma ?? "-"}
             </div>
 
             <label className="block text-sm font-medium text-slate-700">
-              Descripcion
+              Descripción
             </label>
             <textarea
               rows={10}
@@ -578,7 +576,7 @@ export default function MemoriaVersionDetalle() {
                   : "border-slate-200 focus:border-slate-400"
               }`}
               value={programaDescripcion}
-              placeholder="Ej: objetivos, actividades previstas, lineas de trabajo, cronograma y metas del grupo para el proximo periodo."
+              placeholder="Ej: objetivos, actividades previstas, líneas de trabajo, cronograma y metas del grupo para el próximo período."
               onChange={(e) => {
                 setProgramaDescripcion(e.target.value);
                 if (programaError) setProgramaError("");
@@ -598,7 +596,7 @@ export default function MemoriaVersionDetalle() {
                 Cancelar
               </Button>
 
-              <Button size="sm" onClick={handleGuardarPrograma} disabled={isSavingPrograma}>
+              <Button size="sm" onClick={handleGuardarPrograma} disabled={isSavingPrograma} loading={isSavingPrograma} loadingText="Guardando...">
                 {isSavingPrograma ? "Guardando..." : planificacionActual ? "Actualizar" : "Guardar"}
               </Button>
             </div>

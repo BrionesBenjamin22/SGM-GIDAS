@@ -273,11 +273,7 @@ const router = createBrowserRouter([
       { path: "memorias", element: <MemoriasHome /> },
       {
         path: "memorias/nueva",
-        element: (
-          <ProtectedRoute requiredRole="ADMIN">
-            <MemoriaForm />
-          </ProtectedRoute>
-        ),
+        element: editorOnly(<MemoriaForm />),
       },
       { path: "memorias/:id", element: <MemoriaDetalle /> },
       {
@@ -335,6 +331,18 @@ const router = createBrowserRouter([
 
 // Cliente de React Query
 const queryClient = new QueryClient();
+
+// Retira datos guardados por versiones anteriores antes de mostrar cualquier ruta.
+try {
+  for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+    const key = localStorage.key(index);
+    if (key?.startsWith("gidas:form-draft:v1:") || key === "gidas_adoptantes_mock") {
+      localStorage.removeItem(key);
+    }
+  }
+} catch {
+  // El navegador puede deshabilitar Storage; los borradores nuevos usan el servidor.
+}
 
 // Renderizado de la aplicación
 createRoot(document.getElementById("root")!).render(

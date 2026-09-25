@@ -1,7 +1,5 @@
 from extension import db
 from datetime import date
-from modules.produccion.models.trabajo_reunion import investigador_x_trabajo_reunion
-from modules.produccion.models.trabajo_revista import investigador_x_trabajo_revista
 from modules.shared.models.audit_mixin import AuditMixin
 
 # =====================================================
@@ -74,7 +72,8 @@ class PersonalMemoriaVersion(db.Model, AuditMixin):
     )
 
     nombre_apellido = db.Column(db.String(120), nullable=False)
-    horas_semanales = db.Column(db.Integer, nullable=False)
+    fecha_alta_grupo = db.Column(db.Date, nullable=True)
+    horas_semanales = db.Column(db.Integer, nullable=True)
 
     tipo_personal_id = db.Column(
         db.Integer,
@@ -241,11 +240,11 @@ class Investigador(db.Model, AuditMixin):
     grupo_utn = db.relationship('GrupoInvestigacionUtn', back_populates='investigadores')
     tipo_dedicacion = db.relationship('TipoDedicacion', back_populates='investigadores')
 
-    trabajos_reunion_cientifica = db.relationship(
-        'TrabajoReunionCientifica',
-        secondary=investigador_x_trabajo_reunion,
-        back_populates='investigadores'
-    )
+    autorias_reunion = db.relationship("TrabajoReunionAutor", viewonly=True, lazy="selectin")
+
+    @property
+    def trabajos_reunion_cientifica(self):
+        return [autoria.trabajo for autoria in self.autorias_reunion]
 
     grados_actividad = db.relationship(
         "InvestigadorActividadGrado",
@@ -268,11 +267,11 @@ class Investigador(db.Model, AuditMixin):
     actividades_docencia = db.relationship('ActividadDocencia',
                                            back_populates="investigador")
     
-    trabajos_revistas = db.relationship(
-        'TrabajosRevistasReferato',
-        secondary=investigador_x_trabajo_revista,
-        back_populates='investigadores'
-    )
+    autorias_revista = db.relationship("TrabajoRevistaAutor", viewonly=True, lazy="selectin")
+
+    @property
+    def trabajos_revistas(self):
+        return [autoria.trabajo for autoria in self.autorias_revista]
 
     participaciones_proyecto = db.relationship(
         "InvestigadorProyecto",
@@ -354,7 +353,8 @@ class BecarioMemoriaVersion(db.Model, AuditMixin):
     )
 
     nombre_apellido = db.Column(db.String(120), nullable=False)
-    horas_semanales = db.Column(db.Integer, nullable=False)
+    fecha_alta_grupo = db.Column(db.Date, nullable=True)
+    horas_semanales = db.Column(db.Integer, nullable=True)
 
     tipo_formacion_id = db.Column(
         db.Integer,
@@ -411,7 +411,8 @@ class InvestigadorMemoriaVersion(db.Model, AuditMixin):
     )
 
     nombre_apellido = db.Column(db.String(120), nullable=False)
-    horas_semanales = db.Column(db.Integer, nullable=False)
+    fecha_alta_grupo = db.Column(db.Date, nullable=True)
+    horas_semanales = db.Column(db.Integer, nullable=True)
 
     tipo_dedicacion_id = db.Column(
         db.Integer,

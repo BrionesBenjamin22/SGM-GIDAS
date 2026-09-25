@@ -38,6 +38,12 @@ def get_actuales(grupo_id):
 # =====================================================
 
 # Crear directivo
+@directivo_bp.route("/crear-y-asignar", methods=["POST"])
+@requiere_rol("ADMIN", "GESTOR")
+def crear_y_asignar():
+    return DirectivoController.crear_y_asignar()
+
+
 @directivo_bp.route("/", methods=["POST"])
 @requiere_rol("ADMIN", "GESTOR")
 def create():

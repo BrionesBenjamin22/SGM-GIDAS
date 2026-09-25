@@ -8,7 +8,7 @@ export interface Proyecto {
 
 type ProyectoApiResponse = {
   id: number;
-  codigo_proyecto: string | number;
+  codigo_proyecto: string;
   nombre_proyecto: string;
 };
 

@@ -1,6 +1,21 @@
 # Modulo backend de catalogos
 
 Gestiona categorias UTN y fuentes de financiamiento con auditoria y baja logica.
+La pantalla de Catalogos tambien consume servicios de catalogo de `personal`,
+`grupo`, `proyectos`, `produccion`, `recursos` y `transferencia`.
+
+## Nombres descriptivos (ISS-01)
+
+En altas y cambios de nombre de los catalogos administrados desde la pantalla,
+los servicios exigen al menos una letra Unicode. Numeros y signos pueden acompanarla.
+La regla compartida vive en `modules/shared/services/catalog_name_validation.py`;
+devuelve `VALIDATION_ERROR` con `details.fields.nombre` (o `nombre_beca` para becas). No cambia endpoints,
+payloads, IDs, relaciones, estados ni filas historicas existentes. Los servicios
+conservan sus controles propios de longitud, duplicidad y permisos.
+
+El historial por valor continua en `GET <endpoint>/:id/historial`. Una edicion
+mantiene el mismo registro y agrega los cambios de campos; la baja logica conserva
+el registro para consultas historicas.
 
 ## Contrato de errores
 

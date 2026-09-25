@@ -1,5 +1,6 @@
 from modules.produccion.models.documentacion_autores import DocumentacionBibliografica, Autor
 from extension import db
+from modules.shared.services.text_validation import has_only_letters_and_spaces
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 
 
@@ -24,6 +25,8 @@ class AutorService:
     def _validar_nombre(nombre: str):
         if not nombre or not isinstance(nombre, str) or not nombre.strip():
             raise ValidationError("El nombre es obligatorio")
+        if not has_only_letters_and_spaces(nombre):
+            raise ValidationError("Use solo letras y espacios en el nombre", details={"fields": {"nombre_apellido": "Use solo letras y espacios en el nombre"}})
         return nombre.strip()
 
     @staticmethod

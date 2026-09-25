@@ -1,3 +1,6 @@
+from modules.memorias.services.memoria_periodo_service import (
+    consultar_entidades_memoria, registro_puntual_en_memoria,
+)
 from datetime import datetime
 
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
@@ -11,6 +14,7 @@ from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
+from modules.shared.services.date_time import INSTITUTIONAL_MIN_DATE
 
 
 class DocumentacionBibliograficaService:
@@ -29,18 +33,20 @@ class DocumentacionBibliograficaService:
     @staticmethod
     def _normalizar_texto(valor: str, campo: str):
         if not isinstance(valor, str) or not valor.strip():
-            raise ValidationError(f"{campo} es obligatorio")
+            key = campo.lower()
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {key: f"Ingrese {('el título' if key == 'titulo' else 'la editorial')} de la documentación."}})
 
         return " ".join(valor.strip().split()).lower()
 
     @staticmethod
     def _parse_fecha(valor, campo="fecha"):
         try:
-            return datetime.strptime(valor, "%Y-%m-%d").date()
+            fecha = datetime.strptime(valor, "%Y-%m-%d").date()
         except (TypeError, ValueError):
-            raise ValidationError(
-                f"El campo '{campo}' es obligatorio y debe tener formato YYYY-MM-DD"
-            )
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: "Ingrese una fecha válida."}})
+        if fecha < INSTITUTIONAL_MIN_DATE:
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: "Ingrese una fecha desde el 01/01/2010."}})
+        return fecha
 
     # =========================
     # GET ALL
@@ -101,14 +107,17 @@ class DocumentacionBibliograficaService:
     # =========================
     @staticmethod
     def create(data: dict, user_id: int):
-        grupo = db.session.get(GrupoInvestigacionUtn, data["grupo_id"])
+        if not isinstance(data, dict):
+            raise ValidationError("Envíe los datos de la documentación e intente nuevamente.")
+        grupo = db.session.get(GrupoInvestigacionUtn, data.get("grupo_id"))
         if not grupo or grupo.deleted_at is not None:
-            raise NotFoundError("Grupo no encontrado")
-        if not data.get("titulo") or not data.get("editorial"):
-            raise ValidationError("Titulo y editorial son obligatorios")
+            raise NotFoundError("El grupo ya no está disponible. Recargue el formulario e intente nuevamente.")
+        fields = {key: f"Ingrese {label} de la documentación." for key, label in (("titulo", "el título"), ("editorial", "la editorial")) if not isinstance(data.get(key), str) or not data[key].strip()}
+        if fields:
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": fields})
 
         if not isinstance(data.get("anio"), int):
-            raise ValidationError("El anio debe ser numerico")
+            raise ValidationError("Revise el año e intente nuevamente.", details={"fields": {"anio": "Ingrese un año válido."}})
 
         doc = DocumentacionBibliografica(
             titulo=DocumentacionBibliograficaService._normalizar_texto(
@@ -238,11 +247,11 @@ class DocumentacionBibliograficaService:
 
     @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
-        documentos = DocumentacionBibliografica.query.filter().all()
+        documentos = consultar_entidades_memoria(DocumentacionBibliografica, memoria_version, campo_grupo="grupo_id")
 
         snapshots = []
         for doc in documentos:
-            if not esta_en_periodo_memoria(memoria_version, doc.fecha):
+            if not registro_puntual_en_memoria(memoria_version, doc, doc.fecha):
                 continue
             snapshot = DocumentacionBibliograficaMemoriaVersion(
                 memoria_version_id=memoria_version.id,
@@ -262,7 +271,7 @@ class DocumentacionBibliograficaService:
             db.session.flush()
 
             for autor in getattr(doc, "autores", []):
-                if getattr(autor, "deleted_at", None) is not None:
+                if not registro_puntual_en_memoria(memoria_version, autor, doc.fecha):
                     continue
 
                 autor_snapshot = DocumentacionBibliograficaAutorMemoriaVersion(

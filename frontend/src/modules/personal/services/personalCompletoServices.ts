@@ -53,8 +53,8 @@ export interface PersonalCompleto {
   tipo_personal_id?: number;
   tipo_formacion_id?: number;
   tipo_dedicacion_id?: number;
-  categoria_utn_id?: number;
-  programa_incentivos_id?: number;
+  categoria_utn_id?: number | null;
+  programa_incentivos_id?: number | null;
   grupo_utn_id?: number;
   rol: "personal" | "becario" | "investigador" | "profesional";
   grupo?: {

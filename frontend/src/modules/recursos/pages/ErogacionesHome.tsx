@@ -19,6 +19,7 @@ import {
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
+import { getCivilYear } from "@/utils/dateTime";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -76,7 +77,8 @@ export default function ErogacionesLanding() {
   const aniosDisponibles = useMemo(() => {
     const years = scopedList
       .filter((item) => item.fecha)
-      .map((item) => new Date(item.fecha).getFullYear());
+      .map((item) => getCivilYear(item.fecha))
+      .filter((year): year is number => year !== null);
 
     return [...new Set(years)].sort((a, b) => b - a);
   }, [scopedList]);
@@ -105,7 +107,7 @@ export default function ErogacionesLanding() {
 
       const matchAnio =
         !filters.anio ||
-        new Date(item.fecha).getFullYear().toString() === filters.anio;
+        getCivilYear(item.fecha)?.toString() === filters.anio;
 
       return (
         matchSearch &&
@@ -152,7 +154,7 @@ export default function ErogacionesLanding() {
     const erogacion = scopedList.find((item) => item.id === id);
 
     if (erogacion?.deleted_at) {
-      setErrorMessage("No se puede eliminar una erogacion que ya fue eliminada.");
+      setErrorMessage("No se puede eliminar una erogación que ya fue eliminada.");
       setShowError(true);
       return;
     }
@@ -181,8 +183,8 @@ export default function ErogacionesLanding() {
       setShowConfirm(false);
       setErrorMessage(
         invalidItems.length === 1
-          ? "La erogacion seleccionada ya fue eliminada."
-          : "Una o mas erogaciones seleccionadas ya fueron eliminadas."
+          ? "La erogación seleccionada ya fue eliminada."
+          : "Una o más erogaciones seleccionadas ya fueron eliminadas."
       );
       setShowError(true);
       return;
@@ -200,8 +202,8 @@ export default function ErogacionesLanding() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Erogacion eliminada con exito."
-          : "Erogaciones eliminadas con exito."
+          ? "Erogación eliminada con éxito."
+          : "Erogaciones eliminadas con éxito."
       );
       setShowSuccess(true);
     } catch (error) {
@@ -209,7 +211,7 @@ export default function ErogacionesLanding() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 
@@ -273,7 +275,7 @@ export default function ErogacionesLanding() {
           <div className="relative w-full sm:w-64">
             <input
               type="text"
-              placeholder="Buscar por numero, tipo o fuente..."
+              placeholder="Buscar por número, tipo o fuente..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-10 text-xs outline-none transition-all focus:bg-white focus:ring-2 focus:ring-slate-200"
               value={filters.search}
               onChange={(e) =>
@@ -373,7 +375,7 @@ export default function ErogacionesLanding() {
                 key={item.id}
                 item={item}
                 title={(x) =>
-                  `Erogacion Nro ${String(x.numero_erogacion).padStart(6, "0")}`
+                  `Erogación N.º ${String(x.numero_erogacion).padStart(6, "0")}`
                 }
                 subtitle={(x) => x.tipo_erogacion?.nombre || "-"}
                 badge={(x) => (x.deleted_at ? "INACTIVA" : "ACTIVA")}
@@ -393,34 +395,30 @@ export default function ErogacionesLanding() {
         )}
 
         {totalPages > 1 && (
-          <div className="mt-auto pt-8">
-            <div className="flex items-center justify-between">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                Anterior
+          <div className="mt-8">
+            <nav aria-label="Paginación" className="flex flex-wrap items-center justify-center gap-2">
+              <Button type="button" size="sm" variant="secondary" aria-label="Página anterior"
+                disabled={currentPage === 1} onClick={() => setCurrentPage((current) => current - 1)}>
+                {"<"}
               </Button>
-
-              <span className="text-sm text-slate-500">
-                Pagina {currentPage} de {totalPages}
-              </span>
-
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                }
-                disabled={currentPage === totalPages}
-              >
-                Siguiente
+              {[...Array(totalPages)].map((_, index) => {
+                const pageNumber = index + 1;
+                return (
+                  <button type="button" key={pageNumber} aria-label={`Página ${pageNumber}`}
+                    aria-current={currentPage === pageNumber ? "page" : undefined}
+                    onClick={() => setCurrentPage(pageNumber)}
+                    className={`rounded-lg px-3 py-1 text-sm ${
+                      currentPage === pageNumber ? "bg-slate-800 text-white" : "bg-slate-100 hover:bg-slate-200"
+                    }`}>
+                    {pageNumber}
+                  </button>
+                );
+              })}
+              <Button type="button" size="sm" variant="secondary" aria-label="Página siguiente"
+                disabled={currentPage === totalPages} onClick={() => setCurrentPage((current) => current + 1)}>
+                {">"}
               </Button>
-            </div>
+            </nav>
           </div>
         )}
       </div>
@@ -438,7 +436,7 @@ export default function ErogacionesLanding() {
             <div className="flex-1 space-y-5 text-[11px]">
               <div>
                 <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
-                  Ano
+                  Año
                 </label>
                 <select
                   className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
@@ -461,7 +459,7 @@ export default function ErogacionesLanding() {
 
               <div>
                 <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
-                  Numero de erogacion
+                  Número de erogación
                 </label>
                 <input
                   className="w-full rounded border border-slate-200 p-2 outline-none focus:border-slate-400"
@@ -523,7 +521,7 @@ export default function ErogacionesLanding() {
 
               <div>
                 <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
-                  Ingresos minimos
+                  Ingresos mínimos
                 </label>
                 <input
                   type="number"
@@ -540,7 +538,7 @@ export default function ErogacionesLanding() {
 
               <div>
                 <label className="mb-1 block font-bold uppercase tracking-wider text-slate-400">
-                  Egresos minimos
+                  Egresos mínimos
                 </label>
                 <input
                   type="number"
@@ -593,20 +591,21 @@ export default function ErogacionesLanding() {
       <ConfirmDialog
         open={showConfirm}
         title="Eliminar erogaciones"
-        message="Eliminar las siguientes erogaciones?"
+        message="¿Eliminar las siguientes erogaciones?"
         items={selectedActiveItems.map(
           (item) =>
-            `Erogacion Nro ${String(item.numero_erogacion).padStart(6, "0")}`
+            `Erogación N.º ${String(item.numero_erogacion).padStart(6, "0")}`
         )}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
         confirmText={isDeleting ? "Eliminando..." : "Aceptar"}
         confirmDisabled={isDeleting}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}
-        message={successMessage || "Eliminado con exito."}
+        message={successMessage || "Eliminado con éxito."}
         onClose={() => setShowSuccess(false)}
       />
 

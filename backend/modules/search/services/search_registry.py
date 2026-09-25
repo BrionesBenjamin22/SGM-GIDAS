@@ -307,14 +307,11 @@ SEARCH_ENTITIES = [
             "title": t.titulo_trabajo,
             "description": f"{t.nombre_reunion} – {t.tipo_reunion_cientifica}",
             "extra": {
-                "investigadores": [
-                    inv.nombre_apellido
-                    for inv in t.investigadores
-                ],
+                "autores": [a.serialize() for a in t.autorias],
                 "procedencia": t.procedencia,
                 "fecha": (
-                    t.fecha_inicio.isoformat()
-                    if t.fecha_inicio else None
+                    t.fecha_presentacion.isoformat()
+                    if t.fecha_presentacion else None
                 ),
                 "grupo": (
                     t.grupo_utn.nombre_sigla_grupo
@@ -407,14 +404,11 @@ SEARCH_ENTITIES = [
                     t.grupo_utn.nombre_sigla_grupo
                     if t.grupo_utn else None
                 ),
-                "tipo_reunion": (
-                    t.tipo_reunion.nombre
-                    if t.tipo_reunion else None
+                "tipo_revista": (
+                    t.tipo_revista.nombre
+                    if t.tipo_revista else None
                 ),
-                "investigadores": [
-                    inv.nombre_apellido
-                    for inv in t.investigadores
-                ]
+                "autores": [a.serialize() for a in t.autorias]
             },
             "url": f"/trabajos-revistas/{t.id}"
         }

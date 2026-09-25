@@ -7,6 +7,7 @@ import { useState, useMemo } from "react";
 import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
 import Field from "@/components/Field";
+import { parseCivilDate, toCivilDateString } from "@/utils/dateTime";
 import {
   resolveFrontendUrl,
   SEARCH_MAX_QUERY_LENGTH,
@@ -204,7 +205,8 @@ export default function SearchPage() {
 
       case "Trabajo en Reunión Científica":
       case "Trabajo en Revista con Referato":
-        items = getExtraNames(extra, "investigadores");
+        items = getExtraNames(extra, "autores");
+        label = "Autores";
         break;
 
       case "Investigador":
@@ -403,7 +405,9 @@ export default function SearchPage() {
             size="md"
             className="hidden sm:flex items-center gap-2"
             disabled={loading}
-          >
+           loading={loading}
+           loadingText="Buscando..."
+         >
             <Search className="w-4 h-4" />
             Buscar
           </Button>
@@ -439,15 +443,17 @@ export default function SearchPage() {
 
             <Calendar
               label="Desde"
-              value={dateFrom ? new Date(dateFrom + "T12:00:00") : null}
-              onChange={(d) => setDateFrom(d ? d.toISOString().split("T")[0] : undefined)}
+              institutionalRange={false}
+              value={parseCivilDate(dateFrom)}
+              onChange={(d) => setDateFrom(toCivilDateString(d) ?? undefined)}
               placeholder="Fecha desde"
             />
 
             <Calendar
               label="Hasta"
-              value={dateTo ? new Date(dateTo + "T12:00:00") : null}
-              onChange={(d) => setDateTo(d ? d.toISOString().split("T")[0] : undefined)}
+              institutionalRange={false}
+              value={parseCivilDate(dateTo)}
+              onChange={(d) => setDateTo(toCivilDateString(d) ?? undefined)}
               placeholder="Fecha hasta"
             />
 
@@ -738,28 +744,30 @@ export default function SearchPage() {
         )}
 
         {!loading && !error && hasSearched && meta.total_pages > 1 && (
-          <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-            >
-              Anterior
-            </Button>
-            <span className="text-sm text-slate-500">
-              Página {meta.page} de {meta.total_pages} · {meta.total} resultados
-            </span>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={page >= meta.total_pages}
-              onClick={() => setPage((current) => Math.min(meta.total_pages, current + 1))}
-            >
-              Siguiente
-            </Button>
+          <div className="mt-8">
+            <nav aria-label="Paginación" className="flex flex-wrap items-center justify-center gap-2">
+              <Button type="button" size="sm" variant="secondary" aria-label="Página anterior"
+                disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>
+                {"<"}
+              </Button>
+              {[...Array(meta.total_pages)].map((_, index) => {
+                const pageNumber = index + 1;
+                return (
+                  <button type="button" key={pageNumber} aria-label={`Página ${pageNumber}`}
+                    aria-current={page === pageNumber ? "page" : undefined}
+                    onClick={() => setPage(pageNumber)}
+                    className={`rounded-lg px-3 py-1 text-sm ${
+                      page === pageNumber ? "bg-slate-800 text-white" : "bg-slate-100 hover:bg-slate-200"
+                    }`}>
+                    {pageNumber}
+                  </button>
+                );
+              })}
+              <Button type="button" size="sm" variant="secondary" aria-label="Página siguiente"
+                disabled={page >= meta.total_pages} onClick={() => setPage((current) => current + 1)}>
+                {">"}
+              </Button>
+            </nav>
           </div>
         )}
       </div>

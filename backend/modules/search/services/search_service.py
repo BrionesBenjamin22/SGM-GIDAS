@@ -1,5 +1,5 @@
 from sqlalchemy import or_
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from datetime import datetime
 from extension import db
 from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
@@ -118,7 +118,7 @@ class SearchService:
                     "titulo": p.nombre_apellido,
                     "subtitulo": p.tipo_personal.nombre if p.tipo_personal else None,
                     "fecha": None,
-                    "url": f"/personal/{p.id}"
+                    "url": f"/personal/personal/{p.id}"
                 }))
 
         # ==================================================
@@ -246,7 +246,7 @@ class SearchService:
                 joinedload(Investigador.participaciones_proyecto)
                     .joinedload(InvestigadorProyecto.proyecto),
                 joinedload(Investigador.participaciones_relevantes),
-                joinedload(Investigador.trabajos_reunion_cientifica)
+                selectinload(Investigador.autorias_reunion)
             ),
             Investigador,
             eliminados,
@@ -940,7 +940,7 @@ class SearchService:
             db.session.query(TrabajoReunionCientifica)
             .options(
                 joinedload(TrabajoReunionCientifica.tipo_reunion_cientifica),
-                joinedload(TrabajoReunionCientifica.investigadores),
+                selectinload(TrabajoReunionCientifica.autorias),
                 joinedload(TrabajoReunionCientifica.grupo_utn)
             ),
             TrabajoReunionCientifica,
@@ -955,16 +955,16 @@ class SearchService:
             titulo_norm = SearchService.normalize_text(tr.titulo_trabajo)
             reunion_norm = SearchService.normalize_text(tr.nombre_reunion)
             procedencia_norm = SearchService.normalize_text(tr.procedencia)
-            investigadores_norm = [
-                SearchService.normalize_text(inv.nombre_apellido)
-                for inv in tr.investigadores
+            autores_norm = [
+                SearchService.normalize_text(autor.integrante.nombre_apellido)
+                for autor in tr.autorias
             ]
             
             if (
                 query_normalized in titulo_norm
                 or query_normalized in reunion_norm
                 or query_normalized in procedencia_norm
-                or any(query_normalized in inv for inv in investigadores_norm)
+                or any(query_normalized in inv for inv in autores_norm)
             ):
 
                 resultados.append(SearchService.with_status(tr, {
@@ -972,7 +972,7 @@ class SearchService:
                     "id": tr.id,
                     "titulo": tr.titulo_trabajo,
                     "subtitulo": tr.nombre_reunion,
-                    "fecha": tr.fecha_inicio,
+                    "fecha": tr.fecha_presentacion,
                     "url": f"/trabajos-reunion/{tr.id}",
                     "extra": {
                         "tipo_reunion": (
@@ -984,13 +984,7 @@ class SearchService:
                             tr.grupo_utn.nombre_unidad_academica
                             if tr.grupo_utn else None
                         ),
-                        "investigadores": [
-                            {
-                                "id": inv.id,
-                                "nombre": inv.nombre_apellido
-                            }
-                            for inv in tr.investigadores
-                        ]
+                        "autores": [autor.serialize() for autor in tr.autorias]
                     }
                 }))
                 
@@ -1003,8 +997,8 @@ class SearchService:
             db.session.query(TrabajosRevistasReferato)
             .options(
                 joinedload(TrabajosRevistasReferato.grupo_utn),
-                joinedload(TrabajosRevistasReferato.tipo_reunion),
-                joinedload(TrabajosRevistasReferato.investigadores)
+                joinedload(TrabajosRevistasReferato.tipo_revista),
+                selectinload(TrabajosRevistasReferato.autorias)
             ),
             TrabajosRevistasReferato,
             eliminados,
@@ -1020,9 +1014,9 @@ class SearchService:
             editorial_norm = SearchService.normalize_text(tr.editorial)
             issn_norm = SearchService.normalize_text(tr.issn)
             pais_norm = SearchService.normalize_text(tr.pais)
-            investigadores_norm = [
-                SearchService.normalize_text(inv.nombre_apellido)
-                for inv in tr.investigadores
+            autores_norm = [
+                SearchService.normalize_text(autor.integrante.nombre_apellido)
+                for autor in tr.autorias
             ]
 
             if (
@@ -1031,7 +1025,7 @@ class SearchService:
                 or query_normalized in editorial_norm
                 or query_normalized in issn_norm
                 or query_normalized in pais_norm
-                or any(query_normalized in inv for inv in investigadores_norm)
+                or any(query_normalized in inv for inv in autores_norm)
             ):
 
                 resultados.append(SearchService.with_status(tr, {
@@ -1039,21 +1033,15 @@ class SearchService:
                     "id": tr.id,
                     "titulo": tr.titulo_trabajo,
                     "subtitulo": tr.nombre_revista,
-                    "fecha": tr.fecha,
+                    "fecha": tr.fecha_publicacion,
                     "url": f"/trabajos-revistas/{tr.id}",
                     "extra": {
                         "editorial": tr.editorial,
                         "issn": tr.issn,
                         "pais": tr.pais,
                         "grupo": tr.grupo_utn.nombre_sigla_grupo if tr.grupo_utn else None,
-                        "tipo_reunion": tr.tipo_reunion.nombre if tr.tipo_reunion else None,
-                        "investigadores": [
-                            {
-                                "id": inv.id,
-                                "nombre": inv.nombre_apellido
-                            }
-                            for inv in tr.investigadores
-                        ]
+                        "tipo_revista": tr.tipo_revista.nombre if tr.tipo_revista else None,
+                        "autores": [autor.serialize() for autor in tr.autorias]
                     }
                 }))
 

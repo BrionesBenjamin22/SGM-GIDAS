@@ -3,6 +3,7 @@ from enum import Enum
 
 from extension import db
 from modules.shared.models.auditoria_campo import AuditoriaCampo
+from modules.shared.services.date_time import serialize_temporal
 
 
 class AuditoriaService:
@@ -10,7 +11,7 @@ class AuditoriaService:
     @staticmethod
     def _normalizar_valor(valor):
         if isinstance(valor, (datetime, date)):
-            return valor.isoformat()
+            return serialize_temporal(valor)
 
         if isinstance(valor, Enum):
             return valor.value

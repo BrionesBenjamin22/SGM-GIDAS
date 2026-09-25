@@ -1,3 +1,4 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -82,6 +83,7 @@ export default function PlanificacionGrupoForm() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isPending) return;
 
     if (!uct) return;
     if (!validate()) return;
@@ -105,10 +107,11 @@ export default function PlanificacionGrupoForm() {
       try {
         await mutateAsync({ mode: "edit", payload: changedPayload });
       } catch (error: unknown) {
+      if (applyFieldErrors(error, setErrors, ["descripcion","anio"])) return;
         setErrorMessage(
           getErrorMessage(
             error,
-            "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+            "Lo sentimos, no pudimos actualizar la planificación. Revise los datos e intente nuevamente."
           )
         );
         return;
@@ -117,10 +120,11 @@ export default function PlanificacionGrupoForm() {
       try {
         await mutateAsync({ mode: "create", payload });
       } catch (error: unknown) {
+      if (applyFieldErrors(error, setErrors, ["descripcion","anio"])) return;
         setErrorMessage(
           getErrorMessage(
             error,
-            "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+            "Lo sentimos, no pudimos crear la planificación. Revise los datos e intente nuevamente."
           )
         );
         return;
@@ -160,7 +164,7 @@ export default function PlanificacionGrupoForm() {
         onSubmit={submit}
         className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 space-y-6"
       >
-        <Field label="Año">
+        <Field required label="Año" name="anio" error={errors.anio}>
           <>
             <input
               type="number"
@@ -182,7 +186,7 @@ export default function PlanificacionGrupoForm() {
           </>
         </Field>
 
-        <Field label="Descripción">
+        <Field required label="Descripción" name="descripcion" error={errors.descripcion}>
           <>
             <textarea
               rows={8}
@@ -218,7 +222,7 @@ export default function PlanificacionGrupoForm() {
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={isPending}>
+          <Button type="submit" size="sm" disabled={isPending} loading={isPending} loadingText="Guardando...">
             {isPending
               ? "Guardando…"
               : isEdit

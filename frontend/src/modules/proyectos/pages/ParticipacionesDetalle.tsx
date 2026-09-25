@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/Button";
 import HistorialCambiosCard from "@/components/HistorialCambiosCard";
+import { formatFechaHora } from "@/utils/dateTime";
+import { toTitleCase } from "@/utils/format";
 import SuccessToast from "@/components/SuccessToast";
 import {
   getHistorialParticipacionById,
@@ -100,14 +102,9 @@ export default function ParticipacionesDetalle() {
     return dateStr;
   };
 
-  const formatFechaHora = (fecha?: string | null) => {
-    if (!fecha) return "-";
-    return new Date(fecha).toLocaleString("es-AR");
-  };
-
   if (isLoading) return <p className="text-slate-500">Cargando...</p>;
   if (isError || !data) {
-    return <p className="text-slate-500">No se encontro la participacion.</p>;
+    return <p className="text-slate-500">No se encontró la participación.</p>;
   }
 
   const isDeleted = !!data.deleted_at;
@@ -118,7 +115,7 @@ export default function ParticipacionesDetalle() {
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-2">
             <h2 className="text-2xl font-semibold leading-none md:text-3xl">
-              {data.nombre_evento || "-"}
+              {toTitleCase(data.nombre_evento) || "-"}
             </h2>
 
             <span
@@ -148,7 +145,7 @@ export default function ParticipacionesDetalle() {
           <div className="space-y-2 text-sm text-slate-500 md:text-base">
             <p>
               <span className="font-medium text-slate-700">Nombre del evento:</span>{" "}
-              {data.nombre_evento || "-"}
+              {toTitleCase(data.nombre_evento) || "-"}
             </p>
 
             <p>
@@ -158,7 +155,7 @@ export default function ParticipacionesDetalle() {
 
             <p>
               <span className="font-medium text-slate-700">
-                Forma de participacion:
+                Forma de participación:
               </span>{" "}
               {FORMA_PARTICIPACION_LABELS[data.forma_participacion] ||
                 data.forma_participacion ||
@@ -174,9 +171,9 @@ export default function ParticipacionesDetalle() {
 
         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-700">Auditoria</h3>
+            <h3 className="text-lg font-semibold text-slate-700">Auditoría</h3>
             <p className="mt-1 text-xs text-slate-500">
-              {data.nombre_evento || "-"}
+              {toTitleCase(data.nombre_evento) || "-"}
             </p>
           </div>
 
@@ -188,7 +185,7 @@ export default function ParticipacionesDetalle() {
 
             <p>
               <span className="font-medium text-slate-700">
-                Fecha de creacion:
+                Fecha de creación:
               </span>{" "}
               {formatFechaHora(data.created_at)}
             </p>
@@ -200,7 +197,7 @@ export default function ParticipacionesDetalle() {
 
             <p>
               <span className="font-medium text-slate-700">
-                Fecha de eliminacion:
+                Fecha de eliminación:
               </span>{" "}
               {formatFechaHora(data.deleted_at)}
             </p>
@@ -208,7 +205,7 @@ export default function ParticipacionesDetalle() {
         </article>
 
         <HistorialCambiosCard
-          subtitle={data.nombre_evento || "-"}
+          subtitle={toTitleCase(data.nombre_evento) || "-"}
           items={historialCambios}
           isLoading={isLoadingHistorial}
           updatedAt={data.updated_at}

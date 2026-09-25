@@ -1,8 +1,31 @@
 import { http } from "@/lib/http";
 
 export type ProyectosActivosFilter = "true" | "false" | "all";
+export type ProyectoSort =
+  | "codigo"
+  | "nombre"
+  | "tipo"
+  | "fuente"
+  | "fecha_inicio"
+  | "fecha_fin"
+  | "estado";
+
+export type ProyectoListParams = {
+  page: number;
+  perPage?: number;
+  search?: string;
+  activos?: ProyectosActivosFilter;
+  sort?: ProyectoSort;
+  direction?: "asc" | "desc";
+  tipoProyectoId?: number;
+  fuenteFinanciamientoId?: number;
+  investigadorId?: number;
+  becarioId?: number;
+  ids?: Array<number | string>;
+};
 
 export type InvestigadorProyecto = {
+  activo?: boolean;
   fecha_inicio: string;
   fecha_fin?: string | null;
   id: number;
@@ -65,8 +88,11 @@ export type Proyecto = {
 };
 
 export type ProyectoPayload = {
+  investigadoresIds?: number[];
+  becariosIds?: number[];
+  coordinadorId?: number | null;
   id?: string;
-  codigoProyecto?: string | number;
+  codigoProyecto?: string;
   nombreProyecto?: string;
   fechaInicio?: string;
   fechaFinalizacion?: string | null;
@@ -91,7 +117,7 @@ type ProyectoApiResponse = {
   deleted_at?: string | null;
   activo?: boolean;
   cerrado?: boolean;
-  codigo_proyecto: string | number;
+  codigo_proyecto: string;
   nombre_proyecto: string;
   descripcion_proyecto?: string | null;
   dificultades_proyecto?: string | null;
@@ -106,6 +132,12 @@ type ProyectoApiResponse = {
   grupo_utn?: { id: number; nombre?: string | null; nombre_sigla_grupo?: string | null } | null;
   investigadores?: InvestigadorProyecto[];
   becarios?: BecarioProyecto[];
+};
+
+export type ProyectoPage = {
+  data: ProyectoApiResponse[];
+  meta: { page: number; per_page: number; total: number; total_pages: number };
+  error: null;
 };
 
 function mapProyecto(p: ProyectoApiResponse): Proyecto {
@@ -146,6 +178,7 @@ function mapProyecto(p: ProyectoApiResponse): Proyecto {
       fecha_inicio: inv.fecha_inicio,
       fecha_fin: inv.fecha_fin,
       es_coordinador: Boolean(inv.es_coordinador),
+      activo: inv.activo,
     })),
     becarios: (p.becarios || []).map((bec) => ({
       id: bec.id,
@@ -168,8 +201,36 @@ export async function getProyectos(
   return data.map(mapProyecto);
 }
 
+export async function getProyectosPage(
+  params: ProyectoListParams
+): Promise<{ data: Proyecto[]; meta: ProyectoPage["meta"]; error: null }> {
+  const query = new URLSearchParams({
+    page: String(params.page),
+    per_page: String(params.perPage ?? 9),
+    activos: params.activos ?? "true",
+    sort: params.sort ?? "fecha_inicio",
+    direction: params.direction ?? "desc",
+  });
+  if (params.search?.trim()) query.set("search", params.search.trim());
+  if (params.tipoProyectoId) query.set("tipo_proyecto_id", String(params.tipoProyectoId));
+  if (params.fuenteFinanciamientoId) query.set("fuente_financiamiento_id", String(params.fuenteFinanciamientoId));
+  if (params.investigadorId) query.set("investigador_id", String(params.investigadorId));
+  if (params.becarioId) query.set("becario_id", String(params.becarioId));
+  if (params.ids) query.set("ids", params.ids.join(","));
+
+  const response = await http<ProyectoPage>(`/proyectos?${query.toString()}`);
+  return {
+    data: response.data.map(mapProyecto),
+    meta: response.meta,
+    error: null,
+  };
+}
+
 export async function upsertProyectos(payload: ProyectoPayload): Promise<Proyecto> {
   const body: Record<string, unknown> = {};
+  if ("investigadoresIds" in payload) body.investigadores_ids = payload.investigadoresIds;
+  if ("becariosIds" in payload) body.becarios_ids = payload.becariosIds;
+  if ("coordinadorId" in payload) body.coordinador_id = payload.coordinadorId;
 
   if ("codigoProyecto" in payload) {
     body.codigo_proyecto = payload.codigoProyecto;

@@ -12,6 +12,8 @@ from modules.memorias.services.memoria_service import MemoriaService
 class DistincionMemoriaHistorialTestCase(unittest.TestCase):
 
     def setUp(self):
+        self.enterContext(patch("modules.memorias.services.memoria_service.MemoriaService._validar_grupo", return_value=1))
+        self.enterContext(patch("modules.memorias.services.memoria_service.snapshot_contexto_institucional", return_value=None))
         self.add_patcher = patch("modules.produccion.services.distincion_service.db.session.add")
         self.commit_patcher = patch("extension.db.session.commit")
         self.rollback_patcher = patch("extension.db.session.rollback")
@@ -41,7 +43,7 @@ class DistincionMemoriaHistorialTestCase(unittest.TestCase):
             descripcion="Premio a la innovacion",
             proyecto_investigacion_id=8,
             proyecto_investigacion=SimpleNamespace(
-                codigo_proyecto=2026,
+                codigo_proyecto="LPSIEC1347",
                 nombre_proyecto="Sistema GIDAS"
             )
         )
@@ -64,13 +66,14 @@ class DistincionMemoriaHistorialTestCase(unittest.TestCase):
 
         self.assertEqual(len(snapshots), 1)
         self.assertEqual(snapshots[0].distincion_id, 4)
-        self.assertEqual(snapshots[0].proyecto_codigo, 2026)
+        self.assertEqual(snapshots[0].proyecto_codigo, "LPSIEC1347")
         self.assertEqual(snapshots[0].proyecto_nombre, "Sistema GIDAS")
         self.assertEqual(snapshots[0].created_by, 25)
         self.mock_add.assert_called()
 
     def test_change_status_a_cerrada_genera_snapshot_distinciones(self):
         memoria = Memoria(
+            grupo_utn_id=1,
             id=1,
             periodo_inicio=date(2026, 1, 1),
             periodo_fin=date(2026, 12, 31),

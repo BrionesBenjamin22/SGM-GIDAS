@@ -1,12 +1,17 @@
+import builtins
 from datetime import datetime
 from extension import db
+from modules.shared.services.text_validation import has_only_letters_and_spaces
 from modules.shared.exceptions import ValidationError as ValueError
 from sqlalchemy.orm import joinedload
 from modules.grupo.models.directivos import Directivo, DirectivoGrupo, Cargo
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.shared.services.date_time import validate_institutional_date
 
 
 class DirectivoGrupoService:
+
+    CARGOS_DIRECTIVOS = frozenset({"director", "vicedirector"})
 
     # =========================================================
     # HELPERS
@@ -20,6 +25,55 @@ class DirectivoGrupoService:
             raise ValueError(mensaje)
 
         return obj
+
+    @staticmethod
+    def _normalizar_cargo(nombre: str) -> str:
+        return nombre.strip().casefold()
+
+    @staticmethod
+    def _validar_fecha(valor, campo: str):
+        try:
+            fecha = datetime.strptime(valor, "%Y-%m-%d").date()
+        except (TypeError, builtins.ValueError) as exc:
+            raise ValueError(
+                f"El campo '{campo}' debe tener formato YYYY-MM-DD.",
+                details={"fields": {campo: "Ingrese una fecha válida en formato YYYY-MM-DD"}},
+            ) from exc
+
+        try:
+            return validate_institutional_date(fecha, campo, allow_future=False)
+        except ValueError as error:
+            raise ValueError(str(error), details={"fields": {campo: str(error)}}) from error
+
+    @staticmethod
+    def _validar_cargo_y_cupo(
+        grupo_id: int,
+        cargo: Cargo,
+        es_periodo_activo: bool = True
+    ):
+        if cargo.deleted_at is not None:
+            raise ValueError("Cargo no encontrado.")
+
+        cargo_normalizado = DirectivoGrupoService._normalizar_cargo(cargo.nombre)
+        if cargo_normalizado not in DirectivoGrupoService.CARGOS_DIRECTIVOS:
+            raise ValueError(
+                "El equipo directivo solo admite los cargos Director y Vicedirector."
+            )
+
+        if not es_periodo_activo:
+            return
+
+        actuales = DirectivoGrupo.query.filter(
+            DirectivoGrupo.id_grupo_utn == grupo_id,
+            DirectivoGrupo.fecha_fin.is_(None),
+            DirectivoGrupo.deleted_at.is_(None)
+        ).all()
+
+        if len(actuales) >= len(DirectivoGrupoService.CARGOS_DIRECTIVOS):
+            raise ValueError("La UCT ya tiene completo su equipo directivo.")
+
+        if any(participacion.id_cargo == cargo.id for participacion in actuales):
+            raise ValueError(f"La UCT ya tiene un {cargo.nombre} activo.")
 
 
     # =========================================================
@@ -42,10 +96,12 @@ class DirectivoGrupoService:
     # =========================================================
 
     @staticmethod
-    def crear_directivo(data: dict, user_id: int):
+    def crear_directivo(data: dict, user_id: int, *, commit: bool = True):
 
-        if not data.get("nombre_apellido"):
-            raise ValueError("El nombre es obligatorio.")
+        if not isinstance(data.get("nombre_apellido"), str) or not data["nombre_apellido"].strip():
+            raise ValueError("El nombre es obligatorio.", details={"fields": {"nombre_apellido": "Ingrese nombre y apellido"}})
+        if not has_only_letters_and_spaces(data["nombre_apellido"]):
+            raise ValueError("Use solo letras y espacios en nombre y apellido.", details={"fields": {"nombre_apellido": "Use solo letras y espacios en nombre y apellido"}})
 
         directivo = Directivo(
             nombre_apellido=data["nombre_apellido"].strip(),
@@ -53,7 +109,10 @@ class DirectivoGrupoService:
         )
 
         db.session.add(directivo)
-        db.session.commit()
+        if commit:
+            db.session.commit()
+        else:
+            db.session.flush()
 
         return directivo.serialize()
 
@@ -72,6 +131,10 @@ class DirectivoGrupoService:
         )
 
         if "nombre_apellido" in data:
+            if not isinstance(data["nombre_apellido"], str) or not data["nombre_apellido"].strip():
+                raise ValueError("El nombre es obligatorio.", details={"fields": {"nombre_apellido": "Ingrese nombre y apellido"}})
+            if not has_only_letters_and_spaces(data["nombre_apellido"]):
+                raise ValueError("Use solo letras y espacios en nombre y apellido.", details={"fields": {"nombre_apellido": "Use solo letras y espacios en nombre y apellido"}})
             directivo.nombre_apellido = data["nombre_apellido"].strip()
 
         db.session.commit()
@@ -84,13 +147,13 @@ class DirectivoGrupoService:
     # =========================================================
 
     @staticmethod
-    def asignar_a_grupo(data: dict, user_id: int):
+    def asignar_a_grupo(data: dict, user_id: int, *, commit: bool = True):
 
         required = ["id_directivo", "id_grupo_utn", "id_cargo", "fecha_inicio"]
 
         for campo in required:
             if campo not in data:
-                raise ValueError(f"{campo} es obligatorio.")
+                raise ValueError(f"{campo} es obligatorio.", details={"fields": {campo: "Complete este campo"}})
 
         directivo = DirectivoGrupoService._get_activo_or_404(
             Directivo, data["id_directivo"], "Directivo no encontrado."
@@ -102,20 +165,26 @@ class DirectivoGrupoService:
 
         cargo = db.session.get(Cargo, data["id_cargo"])
         if not cargo:
-            raise ValueError("Cargo no encontrado.")
+            raise ValueError("Cargo no encontrado.", details={"fields": {"id_cargo": "Seleccione un cargo disponible"}})
 
-        fecha_inicio = datetime.strptime(
-            data["fecha_inicio"], "%Y-%m-%d"
-        ).date()
+        fecha_inicio = DirectivoGrupoService._validar_fecha(
+            data["fecha_inicio"], "fecha_inicio"
+        )
 
         fecha_fin = None
         if data.get("fecha_fin"):
-            fecha_fin = datetime.strptime(
-                data["fecha_fin"], "%Y-%m-%d"
-            ).date()
+            fecha_fin = DirectivoGrupoService._validar_fecha(
+                data["fecha_fin"], "fecha_fin"
+            )
 
             if fecha_fin < fecha_inicio:
-                raise ValueError("La fecha_fin no puede ser anterior a fecha_inicio.")
+                raise ValueError("La fecha de fin no puede ser anterior al inicio.", details={"fields": {"fecha_fin": "Elija una fecha posterior o igual al inicio"}})
+
+        DirectivoGrupoService._validar_cargo_y_cupo(
+            grupo.id,
+            cargo,
+            es_periodo_activo=fecha_fin is None
+        )
 
         # 🔍 Validar superposición de períodos
         existentes = DirectivoGrupo.query.filter(
@@ -143,9 +212,30 @@ class DirectivoGrupoService:
         )
 
         db.session.add(participacion)
-        db.session.commit()
+        if commit:
+            db.session.commit()
+        else:
+            db.session.flush()
 
         return {"message": "Directivo asignado correctamente."}
+
+    @staticmethod
+    def crear_y_asignar(data: dict, user_id: int):
+        if not isinstance(data, dict):
+            raise ValueError("Complete los datos del directivo.")
+        try:
+            directivo = DirectivoGrupoService.crear_directivo(data, user_id, commit=False)
+            DirectivoGrupoService.asignar_a_grupo({
+                "id_directivo": directivo["id"],
+                "id_grupo_utn": data.get("id_grupo_utn"),
+                "id_cargo": data.get("id_cargo"),
+                "fecha_inicio": data.get("fecha_inicio"),
+            }, user_id, commit=False)
+            db.session.commit()
+            return directivo
+        except Exception:
+            db.session.rollback()
+            raise
 
 
     # =========================================================
@@ -171,9 +261,9 @@ class DirectivoGrupoService:
         if not participacion:
             raise ValueError("No hay cargo activo para finalizar.")
 
-        fecha_fin = datetime.strptime(
-            data["fecha_fin"], "%Y-%m-%d"
-        ).date()
+        fecha_fin = DirectivoGrupoService._validar_fecha(
+            data["fecha_fin"], "fecha_fin"
+        )
 
         if fecha_fin < participacion.fecha_inicio:
             raise ValueError("La fecha_fin no puede ser anterior a fecha_inicio.")

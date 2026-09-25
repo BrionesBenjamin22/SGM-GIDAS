@@ -1,3 +1,4 @@
+from modules.shared.services.catalog_name_validation import validar_nombre_descriptivo
 from extension import db
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
 from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
@@ -13,6 +14,7 @@ def crear_fuente_financiamiento(data, user_id=None):
         raise ValueError("El nombre debe ser un texto no vacío.")
 
     nombre_original = nombre_original.strip()
+    validar_nombre_descriptivo(nombre_original)
     if not nombre_original:
         raise ValueError("El nombre no puede estar vacío.")
 
@@ -52,6 +54,7 @@ def actualizar_fuente_financiamiento(id, data, user_id=None):
         raise ValueError("El nombre debe ser un texto no vacío.")
 
     nombre = nombre.strip().lower()
+    validar_nombre_descriptivo(nombre)
     if not nombre:
         raise ValueError("El nombre no puede estar vacío.")
 

@@ -1,5 +1,32 @@
 # Modulo frontend de proyectos
 
+En Participaciones relevantes, home, detalle y confirmación de baja presentan
+el nombre del evento con mayúsculas consistentes mediante `toTitleCase`. El
+valor persistido y el formulario conservan la escritura ingresada.
+
+Proyecto y participación rechazan nombres exclusivamente numéricos antes del
+envío y muestran el motivo junto al control.
+
+## Errores por campo (ISS-09)
+
+Los formularios del módulo consumen `error.details.fields` mediante
+`applyFieldErrors` de `src/lib/httpError.ts`, muestran el mensaje junto al control
+y enfocan el primer campo inválido. Los nombres locales de los controles se
+vinculan con las claves API, sin cambiar el payload del service ni los permisos.
+Los errores sin campo o con campos desconocidos conservan el aviso general;
+los errores inesperados muestran un mensaje publico seguro o un fallback accionable, sin identificadores internos.
+Se conservan las reglas y el momento de validación existentes. Véase el contrato
+transversal en `../README.md`.
+
+## Fechas
+
+En el formulario de proyecto, `Field` muestra el error de fecha de inicio una
+sola vez. El texto de ayuda del calendario conserva el formato `DD/MM/AAAA`.
+
+Los períodos de proyectos y de sus participaciones admiten fechas desde el
+01/01/2010. Una fecha de finalización no puede preceder a su fecha de inicio;
+los cierres conservan la prohibición de utilizar una fecha futura.
+
 ## Vistas
 
 El modulo administra proyectos de investigacion y participaciones relevantes.
@@ -9,13 +36,76 @@ por permisos y estado activo.
 
 ## Proyectos
 
+### Tabla e historial (ISS-26)
+
+El home utiliza la tabla compartida con hasta 9 proyectos por página, búsqueda,
+filtros, ordenamiento y acciones por fila para ver, editar, cerrar o reabrir según
+estado y permisos. El historial expandible conserva 3 eventos por página.
+
+Los eventos relacionales `investigadores_ids` y `becarios_ids` se presentan como
+vinculaciones o desvinculaciones legibles. Se muestra el nombre conservado por el
+backend o, para eventos anteriores, el nombre disponible en el detalle actual;
+no se renderizan JSON ni identificadores internos. Las asociaciones incluidas en
+el alta son estado inicial y no aparecen como cambios posteriores.
+
+Home y detalle comparten la misma utilidad de presentacion. Los eventos de
+investigadores y becarios muestran directamente la accion y el nombre, sin las
+etiquetas `Valor anterior` y `Valor nuevo`. La asignacion registrada como
+`coordinador_id` se presenta como `Coordinador asignado` seguida del nombre del
+investigador; nunca se muestra el ID como descripcion. Fecha y usuario permanecen
+visibles y los cambios no relacionales conservan el formato anterior/nuevo.
+
+La presentacion directa usa la opcion optativa de `HistorialCambiosCard`, por lo
+que no altera los historiales de otros modulos. Las reglas transversales se
+documentan en `frontend/CONVENCIONES_PANTALLAS.md`.
+
+### Coordinador y guardado consolidado (ISS-10)
+
+El coordinador se elige entre investigadores del proyecto. Las nuevas
+asignaciones requieren investigador activo sin baja lógica; no se ofrecen
+usuarios, becarios ni personas externas como coordinadores.
+
+`ProyectosForm` consulta `/investigadores/` con una clave de React Query propia
+(`proyecto-candidatos`) y refresca al montar. Muestra carga, error con reintento,
+ausencia de candidatos e instrucciones para agregar investigadores. Las filas
+vacías se rechazan antes del envío. Un investigador previamente asociado que
+dejó de estar activo se conserva visible; no puede recibir una nueva asignación
+como coordinador. El detalle identifica al coordinador inactivo sin ocultar su
+nombre ni su historial.
+
+`upsertProyectos` envía campos y relaciones en un solo POST o PUT:
+`investigadoresIds` pasa a `investigadores_ids`, `becariosIds` a `becarios_ids`
+y `coordinadorId` a `coordinador_id`. En alta se envían las selecciones; en
+edición únicamente las listas o el coordinador que cambiaron. Omitir una clave
+conserva su estado actual. La edición sin cambios no realiza peticiones.
+El borrador se limpia y se navega con éxito solo después del guardado completo.
+
+Seguimiento de prueba manual ISS-10: el alta con fecha de fin pasada, de hoy o
+futura admite el guardado consolidado; una fecha pasada/de hoy se muestra como
+proyecto cerrado después del alta. Los proyectos ya cerrados requieren
+reapertura antes de editar. Se valida localmente que fin no preceda a inicio.
+Guardar muestra un icono animado mientras espera al servidor. Una validación
+local o un error de API siempre muestra aviso general, además de los mensajes
+por campo y foco en el primero inválido, para evitar un guardado aparentemente
+sin respuesta cuando el usuario está al final de la pantalla.
+
+Los permisos ADMIN/GESTOR y los destinos de alta/home y edición/detalle se
+conservan. El historial se invalida tras guardar y se presenta con 3 elementos
+por página. Prueba automatizada del formulario y service reales:
+`tests/proyectoCoordinador.test.ts`. La comprobación visual en Docker queda a
+cargo del usuario.
+
 - el service transforma el contrato `snake_case` del backend al modelo de interfaz
+- el código de proyecto se maneja como texto alfanumérico, conserva mayúsculas y
+  minúsculas y admite hasta 50 caracteres sin conversiones numéricas
 - el formulario valida campos obligatorios, coordinador y montos no negativos
 - en edicion solo se envian diferencias reales
 - altas y bajas de investigadores y becarios se consolidan al guardar
 - los cambios de coordinador actualizan las relaciones involucradas en el guardado
 - un proyecto cerrado no admite edicion hasta que sea reabierto
 - las altas vuelven al home y las ediciones al detalle con `successMessage`
+- el formulario conserva un borrador local por usuario y proyecto, solicita
+  confirmacion antes de recuperarlo y lo elimina al guardar o descartar
 
 ## Participaciones relevantes
 
@@ -31,9 +121,58 @@ encapsulan React Query e invalidan listas, detalles e historiales despues de cad
 mutacion. No existen fallbacks mock ante errores: los fallos de permisos, sesion o
 conectividad se propagan para mostrar feedback real y accionable.
 
+`ProyectoPayload.codigoProyecto` y `ProyectoApiResponse.codigo_proyecto` utilizan
+`string`. La validación compartida del código exige un valor no vacío, con máximo
+50 caracteres y patrón `[A-Za-z0-9]+`; el formulario envía el valor recortado y
+muestra el error junto al campo.
+
 ## Seguridad y permisos
 
 Las acciones de alta, cierre, reapertura, edicion y baja se condicionan con las
 capacidades del usuario, sin considerar la interfaz como unica barrera. Los errores
 se normalizan mediante el helper compartido y no se reflejan estructuras desconocidas
 del servidor. No se utiliza HTML inyectado, storage del navegador ni `fetch` directo.
+
+## Validaciones de fechas sin duplicados (ISS-09)
+
+Los errores del formulario se muestran una sola vez mediante Field. El
+helperText de Calendar/DatePicker contiene exclusivamente ayuda de formato o
+rango; no recibe el mensaje de error del formulario. Se conservan los límites,
+las reglas de validación y el foco del primer campo inválido.
+
+## Feedback de acciones (seguimiento ISS-09)
+
+Las acciones asíncronas del módulo usan Button con loading/loadingText
+o ConfirmDialog, que espera la promesa devuelta por onConfirm. Durante la
+operación se muestra texto de progreso con un icono animado, aria-busy y
+role=status. El botón de acción se deshabilita hasta terminar; las
+confirmaciones bloquean además cancelar, el fondo y los campos del diálogo.
+El estado se libera al resolver o fallar, conservando errores y mensajes de
+éxito existentes. Los callbacks basados en React Query deben devolver
+mutateAsync para que el diálogo cubra toda la operación.
+El cierre usa ConfirmDialog con fecha de cierre y texto Cerrando; la
+reapertura de una selección bloquea nuevas acciones hasta finalizar.
+
+## Indicadores de campos obligatorios (ISS-21)
+
+En proyectos son obligatorios codigo, nombre, tipo y fecha de inicio. El coordinador se indica como obligatorio cuando se seleccionan investigadores. Las relaciones y los datos opcionales no llevan marca. Participaciones marca investigador, evento, forma y fecha.
+
+## Errores de Participaciones (ISS-19)
+
+ParticipacionesForm aplica error.details.fields mediante applyFieldErrors. investigador_id, nombre_evento, forma_participacion y fecha se vinculan a los controles visibles. Los conflictos y campos desconocidos mantienen un aviso general; alta y edición indican cómo reintentar.
+
+## Borradores de formularios (ISS-22)
+
+En proyectos y participaciones, los cambios no se guardan como borrador mientras se escribe.
+Al pulsar Volver con cambios, el dialogo permite guardar el ultimo estado en
+el servidor, descartarlo o seguir editando. La navegacion externa al formulario
+queda sujeta a la misma confirmacion. La lista global muestra el tipo, un dato
+identificable del borrador cuando esta disponible, y la fecha de guardado.
+Al abrirlo se puede recuperar o descartar; un guardado exitoso elimina el
+borrador. El contenido no se almacena en localStorage ni sessionStorage.
+
+## Paginación de listados (ISS-23)
+
+Los resultados paginados muestran controles centrados de anterior, números
+de página y siguiente, inmediatamente debajo de las tarjetas o resultados.
+El máximo de resultados por página conserva el contrato del módulo.

@@ -1,8 +1,11 @@
+import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import Button from "@/components/Button";
+import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import DatePicker from "@/components/Calendar";
+import { toCivilDateString } from "@/utils/dateTime";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
 import { getErrorMessage } from "@/lib/httpError";
@@ -16,11 +19,15 @@ import {
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 import { useTiposErogacion } from "@/modules/recursos/hooks/useTipoErogacion";
 import { useFuentesFinanciamiento } from "@/modules/catalogos/hooks/useFuenteFinanciamiento";
+import { useAuth } from "@/context/AuthContext";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
+import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
 
 export default function ErogacionesForm() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { uct, uctGuard } = useUctGuard();
+  const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
 
@@ -59,6 +66,17 @@ export default function ErogacionesForm() {
     });
   }, [erogacion]);
 
+  const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
+    userId: user?.id,
+    module: "recursos-erogaciones",
+    recordId: id,
+    value: data,
+    ready: !isEdit || (!loadingErogacion && Boolean(erogacion)),
+    autosave: false,
+    hasContent: (draft) => Object.values(draft).some((value) => value.trim() !== ""),
+    onRestore: setData,
+  });
+
   const clearError = (field: string) => {
     setErrors((prev) => {
       const copy = { ...prev };
@@ -75,11 +93,11 @@ export default function ErogacionesForm() {
     const egresos = Number(data.egresos);
 
     if (!Number.isInteger(numeroErogacion) || numeroErogacion <= 0) {
-      newErrors.numero = "Debe ingresar numero de erogacion";
+      newErrors.numero = "Debe ingresar número de erogación";
     }
 
     if (!data.tipoErogacionId) {
-      newErrors.tipo = "Debe seleccionar tipo de erogacion";
+      newErrors.tipo = "Debe seleccionar tipo de erogación";
     }
 
     if (!data.fuenteFinanciamientoId) {
@@ -118,6 +136,7 @@ export default function ErogacionesForm() {
         ? updateErogacion(Number(id), payload as UpdateErogacionPayload)
         : createErogacion(payload as CreateErogacionPayload),
     onSuccess: async (saved) => {
+      clearDraft();
       const erogacionId = isEdit ? Number(id) : saved.id;
 
       await qc.invalidateQueries({ queryKey: ["erogaciones"] });
@@ -130,32 +149,19 @@ export default function ErogacionesForm() {
         replace: true,
         state: {
           successMessage: isEdit
-            ? "Erogacion actualizada con exito."
-            : "Erogacion creada con exito.",
+            ? "Erogación actualizada con éxito."
+            : "Erogación creada con éxito.",
         },
       });
     },
     onError: (error) => {
+      if (applyFieldErrors(error, setErrors, ["numero","tipo","fuente","fecha","ingresos","egresos"])) return;
       const backendMessage = getErrorMessage(
         error,
-        "Lo sentimos, no pudimos guardar los cambios. Verifique los datos e intente nuevamente."
+        isEdit
+          ? "Lo sentimos, no pudimos actualizar la erogación. Revise los datos e intente nuevamente."
+          : "Lo sentimos, no pudimos crear la erogación. Revise los datos e intente nuevamente."
       );
-      const lowerMessage = backendMessage.toLowerCase();
-
-      if (lowerMessage.includes("numero")) {
-        setErrors((prev) => ({ ...prev, numero: backendMessage }));
-      } else if (lowerMessage.includes("tipo")) {
-        setErrors((prev) => ({ ...prev, tipo: backendMessage }));
-      } else if (lowerMessage.includes("fuente")) {
-        setErrors((prev) => ({ ...prev, fuente: backendMessage }));
-      } else if (lowerMessage.includes("fecha")) {
-        setErrors((prev) => ({ ...prev, fecha: backendMessage }));
-      } else if (lowerMessage.includes("ingreso")) {
-        setErrors((prev) => ({ ...prev, ingresos: backendMessage }));
-      } else if (lowerMessage.includes("egreso")) {
-        setErrors((prev) => ({ ...prev, egresos: backendMessage }));
-      }
-
       setErrorMessage(backendMessage);
       setShowError(true);
     },
@@ -163,6 +169,7 @@ export default function ErogacionesForm() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isPending) return;
     if (!uct) return;
     if (!validate()) return;
 
@@ -182,11 +189,19 @@ export default function ErogacionesForm() {
     }
 
     const initialPayload = {
+      numero_erogacion: erogacion?.numero_erogacion ?? 0,
+      tipo_erogacion_id: erogacion?.tipo_erogacion_id ?? 0,
+      fuente_financiamiento_id: erogacion?.fuente_financiamiento_id ?? 0,
+      fecha: erogacion?.fecha ?? "",
       ingresos: erogacion?.ingresos ?? 0,
       egresos: erogacion?.egresos ?? 0,
     };
 
     const updatePayload = {
+      numero_erogacion: Number(data.numeroErogacion),
+      tipo_erogacion_id: Number(data.tipoErogacionId),
+      fuente_financiamiento_id: Number(data.fuenteFinanciamientoId),
+      fecha: data.fecha,
       ingresos: Number(data.ingresos),
       egresos: Number(data.egresos),
     };
@@ -198,6 +213,7 @@ export default function ErogacionesForm() {
     );
 
     if (Object.keys(changedPayload).length === 0) {
+      clearDraft();
       navigate(`/erogaciones/${id}`, {
         replace: true,
         state: {
@@ -211,7 +227,7 @@ export default function ErogacionesForm() {
   };
 
   if (isEdit && loadingErogacion) {
-    return <p className="text-slate-500">Cargando erogacion...</p>;
+    return <p className="text-slate-500">Cargando erogación...</p>;
   }
 
   const inputClass = (field: string) =>
@@ -220,27 +236,30 @@ export default function ErogacionesForm() {
   return (
     <section className="w-full">
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
-        {isEdit ? "Editar erogacion" : "Nueva erogacion"}
+        {isEdit ? "Editar erogación" : "Nueva erogación"}
       </h2>
+
+      {availableDraft && (
+        <DraftRecoveryNotice
+          savedAt={availableDraft.saved_at}
+          sourceChanged={sourceChanged}
+          onRestore={restoreDraft}
+          onDiscard={discardDraft}
+        />
+      )}
+      <DraftLeaveControls blocker={blocker} saveStatus={saveStatus} keepAndLeave={keepAndLeave} discardAndLeave={discardAndLeave} />
 
       <form
         noValidate
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        {isEdit && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            En edicion, el backend solo permite actualizar ingresos y egresos.
-          </div>
-        )}
-
-        <Field label="Numero de erogacion">
+        <Field required label="Número de erogación" name="numero" error={errors.numero}>
           <>
             <input
               type="number"
               className={inputClass("numero")}
               value={data.numeroErogacion}
-              disabled={isEdit}
               placeholder="Ej: 125"
               onChange={(e) => {
                 setData((prev) => ({
@@ -256,14 +275,13 @@ export default function ErogacionesForm() {
           </>
         </Field>
 
-        <Field label="Tipo de erogacion">
+        <Field required label="Tipo de erogación" name="tipo" error={errors.tipo}>
           <>
             <select
               className={`${inputClass("tipo")} ${
                 !data.tipoErogacionId ? "text-slate-400" : "text-slate-900"
               }`}
               value={data.tipoErogacionId}
-              disabled={isEdit}
               onChange={(e) => {
                 setData((prev) => ({
                   ...prev,
@@ -273,7 +291,7 @@ export default function ErogacionesForm() {
               }}
             >
               <option value="" disabled>
-                Seleccionar tipo de erogacion
+                Seleccionar tipo de erogación
               </option>
               {tipos.map((tipo) => (
                 <option key={tipo.id} value={tipo.id}>
@@ -287,14 +305,13 @@ export default function ErogacionesForm() {
           </>
         </Field>
 
-        <Field label="Fuente de financiamiento">
+        <Field required label="Fuente de financiamiento" name="fuente" error={errors.fuente}>
           <>
             <select
               className={`${inputClass("fuente")} ${
                 !data.fuenteFinanciamientoId ? "text-slate-400" : "text-slate-900"
               }`}
               value={data.fuenteFinanciamientoId}
-              disabled={isEdit}
               onChange={(e) => {
                 setData((prev) => ({
                   ...prev,
@@ -318,23 +335,22 @@ export default function ErogacionesForm() {
           </>
         </Field>
 
-        <Field label="Fecha">
+        <Field required label="Fecha" name="fecha" error={errors.fecha}>
           <DatePicker
             value={data.fecha ? new Date(`${data.fecha}T00:00:00`) : null}
             onChange={(dt) => {
               setData((prev) => ({
                 ...prev,
-                fecha: dt ? dt.toISOString().split("T")[0] : "",
+                fecha: toCivilDateString(dt) ?? "",
               }));
               if (dt) clearError("fecha");
             }}
-            helperText={errors.fecha ?? "DD/MM/AAAA"}
+            helperText="DD/MM/AAAA"
             className={inputClass("fecha")}
-            disabled={isEdit}
           />
         </Field>
 
-        <Field label="Ingresos">
+        <Field required label="Ingresos" name="ingresos" error={errors.ingresos}>
           <>
             <input
               type="number"
@@ -357,7 +373,7 @@ export default function ErogacionesForm() {
           </>
         </Field>
 
-        <Field label="Egresos">
+        <Field required label="Egresos" name="egresos" error={errors.egresos}>
           <>
             <input
               type="number"
@@ -385,12 +401,12 @@ export default function ErogacionesForm() {
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => requestLeave(() => navigate(-1))}
           >
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={isPending || !uct}>
+          <Button type="submit" size="sm" disabled={isPending || !uct} loading={isPending} loadingText="Guardando...">
             {isPending
               ? isEdit
                 ? "Actualizando..."

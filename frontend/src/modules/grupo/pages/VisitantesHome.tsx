@@ -20,6 +20,7 @@ import {
   getMemoriaSectionFilter,
 } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
+import { getCivilYear } from "@/utils/dateTime";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -101,7 +102,7 @@ export default function VisitantesHome() {
 
       const matchAnio =
         !filters.anio ||
-        new Date(v.fecha).getFullYear() === Number(filters.anio);
+        getCivilYear(v.fecha) === Number(filters.anio);
 
       return matchSearch && matchProcedencia && matchAnio;
     });
@@ -182,7 +183,7 @@ export default function VisitantesHome() {
       setErrorMessage(
         invalidItems.length === 1
           ? "El visitante ya fue eliminado."
-          : "Uno o mas visitantes ya fueron eliminados."
+          : "Uno o más visitantes ya fueron eliminados."
       );
       setShowError(true);
       return;
@@ -199,8 +200,8 @@ export default function VisitantesHome() {
 
       setSuccessMessage(
         selectedActiveItems.length === 1
-          ? "Visitante eliminado con exito."
-          : "Visitantes eliminados con exito."
+          ? "Visitante eliminado con éxito."
+          : "Visitantes eliminados con éxito."
       );
       setShowSuccess(true);
     } catch (error: unknown) {
@@ -209,7 +210,7 @@ export default function VisitantesHome() {
       setErrorMessage(
         getErrorMessage(
           error,
-          "Lo sentimos, no pudimos completar la operacion. Intente nuevamente."
+          "Lo sentimos, no pudimos completar la operación. Intente nuevamente."
         )
       );
 
@@ -222,7 +223,7 @@ export default function VisitantesHome() {
       <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h2 className="text-2xl font-semibold leading-none text-slate-800 md:text-3xl">
-            Visitantes del pais y del extranjero
+            Visitantes del país y del extranjero
           </h2>
           <p className="mt-2 text-xs text-slate-500">
             {visitantesFiltrados.length} de {scopedList.length} resultados
@@ -390,30 +391,30 @@ export default function VisitantesHome() {
             </div>
 
             {totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-between">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                  disabled={page === 1}
-                >
-                  Anterior
-                </Button>
-
-                <span className="text-sm text-slate-500">
-                  Pagina {page} de {totalPages}
-                </span>
-
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={page === totalPages}
-                >
-                  Siguiente
-                </Button>
+              <div className="mt-8">
+                <nav aria-label="Paginación" className="flex flex-wrap items-center justify-center gap-2">
+                  <Button type="button" size="sm" variant="secondary" aria-label="Página anterior"
+                    disabled={page === 1} onClick={() => setPage((current) => current - 1)}>
+                    {"<"}
+                  </Button>
+                  {[...Array(totalPages)].map((_, index) => {
+                    const pageNumber = index + 1;
+                    return (
+                      <button type="button" key={pageNumber} aria-label={`Página ${pageNumber}`}
+                        aria-current={page === pageNumber ? "page" : undefined}
+                        onClick={() => setPage(pageNumber)}
+                        className={`rounded-lg px-3 py-1 text-sm ${
+                          page === pageNumber ? "bg-slate-800 text-white" : "bg-slate-100 hover:bg-slate-200"
+                        }`}>
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
+                  <Button type="button" size="sm" variant="secondary" aria-label="Página siguiente"
+                    disabled={page === totalPages} onClick={() => setPage((current) => current + 1)}>
+                    {">"}
+                  </Button>
+                </nav>
               </div>
             )}
           </>
@@ -427,7 +428,8 @@ export default function VisitantesHome() {
         items={selectedActiveItems.map((v) => v.razon || "-")}
         onCancel={cancelSelection}
         onConfirm={confirmDelete}
-      />
+       loadingText="Eliminando..."
+     />
 
       <SuccessToast
         open={showSuccess}
