@@ -35,7 +35,8 @@ Bases: `/api/v1/produccion/trabajos-reunion-cientifica` y
   vincula autores dentro de una única transacción.
 - `PUT /<id>`: solo diferencias reales. `autores`, cuando está presente,
   reemplaza la colección completa con altas/bajas consolidadas. Omitirlo
-  conserva la colección; `[]` la vacía. No se auditan cambios inexistentes.
+  conserva la colección. Debe quedar al menos un autor; `[]` y la
+  desvinculación del último autor se rechazan. No se auditan cambios inexistentes.
 - `DELETE /<id>/autores`: `{ "autores": [{rol, id}] }` elimina únicamente
   esas asociaciones, también si el integrante está inactivo o eliminado.
 - `DELETE /<id>` y `PUT /<id>/restore`: conservan soft delete y restauración.
@@ -173,3 +174,31 @@ presentarlos mediante el contrato tipado y no por coercion a texto.
 `tests/test_registro_propiedad_memoria_historial.py` cubre las garantias de alta
 sin inicializaciones, edicion sin diferencias, lectura del historial y snapshots
 de memorias.
+
+## ISS-32: contrato de Trabajos en revistas
+
+Trabajos en revistas usa el catálogo independiente `TipoRevista`, sin compartir
+clasificaciones con reuniones científicas. El catálogo se administra en
+`/api/v1/produccion/tipos-revista`; las lecturas y el historial admiten
+ADMIN/GESTOR/LECTURA, mientras que las mutaciones requieren ADMIN o GESTOR.
+Los datos iniciales de testing son `Nacional` e `Internacional`.
+
+`TrabajosRevistasReferato` y sus snapshots usan `fecha_publicacion` no nula y
+`tipo_revista_id` no nulo. POST y PUT reciben esos nombres; GET devuelve además
+`tipo_revista: { id, nombre }`. La fecha admite valores desde 2010-01-01 hasta
+la fecha actual y determina orden, duplicados, pertenencia a memorias, búsqueda y
+exportaciones. Los eventos nuevos de auditoría usan `fecha_publicacion` y
+`tipo_revista_id`.
+
+El alta valida textos, fecha, catálogo, enlace y al menos un autor antes de
+persistir. Trabajo y autorías se confirman en una sola transacción, por lo que
+una petición sin autor no deja una fila parcial ni genera un conflicto de
+duplicado al reintentar con datos corregidos. En edición puede agregarse y
+quitarse autores en una sola petición, pero nunca dejar el trabajo sin autor.
+
+La revisión `b4e7c1d9a320` crea `tipo_revista`, reemplaza las referencias
+anteriores a Tipo de reunión y renombra la fecha de trabajos y snapshots. El
+entorno de prueba fue regenerado después de aplicar la revisión.
+
+Validación: 50 pruebas backend focalizadas cubren catálogo, fechas, autorías,
+rollback, historial, snapshots y errores de dominio.

@@ -8,6 +8,26 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-32: separar el contrato y estandarizar Trabajos en revistas
+
+- Se incorporó el catálogo independiente Tipo de revista con los valores de
+  prueba Nacional e Internacional, endpoints protegidos, auditoría e historial.
+  Trabajos en revistas dejó de depender de Tipo de reunión científica.
+- El modelo, API, snapshots, búsqueda, exportaciones y frontend reemplazaron la
+  fecha genérica por `fecha_publicacion`, presentada como Fecha de publicación.
+- Las altas y ediciones requieren al menos un autor. Una petición inválida no
+  persiste el trabajo, por lo que el reintento corregido no produce un falso
+  conflicto de título duplicado.
+- El home adoptó la tabla compartida con 9 filas, búsqueda, filtros, acciones
+  individuales e historial diferido de 3 eventos. Home y detalle presentan tipos,
+  fechas y eventos de autores con etiquetas legibles.
+- La revisión `b4e7c1d9a320` actualiza el esquema y el dataset de testing se
+  regeneró con las nuevas clasificaciones.
+
+Validaciones: aceptación visual y funcional del usuario, 50 pruebas backend
+focalizadas, 140 pruebas frontend, `typecheck`, build de producción y
+`git diff --check` correctos.
+
 ### ISS-31: presentar relaciones legibles en el historial de Proyectos
 
 - Home y detalle muestran vinculaciones y desvinculaciones de investigadores y

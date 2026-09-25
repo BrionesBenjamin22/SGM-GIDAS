@@ -314,3 +314,32 @@ contexto de Memorias, la baja logica y los permisos vigentes.
 
 Validacion: 135 pruebas frontend, prueba focalizada 5/5, typecheck, build de
 produccion, 46 pruebas backend focalizadas y `git diff --check` correctos.
+
+## ISS-32: contrato y grilla de Trabajos en revistas
+
+El formulario obtiene los tipos desde el service y hook dedicados de
+`tipos-revista`; presenta `Nacional` e `Internacional` sin reutilizar el
+catálogo de reuniones. El payload usa `tipo_revista_id` y
+`fecha_publicacion`, visible como `Fecha de publicación`. La selección de al
+menos un autor es obligatoria y los errores del backend se asocian al selector
+sin perder los datos cargados.
+
+El home usa la tabla compartida con 9 filas por página, búsqueda por trabajo,
+revista, editorial, ISSN, país, tipo o autor, filtros horizontales y acciones
+individuales según estado y permisos. Conserva el contexto de Memorias, el
+feedback de carga/error y la baja lógica. El hook del listado expone carga
+inicial, actualización y reintento.
+
+El historial se consulta al expandir una fila y muestra 3 eventos por página.
+Home y detalle comparten `trabajoRevistaHistory.ts`: omiten acciones técnicas,
+inicializaciones y valores equivalentes; presentan el catálogo por nombre, las
+fechas en formato civil y las vinculaciones o desvinculaciones de autores como
+acciones legibles.
+
+El alta vuelve al home y la edición al detalle con `successMessage`. Los
+services normalizan el contrato tipado y mantienen las escrituras dentro de las
+rutas de Producción.
+
+Validación: aceptación visual y funcional del usuario, 140 pruebas frontend,
+`typecheck`, build de producción, 50 pruebas backend focalizadas y
+`git diff --check` correctos.

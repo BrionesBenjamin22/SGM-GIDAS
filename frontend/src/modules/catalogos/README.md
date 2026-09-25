@@ -23,6 +23,11 @@ Los endpoints se reciben como definiciones internas constantes, no desde entrada
 del usuario. Los cuerpos se serializan como JSON y los errores reconocidos se
 procesan mediante el extractor seguro compartido.
 
+Tipo de revista se administra mediante `/tipos-revista/` y es independiente de
+Tipo de reunión científica. Sus valores iniciales de testing son `Nacional` e
+`Internacional`; el formulario de Trabajos en revistas consume el service y
+hook dedicados del módulo Producción.
+
 ## Permisos y estados
 
 Los roles `ADMIN` y `GESTOR` pueden crear, editar y eliminar valores. `LECTURA`
