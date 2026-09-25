@@ -424,9 +424,9 @@ class ExportService:
     @staticmethod
     def _get_trabajos_revista(grupo_id: int):
         return (
-            TrabajosRevistasReferato.query.options(joinedload(TrabajosRevistasReferato.tipo_reunion), selectinload(TrabajosRevistasReferato.autorias))
+            TrabajosRevistasReferato.query.options(joinedload(TrabajosRevistasReferato.tipo_revista), selectinload(TrabajosRevistasReferato.autorias))
             .filter(TrabajosRevistasReferato.grupo_utn_id == grupo_id, TrabajosRevistasReferato.deleted_at.is_(None))
-            .order_by(TrabajosRevistasReferato.fecha.desc(), TrabajosRevistasReferato.id.desc())
+            .order_by(TrabajosRevistasReferato.fecha_publicacion.desc(), TrabajosRevistasReferato.id.desc())
             .all()
         )
 
@@ -1829,8 +1829,8 @@ class ExportService:
         row = cls._write_grouped_tables(ws, row, "7", "TRABAJOS PRESENTADOS EN CONGRESOS Y REUNIONES CIENTIFICAS CON REFERATO", list(reuniones_grouped.items()), ["Nro.", "Titulo del trabajo", "Reunion cientifica", "Institucion de procedencia", "Fecha de presentacion", "Autores"], merge_span=10, date_cols={5})
         articulos_rows = [[idx, articulo.titulo, articulo.descripcion, articulo.fecha_publicacion] for idx, articulo in enumerate(articulos, start=1)]
         row = cls._write_table(ws, row, "8.- TRABAJOS REALIZADOS Y PUBLICADOS", ["Nro.", "Titulo del articulo", "Descripcion o sintesis", "Fecha de publicacion"], articulos_rows, merge_span=8, date_cols={4})
-        revistas_rows = [[idx, trabajo.titulo_trabajo + ("\nEnlace: " + trabajo.enlace if trabajo.enlace else ""), trabajo.nombre_revista, trabajo.editorial, trabajo.issn, trabajo.pais, trabajo.tipo_reunion.nombre if trabajo.tipo_reunion else "-", trabajo.fecha, cls._autores_texto([a.serialize() for a in trabajo.autorias])] for idx, trabajo in enumerate(trabajos_revista, start=1)]
-        row = cls._write_table(ws, row, "8.1.- Trabajos en revistas con referato", ["Nro.", "Titulo del trabajo", "Revista", "Editorial", "ISSN", "Pais", "Tipo de publicacion", "Fecha", "Autores"], revistas_rows, merge_span=10, date_cols={8})
+        revistas_rows = [[idx, trabajo.titulo_trabajo + ("\nEnlace: " + trabajo.enlace if trabajo.enlace else ""), trabajo.nombre_revista, trabajo.editorial, trabajo.issn, trabajo.pais, trabajo.tipo_revista.nombre if trabajo.tipo_revista else "-", trabajo.fecha_publicacion, cls._autores_texto([a.serialize() for a in trabajo.autorias])] for idx, trabajo in enumerate(trabajos_revista, start=1)]
+        row = cls._write_table(ws, row, "8.1.- Trabajos en revistas con referato", ["Nro.", "Titulo del trabajo", "Revista", "Editorial", "ISSN", "Pais", "Tipo de revista", "Fecha de publicacion", "Autores"], revistas_rows, merge_span=10, date_cols={8})
         registros_grouped = {}
         for registro in registros:
             tipo = registro.tipo_registro.nombre if registro.tipo_registro else "Sin tipo definido"

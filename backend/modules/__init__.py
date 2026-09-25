@@ -46,6 +46,7 @@ def get_blueprints():
         tipo_registro_propiedad_bp,
     )
     from modules.produccion.routes.tipo_reunion_rutas import tipo_reunion_bp
+    from modules.produccion.routes.tipo_revista_rutas import tipo_revista_bp
     from modules.produccion.routes.trabajo_reunion_rutas import (
         trabajo_reunion_cientifica_bp,
     )
@@ -115,6 +116,7 @@ def get_blueprints():
         transferencia_socio_productiva_bp,
         visita_academica_bp,
         tipo_reunion_bp,
+        tipo_revista_bp,
         memoria_bp,
     ]
 

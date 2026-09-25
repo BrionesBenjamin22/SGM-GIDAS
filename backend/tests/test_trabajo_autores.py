@@ -15,7 +15,7 @@ from modules.personal.models.personal import Investigador, Becario, Personal, Ti
 from modules.personal.models.tipo_personal import TipoPersonal
 from modules.produccion.models.trabajo_autor import TrabajoReunionAutor, TrabajoRevistaAutor
 from modules.produccion.models.trabajo_reunion import TipoReunion, TrabajoReunionCientifica
-from modules.produccion.models.trabajo_revista import TrabajosRevistasReferato
+from modules.produccion.models.trabajo_revista import TipoRevista, TrabajosRevistasReferato
 from modules.produccion.routes.trabajo_reunion_rutas import trabajo_reunion_cientifica_bp
 from modules.produccion.routes.trabajo_revista_rutas import trabajos_revistas_referato_bp
 from modules.produccion.services.trabajo_reunion_service import TrabajoReunionCientificaService
@@ -54,6 +54,7 @@ class TrabajoAutoresTest(unittest.TestCase):
             TipoPersonal(id=1, nombre="Profesional"),
             TipoFormacion(id=1, nombre="Grado"),
             TipoReunion(id=1, nombre="Nacional"),
+            TipoRevista(id=1, nombre="Nacional"),
         ])
         db.session.flush()
         db.session.add_all([
@@ -78,10 +79,10 @@ class TrabajoAutoresTest(unittest.TestCase):
         self.context.pop()
 
     def payload(self, tipo):
-        comun = {"titulo_trabajo": "Estudio de sistemas", "tipo_reunion_id": 1, "grupo_utn_id": 1, "autores": self.autores}
+        comun = {"titulo_trabajo": "Estudio de sistemas", "grupo_utn_id": 1, "autores": self.autores}
         if tipo == "reuniones":
-            return {**comun, "nombre_reunion": "Congreso UTN", "procedencia": "Argentina", "fecha_presentacion": "2026-03-20"}
-        return {**comun, "nombre_revista": "Revista UTN", "editorial": "UTN", "issn": "1234-5678", "pais": "Argentina", "fecha": "2026-03-20"}
+            return {**comun, "tipo_reunion_id": 1, "nombre_reunion": "Congreso UTN", "procedencia": "Argentina", "fecha_presentacion": "2026-03-20"}
+        return {**comun, "tipo_revista_id": 1, "nombre_revista": "Revista UTN", "editorial": "UTN", "issn": "1234-5678", "pais": "Argentina", "fecha_publicacion": "2026-03-20"}
 
     def crear(self, tipo):
         respuesta = self.client.post(f"/{tipo}", json=self.payload(tipo), headers=self.headers)
@@ -109,8 +110,8 @@ class TrabajoAutoresTest(unittest.TestCase):
                 self.client.put(f"/{tipo}/{identificador}", json={"autores": [self.autores[1]]}, headers=self.headers)
                 self.assertEqual(AuditoriaCampo.query.filter_by(entidad=entidad, registro_id=identificador).count(), 4)
                 baja = self.client.delete(f"/{tipo}/{identificador}/autores", json={"autores": [self.autores[1]]}, headers=self.headers)
-                self.assertEqual(baja.status_code, 200)
-                self.assertEqual(baja.get_json()["autores"], [])
+                self.assertEqual(baja.status_code, 400)
+                self.assertEqual(len(self.client.get(f"/{tipo}/{identificador}", headers=self.headers).get_json()["autores"]), 1)
 
     def test_solo_investigador_solo_becario_y_ambos(self):
         for tipo in ("reuniones", "revistas"):
@@ -133,7 +134,7 @@ class TrabajoAutoresTest(unittest.TestCase):
                 self.assertNotIn("investigadores", trabajo["extra"])
 
     def test_rechaza_autores_invalidos_sin_persistir_cambios_parciales(self):
-        invalidos = (None, {}, [self.autores[0]] * 2, [{"id": 99, "rol": "becario"}],
+        invalidos = (None, {}, [], [self.autores[0]] * 2, [{"id": 99, "rol": "becario"}],
                      [{"id": True, "rol": "investigador"}], [{"id": 1, "rol": "externo"}], [{"id": 1, "rol": "personal"}], [{"id": 1, "rol": []}],
                      [{"id": 2, "rol": "investigador"}], [{"id": 3, "rol": "investigador"}])
         for tipo in ("reuniones", "revistas"):
@@ -148,6 +149,22 @@ class TrabajoAutoresTest(unittest.TestCase):
                     detalle = self.client.get(f"/{tipo}/{identificador}", headers=self.headers).get_json()
                     self.assertEqual(detalle["titulo_trabajo"], "Estudio de sistemas")
                     self.assertEqual(len(detalle["autores"]), 2)
+
+    def test_alta_revista_sin_autores_no_persiste_y_admite_reintento(self):
+        payload = self.payload("revistas")
+        payload["autores"] = []
+
+        rechazo = self.client.post("/revistas", json=payload, headers=self.headers)
+
+        self.assertEqual(rechazo.status_code, 400)
+        self.assertIn("autores", rechazo.get_json()["error"]["details"]["fields"])
+        self.assertEqual(TrabajosRevistasReferato.query.count(), 0)
+
+        payload["autores"] = self.autores
+        reintento = self.client.post("/revistas", json=payload, headers=self.headers)
+
+        self.assertEqual(reintento.status_code, 201, reintento.get_json())
+        self.assertEqual(TrabajosRevistasReferato.query.count(), 1)
 
     def test_rechaza_personal_existente_activo_en_alta_edicion_baja_y_filtro(self):
         # Personal existe y está activo; su categoría, no su estado, lo excluye.

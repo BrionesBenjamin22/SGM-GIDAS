@@ -45,11 +45,11 @@ class TrabajoRevistaMemoriaHistorialTestCase(unittest.TestCase):
             editorial="Editorial UTN",
             issn="1234-5678",
             pais="Argentina",
-            fecha=date(2026, 4, 10),
+            fecha_publicacion=date(2026, 4, 10),
             grupo_utn_id=4,
             grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS"),
-            tipo_reunion_id=2,
-            tipo_reunion=SimpleNamespace(nombre="Articulo"),
+            tipo_revista_id=2,
+            tipo_revista=SimpleNamespace(nombre="Internacional"),
             autorias=[
                 SimpleNamespace(serialize=lambda: {"id": 1, "rol": "investigador", "tipo": "Investigador", "nombre_apellido": "Ana Perez"}),
                 SimpleNamespace(serialize=lambda: {"id": 1, "rol": "becario", "tipo": "Becario", "nombre_apellido": "Luis Diaz"})
@@ -74,7 +74,7 @@ class TrabajoRevistaMemoriaHistorialTestCase(unittest.TestCase):
 
         self.assertEqual(len(snapshots), 1)
         self.assertEqual(snapshots[0].trabajo_revista_id, 6)
-        self.assertEqual(snapshots[0].tipo_reunion_nombre, "Articulo")
+        self.assertEqual(snapshots[0].tipo_revista_nombre, "Internacional")
         self.assertEqual(
             [a["nombre_apellido"] for a in snapshots[0].autores],
             ["Ana Perez", "Luis Diaz"]
@@ -207,7 +207,7 @@ class TrabajoRevistaMemoriaHistorialTestCase(unittest.TestCase):
                 query=fake_query,
                 memoria_version_id=None,
                 deleted_at=SimpleNamespace(is_=lambda *_: None),
-                fecha=SimpleNamespace(desc=lambda: None),
+                fecha_publicacion=SimpleNamespace(desc=lambda: None),
                 id=SimpleNamespace(desc=lambda: None)
             )
         ):

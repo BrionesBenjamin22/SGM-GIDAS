@@ -34,7 +34,7 @@ class ProduccionDomainErrorsTestCase(unittest.TestCase):
             (lambda: TrabajoReunionCientificaService._validar_texto("", "titulo_trabajo"), "titulo_trabajo"),
             (lambda: TrabajoReunionCientificaService._validar_fecha("2009-12-31"), "fecha_presentacion"),
             (lambda: TrabajosRevistasReferatoService._validar_texto("", "titulo_trabajo"), "titulo_trabajo"),
-            (lambda: TrabajosRevistasReferatoService._validar_fecha("2009-12-31"), "fecha"),
+            (lambda: TrabajosRevistasReferatoService._validar_fecha_publicacion("2009-12-31"), "fecha_publicacion"),
         )
         for validate, field in cases:
             with self.subTest(field=field), self.assertRaises(ValidationError) as caught:

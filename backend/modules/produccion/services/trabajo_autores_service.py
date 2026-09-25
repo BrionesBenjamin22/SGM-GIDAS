@@ -29,6 +29,11 @@ def validar_referencias(autores):
 
 def validar_autores(autores, existentes=()):
     referencias = validar_referencias(autores)
+    if not referencias:
+        raise ValidationError(
+            "Debe seleccionar al menos un autor",
+            details={"fields": {"autores": "Agregue al menos un autor."}},
+        )
     actuales = {(a.rol, a.integrante.id) for a in existentes}
     resultado = []
     for rol, identificador in referencias:

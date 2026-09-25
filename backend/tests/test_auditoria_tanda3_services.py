@@ -315,9 +315,9 @@ class AuditoriaTanda3ServicesTestCase(unittest.TestCase):
             editorial="Editorial inicial",
             issn="1234-5678",
             pais="Argentina",
-            fecha=date(2024, 4, 1),
+            fecha_publicacion=date(2024, 4, 1),
             grupo_utn_id=1,
-            tipo_reunion_id=2,
+            tipo_revista_id=2,
             created_by=1
         )
         trabajo.deleted_at = None
@@ -333,7 +333,7 @@ class AuditoriaTanda3ServicesTestCase(unittest.TestCase):
             "modules.produccion.services.trabajo_revista_service.TrabajosRevistasReferatoService._validar_grupo",
             return_value=5
         ), patch(
-            "modules.produccion.services.trabajo_revista_service.TrabajosRevistasReferatoService._validar_tipo_reunion",
+            "modules.produccion.services.trabajo_revista_service.TrabajosRevistasReferatoService._validar_tipo_revista",
             return_value=6
         ), patch(
             "modules.produccion.services.trabajo_revista_service.AuditoriaService.registrar_cambios"
@@ -344,7 +344,7 @@ class AuditoriaTanda3ServicesTestCase(unittest.TestCase):
                     "titulo_trabajo": "Titulo actualizado",
                     "pais": "Chile",
                     "grupo_utn_id": 5,
-                    "tipo_reunion_id": 6
+                    "tipo_revista_id": 6
                 },
                 user_id=16
             )
@@ -352,7 +352,7 @@ class AuditoriaTanda3ServicesTestCase(unittest.TestCase):
         self.assertEqual(resultado["titulo_trabajo"], "Titulo actualizado")
         self.assertEqual(resultado["pais"], "Chile")
         self.assertEqual(resultado["grupo_utn_id"], 5)
-        self.assertEqual(resultado["tipo_reunion_id"], 6)
+        self.assertEqual(resultado["tipo_revista_id"], 6)
         self.assertEqual(trabajo.updated_by, 16)
         self.assertIsNotNone(trabajo.updated_at)
         mock_registrar.assert_called_once()

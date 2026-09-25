@@ -3,8 +3,23 @@ import re
 from sqlalchemy.orm import validates
 from extension import db
 from modules.produccion.models.trabajo_autor import TrabajoRevistaAutor
-from modules.produccion.models.trabajo_reunion import TipoReunion
 from modules.shared.models.audit_mixin import AuditMixin
+
+
+class TipoRevista(db.Model, AuditMixin):
+    __tablename__ = "tipo_revista"
+
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False, unique=True)
+
+    trabajos_revistas = db.relationship(
+        "TrabajosRevistasReferato",
+        back_populates="tipo_revista",
+        lazy="select",
+    )
+
+    def serialize(self):
+        return self.to_dict()
 
 
 
@@ -19,7 +34,7 @@ class TrabajosRevistasReferato(db.Model, AuditMixin):
     editorial = db.Column(db.Text, nullable=False)
     issn = db.Column(db.Text, nullable=False)
     pais = db.Column(db.Text, nullable=False)
-    fecha = db.Column(db.Date, nullable=False)
+    fecha_publicacion = db.Column(db.Date, nullable=False)
 
     grupo_utn_id = db.Column(
         db.Integer,
@@ -31,14 +46,14 @@ class TrabajosRevistasReferato(db.Model, AuditMixin):
         back_populates='trabajos_revistas'
     )
 
-    tipo_reunion_id = db.Column(
+    tipo_revista_id = db.Column(
         db.Integer,
-        db.ForeignKey('tipo_reunion_cientifica.id'),
+        db.ForeignKey('tipo_revista.id'),
         nullable=False
     )
 
-    tipo_reunion = db.relationship(
-        'TipoReunion',
+    tipo_revista = db.relationship(
+        'TipoRevista',
         back_populates='trabajos_revistas'
     )
 
@@ -55,12 +70,12 @@ class TrabajosRevistasReferato(db.Model, AuditMixin):
                 if self.grupo_utn else None
             ),
             "autores": [autor.serialize() for autor in self.autorias],
-            "tipo_reunion": (
+            "tipo_revista": (
                 {
-                    "id": self.tipo_reunion.id,
-                    "nombre": self.tipo_reunion.nombre
+                    "id": self.tipo_revista.id,
+                    "nombre": self.tipo_revista.nombre
                 }
-                if self.tipo_reunion else None
+                if self.tipo_revista else None
             )
         })
 
@@ -89,7 +104,7 @@ class TrabajosRevistasReferatoMemoriaVersion(db.Model, AuditMixin):
     editorial = db.Column(db.Text, nullable=False)
     issn = db.Column(db.Text, nullable=False)
     pais = db.Column(db.Text, nullable=False)
-    fecha = db.Column(db.Date, nullable=False)
+    fecha_publicacion = db.Column(db.Date, nullable=False)
 
     grupo_utn_id = db.Column(
         db.Integer,
@@ -98,18 +113,18 @@ class TrabajosRevistasReferatoMemoriaVersion(db.Model, AuditMixin):
     )
     grupo_utn_nombre = db.Column(db.String(255), nullable=True)
 
-    tipo_reunion_id = db.Column(
+    tipo_revista_id = db.Column(
         db.Integer,
-        db.ForeignKey("tipo_reunion_cientifica.id"),
+        db.ForeignKey("tipo_revista.id"),
         nullable=False
     )
-    tipo_reunion_nombre = db.Column(db.String(100), nullable=True)
+    tipo_revista_nombre = db.Column(db.String(100), nullable=True)
     autores = db.Column(db.JSON, nullable=False, default=list)
 
     memoria_version = db.relationship("MemoriaVersion", lazy="joined")
     trabajo_revista = db.relationship("TrabajosRevistasReferato", lazy="joined")
     grupo_utn = db.relationship("GrupoInvestigacionUtn", lazy="joined")
-    tipo_reunion_rel = db.relationship("TipoReunion", lazy="joined")
+    tipo_revista_rel = db.relationship("TipoRevista", lazy="joined")
 
     __table_args__ = (
         db.UniqueConstraint(

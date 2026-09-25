@@ -11,13 +11,12 @@ from modules.produccion.models.trabajo_autor import TrabajoRevistaAutor
 from modules.produccion.services.trabajo_autores_service import (
     validar_autores, validar_referencias, sincronizar_autores, filtrar_por_autor,
 )
-from modules.produccion.models.trabajo_reunion import TipoReunion
 from modules.produccion.models.trabajo_revista import (
+    TipoRevista,
     TrabajosRevistasReferato,
     TrabajosRevistasReferatoMemoriaVersion,
 )
 from modules.shared.services.auditoria_service import AuditoriaService
-from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 from modules.shared.services.date_time import INSTITUTIONAL_MIN_DATE
 from extension import db
@@ -37,7 +36,7 @@ class TrabajosRevistasReferatoService:
             return None
 
         if not isinstance(valor, int) or valor <= 0:
-            if campo == "tipo_reunion_id":
+            if campo == "tipo_revista_id":
                 raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: "Seleccione un tipo de revista disponible."}})
             raise ValidationError("No pudimos procesar la solicitud. Intente nuevamente.")
 
@@ -64,17 +63,17 @@ class TrabajosRevistasReferatoService:
         return valor
 
     @staticmethod
-    def _validar_fecha(fecha_str: str):
+    def _validar_fecha_publicacion(fecha_str: str):
         try:
             fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
         except (TypeError, ValueError):
-            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha": "Ingrese una fecha válida."}})
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_publicacion": "Ingrese una fecha de publicación válida."}})
 
         if fecha > date.today():
-            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha": "Ingrese una fecha que no sea futura."}})
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_publicacion": "Ingrese una fecha de publicación que no sea futura."}})
 
         if fecha < INSTITUTIONAL_MIN_DATE:
-            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha": "Ingrese una fecha desde el 01/01/2010."}})
+            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_publicacion": "Ingrese una fecha de publicación desde el 01/01/2010."}})
         return fecha
 
     @staticmethod
@@ -124,14 +123,14 @@ class TrabajosRevistasReferatoService:
         return grupo.id
 
     @staticmethod
-    def _validar_tipo_reunion(tipo_reunion_id):
-        tipo_reunion_id = TrabajosRevistasReferatoService._validar_id(
-            tipo_reunion_id, "tipo_reunion_id"
+    def _validar_tipo_revista(tipo_revista_id):
+        tipo_revista_id = TrabajosRevistasReferatoService._validar_id(
+            tipo_revista_id, "tipo_revista_id"
         )
-        tipo_reunion = db.session.get(TipoReunion, tipo_reunion_id)
-        if not tipo_reunion:
-            raise NotFoundError("El tipo de revista ya no está disponible. Elija otro e intente nuevamente.", details={"fields": {"tipo_reunion_id": "Seleccione un tipo de revista disponible."}})
-        return tipo_reunion.id
+        tipo_revista = db.session.get(TipoRevista, tipo_revista_id)
+        if not tipo_revista or tipo_revista.deleted_at is not None:
+            raise NotFoundError("El tipo de revista ya no está disponible. Elija otro e intente nuevamente.", details={"fields": {"tipo_revista_id": "Seleccione un tipo de revista disponible."}})
+        return tipo_revista.id
 
     @staticmethod
     def _get_or_404(trabajo_id: int):
@@ -163,7 +162,7 @@ class TrabajosRevistasReferatoService:
         editorial: str,
         issn: str,
         pais: str,
-        fecha,
+        fecha_publicacion,
         trabajo_id: int = None
     ):
         query = TrabajosRevistasReferato.query.filter(
@@ -173,7 +172,7 @@ class TrabajosRevistasReferatoService:
             TrabajosRevistasReferato.editorial == editorial,
             TrabajosRevistasReferato.issn == issn,
             TrabajosRevistasReferato.pais == pais,
-            TrabajosRevistasReferato.fecha == fecha,
+            TrabajosRevistasReferato.fecha_publicacion == fecha_publicacion,
         )
 
         if trabajo_id is not None:
@@ -234,9 +233,9 @@ class TrabajosRevistasReferatoService:
             filters.get("orden")
         )
         if orden == "asc":
-            query = query.order_by(TrabajosRevistasReferato.fecha.asc())
+            query = query.order_by(TrabajosRevistasReferato.fecha_publicacion.asc())
         else:
-            query = query.order_by(TrabajosRevistasReferato.fecha.desc())
+            query = query.order_by(TrabajosRevistasReferato.fecha_publicacion.desc())
 
         return [t.serialize() for t in query.all()]
 
@@ -272,12 +271,14 @@ class TrabajosRevistasReferatoService:
         pais = TrabajosRevistasReferatoService._validar_texto(
             data.get("pais"), "pais", max_len=120
         )
-        fecha = TrabajosRevistasReferatoService._validar_fecha(data.get("fecha"))
+        fecha_publicacion = TrabajosRevistasReferatoService._validar_fecha_publicacion(
+            data.get("fecha_publicacion")
+        )
         grupo_utn_id = TrabajosRevistasReferatoService._validar_grupo(
             data.get("grupo_utn_id")
         )
-        tipo_reunion_id = TrabajosRevistasReferatoService._validar_tipo_reunion(
-            data.get("tipo_reunion_id")
+        tipo_revista_id = TrabajosRevistasReferatoService._validar_tipo_revista(
+            data.get("tipo_revista_id")
         )
 
         TrabajosRevistasReferatoService._validar_no_duplicado(
@@ -286,7 +287,7 @@ class TrabajosRevistasReferatoService:
             editorial,
             issn,
             pais,
-            fecha,
+            fecha_publicacion,
         )
 
         enlace = validar_enlace(data.get("enlace"))
@@ -297,10 +298,10 @@ class TrabajosRevistasReferatoService:
             nombre_revista=nombre_revista,
             editorial=editorial,
             issn=issn,
-            fecha=fecha,
+            fecha_publicacion=fecha_publicacion,
             pais=pais,
             grupo_utn_id=grupo_utn_id,
-            tipo_reunion_id=tipo_reunion_id,
+            tipo_revista_id=tipo_revista_id,
             enlace=enlace,
             created_by=user_id
         )
@@ -355,9 +356,11 @@ class TrabajosRevistasReferatoService:
                 data["pais"], "pais", max_len=120
             )
 
-        fecha = trabajo.fecha
-        if "fecha" in data:
-            fecha = TrabajosRevistasReferatoService._validar_fecha(data["fecha"])
+        fecha_publicacion = trabajo.fecha_publicacion
+        if "fecha_publicacion" in data:
+            fecha_publicacion = TrabajosRevistasReferatoService._validar_fecha_publicacion(
+                data["fecha_publicacion"]
+            )
 
         grupo_utn_id = trabajo.grupo_utn_id
         if "grupo_utn_id" in data:
@@ -365,10 +368,10 @@ class TrabajosRevistasReferatoService:
                 data["grupo_utn_id"]
             )
 
-        tipo_reunion_id = trabajo.tipo_reunion_id
-        if "tipo_reunion_id" in data:
-            tipo_reunion_id = TrabajosRevistasReferatoService._validar_tipo_reunion(
-                data["tipo_reunion_id"]
+        tipo_revista_id = trabajo.tipo_revista_id
+        if "tipo_revista_id" in data:
+            tipo_revista_id = TrabajosRevistasReferatoService._validar_tipo_revista(
+                data["tipo_revista_id"]
             )
 
         TrabajosRevistasReferatoService._validar_no_duplicado(
@@ -377,7 +380,7 @@ class TrabajosRevistasReferatoService:
             editorial,
             issn,
             pais,
-            fecha,
+            fecha_publicacion,
             trabajo.id,
         )
 
@@ -416,10 +419,13 @@ class TrabajosRevistasReferatoService:
                 cambios["pais"] = cambio
                 trabajo.pais = pais
 
-            cambio = AuditoriaService.construir_cambio(trabajo.fecha, fecha)
+            cambio = AuditoriaService.construir_cambio(
+                trabajo.fecha_publicacion,
+                fecha_publicacion,
+            )
             if cambio:
-                cambios["fecha"] = cambio
-                trabajo.fecha = fecha
+                cambios["fecha_publicacion"] = cambio
+                trabajo.fecha_publicacion = fecha_publicacion
 
             cambio = AuditoriaService.construir_cambio(
                 trabajo.grupo_utn_id,
@@ -430,12 +436,12 @@ class TrabajosRevistasReferatoService:
                 trabajo.grupo_utn_id = grupo_utn_id
 
             cambio = AuditoriaService.construir_cambio(
-                trabajo.tipo_reunion_id,
-                tipo_reunion_id
+                trabajo.tipo_revista_id,
+                tipo_revista_id
             )
             if cambio:
-                cambios["tipo_reunion_id"] = cambio
-                trabajo.tipo_reunion_id = tipo_reunion_id
+                cambios["tipo_revista_id"] = cambio
+                trabajo.tipo_revista_id = tipo_revista_id
 
             cambio = AuditoriaService.construir_cambio(trabajo.enlace, enlace)
             if cambio:
@@ -507,7 +513,11 @@ class TrabajosRevistasReferatoService:
 
         snapshots = []
         for trabajo in trabajos:
-            if not registro_puntual_en_memoria(memoria_version, trabajo, trabajo.fecha):
+            if not registro_puntual_en_memoria(
+                memoria_version,
+                trabajo,
+                trabajo.fecha_publicacion,
+            ):
                 continue
             autores = [autor.serialize() for autor in trabajo.autorias]
 
@@ -520,16 +530,16 @@ class TrabajosRevistasReferatoService:
                 editorial=trabajo.editorial,
                 issn=trabajo.issn,
                 pais=trabajo.pais,
-                fecha=trabajo.fecha,
+                fecha_publicacion=trabajo.fecha_publicacion,
                 grupo_utn_id=trabajo.grupo_utn_id,
                 grupo_utn_nombre=(
                     trabajo.grupo_utn.nombre_sigla_grupo
                     if trabajo.grupo_utn else None
                 ),
-                tipo_reunion_id=trabajo.tipo_reunion_id,
-                tipo_reunion_nombre=(
-                    trabajo.tipo_reunion.nombre
-                    if trabajo.tipo_reunion else None
+                tipo_revista_id=trabajo.tipo_revista_id,
+                tipo_revista_nombre=(
+                    trabajo.tipo_revista.nombre
+                    if trabajo.tipo_revista else None
                 ),
                 autores=autores,
                 created_by=user_id
@@ -548,7 +558,7 @@ class TrabajosRevistasReferatoService:
                 TrabajosRevistasReferatoMemoriaVersion.deleted_at.is_(None)
             )
             .order_by(
-                TrabajosRevistasReferatoMemoriaVersion.fecha.desc(),
+                TrabajosRevistasReferatoMemoriaVersion.fecha_publicacion.desc(),
                 TrabajosRevistasReferatoMemoriaVersion.id.desc()
             )
             .all()

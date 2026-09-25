@@ -997,7 +997,7 @@ class SearchService:
             db.session.query(TrabajosRevistasReferato)
             .options(
                 joinedload(TrabajosRevistasReferato.grupo_utn),
-                joinedload(TrabajosRevistasReferato.tipo_reunion),
+                joinedload(TrabajosRevistasReferato.tipo_revista),
                 selectinload(TrabajosRevistasReferato.autorias)
             ),
             TrabajosRevistasReferato,
@@ -1033,14 +1033,14 @@ class SearchService:
                     "id": tr.id,
                     "titulo": tr.titulo_trabajo,
                     "subtitulo": tr.nombre_revista,
-                    "fecha": tr.fecha,
+                    "fecha": tr.fecha_publicacion,
                     "url": f"/trabajos-revistas/{tr.id}",
                     "extra": {
                         "editorial": tr.editorial,
                         "issn": tr.issn,
                         "pais": tr.pais,
                         "grupo": tr.grupo_utn.nombre_sigla_grupo if tr.grupo_utn else None,
-                        "tipo_reunion": tr.tipo_reunion.nombre if tr.tipo_reunion else None,
+                        "tipo_revista": tr.tipo_revista.nombre if tr.tipo_revista else None,
                         "autores": [autor.serialize() for autor in tr.autorias]
                     }
                 }))

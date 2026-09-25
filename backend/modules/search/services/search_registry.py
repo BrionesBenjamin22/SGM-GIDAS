@@ -404,9 +404,9 @@ SEARCH_ENTITIES = [
                     t.grupo_utn.nombre_sigla_grupo
                     if t.grupo_utn else None
                 ),
-                "tipo_reunion": (
-                    t.tipo_reunion.nombre
-                    if t.tipo_reunion else None
+                "tipo_revista": (
+                    t.tipo_revista.nombre
+                    if t.tipo_revista else None
                 ),
                 "autores": [a.serialize() for a in t.autorias]
             },

@@ -65,6 +65,7 @@ from modules.produccion.models.trabajo_reunion import (  # noqa: F401
     TrabajoReunionCientificaMemoriaVersion,
 )
 from modules.produccion.models.trabajo_revista import (  # noqa: F401
+    TipoRevista,
     TrabajosRevistasReferato,
     TrabajosRevistasReferatoMemoriaVersion,
 )

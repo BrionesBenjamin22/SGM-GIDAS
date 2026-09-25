@@ -43,7 +43,7 @@ from modules.produccion.models.registro_patente import (
     TipoRegistroPropiedad,
 )
 from modules.produccion.models.trabajo_reunion import TipoReunion, TrabajoReunionCientifica
-from modules.produccion.models.trabajo_revista import TrabajosRevistasReferato
+from modules.produccion.models.trabajo_revista import TipoRevista, TrabajosRevistasReferato
 from modules.proyectos.models.participacion_relevante import ParticipacionRelevante
 from modules.recursos.models.becas import Beca
 from modules.recursos.models.equipamiento import Equipamiento
@@ -393,6 +393,8 @@ def _seed_search_coverage(grupo, catalogs, investigador, admin_user_id):
         nombre="Convenio de asistencia TEST",
     )
     tipo_reunion, _ = _get_or_create(TipoReunion, nombre="Jornada academica TEST")
+    tipo_revista, _ = _get_or_create(TipoRevista, nombre="Nacional")
+    _get_or_create(TipoRevista, nombre="Internacional")
 
     _get_or_create(
         Beca,
@@ -509,9 +511,9 @@ def _seed_search_coverage(grupo, catalogs, investigador, admin_user_id):
             "editorial": "Editorial de Prueba",
             "issn": "0000-0000",
             "pais": "Argentina",
-            "fecha": date(2024, 9, 15),
+            "fecha_publicacion": date(2024, 9, 15),
             "grupo_utn_id": grupo.id,
-            "tipo_reunion_id": tipo_reunion.id,
+            "tipo_revista_id": tipo_revista.id,
             "created_by": admin_user_id,
         },
     )
@@ -587,6 +589,10 @@ def _seed_manual_testing_dataset(grupo, catalogs, investigador, admin_user_id):
             "Jornada TEST",
             "Seminario TEST",
         ]
+    ]
+    tipos_revista = [
+        _get_or_create(TipoRevista, nombre=nombre)[0]
+        for nombre in ["Nacional", "Internacional"]
     ]
 
     instituciones = [
@@ -721,9 +727,9 @@ def _seed_manual_testing_dataset(grupo, catalogs, investigador, admin_user_id):
                 "editorial": f"Editorial {tipo_index + 1}",
                 "issn": f"{1000 + index:04d}-{2000 + index:04d}",
                 "pais": paises[tipo_index],
-                "fecha": date(year, month, 19),
+                "fecha_publicacion": date(year, month, 19),
                 "grupo_utn_id": grupo.id,
-                "tipo_reunion_id": tipos_reunion[tipo_index].id,
+                "tipo_revista_id": tipos_revista[tipo_index % 2].id,
                 "created_by": admin_user_id,
             },
         )
