@@ -20,6 +20,7 @@ import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,
 } from "@/lib/memoriaNavigation";
+import { formatTrabajoReunionAuthorHistoryEntry } from "@/modules/produccion/utils/trabajoReunionHistory";
 
 export default function TrabajoReunionDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -222,6 +223,7 @@ export default function TrabajoReunionDetalle() {
           formatItemValue={(item, value, kind) =>
             formatHistorialValue(item, value, kind)
           }
+          formatItemPresentation={formatTrabajoReunionAuthorHistoryEntry}
         />
 
         <div className="flex justify-start pt-4">

@@ -17,6 +17,11 @@ export type HistorialCambioCardItem = {
   tipo?: string;
 };
 
+type HistorialCambioPresentation = {
+  title: string;
+  description: string;
+};
+
 type Props = {
   title?: string;
   subtitle?: string;
@@ -30,6 +35,9 @@ type Props = {
     value: unknown,
     kind: "anterior" | "nuevo"
   ) => string;
+  formatItemPresentation?: (
+    item: HistorialCambioCardItem
+  ) => HistorialCambioPresentation | null;
 };
 
 function formatValor(valor: unknown) {
@@ -63,6 +71,7 @@ export default function HistorialCambiosCard({
   updatedByName,
   pageSize = 3,
   formatItemValue,
+  formatItemPresentation,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState(1);
@@ -110,6 +119,29 @@ export default function HistorialCambiosCard({
         >
           <div className="space-y-1 text-sm text-slate-500">
             <p className="font-medium text-slate-700">Última actualización</p>
+            <p>
+              <span className="font-medium text-slate-700">Fecha:</span>{" "}
+              {formatFechaHora(item.fecha_cambio)}
+            </p>
+            <p>
+              <span className="font-medium text-slate-700">Usuario:</span>{" "}
+              {item.usuario_nombre || "-"}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    const presentation = formatItemPresentation?.(item);
+    if (presentation) {
+      return (
+        <div
+          key={`${item.id}-${item.fecha_cambio ?? "sin-fecha"}`}
+          className="rounded-xl border border-slate-200 bg-white px-4 py-3"
+        >
+          <div className="space-y-1 text-sm text-slate-500">
+            <p className="font-medium text-slate-700">{presentation.title}</p>
+            <p>{presentation.description}</p>
             <p>
               <span className="font-medium text-slate-700">Fecha:</span>{" "}
               {formatFechaHora(item.fecha_cambio)}
