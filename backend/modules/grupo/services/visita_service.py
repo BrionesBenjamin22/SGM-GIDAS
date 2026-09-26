@@ -7,11 +7,11 @@ import builtins
 from extension import db
 from modules.shared.exceptions import ValidationError as ValueError
 from modules.grupo.models.visita_grupo import (
+    TipoVisita,
     VisitaAcademica,
     VisitaAcademicaMemoriaVersion,
 )
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
-from modules.produccion.models.trabajo_reunion import TipoReunion
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from modules.shared.services.date_time import INSTITUTIONAL_MIN_DATE
@@ -69,8 +69,8 @@ def _validar_fecha(fecha_str: str):
 
 def _validar_tipo_visita(tipo_visita_id):
     tipo_visita_id = _validar_id(tipo_visita_id, "tipo_visita_id")
-    tipo_visita = db.session.get(TipoReunion, tipo_visita_id)
-    if not tipo_visita:
+    tipo_visita = db.session.get(TipoVisita, tipo_visita_id)
+    if not tipo_visita or tipo_visita.deleted_at is not None:
         raise ValueError("Revise el tipo de visita e intente nuevamente.", details={"fields": {"tipo_visita_id": "Seleccione un tipo de visita disponible."}})
     return tipo_visita.id
 

@@ -37,6 +37,52 @@ paginado transversal cuando recibe `page` o `per_page`.
 La actualizacion acepta payload parcial, valida unicidad por grupo y año,
 registra solamente campos modificados y asigna `updated_by`.
 
+## Visitas y tipos de visita (ISS-37)
+
+Las visitas utilizan el catálogo propio `TipoVisita`. La relación
+`tipo_visita_id` ya no depende de `TipoReunion`; el resto de los tipos de
+encuentro permanece sin cambios. Las visitas vigentes y los snapshots cerrados
+de Memorias referencian `tipo_visita`, y los snapshots conservan además el
+nombre congelado para trazabilidad histórica.
+
+Endpoints de visitas:
+
+```text
+GET    /api/v1/visitas-academicas/?activos=true|false|all
+POST   /api/v1/visitas-academicas/
+GET    /api/v1/visitas-academicas/{id}
+PUT    /api/v1/visitas-academicas/{id}
+DELETE /api/v1/visitas-academicas/{id}
+GET    /api/v1/visitas-academicas/{id}/historial
+```
+
+El alta recibe `razon`, `fecha`, `procedencia`, `tipo_visita_id` y
+`grupo_utn_id`. La edición admite un payload parcial y registra únicamente las
+diferencias reales. `tipo_visita_id` debe identificar un tipo activo del
+catálogo propio; `procedencia` continúa representando el origen de la visita
+como texto.
+
+Endpoints del catálogo:
+
+```text
+GET    /api/v1/grupo/tipos-visita/?activos=true|false|all
+POST   /api/v1/grupo/tipos-visita/
+PUT    /api/v1/grupo/tipos-visita/{id}
+DELETE /api/v1/grupo/tipos-visita/{id}
+GET    /api/v1/grupo/tipos-visita/{id}/historial
+```
+
+El catálogo recibe `{ "nombre": string }`, normaliza espacios, exige un nombre
+descriptivo y evita duplicados sin distinguir mayúsculas. Sus registros son
+auditables, usan baja lógica y no pueden eliminarse mientras tengan visitas
+asociadas. Lectura e historial admiten `ADMIN`, `GESTOR` y `LECTURA`; las
+mutaciones requieren `ADMIN` o `GESTOR`.
+
+La revisión `d8f3a6c1b5e2` crea `tipo_visita`, incorpora `Académica` e
+`Intercambio`, retira el dataset anterior de visitas de prueba y cambia las
+claves foráneas de visitas y snapshots. El seed de testing regenera las visitas
+contra el catálogo independiente.
+
 ## Directivos
 
 Las relaciones entre directivo, cargo y grupo mantienen periodos de vigencia.
@@ -70,6 +116,8 @@ de directivos actuales mantiene el mismo criterio para el formulario y la home.
 - `tests/test_pagination.py`
 - pruebas de auditoria de relaciones y visitas
 - `tests/test_grupo_domain_errors.py`
+- `tests/test_tipo_visita_catalog.py`
+- `tests/test_catalog_name_validation.py`
 
 ## Contrato de errores
 

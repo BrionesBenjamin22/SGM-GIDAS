@@ -125,6 +125,11 @@ const CATALOGS: CatalogDef[] = [
     description: "Clasifica reuniones científicas para trabajos presentados.",
   },
   {
+    label: "Tipo de Visita",
+    endpoint: "/grupo/tipos-visita/",
+    description: "Clasifica el propósito de las visitas, sin confundirlo con su procedencia.",
+  },
+  {
     label: "Tipo de Revista",
     endpoint: "/tipos-revista/",
     description: "Clasifica el alcance nacional o internacional de las revistas.",

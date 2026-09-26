@@ -102,6 +102,7 @@ class ApiVersioningTestCase(unittest.TestCase):
         self.assertIn("/api/v1/proyectos", rules)
         self.assertIn("/api/v1/transferencia/transferencias", rules)
         self.assertIn("/api/v1/grupo/cargos/", rules)
+        self.assertIn("/api/v1/grupo/tipos-visita/", rules)
 
     def test_app_no_expone_rutas_legacy(self):
         app = create_app()

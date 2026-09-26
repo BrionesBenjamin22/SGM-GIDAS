@@ -18,6 +18,7 @@ def get_blueprints():
         programa_incentivos_bp,
     )
     from modules.grupo.routes.visita_rutas import visita_academica_bp
+    from modules.grupo.routes.tipo_visita_rutas import tipo_visita_bp
     from modules.memorias.routes.memorias_rutas import memoria_bp
     from modules.personal.routes.becario_rutas import becario_bp
     from modules.personal.routes.investigador_rutas import investigador_bp
@@ -115,6 +116,7 @@ def get_blueprints():
         trabajos_revistas_referato_bp,
         transferencia_socio_productiva_bp,
         visita_academica_bp,
+        tipo_visita_bp,
         tipo_reunion_bp,
         tipo_revista_bp,
         memoria_bp,

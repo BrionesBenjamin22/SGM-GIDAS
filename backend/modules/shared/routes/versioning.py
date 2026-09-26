@@ -43,6 +43,7 @@ VERSIONED_PREFIXES = {
     "tipo_registro_propiedad": "/api/v1/produccion/tipo-registro-propiedad",
     "tipo_reunion": "/api/v1/produccion/tipos-reunion-cientifica",
     "tipo_revista": "/api/v1/produccion/tipos-revista",
+    "tipo_visita": "/api/v1/grupo/tipos-visita",
     "trabajo_reunion_cientifica": "/api/v1/produccion/trabajos-reunion-cientifica",
     "trabajos_revistas_referato": "/api/v1/produccion/trabajos-revistas",
     "transferencia_socio_productiva": "/api/v1/transferencia/transferencias",

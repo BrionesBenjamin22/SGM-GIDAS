@@ -8,6 +8,30 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-37: separar y estandarizar los tipos de Visitas
+
+- Se incorporó el catálogo independiente Tipo de visita con los valores de
+  prueba Académica e Intercambio, endpoints protegidos, auditoría, historial y
+  baja lógica. Visitas dejó de depender de Tipo de reunión científica sin
+  modificar los demás tipos de encuentro.
+- El modelo vigente, los snapshots de Memorias, las validaciones, la API y el
+  dataset de testing referencian el catálogo propio. Procedencia continúa
+  representando el origen de la visita.
+- El formulario diferencia tipo y procedencia, recupera errores del catálogo y
+  conserva el envío exclusivo de diferencias, mensajes y navegación aprobados.
+- El home adoptó la tabla compartida con 9 filas, búsqueda, filtros horizontales,
+  acciones individuales e historial diferido paginado de a 3 eventos con el
+  formato común de los módulos estandarizados.
+- Home y detalle presentan tipos, fechas y relaciones mediante etiquetas
+  legibles, omitiendo acciones técnicas, inicializaciones, valores equivalentes,
+  IDs internos y JSON.
+- La revisión `d8f3a6c1b5e2` actualiza las claves foráneas y elimina los datos de
+  prueba anteriores; el seed regenera 13 visitas asociadas al catálogo propio.
+
+Validaciones: aceptación visual y funcional del usuario, 37 pruebas backend
+focalizadas, 161 pruebas frontend, `typecheck`, build de producción y
+`git diff --check` correctos.
+
 ### ISS-35: admitir becarios en Participaciones relevantes
 
 - Participaciones relevantes admite como participante a un investigador o un

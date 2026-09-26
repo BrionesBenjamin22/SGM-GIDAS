@@ -48,13 +48,29 @@ detalles consumen auditoria e historial cuando existe endpoint.
 - la exportacion valida que la respuesta no este vacia y que su tipo sea compatible
   con Excel; los errores del servidor se normalizan antes de mostrarse
 
-## Visitas academicas
+## Visitas
 
-- el service admite listas planas o envueltas en `data` y expone tipos dedicados
-- el formulario valida razon, fecha, procedencia y tipo de visita
-- en edicion solo se envian diferencias reales; si no existen, no se llama al backend
-- el alta vuelve al home y la edicion al detalle con `successMessage`
-- el detalle consume auditoria e historial con paginas de 3 elementos
+- `tiposVisitaServices.ts` consulta el catálogo independiente
+  `GET /grupo/tipos-visita/`; Visitas no consume tipos de reunión científica
+- `visitantesServices.ts` centraliza el contrato de visitas y normaliza listados
+  planos o envueltos en `data`
+- el formulario distingue `Tipo de visita`, que clasifica el propósito, de
+  `Procedencia u origen`, que informa desde dónde llegó la visita
+- el formulario valida razón, fecha, procedencia y tipo; en edición envía solo
+  diferencias reales y no llama al backend si no hay cambios
+- el alta vuelve al home y la edición al detalle con `successMessage`
+- el home usa la tabla compartida con hasta 9 registros, búsqueda, filtros
+  horizontales por estado, tipo, procedencia y año, navegación de fila y
+  acciones individuales según permisos y estado
+- el historial del home se consulta al expandir una fila, muestra 3 eventos por
+  página y replica el formato aprobado: lista vertical, tarjetas compactas,
+  comparación `anterior → nuevo` y autor mediante `Por ...`
+- `visitHistory.ts` omite acciones técnicas, inicializaciones y valores
+  equivalentes; normaliza fechas, catálogos y relaciones sin mostrar IDs ni JSON
+- el detalle reutiliza esa presentación, además de mostrar la tarjeta principal,
+  Auditoría, Historial de cambios, Volver y Editar cuando corresponde
+- los errores de carga, catálogo y eliminación son visibles, seguros y ofrecen
+  reintento cuando aplica
 
 ## Directivos
 

@@ -10,6 +10,7 @@ from modules.grupo.models.grupo import GrupoInvestigacionUtn  # noqa: F401
 from modules.grupo.models.programa_actividades import PlanificacionGrupo  # noqa: F401
 from modules.grupo.models.programa_incentivos import ProgramaIncentivos  # noqa: F401
 from modules.grupo.models.visita_grupo import (  # noqa: F401
+    TipoVisita,
     VisitaAcademica,
     VisitaAcademicaMemoriaVersion,
 )

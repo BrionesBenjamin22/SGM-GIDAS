@@ -11,7 +11,7 @@ from modules.catalogos.models.categoria_utn import CategoriaUtn
 from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.grupo.models.directivos import Cargo, Directivo, DirectivoGrupo
-from modules.grupo.models.visita_grupo import VisitaAcademica
+from modules.grupo.models.visita_grupo import TipoVisita, VisitaAcademica
 from modules.memorias.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
 from modules.auth.models.persona import Persona
 from modules.personal.models.personal import (
@@ -123,6 +123,8 @@ def _seed_catalogs():
     tipo_profesional, _ = _get_or_create(TipoPersonal, nombre="Profesional")
     tipo_proyecto, _ = _get_or_create(TipoProyecto, nombre="I+D")
     fuente, _ = _get_or_create(FuenteFinanciamiento, nombre="UTN")
+    tipo_visita_academica, _ = _get_or_create(TipoVisita, nombre="Académica")
+    tipo_visita_intercambio, _ = _get_or_create(TipoVisita, nombre="Intercambio")
     return {
         "categoria": categoria,
         "dedicacion": dedicacion,
@@ -132,6 +134,8 @@ def _seed_catalogs():
         "tipo_profesional": tipo_profesional,
         "tipo_proyecto": tipo_proyecto,
         "fuente": fuente,
+        "tipo_visita_academica": tipo_visita_academica,
+        "tipo_visita_intercambio": tipo_visita_intercambio,
     }
 
 
@@ -550,7 +554,7 @@ def _seed_search_coverage(grupo, catalogs, investigador, admin_user_id):
         defaults={
             "fecha": date(2024, 10, 15),
             "procedencia": "Instituto de Prueba",
-            "tipo_visita_id": tipo_reunion.id,
+            "tipo_visita_id": catalogs["tipo_visita_intercambio"].id,
             "grupo_utn_id": grupo.id,
             "created_by": admin_user_id,
         },
@@ -590,6 +594,10 @@ def _seed_manual_testing_dataset(grupo, catalogs, investigador, admin_user_id):
             "Jornada TEST",
             "Seminario TEST",
         ]
+    ]
+    tipos_visita = [
+        catalogs["tipo_visita_academica"],
+        catalogs["tipo_visita_intercambio"],
     ]
     tipos_revista = [
         _get_or_create(TipoRevista, nombre=nombre)[0]
@@ -751,7 +759,7 @@ def _seed_manual_testing_dataset(grupo, catalogs, investigador, admin_user_id):
             defaults={
                 "fecha": date(year, month, 21),
                 "procedencia": instituciones[tipo_index],
-                "tipo_visita_id": tipos_reunion[tipo_index].id,
+                "tipo_visita_id": tipos_visita[tipo_index % len(tipos_visita)].id,
                 "grupo_utn_id": grupo.id,
                 "created_by": admin_user_id,
             },

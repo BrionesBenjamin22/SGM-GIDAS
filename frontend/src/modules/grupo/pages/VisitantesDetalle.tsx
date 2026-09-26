@@ -9,9 +9,13 @@ import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import {
   getHistorialVisitanteById,
-  getTiposVisita,
   getVisitanteById,
 } from "@/modules/grupo/services/visitantesServices";
+import { getTiposVisita } from "@/modules/grupo/services/tiposVisitaServices";
+import {
+  formatVisitHistoryEntry,
+  presentVisitHistoryItems,
+} from "@/modules/grupo/utils/visitHistory";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,
@@ -65,6 +69,14 @@ export default function VisitantesDetalle() {
     () => new Map(tiposVisita.map((tipo) => [tipo.id, tipo.nombre])),
     [tiposVisita]
   );
+  const historialPresentable = useMemo(
+    () => presentVisitHistoryItems(historialCambios),
+    [historialCambios]
+  );
+  const historialContext = useMemo(
+    () => ({ tiposVisita: tiposVisitaMap, visita: data ?? undefined }),
+    [data, tiposVisitaMap]
+  );
 
   const formatFecha = (fecha?: string | Date | null) => {
     if (!fecha) return "-";
@@ -96,9 +108,13 @@ export default function VisitantesDetalle() {
     return dateStr;
   };
 
-  if (isLoading) return <p className="text-slate-500">Cargando...</p>;
+  if (isLoading) return <p role="status" className="text-slate-500">Cargando visita...</p>;
   if (isError || !data) {
-    return <p className="text-slate-500">No se encontró el visitante.</p>;
+    return (
+      <p role="alert" className="text-slate-500">
+        Lo sentimos, no pudimos recuperar la visita. Intente nuevamente.
+      </p>
+    );
   }
 
   const isDeleted = !!data.deleted_at;
@@ -146,7 +162,7 @@ export default function VisitantesDetalle() {
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Procedencia:</span>{" "}
+              <span className="font-medium text-slate-700">Procedencia u origen:</span>{" "}
               {data.procedencia || "-"}
             </p>
 
@@ -199,30 +215,13 @@ export default function VisitantesDetalle() {
 
         <HistorialCambiosCard
           subtitle={data.razon || "-"}
-          items={historialCambios}
+          items={historialPresentable}
           isLoading={isLoadingHistorial}
           updatedAt={data.updated_at}
           updatedByName={data.updated_by_nombre}
-          formatItemValue={(item, value) => {
-            if (item.campo === "tipo_visita_id") {
-              if (value === null || value === undefined || value === "") return "-";
-              const idValue = Number(value);
-              return (
-                tiposVisitaMap.get(idValue) ||
-                (idValue === data.tipo_visita_id ? data.tipo_visita?.nombre || "-" : `ID ${idValue}`)
-              );
-            }
-
-            if (item.campo === "grupo_utn_id") {
-              if (value === null || value === undefined || value === "") return "-";
-              const idValue = Number(value);
-              return idValue === data.grupo_utn_id ? data.grupo || `ID ${idValue}` : `ID ${idValue}`;
-            }
-
-            return value === null || value === undefined || value === ""
-              ? "-"
-              : String(value);
-          }}
+          formatItemPresentation={(item) =>
+            formatVisitHistoryEntry(item, historialContext)
+          }
         />
 
         <div className="flex justify-start pt-4">

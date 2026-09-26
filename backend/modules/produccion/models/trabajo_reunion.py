@@ -135,12 +135,6 @@ class TipoReunion(db.Model, AuditMixin):
         back_populates='tipo_reunion_cientifica',
         lazy='select'
     )
-    visitas = db.relationship(
-        'VisitaAcademica',
-        back_populates='tipo_visita',
-        lazy='select'
-    )
-
     def serialize(self):
         return self.to_dict()
         

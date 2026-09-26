@@ -11,11 +11,13 @@ import { getErrorMessage } from "@/lib/httpError";
 import {
   actualizarVisitante,
   crearVisitante,
-  getTiposVisita,
   getVisitanteById,
-  type TipoVisitaOption,
   type VisitantePayload,
 } from "@/modules/grupo/services/visitantesServices";
+import {
+  getTiposVisita,
+  type TipoVisita,
+} from "@/modules/grupo/services/tiposVisitaServices";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 import { toCivilDateString } from "@/utils/dateTime";
 import { useAuth } from "@/context/AuthContext";
@@ -31,13 +33,23 @@ export default function VisitantesForm() {
   const { uct, uctGuard } = useUctGuard();
   const { user } = useAuth();
 
-  const { data: tiposVisita = [] } = useQuery({
+  const {
+    data: tiposVisita = [],
+    isLoading: isLoadingTiposVisita,
+    isError: isErrorTiposVisita,
+    refetch: refetchTiposVisita,
+  } = useQuery({
     queryKey: ["tipos-visita"],
     queryFn: getTiposVisita,
     staleTime: 60_000,
   });
 
-  const { data: initialData, isLoading } = useQuery({
+  const {
+    data: initialData,
+    isLoading,
+    isError: isInitialDataError,
+    refetch: refetchInitialData,
+  } = useQuery({
     queryKey: ["visitante", id],
     queryFn: () => (id ? getVisitanteById(Number(id)) : null),
     enabled: isEdit,
@@ -197,8 +209,19 @@ export default function VisitantesForm() {
     await mutation.mutateAsync({ mode: "edit", payload: changedPayload });
   };
 
-  if (isEdit && isLoading) {
-    return <p className="text-slate-500">Cargando visitante...</p>;
+  if ((isEdit && isLoading) || isLoadingTiposVisita) {
+    return <p role="status" className="text-slate-500">Cargando visita...</p>;
+  }
+
+  if (isEdit && isInitialDataError) {
+    return (
+      <div role="alert" className="space-y-4 text-slate-600">
+        <p>Lo sentimos, no pudimos recuperar la visita. Intente nuevamente.</p>
+        <Button type="button" variant="secondary" size="sm" onClick={() => void refetchInitialData()}>
+          Reintentar
+        </Button>
+      </div>
+    );
   }
 
   const inputClass = (field: string) =>
@@ -207,7 +230,7 @@ export default function VisitantesForm() {
   return (
     <section className="w-full">
       <h2 className="text-2xl font-semibold leading-none md:text-3xl">
-        {isEdit ? "Editar visitante" : "Nueva visita académica"}
+        {isEdit ? "Editar visita" : "Nueva visita"}
       </h2>
 
       {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
@@ -218,6 +241,25 @@ export default function VisitantesForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
+        {isErrorTiposVisita && (
+          <div
+            role="alert"
+            className="flex flex-col gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <p>
+              Lo sentimos, no pudimos recuperar los tipos de visita. Intente nuevamente.
+            </p>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => void refetchTiposVisita()}
+            >
+              Reintentar
+            </Button>
+          </div>
+        )}
+
         <Field required label="Razon de la visita" name="razon" error={errors.razon}>
           <>
             <textarea
@@ -246,7 +288,7 @@ export default function VisitantesForm() {
           />
         </Field>
 
-        <Field required label="Procedencia" name="procedencia" error={errors.procedencia}>
+        <Field required label="Procedencia u origen" name="procedencia" error={errors.procedencia}>
           <>
             <input
               type="text"
@@ -256,8 +298,13 @@ export default function VisitantesForm() {
                 setProcedencia(e.target.value);
                 if (e.target.value.trim()) clearError("procedencia");
               }}
-              placeholder="Ej: Universidad Nacional de Cordoba"
+              placeholder="Ej.: Universidad Nacional de Córdoba"
             />
+            {!errors.procedencia && (
+              <p className="mt-1.5 text-xs text-slate-500">
+                Indique la institución, ciudad o país desde donde proviene la visita.
+              </p>
+            )}
             {errors.procedencia && (
               <p className="mt-1 text-sm text-red-500">{errors.procedencia}</p>
             )}
@@ -280,12 +327,17 @@ export default function VisitantesForm() {
               <option value="" disabled>
                 Seleccionar tipo de visita
               </option>
-              {tiposVisita.map((t: TipoVisitaOption) => (
+              {tiposVisita.map((t: TipoVisita) => (
                 <option key={t.id} value={t.id}>
                   {t.nombre}
                 </option>
               ))}
             </select>
+            {!errors.tipoVisita && (
+              <p className="mt-1.5 text-xs text-slate-500">
+                Clasifique el propósito de la visita, por ejemplo académica o intercambio.
+              </p>
+            )}
             {errors.tipoVisita && (
               <p className="mt-1 text-sm text-red-500">{errors.tipoVisita}</p>
             )}
@@ -302,7 +354,7 @@ export default function VisitantesForm() {
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={mutation.isPending || !uct} loading={mutation.isPending} loadingText="Guardando...">
+          <Button type="submit" size="sm" disabled={mutation.isPending || !uct || isErrorTiposVisita || tiposVisita.length === 0} loading={mutation.isPending} loadingText="Guardando...">
             {mutation.isPending
               ? isEdit
                 ? "Actualizando..."
