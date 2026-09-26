@@ -22,6 +22,10 @@ Los endpoints de equipamiento se publican bajo `/api/v1/recursos/equipamiento`:
 - `GET /<id>/historial`: historial de cambios para los mismos roles;
 - `POST /`, `PUT /<id>` y `DELETE /<id>`: mutaciones para `ADMIN` y `GESTOR`.
 
+El home de Equipamientos consulta el historial existente al expandir una fila;
+el detalle también consume ese endpoint. La estandarización visual ISS-38 no
+modificó rutas, payloads, permisos, validaciones ni persistencia del backend.
+
 El payload de alta requiere `denominacion`, `descripcion_breve`,
 `fecha_incorporacion`, `monto_invertido` y `grupo_utn_id`. La edicion acepta solo
 los campos modificados.

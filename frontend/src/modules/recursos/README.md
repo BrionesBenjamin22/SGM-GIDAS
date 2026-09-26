@@ -26,6 +26,27 @@ El modulo administra equipamiento e infraestructura y el resumen de ingresos y
 egresos. Cada entidad dispone de home, formulario, detalle, auditoria e historial.
 Los homes muestran hasta 9 elementos y los historiales 3 items por pagina.
 
+## Equipamientos: presentación del home (ISS-38)
+
+`pages/EquipamientoHome.tsx` usa la tabla compartida con hasta 9 registros por
+página. La barra reúne búsqueda por denominación o descripción, chips de estado,
+año de incorporación y rango de monto; en anchos reducidos los filtros se
+desplazan horizontalmente. Cada fila abre el detalle. Las acciones Ver, Editar y
+Eliminar son individuales; Editar y Eliminar aparecen solo para registros activos
+y roles autorizados. La baja lógica conserva confirmación y mensaje de resultado.
+
+El historial se consulta al expandir una fila mediante
+`services/equipamientoServices.ts` y se pagina de a 3 cambios. Presenta carga,
+error con reintento y estado vacío. Omite acciones técnicas, inicializaciones y
+valores equivalentes; las fechas y montos usan formatos legibles y no se muestran
+objetos ni identificadores internos. `hooks/useEquipamiento.ts` expone carga
+inicial, actualización y reintento para conservar las filas durante un refetch.
+
+El detalle mantiene datos, Auditoría, Historial de cambios y las acciones
+condicionadas por estado y permisos. El formulario conserva la validación local,
+los errores por campo y el envío exclusivo de diferencias en edición. Esta
+adaptación no cambia payloads, rutas ni reglas del backend.
+
 ## Servicios y contratos
 
 Los services normalizan contratos planos y respuestas envueltas en `{ data }` sin

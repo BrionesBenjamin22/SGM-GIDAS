@@ -8,6 +8,23 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-38: estandarizar visualmente Equipamientos
+
+- El home reemplazó las tarjetas, la selección masiva y el panel lateral por la
+  tabla compartida con 9 filas, búsqueda y filtros horizontales de estado, año y
+  rango de monto.
+- Cada fila abre el detalle y ofrece acciones individuales según el estado y los
+  permisos existentes. La baja conserva confirmación y feedback visible.
+- El historial se carga al expandir una fila, muestra hasta 3 cambios por página
+  y ofrece estados de carga, vacío y error con reintento. La actualización del
+  listado conserva las filas visibles.
+- El formulario, el detalle y el contrato backend mantienen sus reglas vigentes.
+
+Validaciones: aceptación visual y funcional del usuario, 161 pruebas frontend,
+`typecheck`, build de producción y `git diff --check` correctos. Las pruebas
+backend no se ejecutaron porque el Python local no tiene `pytest` instalado;
+no hubo cambios de backend.
+
 ### ISS-37: separar y estandarizar los tipos de Visitas
 
 - Se incorporó el catálogo independiente Tipo de visita con los valores de
