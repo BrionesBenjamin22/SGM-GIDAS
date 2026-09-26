@@ -6,6 +6,7 @@ import Sidebar from "@/components/Sidebar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 import { deleteFormDraft, listFormDrafts, type FormDraftSummary } from "@/modules/shared/services/formDraftService";
+import RouteBreadcrumbs from "@/modules/shared/components/RouteBreadcrumbs";
 
 export default function AppLayout() {
   const { user, logout, isAdmin } = useAuth();
@@ -198,6 +199,7 @@ export default function AppLayout() {
 
       <main className="flex-1">
         <div className="w-full max-w-7xl mx-auto px-6 lg:px-10 py-4">
+          <RouteBreadcrumbs />
           {drafts.length > 0 && (
             <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950">
               <span>{drafts.length === 1 ? "Tiene 1 borrador activo." : `Tiene ${drafts.length} borradores activos.`}</span>

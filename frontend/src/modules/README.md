@@ -49,6 +49,16 @@ mantienen fachadas paralelas en `src/pages`, `src/services` ni `src/hooks`.
 - Los nombres de chunks no deben contener secretos y ninguna variable `VITE_*`
   debe almacenar credenciales.
 
+## Navegación por rutas (ISS-41)
+
+Las pantallas autenticadas muestran breadcrumbs desde `AppLayout`; la portada,
+el login y el registro los muestran en sus propias vistas. El resolvedor
+`shared/utils/routeBreadcrumbs.ts` mantiene etiquetas y destinos alineados con
+las rutas del router sin modificar el contrato de cada módulo. Los listados,
+altas, detalles, ediciones y versiones muestran sus ancestros navegables. Las
+etiquetas de detalle y versión no contienen IDs. Véase `shared/README.md` para
+el contrato de accesibilidad, estado de navegación y pruebas.
+
 ## Capas por modulo
 
 - `pages`: vistas de home, formulario y detalle del dominio.

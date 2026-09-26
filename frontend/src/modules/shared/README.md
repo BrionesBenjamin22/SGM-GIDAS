@@ -1,4 +1,27 @@
-# Borradores de formularios
+# Funcionalidades compartidas
+
+## Breadcrumbs de navegación (ISS-41)
+
+`components/RouteBreadcrumbs.tsx` presenta la ruta actual con una lista ordenada
+dentro de un `nav` accesible. El último elemento usa `aria-current="page"`; los
+anteriores enlazan únicamente a pantallas existentes. Los enlaces conservan el
+estado de navegación necesario para Memorias y descartan `successMessage` para
+evitar avisos repetidos. Los formularios mantienen el bloqueo de salida del hook
+de borradores cuando hay cambios pendientes.
+
+`utils/routeBreadcrumbs.ts` resuelve las etiquetas y destinos desde el pathname
+del router. Cubre rutas públicas, Inicio, listados, altas, detalles, ediciones,
+versiones de Memorias y la pantalla no encontrada. Los alias antiguos redirigen
+a rutas canónicas o llevan al listado de Personal. Las etiquetas `Detalle` y
+`Versión` no exponen IDs; los IDs permanecen en los destinos necesarios para
+navegar. La ruta `/uct/nueva` enlaza a Inicio porque no existe un listado UCT.
+
+`AppLayout` muestra el componente antes del contenido de cada ruta autenticada.
+La portada, el login y el registro lo montan en sus propias vistas. La prueba
+`frontend/tests/routeBreadcrumbs.test.ts` comprueba la cobertura de las rutas
+declaradas en el router y que ninguna etiqueta muestre un ID.
+
+## Borradores de formularios
 
 `useFormDraft` coordina carga, guardado automático, descarte y confirmación de
 navegación. `formDraftService` consume los endpoints `/api/v1/borradores` sin usar
