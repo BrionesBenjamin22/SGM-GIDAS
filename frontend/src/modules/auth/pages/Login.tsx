@@ -2,9 +2,10 @@ import Field from "@/components/Field";
 import { applyFieldErrors, getErrorMessage } from "@/lib/httpError";
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { AlertCircle, ArrowLeft, Eye, EyeOff, LoaderCircle, LogIn } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, LoaderCircle, LogIn } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useSystemSetup } from "@/modules/auth/hooks/useSystemSetup";
+import RouteBreadcrumbs from "@/modules/shared/components/RouteBreadcrumbs";
 import {
   consumeSessionEnded,
   consumeSessionPath,
@@ -68,13 +69,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#F6F6FB] px-4 py-8 sm:py-12">
       <div className="mx-auto w-full max-w-md">
-        <Link
-          to="/"
-          className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-950"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Volver a la página principal
-        </Link>
+        <RouteBreadcrumbs />
 
         <div className="card w-full border border-slate-200 bg-white p-8 shadow-sm">
           <div className="mb-8 text-center">

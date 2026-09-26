@@ -8,6 +8,20 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-41: breadcrumbs en todas las rutas del frontend
+
+- Se incorporó una ruta de navegación accesible en las pantallas públicas y
+  autenticadas, incluidos listados, altas, detalles, ediciones y versiones.
+- Los enlaces llevan a páginas reales y conservan el contexto de navegación de
+  Memorias sin repetir mensajes de éxito. Las etiquetas `Detalle` y `Versión`
+  omiten el ID del registro; la URL mantiene el identificador necesario.
+- El login usa el breadcrumb para volver a la portada. El registro lo mantiene
+  visible en sus estados de carga, error y configuración.
+
+Validaciones: aceptación visual y funcional del usuario, 172 pruebas frontend,
+`typecheck`, build de producción aislado y `git diff --check` correctos. No hubo
+cambios de backend.
+
 ### ISS-40: estandarizar Transferencias y Adoptantes
 
 - El home adoptó la tabla compartida con búsqueda, filtros y scrollbar del

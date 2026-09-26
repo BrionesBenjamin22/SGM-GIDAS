@@ -7,6 +7,7 @@ import { CheckCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { SYSTEM_SETUP_QUERY_KEY } from "@/modules/auth/hooks/useSystemSetup";
 import { getErrorMessage } from "@/lib/httpError";
+import RouteBreadcrumbs from "@/modules/shared/components/RouteBreadcrumbs";
 
 export default function RegisterPage() {
   const { register, esPrimerUsuario } = useAuth();
@@ -78,6 +79,7 @@ export default function RegisterPage() {
     return (
       <div className="min-h-screen grid place-items-center bg-[#F6F6FB]">
         <div className="card w-full max-w-md text-center">
+          <RouteBreadcrumbs />
           <div className="animate-pulse">
             <div className="h-8 w-48 bg-slate-200 rounded mx-auto mb-4"></div>
             <div className="h-4 w-32 bg-slate-200 rounded mx-auto"></div>
@@ -91,6 +93,7 @@ export default function RegisterPage() {
     return (
       <div className="min-h-screen grid place-items-center bg-[#F6F6FB]">
         <div className="card w-full max-w-md text-center">
+          <RouteBreadcrumbs />
           <h1 className="text-xl font-semibold mb-3">No pudimos verificar la configuración</h1>
           <p className="text-slate-600 mb-6">
             Lo sentimos, no pudimos recuperar la información. Intente nuevamente antes de crear una cuenta.
@@ -108,6 +111,7 @@ export default function RegisterPage() {
     return (
       <div className="min-h-screen grid place-items-center bg-[#F6F6FB]">
         <div className="card w-full max-w-md text-center">
+          <RouteBreadcrumbs />
           <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl">🔒</span>
           </div>
@@ -130,6 +134,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen grid place-items-center bg-[#F6F6FB]">
       <div className="card w-full max-w-md">
+        <RouteBreadcrumbs />
         {registroExitoso ? (
           <div className="text-center py-8">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
