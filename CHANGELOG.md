@@ -8,6 +8,23 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-39: estandarizar Documentación y Biblioteca
+
+- El home adoptó la tabla compartida con búsqueda, filtros, orden, 9 registros
+  por página, acciones individuales e historial diferido de 3 eventos.
+- El formulario incorporó búsqueda de autores por nombre o iniciales, selección
+  local de altas y bajas y creación diferida de autores nuevos. Conserva el envío
+  de diferencias reales y la navegación con mensaje de éxito.
+- El detalle y el home presentan cambios de campos y eventos de autores con
+  nombres legibles. El backend registra vinculaciones y desvinculaciones con
+  usuario y snapshot del nombre.
+- Se corrigió la codificación de los textos de la pantalla y se unificó el botón
+  «Añadir» del selector.
+
+Validaciones: aceptación visual y funcional del usuario, 164 pruebas frontend,
+9 pruebas backend focalizadas, `typecheck`, build de producción y
+`git diff --check` correctos.
+
 ### ISS-38: estandarizar visualmente Equipamientos
 
 - El home reemplazó las tarjetas, la selección masiva y el panel lateral por la

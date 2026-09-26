@@ -90,7 +90,8 @@ class DocumentacionBibliograficaController:
             return jsonify(
                 DocumentacionBibliograficaService.add_autor(
                     doc_id,
-                    data["autor_id"]
+                    data["autor_id"],
+                    g.current_user_id
                 )
             ), 200
 
@@ -104,7 +105,8 @@ class DocumentacionBibliograficaController:
             return jsonify(
                 DocumentacionBibliograficaService.remove_autor(
                     doc_id,
-                    autor_id
+                    autor_id,
+                    g.current_user_id
                 )
             ), 200
 

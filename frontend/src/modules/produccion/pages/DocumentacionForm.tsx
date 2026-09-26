@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
-import AutoresField from "@/components/AutoresField";
+import DocumentacionAutoresField from "@/modules/produccion/components/DocumentacionAutoresField";
 import DatePicker from "@/components/Calendar";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
@@ -25,6 +25,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
 import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
 import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
+import { normalizarNombreAutor } from "@/modules/produccion/utils/documentacionAutores";
 
 export default function DocumentacionForm() {
   const { id } = useParams<{ id: string }>();
@@ -40,17 +41,19 @@ export default function DocumentacionForm() {
     enabled: isEdit,
   });
 
-  const { data: autoresSistema = [] } = useQuery({
+  const autoresQuery = useQuery({
     queryKey: ["autores"],
     queryFn: getAutores,
   });
+  const autoresSistema = autoresQuery.data ?? [];
+  const autoresNoDisponibles = autoresQuery.data === undefined;
 
   const [data, setData] = useState({
     titulo: "",
     editorial: "",
     fecha: "",
   });
-  const [autores, setAutores] = useState<Autor[]>([{ id: -Date.now(), nombre_apellido: "" }]);
+  const [autores, setAutores] = useState<Autor[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -63,11 +66,7 @@ export default function DocumentacionForm() {
       editorial: initial.editorial ?? "",
       fecha: initial.fecha ?? "",
     });
-    setAutores(
-      initial.autores?.length
-        ? initial.autores
-        : [{ id: -Date.now(), nombre_apellido: "" }]
-    );
+    setAutores(initial.autores ?? []);
   }, [initial]);
 
   const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
@@ -78,7 +77,10 @@ export default function DocumentacionForm() {
     ready: !isEdit || (!isLoading && Boolean(initial)),
     autosave: false,
     hasContent: (draft) => Object.values(draft.data).some(Boolean) || draft.autores.some((autor) => autor.id > 0 || Boolean(autor.nombre_apellido.trim())),
-    onRestore: (draft) => { setData(draft.data); setAutores(draft.autores); },
+    onRestore: (draft) => {
+      setData(draft.data);
+      setAutores(draft.autores.filter((autor) => autor.id > 0 || autor.nombre_apellido.trim()));
+    },
   });
 
   const autoresDisponibles = useMemo(() => {
@@ -107,10 +109,6 @@ export default function DocumentacionForm() {
     });
   };
 
-  const autoresValidos = autores.filter((autor) =>
-    autor.id > 0 ? true : autor.nombre_apellido.trim() !== ""
-  );
-
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
@@ -118,16 +116,17 @@ export default function DocumentacionForm() {
     if (!data.editorial.trim()) newErrors.editorial = "Debe ingresar editorial";
     if (!data.fecha) newErrors.fecha = "Debe ingresar fecha";
 
-    if (autoresValidos.length === 0) {
-      newErrors.autores = "Debe ingresar al menos un autor";
+    if (autores.length === 0) {
+      newErrors.autores = "Debe añadir al menos un autor";
     }
-
-    if (
-      autores.some((autor) => autor.id <= 0 && autor.nombre_apellido.trim() === "")
-    ) {
-      newErrors.autores = "No puede haber autores vacios";
-    } else if (autores.some((autor) => autor.id <= 0 && !hasOnlyLettersAndSpaces(autor.nombre_apellido))) {
+    if (autores.some((autor) => autor.id <= 0 && !hasOnlyLettersAndSpaces(autor.nombre_apellido))) {
       newErrors.autores = "Use solo letras y espacios en el nombre de cada autor";
+    }
+    if (new Set(autores.map((autor) => normalizarNombreAutor(autor.nombre_apellido))).size !== autores.length) {
+      newErrors.autores = "Quite los autores duplicados antes de guardar.";
+    }
+    if (autores.some((autor) => autor.id <= 0 && autoresSistema.some((existing) => normalizarNombreAutor(existing.nombre_apellido) === normalizarNombreAutor(autor.nombre_apellido)))) {
+      newErrors.autores = "Seleccione los autores existentes desde la lista.";
     }
 
     setErrors(newErrors);
@@ -141,7 +140,7 @@ export default function DocumentacionForm() {
       }
 
       const persistedAutores: Autor[] = [];
-      for (const autor of autoresValidos) {
+      for (const autor of autores) {
         if (autor.id > 0) {
           persistedAutores.push(autor);
         } else {
@@ -234,6 +233,7 @@ export default function DocumentacionForm() {
       const documentacionId = isEdit ? Number(id) : saved.id;
 
       await qc.invalidateQueries({ queryKey: ["documentacion"] });
+      await qc.invalidateQueries({ queryKey: ["autores"] });
       await qc.invalidateQueries({ queryKey: ["documentacion", documentacionId] });
       await qc.invalidateQueries({
         queryKey: ["documentacion-historial", documentacionId],
@@ -262,7 +262,7 @@ export default function DocumentacionForm() {
     },
   });
 
-  if (isLoading) return <p className="text-slate-500">Cargando...</p>;
+  if (isLoading) return <p role="status" className="text-slate-500">Cargando documentación...</p>;
 
   const inputClass = (field: string) =>
     `input ${errors[field] ? "!border-red-500 !ring-2 !ring-red-500" : ""}`;
@@ -280,7 +280,7 @@ export default function DocumentacionForm() {
         noValidate
         onSubmit={async (e) => {
           e.preventDefault();
-    if (isPending) return;
+          if (isPending || autoresNoDisponibles) return;
           if (!validate()) return;
           if (!uct) return;
           await mutateAsync();
@@ -291,42 +291,38 @@ export default function DocumentacionForm() {
           <>
             <input
               className={inputClass("titulo")}
+              placeholder="Ingrese el título del documento"
               value={data.titulo}
               onChange={(e) => {
                 setData((prev) => ({ ...prev, titulo: e.target.value }));
                 if (e.target.value.trim()) clearError("titulo");
               }}
             />
-            {errors.titulo && (
-              <p className="mt-1 text-sm text-red-500">{errors.titulo}</p>
-            )}
           </>
         </Field>
 
         <Field required label="Autores" name="autores" error={errors.autores}>
-          <AutoresField
-            value={autores}
-            options={autoresDisponibles}
-            onChange={(updatedAutores) => {
-              setAutores(updatedAutores);
-              if (updatedAutores.length > 0) clearError("autores");
-            }}
-          />
+          <>
+            {autoresQuery.isError && <div className="mb-3 space-y-2"><p role="alert" className="text-sm text-rose-700">Lo sentimos, no pudimos recuperar los autores. Intente nuevamente.</p><Button type="button" variant="secondary" size="sm" loading={autoresQuery.isFetching} loadingText="Cargando autores..." onClick={() => { void autoresQuery.refetch(); }}>Reintentar</Button></div>}
+            {autoresNoDisponibles && !autoresQuery.isError && <p role="status" className="mb-3 text-sm text-slate-500">Cargando autores...</p>}
+            {autoresQuery.data?.length === 0 && <p role="status" className="mb-3 text-sm text-slate-500">No hay autores registrados. Puede añadir uno nuevo.</p>}
+            <DocumentacionAutoresField value={autores} options={autoresDisponibles}
+              disabled={isPending || autoresNoDisponibles}
+              onChange={(value) => { setAutores(value); if (value.length) clearError("autores"); }} />
+          </>
         </Field>
 
         <Field required label="Editorial" name="editorial" error={errors.editorial}>
           <>
             <input
               className={inputClass("editorial")}
+              placeholder="Ingrese la editorial"
               value={data.editorial}
               onChange={(e) => {
                 setData((prev) => ({ ...prev, editorial: e.target.value }));
                 if (e.target.value.trim()) clearError("editorial");
               }}
             />
-            {errors.editorial && (
-              <p className="mt-1 text-sm text-red-500">{errors.editorial}</p>
-            )}
           </>
         </Field>
 
@@ -350,7 +346,7 @@ export default function DocumentacionForm() {
             Volver
           </Button>
 
-          <Button type="submit" size="sm" disabled={isPending} loading={isPending} loadingText="Guardando...">
+          <Button type="submit" size="sm" disabled={isPending || autoresNoDisponibles} loading={isPending} loadingText="Guardando...">
             {isPending ? "Guardando..." : isEdit ? "Actualizar" : "Guardar"}
           </Button>
         </div>

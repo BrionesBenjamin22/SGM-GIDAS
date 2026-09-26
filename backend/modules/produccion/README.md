@@ -1,5 +1,41 @@
 # Producción
 
+## ISS-39: Documentación y Biblioteca
+
+Las rutas de `documentacion_bibliografica_bp` exponen
+`GET /documentacion-bibliografica` con filtro `activos=true|false|all` y orden
+opcional `orden=asc|desc`, `GET /documentacion-bibliografica/<id>` y
+`GET /documentacion-bibliografica/<id>/historial`.
+`POST /documentacion-bibliografica` crea con `titulo`, `editorial`, `anio`,
+`fecha` (`YYYY-MM-DD`) y `grupo_id`. `PUT /documentacion-bibliografica/<id>`
+acepta diferencias de esos campos; `DELETE /documentacion-bibliografica/<id>`
+aplica baja lógica. `POST /documentacion-bibliografica/<id>/autores` recibe
+`autor_id` y `DELETE /documentacion-bibliografica/<id>/autores/<autor_id>`
+desvincula. Las lecturas admiten ADMIN, GESTOR y LECTURA; las escrituras
+requieren ADMIN o GESTOR.
+
+El controller propaga el usuario autenticado al service. El modelo
+`DocumentacionBibliografica` conserva los campos bibliográficos, grupo,
+autores y marcas de auditoría. La relación con `Autor` usa `autorxlibro`.
+El service valida grupo activo, textos obligatorios y fecha institucional; en
+el alta exige además un año entero. Rechaza relaciones inexistentes o
+duplicadas y registros eliminados. Las
+actualizaciones de campos generan auditoría solo ante diferencias reales.
+Vincular o desvincular autores registra en el historial un evento `autores` con
+`{ accion, detalle: { nombre_apellido } }` y el usuario responsable, preservando
+el nombre para interpretar el evento después. El historial se obtiene por
+entidad e ID, ordenado del evento más reciente al más antiguo.
+
+Las respuestas serializadas incluyen datos de auditoría, grupo y autores. Los
+errores de validación identificables usan `error.details.fields`; las ausencias
+y conflictos conservan sus errores de dominio. Las llamadas de asociación se
+confirman por separado tras la creación o actualización del documento, por lo
+que el cliente consolida la selección antes de guardarla y envía cada diferencia
+al finalizar. Los snapshots de Memorias conservan documento y autores asociados.
+
+Validación: 9 pruebas backend focalizadas sobre historial, snapshots, auditoría
+y eventos relacionales, además de las verificaciones frontend de ISS-39.
+
 Los nombres de autores admiten solo letras Unicode y espacios. Los nombres de
 revista, reunión y artículo de propiedad requieren alguna letra. ISSN conserva
 su validación propia.

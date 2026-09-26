@@ -214,7 +214,7 @@ class DocumentacionBibliograficaService:
     # RELACION DOCUMENTO - AUTOR
     # =========================
     @staticmethod
-    def add_autor(doc_id: int, autor_id: int):
+    def add_autor(doc_id: int, autor_id: int, user_id: int):
         doc = DocumentacionBibliograficaService._get_activo_or_404(doc_id)
 
         autor = db.session.get(Autor, autor_id)
@@ -225,12 +225,18 @@ class DocumentacionBibliograficaService:
             raise ConflictError("El autor ya esta asociado")
 
         doc.autores.append(autor)
+        doc.mark_updated(user_id)
+        AuditoriaService.registrar_evento_relacion(
+            entidad="documentacion_bibliografica", registro_id=doc.id,
+            relacion="autores", accion="vincular",
+            detalle={"nombre_apellido": autor.nombre_apellido}, user_id=user_id,
+        )
         db.session.commit()
 
         return doc.serialize()
 
     @staticmethod
-    def remove_autor(doc_id: int, autor_id: int):
+    def remove_autor(doc_id: int, autor_id: int, user_id: int):
         doc = DocumentacionBibliograficaService._get_activo_or_404(doc_id)
 
         autor = db.session.get(Autor, autor_id)
@@ -241,6 +247,12 @@ class DocumentacionBibliograficaService:
             raise NotFoundError("La relacion no existe")
 
         doc.autores.remove(autor)
+        doc.mark_updated(user_id)
+        AuditoriaService.registrar_evento_relacion(
+            entidad="documentacion_bibliografica", registro_id=doc.id,
+            relacion="autores", accion="desvincular",
+            detalle={"nombre_apellido": autor.nombre_apellido}, user_id=user_id,
+        )
         db.session.commit()
 
         return doc.serialize()

@@ -12,6 +12,7 @@ import {
 import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import { formatFecha, formatFechaHora } from "@/utils/dateTime";
+import { formatDocumentacionAuthorHistoryEntry, formatDocumentacionHistoryValue, presentDocumentacionHistoryItems } from "@/modules/produccion/utils/documentacionHistory";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,
@@ -41,7 +42,7 @@ export default function DocumentacionDetalle() {
     refetchOnMount: "always",
   });
 
-  const { data: historialCambios = [], isLoading: isLoadingHistorial } = useQuery({
+  const { data: historialCambios = [], isLoading: isLoadingHistorial, isError: isHistoryError, refetch: retryHistory } = useQuery({
     queryKey: ["documentacion-historial", id],
     queryFn: () => getHistorialDocumentacionById(Number(id)),
     enabled: !!id,
@@ -63,9 +64,9 @@ export default function DocumentacionDetalle() {
     }
   }, [location.state, navigate, location.pathname]);
 
-  if (isLoading) return <p className="text-slate-500">Cargando...</p>;
+  if (isLoading) return <p role="status" className="text-slate-500">Cargando documentación...</p>;
   if (isError || !data) {
-    return <p className="text-slate-500">No se encontró el documento.</p>;
+    return <p role="alert" className="text-slate-500">Lo sentimos, no pudimos recuperar la información. Intente nuevamente.</p>;
   }
 
   const autores = data.autores?.length
@@ -153,17 +154,15 @@ export default function DocumentacionDetalle() {
           </div>
         </article>
 
+        {isHistoryError && <div role="alert" className="text-sm text-rose-700">Lo sentimos, no pudimos recuperar el historial. <Button type="button" variant="secondary" size="sm" onClick={() => retryHistory()}>Reintentar</Button></div>}
         <HistorialCambiosCard
           subtitle={tituloFormateado}
-          items={historialCambios}
+          items={presentDocumentacionHistoryItems(historialCambios)}
           isLoading={isLoadingHistorial}
           updatedAt={data.updated_at}
           updatedByName={data.updated_by_nombre}
-          formatItemValue={(item, value) => {
-            if (value === null || value === undefined || value === "") return "-";
-            if (item.campo === "fecha") return formatFecha(String(value));
-            return String(value);
-          }}
+          formatItemValue={formatDocumentacionHistoryValue}
+          formatItemPresentation={formatDocumentacionAuthorHistoryEntry}
         />
 
         <div className="flex justify-start pt-4">

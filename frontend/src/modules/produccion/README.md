@@ -1,5 +1,37 @@
 # Produccion
 
+## ISS-39: Documentación y Biblioteca
+
+`DocumentacionHome` usa la tabla compartida con un máximo de 9 documentos por
+página. Permite buscar por título, editorial, año o autor; filtrar por estado,
+autor y año; ordenar por título; y abrir el detalle desde cada fila. Las acciones
+de ver, editar y eliminar se muestran según permisos y estado. La eliminación
+requiere confirmación y muestra feedback. Se conserva el contexto de Memorias.
+El historial se consulta al expandir una fila, con 3 eventos por página,
+reintento y estados de carga y vacío. `DocumentacionDetalle` muestra datos,
+Auditoría e Historial de cambios, con 3 eventos por página y regreso al origen.
+
+`DocumentacionForm` usa `DocumentacionAutoresField` para buscar autores por
+nombre o iniciales, añadir existentes, preparar autores nuevos y quitar
+selecciones. La búsqueda omite nombres ya seleccionados y muestra 9 resultados
+por vez. Las altas y bajas se aplican al guardar, no al interactuar con el
+selector. El formulario exige al menos un autor, valida nombres y duplicados,
+envía solo diferencias en edición y evita la actualización si no hay cambios.
+Los borradores anteriores con filas vacías de autor se recuperan sin esas filas.
+El alta vuelve al home y la edición al detalle con `successMessage`.
+
+`documentacionServices.ts` define los tipos y adapta listas, detalle, historial y
+payloads del backend. `useDocumentacion` expone lista, carga inicial,
+actualización y reintento. `documentacionAutores.ts` concentra la búsqueda y
+normalización de nombres; `documentacionHistory.ts` filtra inicializaciones y
+valores equivalentes y presenta cambios de campos y eventos de autores sin IDs
+internos ni JSON. Las consultas de catálogo e historial tienen estados de error
+recuperables. El backend controla definitivamente los permisos: las lecturas
+admiten ADMIN, GESTOR y LECTURA; las mutaciones requieren ADMIN o GESTOR.
+
+Validación: aceptación visual y funcional del usuario, 164 pruebas frontend,
+`npm run typecheck`, `npm run build:production` y `git diff --check` aprobados.
+
 Los autores nuevos admiten solo letras Unicode y espacios. Revista, reunión y
 artículo rechazan nombres exclusivamente numéricos antes de guardar.
 
