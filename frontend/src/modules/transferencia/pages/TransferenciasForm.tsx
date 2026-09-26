@@ -1,22 +1,21 @@
 import { applyFieldErrors } from "@/lib/httpError";
 import { hasLetter } from "../../../lib/textValidation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import Button from "@/components/Button";
 import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import DatePicker from "@/components/Calendar";
 import Field from "@/components/Field";
-import AdoptanteSelector from "@/components/AdoptanteSelector";
+import AdoptantesField from "@/modules/transferencia/components/AdoptantesField";
 import SuccessToast from "@/components/SuccessToast";
 import { getErrorMessage } from "@/lib/httpError";
 import {
   createTransferencia,
   getTransferenciaById,
   updateTransferencia,
-  addAdoptantesToTransferencia,
-  removeAdoptantesFromTransferencia,
   type Transferencia,
+  type TransferenciaPayload,
 } from "@/modules/transferencia/services/transferenciasServices";
 import type { Adoptante } from "@/modules/transferencia/services/adoptantesServices";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
@@ -34,10 +33,9 @@ export default function TransferenciasForm() {
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
 
-  const { tipos, isError: isTiposError } = useTiposContrato();
+  const { tipos, isError: isTiposError, refetch: refetchTipos } = useTiposContrato();
 
   const [data, setData] = useState({
-    numeroTransferencia: "",
     denominacion: "",
     demandante: "",
     descripcionActividad: "",
@@ -50,11 +48,13 @@ export default function TransferenciasForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const loadedId = useRef<number | null>(null);
 
   const {
     data: transferencia,
     isLoading,
     isError: isTransferenciaError,
+    refetch: refetchTransferencia,
   } = useQuery<Transferencia | null>({
     queryKey: ["transferencias", id],
     queryFn: () => getTransferenciaById(Number(id)),
@@ -62,10 +62,10 @@ export default function TransferenciasForm() {
   });
 
   useEffect(() => {
-    if (!transferencia) return;
+    if (!transferencia || loadedId.current === transferencia.id) return;
+    loadedId.current = transferencia.id;
 
     setData({
-      numeroTransferencia: transferencia.numeroTransferencia?.toString() ?? "",
       denominacion: transferencia.denominacion ?? "",
       demandante: transferencia.demandante ?? "",
       descripcionActividad: transferencia.descripcionActividad ?? "",
@@ -98,11 +98,6 @@ export default function TransferenciasForm() {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-
-    const numeroTransferencia = Number(data.numeroTransferencia);
-    if (!Number.isInteger(numeroTransferencia) || numeroTransferencia <= 0) {
-      newErrors.numeroTransferencia = "Debe ingresar un numero positivo";
-    }
 
     if (!data.denominacion.trim() || data.denominacion.trim().length < 3) {
       newErrors.denominacion = "Debe ingresar una denominación válida";
@@ -149,7 +144,6 @@ export default function TransferenciasForm() {
       }
 
       const payload = {
-        numeroTransferencia: Number(data.numeroTransferencia),
         denominacion: data.denominacion.trim(),
         demandante: data.demandante.trim(),
         descripcionActividad: data.descripcionActividad.trim(),
@@ -163,13 +157,13 @@ export default function TransferenciasForm() {
       if (!isEdit) {
         const created = await createTransferencia({
           ...payload,
-          adoptantesIds: adoptantes.map((adoptante) => adoptante.id),
+          adoptantesIds: adoptantes.filter((adoptante) => adoptante.id > 0).map((adoptante) => adoptante.id),
+          adoptantesNuevos: adoptantes.filter((adoptante) => adoptante.id < 0).map((adoptante) => adoptante.nombre),
         });
         return created;
       }
 
       const initialPayload = {
-        numeroTransferencia: transferencia?.numeroTransferencia ?? 0,
         denominacion: transferencia?.denominacion ?? "",
         demandante: transferencia?.demandante ?? "",
         descripcionActividad: transferencia?.descripcionActividad ?? "",
@@ -180,22 +174,23 @@ export default function TransferenciasForm() {
         grupoUtnId: transferencia?.grupoUtnId ?? uct.id,
       };
 
-      const changedPayload = Object.fromEntries(
+      const changedPayload: Partial<TransferenciaPayload> = Object.fromEntries(
         Object.entries(payload).filter(([key, value]) => {
           return initialPayload[key as keyof typeof initialPayload] !== value;
         })
       );
+      // El grupo de la transferencia se fija en el alta.
+      delete changedPayload.grupoUtnId;
 
       const prevIds = transferencia?.adoptantes.map((adoptante) => adoptante.id) ?? [];
-      const nextIds = adoptantes.map((adoptante) => adoptante.id);
-      const toAdd = nextIds.filter((adoptanteId) => !prevIds.includes(adoptanteId));
-      const toRemove = prevIds.filter((adoptanteId) => !nextIds.includes(adoptanteId));
+      const nextIds = adoptantes.filter((adoptante) => adoptante.id > 0).map((adoptante) => adoptante.id);
+      const nuevos = adoptantes.filter((adoptante) => adoptante.id < 0).map((adoptante) => adoptante.nombre);
+      if (nuevos.length > 0 || nextIds.length !== prevIds.length || nextIds.some((adoptanteId) => !prevIds.includes(adoptanteId))) {
+        changedPayload.adoptantesIds = nextIds;
+        changedPayload.adoptantesNuevos = nuevos;
+      }
 
-      if (
-        Object.keys(changedPayload).length === 0 &&
-        toAdd.length === 0 &&
-        toRemove.length === 0
-      ) {
+      if (Object.keys(changedPayload).length === 0) {
         clearDraft();
         navigate(`/transferencias/${id}`, {
           replace: true,
@@ -206,20 +201,7 @@ export default function TransferenciasForm() {
         return null;
       }
 
-      let updated = transferencia;
-      if (Object.keys(changedPayload).length > 0) {
-        updated = await updateTransferencia(Number(id), changedPayload);
-      }
-
-      if (toAdd.length > 0) {
-        await addAdoptantesToTransferencia(Number(id), toAdd);
-      }
-
-      if (toRemove.length > 0) {
-        await removeAdoptantesFromTransferencia(Number(id), toRemove);
-      }
-
-      return updated ?? transferencia ?? null;
+      return updateTransferencia(Number(id), changedPayload);
     },
     onSuccess: async (saved) => {
       if (!saved) return;
@@ -232,6 +214,7 @@ export default function TransferenciasForm() {
       await qc.invalidateQueries({
         queryKey: ["transferencia-historial", transferenciaId],
       });
+      await qc.invalidateQueries({ queryKey: ["adoptantes"] });
 
       navigate(isEdit ? `/transferencias/${transferenciaId}` : "/transferencias", {
         replace: true,
@@ -243,7 +226,7 @@ export default function TransferenciasForm() {
       });
     },
     onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["numeroTransferencia","denominacion","demandante","descripcionActividad","monto","fechaInicio","fechaFin","tipoContratoId","adoptantes"])) return;
+      if (applyFieldErrors(error, setErrors, ["denominacion","demandante","descripcionActividad","monto","fechaInicio","fechaFin","tipoContratoId","adoptantes"])) return;
       setErrorMessage(
         getErrorMessage(
           error,
@@ -262,10 +245,12 @@ export default function TransferenciasForm() {
 
   if (isTiposError || isTransferenciaError) {
     return (
-      <p className="text-slate-500">
-        Lo sentimos, no pudimos recuperar la información. Intente nuevamente.
-      </p>
+      <div role="alert" className="space-y-3 text-slate-600"><p>Lo sentimos, no pudimos recuperar la información. Intente nuevamente.</p><Button type="button" onClick={() => { if (isTiposError) void refetchTipos(); if (isTransferenciaError) void refetchTransferencia(); }}>Reintentar</Button></div>
     );
+  }
+
+  if (isEdit && !transferencia) {
+    return <div role="alert" className="space-y-3 text-slate-600"><p>No se encontró la transferencia. Vuelva al listado e intente nuevamente.</p><Button type="button" onClick={() => navigate("/transferencias")}>Volver</Button></div>;
   }
 
   const inputClass = (field: string) =>
@@ -291,24 +276,6 @@ export default function TransferenciasForm() {
         }}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field required label="Número de transferencia" name="numeroTransferencia" error={errors.numeroTransferencia}>
-          <>
-            <input
-              type="number"
-              className={inputClass("numeroTransferencia")}
-              value={data.numeroTransferencia}
-              placeholder="Ej: 2025001"
-              onChange={(e) => {
-                setData((prev) => ({ ...prev, numeroTransferencia: e.target.value }));
-                if (e.target.value) clearError("numeroTransferencia");
-              }}
-            />
-            {errors.numeroTransferencia && (
-              <p className="mt-1 text-sm text-red-500">{errors.numeroTransferencia}</p>
-            )}
-          </>
-        </Field>
-
         <Field required label="Denominación" name="denominacion" error={errors.denominacion}>
           <>
             <input
@@ -440,7 +407,7 @@ export default function TransferenciasForm() {
         </Field>
 
         <div data-error-field="adoptantes">
-          <AdoptanteSelector selected={adoptantes} onChange={(next) => {
+          <AdoptantesField selected={adoptantes} disabled={isPending} onChange={(next) => {
             setAdoptantes(next);
             setErrors((previous) => ({ ...previous, adoptantes: "" }));
           }} />

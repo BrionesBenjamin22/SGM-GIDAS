@@ -8,6 +8,25 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-40: estandarizar Transferencias y Adoptantes
+
+- El home adoptó la tabla compartida con búsqueda, filtros y scrollbar del
+  patrón de Trabajos de Reunión, 9 registros por página, acciones individuales
+  e historial diferido de 3 eventos.
+- El backend asigna el número de transferencia automáticamente y conserva la
+  secuencia de los registros dados de baja. El formulario ya no solicita ese
+  número.
+- El formulario permite seleccionar, crear y quitar adoptantes en una grilla.
+  Los cambios se guardan con la transferencia en una sola transacción; Enter en
+  el nombre nuevo lo añade a la grilla sin enviar el formulario.
+- El detalle y el historial presentan los vínculos y sus cambios con nombres
+  legibles. El flujo utiliza el backend real para mantener coherentes catálogo,
+  transferencia y mensajes de éxito.
+
+Validaciones: aceptación visual y funcional del usuario, 167 pruebas frontend,
+485 pruebas backend en Docker, `typecheck`, build de producción y
+`git diff --check` correctos.
+
 ### ISS-39: estandarizar Documentación y Biblioteca
 
 - El home adoptó la tabla compartida con búsqueda, filtros, orden, 9 registros

@@ -14,6 +14,41 @@ ser anterior al inicio, tanto en alta como en edición.
 Gestiona transferencias socio-productivas, tipos de contrato, adoptantes y sus
 relaciones, incluyendo auditoria, baja logica e historial.
 
+## API y permisos
+
+El blueprint `/transferencias` expone GET `/`, GET `/:id`, GET `/:id/historial`,
+POST `/`, PUT `/:id` y DELETE `/:id`. Los GET admiten `ADMIN`, `GESTOR` y
+`LECTURA`; las escrituras requieren `ADMIN` o `GESTOR`. El listado acepta
+`grupo_utn_id`, `tipo_contrato_id` y `activos`. Los endpoints separados POST y
+DELETE `/:id/adoptantes` conservan su contrato `adoptantes_ids` para clientes
+existentes. `/adoptantes` expone el catálogo con lectura para los tres roles y
+escritura para `ADMIN` y `GESTOR`.
+
+## Número y guardado de adoptantes
+
+El cliente no asigna `numero_transferencia`. En el alta, el service calcula
+`max(numero_transferencia) + 1` sobre todos los registros, incluidas las bajas
+lógicas; ignora un número enviado por clientes anteriores. En PostgreSQL usa un
+bloqueo transaccional consultivo para serializar la asignación concurrente. El
+número persiste en `TransferenciaSocioProductiva` y se devuelve en la respuesta.
+
+POST `/transferencias` acepta los campos de transferencia existentes y,
+opcionalmente, `adoptantes_ids: number[]` y `adoptantes_nuevos: string[]`.
+PUT `/transferencias/:id` acepta solo los campos modificados. Si recibe alguna
+de esas dos claves, interpreta ambas listas como la selección final: los IDs
+existentes se vinculan, los nombres nuevos se crean en `Adoptante` y se vinculan,
+y los vínculos ausentes se dan de baja lógicamente. Una petición sin ambas claves
+conserva los vínculos. La creación del catálogo, la actualización de relaciones,
+la auditoría y la transferencia comparten la misma transacción; el cliente recibe
+éxito solo después del commit.
+
+Los nombres nuevos se normalizan con espacios simples y deben contener letras
+Unicode y espacios. Se rechazan IDs inválidos o repetidos, adoptantes inactivos y
+nombres nuevos vacíos, repetidos o ya disponibles en el catálogo. Las relaciones
+usan `AdoptanteTransferencia`; vincular y desvincular registran eventos de
+historial con ID y nombre. La edición del tipo de contrato valida un tipo activo
+y registra el cambio de campo. La baja de transferencias sigue siendo lógica.
+
 ## Contrato de errores
 
 Los services distinguen validaciones (`VALIDATION_ERROR`), recursos inexistentes
@@ -25,12 +60,19 @@ ISS-19: número, denominación, demandante, descripción, monto, fechas y tipo d
 
 Las altas y bajas de la relación de adoptantes responden con `error.details.fields.adoptantes_ids` si la selección no es válida. Un adoptante que ya no está disponible conserva `NOT_FOUND` y señala el selector.
 
+El guardado consolidado señala errores de `adoptantes_ids` también cuando un
+nombre nuevo o la selección final no es válida. El número automático no produce
+errores de validación de entrada. Los controladores devuelven respuestas seguras
+sin exponer excepciones internas.
+
 El alta y la edición de un adoptante indican `nombre` si falta o está duplicado.
 
 ## Pruebas relacionadas
 
 - `tests/test_transferencia_domain_errors.py`
 - `tests/test_transferencia_memoria_historial.py`
+- `tests/test_transferencia_autonumero.py`: asignación automática, descarte del
+  número del cliente y persistencia conjunta de catálogo y vínculos.
 
 ## Snapshots de memorias (ISS-16)
 

@@ -12,6 +12,7 @@ import {
 import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import { formatFecha, formatFechaHora } from "@/utils/dateTime";
+import { presentTransferenciaHistory, transferenciaHistoryEvent } from "@/modules/transferencia/utils/transferenciaHistory";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,
@@ -33,7 +34,7 @@ export default function TransferenciasDetalle() {
 
   const puedeEditar = canEditRecords();
 
-  const { data, isLoading, isError } = useQuery<Transferencia | null>({
+  const { data, isLoading, isError, refetch: refetchTransferencia } = useQuery<Transferencia | null>({
     queryKey: ["transferencias", id],
     queryFn: () => getTransferenciaById(Number(id)),
     enabled: !!id,
@@ -44,6 +45,7 @@ export default function TransferenciasDetalle() {
     data: historialCambios = [],
     isLoading: isLoadingHistorial,
     isError: isHistorialError,
+    refetch: refetchHistorial,
   } = useQuery({
     queryKey: ["transferencia-historial", id],
     queryFn: () => getHistorialTransferenciaById(Number(id)),
@@ -72,9 +74,7 @@ export default function TransferenciasDetalle() {
 
   if (isError) {
     return (
-      <p className="text-slate-500">
-        Lo sentimos, no pudimos recuperar la información. Intente nuevamente.
-      </p>
+      <div role="alert" className="space-y-3 text-slate-600"><p>Lo sentimos, no pudimos recuperar la información. Intente nuevamente.</p><Button type="button" onClick={() => void refetchTransferencia()}>Reintentar</Button></div>
     );
   }
 
@@ -199,10 +199,11 @@ export default function TransferenciasDetalle() {
 
         <HistorialCambiosCard
           subtitle={titulo}
-          items={historialCambios}
+          items={presentTransferenciaHistory(historialCambios)}
           isLoading={isLoadingHistorial}
           updatedAt={data.updated_at}
           updatedByName={data.updated_by_nombre}
+          formatItemPresentation={(item) => transferenciaHistoryEvent(item)}
           formatItemValue={(item, value) => {
             if (value === null || value === undefined || value === "") return "-";
 
@@ -216,16 +217,12 @@ export default function TransferenciasDetalle() {
 
             if (item.campo === "tipo_contrato_id") {
               const idValue = Number(value);
-              return idValue === data.tipoContratoId
-                ? data.tipoContrato || `ID ${idValue}`
-                : `ID ${idValue}`;
+              return idValue === data.tipoContratoId ? data.tipoContrato || "Dato actualizado" : "Dato actualizado";
             }
 
             if (item.campo === "grupo_utn_id") {
               const idValue = Number(value);
-              return idValue === data.grupoUtnId
-                ? data.grupo || `ID ${idValue}`
-                : `ID ${idValue}`;
+              return idValue === data.grupoUtnId ? data.grupo || "Dato actualizado" : "Dato actualizado";
             }
 
             if (item.campo === "adoptantes") {
@@ -277,7 +274,7 @@ export default function TransferenciasDetalle() {
 
         {isHistorialError && (
           <p className="text-sm text-red-600" role="alert">
-            Lo sentimos, no pudimos recuperar el historial. Intente nuevamente.
+            Lo sentimos, no pudimos recuperar el historial. <button type="button" className="underline" onClick={() => refetchHistorial()}>Reintentar</button>
           </p>
         )}
 
