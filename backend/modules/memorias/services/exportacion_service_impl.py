@@ -9,6 +9,7 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.cell.cell import MergedCell
 from openpyxl.utils import column_index_from_string
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import joinedload, selectinload
 
 from modules.produccion.models.actividad_docencia import ActividadDocencia, InvestigadorActividadGrado
@@ -392,9 +393,25 @@ class ExportService:
     @staticmethod
     def _get_participaciones(grupo_id: int):
         return (
-            ParticipacionRelevante.query.options(joinedload(ParticipacionRelevante.investigador))
-            .join(Investigador, ParticipacionRelevante.investigador_id == Investigador.id)
-            .filter(ParticipacionRelevante.deleted_at.is_(None), Investigador.grupo_utn_id == grupo_id, Investigador.deleted_at.is_(None))
+            ParticipacionRelevante.query.options(
+                joinedload(ParticipacionRelevante.investigador),
+                joinedload(ParticipacionRelevante.becario),
+            )
+            .outerjoin(Investigador, ParticipacionRelevante.investigador_id == Investigador.id)
+            .outerjoin(Becario, ParticipacionRelevante.becario_id == Becario.id)
+            .filter(
+                ParticipacionRelevante.deleted_at.is_(None),
+                or_(
+                    and_(
+                        Investigador.grupo_utn_id == grupo_id,
+                        Investigador.deleted_at.is_(None),
+                    ),
+                    and_(
+                        Becario.grupo_utn_id == grupo_id,
+                        Becario.deleted_at.is_(None),
+                    ),
+                ),
+            )
             .order_by(ParticipacionRelevante.fecha.desc(), ParticipacionRelevante.id.desc())
             .all()
         )
@@ -1815,11 +1832,11 @@ class ExportService:
             proyectos_rows.append([idx, proyecto.codigo_proyecto, proyecto.nombre_proyecto, proyecto.tipo_proyecto.nombre if proyecto.tipo_proyecto else "-", proyecto.fuente_financiamiento.nombre if proyecto.fuente_financiamiento else "-", monto, proyecto.fecha_inicio, proyecto.fecha_fin, ", ".join(inv.nombre_apellido for inv in investigadores_activos) or "-", ", ".join(bec.nombre_apellido for bec in becarios_activos) or "-", distinciones_texto])
         row = cls._write_table(ws, row, "5.- PROYECTOS DE INVESTIGACION", ["Nro.", "Codigo del proyecto", "Denominacion del proyecto", "Tipo de proyecto", "Fuente de financiamiento", "Monto destinado", "Fecha de inicio", "Fecha de finalizacion", "Investigadores vinculados", "Becarios vinculados", "Distinciones asociadas"], proyectos_rows, accent=True, merge_span=12, date_cols={7, 8}, money_cols={6})
         row = cls._write_totals(ws, row, "Total monto proyectos", [(6, total_proyectos)])
-        participaciones_rows = [[idx, participacion.nombre_evento, participacion.forma_participacion, participacion.fecha, participacion.investigador.nombre_apellido if participacion.investigador else "-"] for idx, participacion in enumerate(participaciones, start=1)]
+        participaciones_rows = [[idx, participacion.nombre_evento, participacion.forma_participacion, participacion.fecha, participacion.participante.nombre_apellido if participacion.participante else "-", "Investigador" if participacion.participante_rol == "investigador" else "Becario"] for idx, participacion in enumerate(participaciones, start=1)]
         row = cls._write_subsection(ws, row, "6.- RECONOCIMIENTOS, PARTICIPACIONES Y VISITAS ACADEMICAS", span=10)
         distinciones_rows = [[idx, distincion.fecha, distincion.descripcion, distincion.proyecto_investigacion.nombre_proyecto if distincion.proyecto_investigacion else "-"] for idx, distincion in enumerate(distinciones, start=1)]
         row = cls._write_table(ws, row, "6.1.- Distinciones y reconocimientos recibidos", ["Nro.", "Fecha", "Descripcion de la distincion", "Proyecto asociado"], distinciones_rows, merge_span=8, date_cols={2})
-        row = cls._write_table(ws, row, "6.2.- Participaciones institucionales y academicas relevantes", ["Nro.", "Evento o actividad", "Forma de participacion", "Fecha", "Investigador participante"], participaciones_rows, merge_span=8, date_cols={4})
+        row = cls._write_table(ws, row, "6.2.- Participaciones institucionales y academicas relevantes", ["Nro.", "Evento o actividad", "Forma de participacion", "Fecha", "Participante", "Categoria"], participaciones_rows, merge_span=8, date_cols={4})
         visitas_rows = [[idx, visita.razon, visita.procedencia, visita.tipo_visita.nombre if visita.tipo_visita else "-", visita.fecha] for idx, visita in enumerate(visitas, start=1)]
         row = cls._write_table(ws, row, "6.3.- Visitantes del pais y del extranjero", ["Nro.", "Motivo o razon de la visita", "Procedencia", "Tipo de visita", "Fecha"], visitas_rows, merge_span=8, date_cols={5})
         reuniones_grouped = {}

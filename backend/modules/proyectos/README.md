@@ -106,7 +106,29 @@ relaciones, cierres y reaperturas conservan auditoria e historial.
 
 ## Snapshots de memorias (ISS-16)
 
-Un proyecto entra cuando pertenece a la UCT y su intervalo desde `fecha_inicio` hasta el primero entre `fecha_fin` y baja lógica solapa el período. Los terminados antes se excluyen. Distinciones y participaciones heredan la UCT del proyecto o investigador y usan su fecha puntual inclusiva.
-## Validaciones de Participaciones (ISS-19)
+Un proyecto entra cuando pertenece a la UCT y su intervalo desde `fecha_inicio` hasta el primero entre `fecha_fin` y baja lógica solapa el período. Los terminados antes se excluyen. Distinciones y participaciones heredan la UCT del proyecto o participante y usan su fecha puntual inclusiva.
 
-El service de participaciones devuelve error.details.fields para investigador_id, nombre_evento, forma_participacion y fecha. Un investigador inactivo o inexistente pide elegir otro; una participación duplicada responde CONFLICT con un mensaje público y accionable. Se conservan la auditoría y la transacción de guardado.
+## Participaciones relevantes (ISS-19, ISS-35)
+
+El service de participaciones devuelve `error.details.fields` para participante,
+nombre_evento, forma_participacion y fecha. La escritura usa
+`participante: { rol: "investigador" | "becario", id }`; la lectura agrega nombre
+y categoria y conserva temporalmente los campos heredados para compatibilidad.
+La base exige exactamente un investigador o becario por registro mediante una
+restriccion `CHECK` y claves foraneas para ambos roles.
+
+Una persona inactiva, eliminada o inexistente pide elegir otra. El duplicado se
+evalua por identidad compuesta `(rol, id)`, evento, forma y fecha, y responde
+`CONFLICT` con un mensaje publico y accionable. Los filtros aceptan
+`participante_rol` y `participante_id` juntos, ademas del filtro heredado por
+investigador. Alta, edicion y baja conservan transacciones, permisos, auditoria y
+soft delete.
+
+Los snapshots de Memorias preservan rol, ID y nombre del participante. La
+seleccion por periodo consulta tanto la relacion con investigadores como con
+becarios y mantiene la exportacion XLSX y la busqueda global con nombres legibles
+de ambos tipos de persona.
+
+La revision `c35e8a1b7d42` agrega las columnas de becario, flexibiliza las columnas
+anteriores de investigador, incorpora claves foraneas y restricciones de
+integridad, y mantiene los registros existentes asociados a investigadores.

@@ -681,7 +681,10 @@ class SearchService:
 
         participaciones = SearchService.bounded_results(
             db.session.query(ParticipacionRelevante)
-            .options(joinedload(ParticipacionRelevante.investigador)),
+            .options(
+                joinedload(ParticipacionRelevante.investigador),
+                joinedload(ParticipacionRelevante.becario),
+            ),
             ParticipacionRelevante,
             eliminados,
             max_scan_per_model,
@@ -693,10 +696,14 @@ class SearchService:
 
             evento_norm = SearchService.normalize_text(pr.nombre_evento)
             forma_norm = SearchService.normalize_text(pr.forma_participacion)
+            participante_norm = SearchService.normalize_text(
+                pr.participante.nombre_apellido if pr.participante else ""
+            )
 
             if (
                 query_normalized in evento_norm
                 or query_normalized in forma_norm
+                or query_normalized in participante_norm
             ):
 
                 resultados.append(SearchService.with_status(pr, {
@@ -707,7 +714,8 @@ class SearchService:
                     "fecha": pr.fecha,
                     "url": f"/participaciones-relevantes/{pr.id}",
                     "extra": {
-                        "investigador": pr.investigador.nombre_apellido if pr.investigador else None
+                        "participante": pr.participante.nombre_apellido if pr.participante else None,
+                        "categoria": "Investigador" if pr.participante_rol == "investigador" else "Becario",
                     }
                 }))
                 

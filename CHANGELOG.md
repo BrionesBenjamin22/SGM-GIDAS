@@ -8,6 +8,27 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-35: admitir becarios en Participaciones relevantes
+
+- Participaciones relevantes admite como participante a un investigador o un
+  becario, con identidad inequivoca por rol e ID, validaciones de actividad,
+  claves foraneas y restriccion de integridad en registros y snapshots.
+- La API, auditoria, filtros, deteccion de duplicados, busqueda global,
+  exportacion XLSX y Memorias contemplan ambas categorias y presentan nombres
+  legibles sin exponer identificadores internos.
+- El formulario reemplazo el selector extenso por busqueda por nombre, apellido
+  o iniciales, filtro de categoria, resultados de a 9 y una tarjeta de seleccion.
+- El home adopto la tabla compartida con 9 filas, filtros horizontales, acciones
+  individuales e historial diferido paginado de a 3 eventos. El detalle conserva
+  auditoria, historial, permisos y navegacion aprobada.
+- La revision `c35e8a1b7d42` actualizo el esquema y el dataset ficticio se
+  regenero despues de retirar participaciones de prueba huerfanas.
+
+Validaciones: aceptacion visual y funcional del usuario, 10 pruebas backend
+focalizadas de Participaciones relevantes, 75 pruebas backend relacionadas, 156
+pruebas frontend, `typecheck`, build de produccion y `git diff --check`
+correctos.
+
 ### ISS-34: estandarizar Artículos de divulgación
 
 - Artículos de divulgación reemplazó las tarjetas, la selección masiva y el

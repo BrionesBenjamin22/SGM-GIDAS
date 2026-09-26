@@ -142,6 +142,12 @@ class Becario(db.Model, AuditMixin):
         cascade="all, delete-orphan"
     )
 
+    participaciones_relevantes = db.relationship(
+        "ParticipacionRelevante",
+        back_populates="becario",
+        cascade="all, delete-orphan"
+    )
+
     becas = db.relationship(
         "Beca_Becario",
         back_populates="becario",

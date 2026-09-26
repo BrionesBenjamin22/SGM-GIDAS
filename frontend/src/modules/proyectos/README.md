@@ -109,10 +109,24 @@ cargo del usuario.
 
 ## Participaciones relevantes
 
-- el service admite listas planas o envueltas en `data`
-- el formulario valida investigador, evento, forma de participacion y fecha
-- las ediciones sin diferencias no llaman al backend
-- el historial y la auditoria se consumen desde el detalle
+- el contrato identifica a la persona mediante
+  `participante: { rol: "investigador" | "becario", id }`; IDs iguales de roles
+  distintos representan personas diferentes
+- el service admite listas planas o envueltas en `data` y conserva compatibilidad
+  de lectura con registros anteriores de investigadores
+- el formulario permite buscar por nombre, apellido o iniciales sin depender de
+  tildes, filtrar por investigadores o becarios y mostrar resultados de a 9
+- la persona elegida se presenta en una tarjeta y la seleccion se consolida al
+  guardar; la edicion envia solo diferencias reales y no llama al backend cuando
+  no existen cambios
+- carga de candidatos, error con reintento, ausencia de opciones y validaciones
+  de participante, evento, forma y fecha poseen feedback visible y accesible
+- el home usa la tabla compartida con 9 filas por pagina, busqueda, filtros,
+  acciones individuales e historial diferido paginado de a 3 eventos
+- home y detalle muestran nombre y categoria del participante; el historial
+  presenta cambios legibles sin exponer IDs ni JSON
+- el detalle consume auditoria e historial y conserva acciones condicionadas por
+  permisos y estado activo
 
 ## Services, hooks y contratos
 
@@ -155,11 +169,14 @@ reapertura de una selección bloquea nuevas acciones hasta finalizar.
 
 ## Indicadores de campos obligatorios (ISS-21)
 
-En proyectos son obligatorios codigo, nombre, tipo y fecha de inicio. El coordinador se indica como obligatorio cuando se seleccionan investigadores. Las relaciones y los datos opcionales no llevan marca. Participaciones marca investigador, evento, forma y fecha.
+En proyectos son obligatorios codigo, nombre, tipo y fecha de inicio. El coordinador se indica como obligatorio cuando se seleccionan investigadores. Las relaciones y los datos opcionales no llevan marca. Participaciones marca participante, evento, forma y fecha.
 
 ## Errores de Participaciones (ISS-19)
 
-ParticipacionesForm aplica error.details.fields mediante applyFieldErrors. investigador_id, nombre_evento, forma_participacion y fecha se vinculan a los controles visibles. Los conflictos y campos desconocidos mantienen un aviso general; alta y edición indican cómo reintentar.
+ParticipacionesForm aplica `error.details.fields` mediante `applyFieldErrors`.
+`participante`, `nombre_evento`, `forma_participacion` y `fecha` se vinculan a
+los controles visibles. Los conflictos y campos desconocidos mantienen un aviso
+general; alta y edicion indican como reintentar.
 
 ## Borradores de formularios (ISS-22)
 

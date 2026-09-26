@@ -463,6 +463,7 @@ def _seed_search_coverage(grupo, catalogs, investigador, admin_user_id):
         defaults={
             "forma_participacion": "Expositor ficticio",
             "fecha": date(2024, 7, 10),
+            "investigador_id": investigador.id,
             "created_by": admin_user_id,
         },
     )
@@ -679,6 +680,7 @@ def _seed_manual_testing_dataset(grupo, catalogs, investigador, admin_user_id):
             defaults={
                 "forma_participacion": ["Expositor", "Organizador", "Asistente"][tipo_index],
                 "fecha": date(year, month, 16),
+                "investigador_id": investigador.id,
                 "created_by": admin_user_id,
             },
         )

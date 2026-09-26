@@ -430,9 +430,9 @@ SEARCH_ENTITIES = [
             "title": p.nombre_evento,
             "description": f"Participación como {p.forma_participacion}",
             "extra": {
-                "investigador": (
-                    p.investigador.nombre_apellido
-                    if p.investigador else None
+                "participante": p.participante.nombre_apellido if p.participante else None,
+                "categoria": (
+                    "Investigador" if p.participante_rol == "investigador" else "Becario"
                 ),
                 "fecha": (
                     p.fecha.isoformat()
