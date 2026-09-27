@@ -1,0 +1,265 @@
+import unittest
+from datetime import date
+from decimal import Decimal
+from io import BytesIO
+from types import SimpleNamespace
+from unittest.mock import patch
+from openpyxl import load_workbook
+from sqlalchemy.exc import IntegrityError
+
+from app import create_app
+from config import Config
+from extension import db
+from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
+from modules.dashboard.services.dashboard_service import DashboardService
+from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.memorias.services.exportacion_service_impl import ExportService
+from modules.recursos.models.movimiento_financiero import (
+    CategoriaErogacion, MovimientoFinanciero, MovimientoMemoriaVersion,
+)
+from modules.recursos.services.movimiento_financiero_service import MovimientoFinancieroService
+from modules.recursos.services.saldo_financiero_service import SaldoFinancieroService
+from modules.shared.exceptions import ConflictError, ValidationError
+from modules.shared.models.auditoria_campo import AuditoriaCampo
+from tools.seed_testing_data import _seed_group
+
+
+class MovimientoFinancieroAltaTestCase(unittest.TestCase):
+    def setUp(self):
+        config = type(
+            "MovimientoTestConfig", (Config,),
+            {"SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:"},
+        )
+        with patch("app.get_config_class", return_value=config):
+            self.app = create_app()
+        self.context = self.app.app_context()
+        self.context.push()
+        db.create_all()
+        self.grupo = GrupoInvestigacionUtn(
+            mail="gidas@example.org", nombre_unidad_academica="UTN",
+            objetivo_desarrollo="Investigación", nombre_sigla_grupo="GIDAS",
+        )
+        self.fuente = FuenteFinanciamiento(nombre="UTN")
+        self.categoria = CategoriaErogacion(codigo="CORRIENTE", nombre="Corriente")
+        db.session.add_all([self.grupo, self.fuente, self.categoria])
+        db.session.commit()
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.context.pop()
+
+    def _payload(self, tipo, **changes):
+        payload = {
+            "grupo_utn_id": self.grupo.id,
+            "fecha": "2026-09-01",
+            "tipo_movimiento": tipo,
+            "monto": "100.25",
+        }
+        payload.update(changes)
+        return payload
+
+    def test_semilla_usa_la_uct_activa_en_vez_de_crear_un_grupo_invisible(self):
+        self.assertEqual(_seed_group().id, self.grupo.id)
+        self.assertEqual(GrupoInvestigacionUtn.query.count(), 1)
+
+    def test_numera_por_grupo_y_separa_id_de_numero_visible(self):
+        primero = MovimientoFinancieroService.create(
+            self._payload("INGRESO", fuente_financiamiento_id=self.fuente.id), 1,
+        )
+        segundo = MovimientoFinancieroService.create(
+            self._payload("EGRESO", categoria_erogacion_id=self.categoria.id), 1,
+        )
+        self.assertEqual([primero["numero_movimiento"], segundo["numero_movimiento"]], [1, 2])
+        self.assertEqual(primero["monto"], "100.25")
+        self.assertEqual(primero["moneda"], "ARS")
+        self.assertEqual(MovimientoFinanciero.query.count(), 2)
+
+    def test_listado_y_saldo_separan_grupos(self):
+        otro_grupo = GrupoInvestigacionUtn(
+            mail="otro@example.org", nombre_unidad_academica="UTN",
+            objetivo_desarrollo="Investigación", nombre_sigla_grupo="OTRO",
+        )
+        db.session.add(otro_grupo)
+        db.session.commit()
+        MovimientoFinancieroService.create(
+            self._payload("INGRESO", fuente_financiamiento_id=self.fuente.id), 1,
+        )
+        MovimientoFinancieroService.create({
+            **self._payload("INGRESO", fuente_financiamiento_id=self.fuente.id),
+            "grupo_utn_id": otro_grupo.id, "monto": "300.00",
+        }, 1)
+        movimientos = MovimientoFinancieroService.get_all({"grupo_utn_id": self.grupo.id})
+        self.assertEqual(len(movimientos), 1)
+        self.assertEqual(movimientos[0]["numero_movimiento"], 1)
+        self.assertEqual(SaldoFinancieroService.calcular(self.grupo.id).saldo_disponible, Decimal("100.25"))
+
+    def test_no_acepta_numero_elegido_por_cliente(self):
+        with self.assertRaises(ValidationError):
+            MovimientoFinancieroService.create(
+                self._payload(
+                    "INGRESO", fuente_financiamiento_id=self.fuente.id,
+                    numero_movimiento=99,
+                ), 1,
+            )
+        self.assertEqual(MovimientoFinanciero.query.count(), 0)
+
+    def test_restriccion_de_base_impide_numeros_duplicados(self):
+        MovimientoFinancieroService.create(
+            self._payload("INGRESO", fuente_financiamiento_id=self.fuente.id), 1,
+        )
+        db.session.add(MovimientoFinanciero(
+            grupo_utn_id=self.grupo.id,
+            numero_movimiento=1,
+            tipo_movimiento="INGRESO",
+            monto="1.00",
+            moneda="ARS",
+            fecha=self.grupo.created_at.date(),
+            fuente_financiamiento_id=self.fuente.id,
+        ))
+        with self.assertRaises(IntegrityError):
+            db.session.commit()
+        db.session.rollback()
+        self.assertEqual(MovimientoFinanciero.query.count(), 1)
+
+    def test_exige_relacion_segun_tipo(self):
+        for payload in (
+            self._payload("INGRESO"),
+            self._payload("EGRESO"),
+            self._payload("INGRESO", fuente_financiamiento_id=self.fuente.id,
+                          categoria_erogacion_id=self.categoria.id),
+            self._payload("EGRESO", fuente_financiamiento_id=self.fuente.id,
+                          categoria_erogacion_id=self.categoria.id),
+        ):
+            with self.subTest(payload=payload), self.assertRaises(ValidationError):
+                MovimientoFinancieroService.create(payload, 1)
+        self.assertEqual(MovimientoFinanciero.query.count(), 0)
+
+    def test_saldo_y_edicion_de_egreso_respetan_limites(self):
+        MovimientoFinancieroService.create(
+            self._payload("INGRESO", fuente_financiamiento_id=self.fuente.id), 1,
+        )
+        with self.assertRaises(ConflictError):
+            MovimientoFinancieroService.create(
+                self._payload("EGRESO", monto="100.26",
+                              categoria_erogacion_id=self.categoria.id), 1,
+            )
+        egreso = MovimientoFinancieroService.create(
+            self._payload("EGRESO", categoria_erogacion_id=self.categoria.id), 1,
+        )
+        resumen = SaldoFinancieroService.calcular(self.grupo.id)
+        self.assertEqual(resumen.serialize(), {
+            "moneda": "ARS", "total_ingresos": "100.25",
+            "total_egresos": "100.25", "saldo_disponible": "0.00",
+            "cantidad_movimientos": 2,
+        })
+        actualizado = MovimientoFinancieroService.update(egreso["id"], {"monto": "60.00"}, 1)
+        self.assertEqual(actualizado["monto"], "60.00")
+        self.assertEqual(SaldoFinancieroService.calcular(self.grupo.id).saldo_disponible, Decimal("40.25"))
+        self.assertEqual(AuditoriaCampo.query.filter_by(
+            entidad="movimiento_financiero", registro_id=egreso["id"], campo="monto"
+        ).count(), 1)
+        with self.assertRaises(ConflictError):
+            MovimientoFinancieroService.update(egreso["id"], {"monto": "100.26"}, 1)
+        with self.assertRaises(ValidationError):
+            MovimientoFinancieroService.update(egreso["id"], {"tipo_movimiento": "INGRESO"}, 1)
+
+    def test_baja_de_ingreso_no_permite_saldo_negativo(self):
+        ingreso = MovimientoFinancieroService.create(
+            self._payload("INGRESO", fuente_financiamiento_id=self.fuente.id), 1,
+        )
+        egreso = MovimientoFinancieroService.create(
+            self._payload("EGRESO", monto="25.00",
+                          categoria_erogacion_id=self.categoria.id), 1,
+        )
+        with self.assertRaises(ConflictError):
+            MovimientoFinancieroService.delete(ingreso["id"], 1)
+        MovimientoFinancieroService.delete(egreso["id"], 1)
+        self.assertEqual(SaldoFinancieroService.calcular(self.grupo.id).saldo_disponible, Decimal("100.25"))
+        MovimientoFinancieroService.delete(ingreso["id"], 1)
+        self.assertEqual(SaldoFinancieroService.calcular(self.grupo.id).serialize()["cantidad_movimientos"], 0)
+
+    def test_snapshot_conserva_monto_y_categoria_tras_edicion(self):
+        MovimientoFinancieroService.create(
+            self._payload("INGRESO", fuente_financiamiento_id=self.fuente.id), 1,
+        )
+        egreso = MovimientoFinancieroService.create(
+            self._payload("EGRESO", monto="25.00",
+                          categoria_erogacion_id=self.categoria.id), 1,
+        )
+        version = SimpleNamespace(id=51, memoria=None)
+        snapshots = MovimientoFinancieroService.snapshot_para_memoria_version(version, 1)
+        db.session.commit()
+        self.assertEqual(len(snapshots), 2)
+        foto = MovimientoMemoriaVersion.query.filter_by(
+            memoria_version_id=51, movimiento_id=egreso["id"],
+        ).one()
+        self.assertEqual(foto.categoria_erogacion_codigo, "CORRIENTE")
+        MovimientoFinancieroService.update(egreso["id"], {"monto": "30.00"}, 1)
+        db.session.expire_all()
+        fotos = MovimientoFinancieroService.obtener_snapshots_por_memoria_version(51)
+        egreso_foto = next(item for item in fotos if item["movimiento_id"] == egreso["id"])
+        self.assertEqual(egreso_foto["monto"], "25.00")
+        self.assertEqual(egreso_foto["categoria_erogacion_codigo"], "CORRIENTE")
+
+    def test_dashboard_y_exportacion_usan_movimientos(self):
+        MovimientoFinancieroService.create(
+            self._payload("INGRESO", fuente_financiamiento_id=self.fuente.id), 1,
+        )
+        MovimientoFinancieroService.create(
+            self._payload("EGRESO", monto="25.00",
+                          categoria_erogacion_id=self.categoria.id), 1,
+        )
+        resumen = DashboardService.get_resumen()
+        self.assertEqual(resumen["resumen"]["total_ingresos"], "100.25")
+        self.assertEqual(resumen["resumen"]["total_egresos"], "25.00")
+        self.assertEqual(resumen["resumen"]["saldo_financiero"], "75.25")
+        self.assertEqual(resumen["resumen"]["egresos_corrientes"], "25.00")
+        movimientos = ExportService._get_erogaciones(self.grupo.id)
+        self.assertEqual(len(movimientos), 2)
+        self.assertEqual(ExportService._clasificar_erogacion("CORRIENTE"), "corriente")
+
+    def test_exportacion_de_memoria_separa_ingresos_y_categorias_de_egreso(self):
+        memoria = SimpleNamespace(periodo_inicio=date(2026, 1, 1), periodo_fin=date(2026, 12, 31))
+        version = SimpleNamespace(numero_version=1, contexto_institucional={
+            "grupo": {
+                "id": self.grupo.id,
+                "nombre_unidad_academica": self.grupo.nombre_unidad_academica,
+                "nombre_sigla_grupo": self.grupo.nombre_sigla_grupo,
+                "mail": self.grupo.mail,
+                "objetivo_desarrollo": self.grupo.objetivo_desarrollo,
+            },
+            "directivos": [],
+            "programa_actividades": None,
+            "anio_programa": 2027,
+        })
+        fuentes = {key: [] for key in (
+            "investigadores", "becarios", "personal", "proyectos", "participaciones",
+            "visitas", "articulos", "documentacion", "registros", "distinciones",
+            "transferencias", "actividades", "erogaciones", "equipamiento", "becas",
+            "planificaciones", "trabajos_reunion", "trabajos_revista",
+        )}
+        fuentes.update(memoria=memoria, version=version, erogaciones=[
+            {"numero_movimiento": 1, "fecha": date(2026, 5, 1), "tipo_movimiento": "INGRESO",
+             "monto": "100.25", "moneda": "ARS", "fuente_financiamiento_nombre": "UTN"},
+            {"numero_movimiento": 2, "fecha": date(2026, 5, 2), "tipo_movimiento": "EGRESO",
+             "monto": "25.00", "moneda": "ARS", "categoria_erogacion_codigo": "CORRIENTE",
+             "categoria_erogacion_nombre": "Corriente"},
+            {"numero_movimiento": 3, "fecha": date(2026, 5, 3), "tipo_movimiento": "EGRESO",
+             "monto": "10.00", "moneda": "ARS", "categoria_erogacion_codigo": "CAPITAL",
+             "categoria_erogacion_nombre": "Capital"},
+        ])
+        with patch.object(ExportService, "_build_memoria_snapshot_sources", return_value=fuentes):
+            archivo = ExportService.generar_excel_memoria(1, 1)
+        libro = load_workbook(BytesIO(archivo.getvalue()), data_only=True)
+        celdas = [celda.value for hoja in libro for fila in hoja for celda in fila]
+        self.assertIn("11.1.- Erogaciones Corrientes", celdas)
+        self.assertIn("11.2.- Erogaciones de Capital", celdas)
+        self.assertIn("11.3.- Ingresos", celdas)
+        self.assertIn("Corriente", celdas)
+        self.assertIn("Capital", celdas)
+        self.assertIn("UTN", celdas)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -63,8 +63,7 @@ def get_blueprints():
     from modules.proyectos.routes.tipo_proyecto_rutas import tipo_proyecto_bp
     from modules.recursos.routes.becas_rutas import beca_bp
     from modules.recursos.routes.equipamiento_rutas import equipamiento_bp
-    from modules.recursos.routes.erogacion_rutas import erogacion_bp
-    from modules.recursos.routes.tipo_erogacion_rutas import tipo_erogacion_bp
+    from modules.recursos.routes.movimiento_financiero_rutas import movimiento_financiero_bp
     from modules.search.routes.search_rutas import search_bp
     from modules.shared.routes.status import health_bp
     from modules.shared.routes.form_draft_routes import form_draft_bp
@@ -91,7 +90,7 @@ def get_blueprints():
         directivo_bp,
         documentacion_bibliografica_bp,
         equipamiento_bp,
-        erogacion_bp,
+        movimiento_financiero_bp,
         fuente_financiamiento_bp,
         grupo_utn_bp,
         grado_academico_bp,
@@ -107,7 +106,6 @@ def get_blueprints():
         search_bp,
         tipo_contrato_bp,
         tipo_dedicacion_bp,
-        tipo_erogacion_bp,
         tipo_formacion_becario_bp,
         tipo_personal_bp,
         tipo_registro_propiedad_bp,

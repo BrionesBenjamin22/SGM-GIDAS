@@ -1,5 +1,9 @@
 # Recursos
 
+El contrato vigente de ingresos, egresos, saldo, auditoría, permisos y API está en
+[MOVIMIENTOS.md](MOVIMIENTOS.md). El modelo y las rutas antiguas de erogaciones no
+forman parte del contrato público actual.
+
 La denominación del equipamiento debe contener una letra. Montos y fechas
 mantienen sus validaciones propias.
 
@@ -10,7 +14,7 @@ Equipamiento, erogaciones, becas y sus relaciones se validan desde el
 
 ## Funcionalidad
 
-El modulo administra equipamiento, becas, erogaciones y tipos de erogacion. Cada
+El modulo administra equipamiento, becas y movimientos financieros. Cada
 entidad separa rutas, controladores, servicios y modelos, y aplica permisos por rol
 en sus endpoints.
 
@@ -41,19 +45,17 @@ equipamiento correspondientes al periodo versionado para mantener trazabilidad.
 
 ## Errores
 
-La edicion de erogaciones acepta diferencias de `numero_erogacion`,
-`tipo_erogacion_id`, `fuente_financiamiento_id`, `fecha`, `ingresos` y
-`egresos`. La fecha se vuelve a validar con el rango institucional, el numero
-se comprueba dentro del grupo y los catalogos deben seguir disponibles. Cada
-cambio real se registra en el historial de auditoria; los snapshots de memoria
-ya creados conservan su version original.
+La edición de movimientos acepta diferencias de fecha, monto y de la relación
+correspondiente al tipo. El backend comprueba saldo y relaciones antes de guardar,
+registra cada cambio real en la auditoría y mantiene inmutables los snapshots de
+Memorias ya creados.
 
 Los controladores delegan en el contrato uniforme de errores. Los datos ausentes,
 formatos invalidos, montos no positivos, grupos inexistentes y fechas fuera del
 rango se responden como errores de validacion sin exponer detalles internos.
 
-ISS-19: equipamiento identifica `denominacion`, `descripcion_breve`, `monto_invertido` y `fecha_incorporacion` en `error.details.fields`. Erogaciones identifica `numero_erogacion`, `egresos`, `ingresos`, `fecha`, `tipo_erogacion_id` y `fuente_financiamiento_id`. La edición valida ambos montos antes de modificar la entidad o registrar auditoría. Los conflictos de número conservan HTTP 409 y señalan el control correspondiente.
+ISS-19: equipamiento identifica `denominacion`, `descripcion_breve`, `monto_invertido` y `fecha_incorporacion` en `error.details.fields`. Movimientos identifica `tipo_movimiento`, `fecha`, `monto`, `fuente_financiamiento_id` y `categoria_erogacion_id` según corresponda. Los conflictos de saldo responden HTTP 409.
 
 ## Snapshots de memorias (ISS-16)
 
-Equipamiento y erogaciones se filtran por UCT. Equipamiento usa solapamiento entre incorporación, baja y período; erogaciones usan su fecha puntual inclusiva. Una baja posterior no elimina un hecho histórico que correspondía al período.
+Equipamiento y movimientos se filtran por UCT. Equipamiento usa solapamiento entre incorporación, baja y período; movimientos usan su fecha puntual inclusiva. Una baja posterior no elimina un hecho histórico que correspondía al período.

@@ -10,7 +10,7 @@ from modules.produccion.models.actividad_docencia import ActividadDocencia, Inve
 from modules.produccion.models.articulo_divulgacion import ArticuloDivulgacion
 from modules.recursos.models.equipamiento import Equipamiento
 from modules.transferencia.models.transferencia_socio import TipoContrato, TransferenciaSocioProductiva
-from modules.recursos.models.erogacion import Erogacion, TipoErogacion
+from modules.recursos.models.movimiento_financiero import CategoriaErogacion, MovimientoFinanciero
 from modules.produccion.models.registro_patente import RegistrosPropiedad, TipoRegistroPropiedad
 from modules.produccion.models.documentacion_autores import DocumentacionBibliografica, Autor
 from modules.personal.models.tipo_personal import TipoPersonal
@@ -582,9 +582,9 @@ class SearchService:
         # ==================================================
 
         tipos_erogacion = SearchService.bounded_results(
-            db.session.query(TipoErogacion)
-            .options(joinedload(TipoErogacion.erogaciones)),
-            TipoErogacion,
+            db.session.query(CategoriaErogacion)
+            .options(joinedload(CategoriaErogacion.movimientos)),
+            CategoriaErogacion,
             eliminados,
             max_scan_per_model,
         )
@@ -598,7 +598,7 @@ class SearchService:
             if query_normalized in tipo_norm:
 
                 erogaciones = sorted(
-                    tipo.erogaciones,
+                    tipo.movimientos,
                     key=lambda e: e.fecha if hasattr(e, "fecha") else None,
                     reverse=True
                 )
@@ -606,29 +606,31 @@ class SearchService:
                 erogaciones_data = [
                     {
                         "id": e.id,
-                        "numero_erogacion": e.numero_erogacion,
-                        "ingresos": e.ingresos,
-                        "egresos": e.egresos,
+                        "numero_movimiento": e.numero_movimiento,
+                        "titulo": f"Movimiento {e.numero_movimiento}",
+                        "tipo_movimiento": e.tipo_movimiento,
+                        "monto": str(e.monto),
+                        "moneda": e.moneda,
                         "fecha": e.fecha,
-                        "url": f"/erogaciones/{e.id}"
+                        "url": f"/movimientos/{e.id}"
                     }
                     for e in erogaciones[:5]  # recientes
                 ]
 
-                total_egresos = sum(e.egresos or 0 for e in tipo.erogaciones)
-                total_ingresos = sum(e.ingresos or 0 for e in tipo.erogaciones)
+                total_egresos = sum(e.monto for e in tipo.movimientos if e.tipo_movimiento == "EGRESO" and e.deleted_at is None)
+                total_ingresos = sum(e.monto for e in tipo.movimientos if e.tipo_movimiento == "INGRESO" and e.deleted_at is None)
 
                 resultados.append(SearchService.with_status(tipo, {
-                    "tipo": "Tipo de Erogación",
+                    "tipo": "Categoría de Erogación",
                     "id": tipo.id,
                     "titulo": tipo.nombre,
                     "subtitulo": "Clasificación de gastos",
                     "fecha": None,
-                    "url": f"/tipos-erogacion/{tipo.id}",
+                    "url": "/movimientos",
                     "extra": {
-                        "cantidad_erogaciones": len(tipo.erogaciones),
-                        "total_egresos": total_egresos,
-                        "total_ingresos": total_ingresos,
+                        "cantidad_erogaciones": len(tipo.movimientos),
+                        "total_egresos": str(total_egresos),
+                        "total_ingresos": str(total_ingresos),
                         "erogaciones_recientes": erogaciones_data
                     }
                 }))
@@ -1151,26 +1153,27 @@ class SearchService:
         # EROGACIONES
         # ==================================================
         erogaciones = SearchService.bounded_results(
-            db.session.query(Erogacion).options(
-                joinedload(Erogacion.tipo_erogacion),
-                joinedload(Erogacion.fuente_financiamiento),
-                joinedload(Erogacion.grupo_utn),
-            ), Erogacion, eliminados, max_scan_per_model,
+            db.session.query(MovimientoFinanciero).options(
+                joinedload(MovimientoFinanciero.categoria_erogacion),
+                joinedload(MovimientoFinanciero.fuente_financiamiento),
+                joinedload(MovimientoFinanciero.grupo_utn),
+            ), MovimientoFinanciero, eliminados, max_scan_per_model,
         )
         for erogacion in erogaciones:
             valores = [
-                str(erogacion.numero_erogacion or ""),
-                erogacion.tipo_erogacion.nombre if erogacion.tipo_erogacion else "",
+                str(erogacion.numero_movimiento or ""),
+                erogacion.categoria_erogacion.nombre if erogacion.categoria_erogacion else "",
                 erogacion.fuente_financiamiento.nombre if erogacion.fuente_financiamiento else "",
+                erogacion.tipo_movimiento,
             ]
             if any(query_normalized in SearchService.normalize_text(valor) for valor in valores):
                 resultados.append(SearchService.with_status(erogacion, {
-                    "tipo": "Erogación",
+                    "tipo": "Movimiento financiero",
                     "id": erogacion.id,
-                    "titulo": f"Erogación {erogacion.numero_erogacion}",
-                    "subtitulo": erogacion.tipo_erogacion.nombre if erogacion.tipo_erogacion else None,
+                    "titulo": f"Movimiento {erogacion.numero_movimiento}",
+                    "subtitulo": erogacion.categoria_erogacion.nombre if erogacion.categoria_erogacion else erogacion.fuente_financiamiento.nombre if erogacion.fuente_financiamiento else None,
                     "fecha": erogacion.fecha,
-                    "url": f"/erogaciones/{erogacion.id}",
+                    "url": f"/movimientos/{erogacion.id}",
                 }))
 
         # ==================================================

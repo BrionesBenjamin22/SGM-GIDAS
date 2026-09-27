@@ -1,5 +1,10 @@
 # Modulo backend de busqueda
 
+Los resultados de movimientos consultan `MovimientoFinanciero`, presentan número,
+tipo y estado, y enlazan a `/movimientos/:id`. La búsqueda es global entre grupos;
+la semilla de pruebas registra movimientos en la UCT activa para que también
+figuren en el historial financiero visible.
+
 Realiza busqueda global paginada sobre entidades habilitadas, con filtros de
 estado, ordenamiento y limites configurables de consulta.
 

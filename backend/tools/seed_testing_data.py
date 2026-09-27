@@ -47,7 +47,7 @@ from modules.produccion.models.trabajo_revista import TipoRevista, TrabajosRevis
 from modules.proyectos.models.participacion_relevante import ParticipacionRelevante
 from modules.recursos.models.becas import Beca
 from modules.recursos.models.equipamiento import Equipamiento
-from modules.recursos.models.erogacion import Erogacion, TipoErogacion
+from modules.recursos.models.movimiento_financiero import CategoriaErogacion, MovimientoFinanciero
 from modules.transferencia.models.transferencia_socio import (
     TipoContrato,
     TransferenciaSocioProductiva,
@@ -140,9 +140,11 @@ def _seed_catalogs():
 
 
 def _seed_group():
-    grupo = GrupoInvestigacionUtn.query.filter_by(
-        nombre_sigla_grupo="GIDAS TEST"
-    ).first()
+    # La aplicación muestra una única UCT activa. Usar esa misma UCT evita
+    # generar movimientos buscables que no aparecen en su historial financiero.
+    grupo = GrupoInvestigacionUtn.query.filter(
+        GrupoInvestigacionUtn.deleted_at.is_(None)
+    ).order_by(GrupoInvestigacionUtn.id.asc()).first()
     if grupo:
         return grupo
 
@@ -384,9 +386,9 @@ def _seed_memoria(admin_user_id):
 
 
 def _seed_search_coverage(grupo, catalogs, investigador, admin_user_id):
-    tipo_erogacion, _ = _get_or_create(
-        TipoErogacion,
-        nombre="Insumos de laboratorio TEST",
+    categoria_erogacion, _ = _get_or_create(
+        CategoriaErogacion, codigo="CORRIENTE",
+        defaults={"nombre": "Corriente"},
     )
     tipo_registro, _ = _get_or_create(
         TipoRegistroPropiedad,
@@ -449,15 +451,28 @@ def _seed_search_coverage(grupo, catalogs, investigador, admin_user_id):
         documento.autores.append(autor)
 
     _get_or_create(
-        Erogacion,
-        numero_erogacion=990001,
+        MovimientoFinanciero,
+        numero_movimiento=990001,
         grupo_utn_id=grupo.id,
         defaults={
-            "egresos": 25000.0,
-            "ingresos": 0.0,
+            "tipo_movimiento": "INGRESO",
+            "monto": "50000.00",
+            "moneda": "ARS",
             "fecha": date(2024, 6, 15),
-            "tipo_erogacion_id": tipo_erogacion.id,
             "fuente_financiamiento_id": catalogs["fuente"].id,
+            "created_by": admin_user_id,
+        },
+    )
+    _get_or_create(
+        MovimientoFinanciero,
+        numero_movimiento=990002,
+        grupo_utn_id=grupo.id,
+        defaults={
+            "tipo_movimiento": "EGRESO",
+            "monto": "25000.00",
+            "moneda": "ARS",
+            "fecha": date(2024, 6, 15),
+            "categoria_erogacion_id": categoria_erogacion.id,
             "created_by": admin_user_id,
         },
     )
@@ -563,13 +578,10 @@ def _seed_search_coverage(grupo, catalogs, investigador, admin_user_id):
 
 def _seed_manual_testing_dataset(grupo, catalogs, investigador, admin_user_id):
     """Crea variantes deterministas para probar filtros y paginacion manual."""
-    tipos_erogacion = [
-        _get_or_create(TipoErogacion, nombre=nombre)[0]
-        for nombre in [
-            "Insumos TEST",
-            "Servicios TEST",
-            "Viaticos TEST",
-        ]
+    categorias_erogacion = [
+        _get_or_create(CategoriaErogacion, codigo=codigo,
+                       defaults={"nombre": nombre})[0]
+        for codigo, nombre in [("CORRIENTE", "Corriente"), ("CAPITAL", "Capital")]
     ]
     tipos_registro = [
         _get_or_create(TipoRegistroPropiedad, nombre=nombre)[0]
@@ -669,16 +681,18 @@ def _seed_manual_testing_dataset(grupo, catalogs, investigador, admin_user_id):
         if autor not in documento.autores:
             documento.autores.append(autor)
 
+        tipo_movimiento = "INGRESO" if index % 2 == 0 else "EGRESO"
         _get_or_create(
-            Erogacion,
-            numero_erogacion=991000 + index,
+            MovimientoFinanciero,
+            numero_movimiento=991000 + index,
             grupo_utn_id=grupo.id,
             defaults={
-                "egresos": 10000.0 + index * 2500.0 if index % 2 else 0.0,
-                "ingresos": 15000.0 + index * 3000.0 if index % 2 == 0 else 0.0,
+                "tipo_movimiento": tipo_movimiento,
+                "monto": str(15000 + index * 3000 if index % 2 == 0 else 10000 + index * 2500),
+                "moneda": "ARS",
                 "fecha": date(year, month, 15),
-                "tipo_erogacion_id": tipos_erogacion[tipo_index].id,
-                "fuente_financiamiento_id": catalogs["fuente"].id,
+                "fuente_financiamiento_id": catalogs["fuente"].id if tipo_movimiento == "INGRESO" else None,
+                "categoria_erogacion_id": categorias_erogacion[tipo_index % 2].id if tipo_movimiento == "EGRESO" else None,
                 "created_by": admin_user_id,
             },
         )

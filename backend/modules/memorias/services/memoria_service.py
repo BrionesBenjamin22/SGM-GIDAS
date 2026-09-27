@@ -34,9 +34,7 @@ from modules.produccion.services.documentacion_service import (
 from modules.recursos.services.equipamiento_service import (
     EquipamientoService,
 )
-from modules.recursos.services.erogacion_service import (
-    ErogacionService,
-)
+from modules.recursos.services.movimiento_financiero_service import MovimientoFinancieroService
 from modules.transferencia.services.transferencia_service import (
     TransferenciaSocioProductivaService,
 )
@@ -342,7 +340,7 @@ class MemoriaService:
             ParticipacionRelevanteService.obtener_snapshots_por_memoria_version(version.id),
             DocumentacionBibliograficaService.obtener_snapshots_por_memoria_version(version.id),
             EquipamientoService.obtener_snapshots_por_memoria_version(version.id),
-            ErogacionService.obtener_snapshots_por_memoria_version(version.id),
+            MovimientoFinancieroService.obtener_snapshots_por_memoria_version(version.id),
             TransferenciaSocioProductivaService.obtener_snapshots_por_memoria_version(version.id),
             TrabajoReunionCientificaService.obtener_snapshots_por_memoria_version(version.id),
             TrabajosRevistasReferatoService.obtener_snapshots_por_memoria_version(version.id),
@@ -501,7 +499,7 @@ class MemoriaService:
         if version.memoria_id != memoria.id:
             raise NotFoundError("La version no pertenece a la memoria indicada")
 
-        return ErogacionService.obtener_snapshots_por_memoria_version(version.id)
+        return MovimientoFinancieroService.obtener_snapshots_por_memoria_version(version.id)
 
     @staticmethod
     def get_transferencias_snapshot(memoria_id: int, memoria_version_id: int):
@@ -786,7 +784,7 @@ class MemoriaService:
                         version_actual,
                         user_id
                     )
-                    ErogacionService.snapshot_para_memoria_version(
+                    MovimientoFinancieroService.snapshot_para_memoria_version(
                         version_actual,
                         user_id
                     )

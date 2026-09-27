@@ -1,5 +1,12 @@
 # Memorias
 
+Las versiones nuevas capturan `MovimientoMemoriaVersion` con tipo, importe,
+moneda, grupo y nombres de fuente o categoría. La exportación usa esas fotos
+inmutables y separa ingresos, egresos corrientes y egresos de capital. Los datos
+anteriores del entorno eran ficticios; no se conservaron mediante migración
+controlada. La clave de sección `erogaciones` del endpoint de snapshots se
+mantiene por compatibilidad interna con Memorias.
+
 ## Contrato de fechas
 
 Los períodos de memoria se validan desde el 01/01/2010 y deben conservar el

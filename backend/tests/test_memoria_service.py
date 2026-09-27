@@ -1,4 +1,4 @@
-import unittest
+﻿import unittest
 from datetime import date, datetime
 from contextlib import ExitStack
 from unittest.mock import patch
@@ -300,7 +300,7 @@ class MemoriaServiceTestCase(unittest.TestCase):
             "modules.memorias.services.memoria_service.ParticipacionRelevanteService.obtener_snapshots_por_memoria_version",
             "modules.memorias.services.memoria_service.DocumentacionBibliograficaService.obtener_snapshots_por_memoria_version",
             "modules.memorias.services.memoria_service.EquipamientoService.obtener_snapshots_por_memoria_version",
-            "modules.memorias.services.memoria_service.ErogacionService.obtener_snapshots_por_memoria_version",
+            "modules.memorias.services.memoria_service.MovimientoFinancieroService.obtener_snapshots_por_memoria_version",
             "modules.memorias.services.memoria_service.TransferenciaSocioProductivaService.obtener_snapshots_por_memoria_version",
             "modules.memorias.services.memoria_service.TrabajoReunionCientificaService.obtener_snapshots_por_memoria_version",
             "modules.memorias.services.memoria_service.TrabajosRevistasReferatoService.obtener_snapshots_por_memoria_version",

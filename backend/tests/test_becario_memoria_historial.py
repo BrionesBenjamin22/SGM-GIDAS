@@ -1,4 +1,4 @@
-import unittest
+﻿import unittest
 from datetime import date, datetime
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -129,7 +129,7 @@ class BecarioMemoriaHistorialTestCase(unittest.TestCase):
         ), patch(
             "modules.memorias.services.memoria_service.EquipamientoService.snapshot_para_memoria_version"
         ), patch(
-            "modules.memorias.services.memoria_service.ErogacionService.snapshot_para_memoria_version"
+            "modules.memorias.services.memoria_service.MovimientoFinancieroService.snapshot_para_memoria_version"
         ), patch(
             "modules.memorias.services.memoria_service.TransferenciaSocioProductivaService.snapshot_para_memoria_version"
         ), patch(

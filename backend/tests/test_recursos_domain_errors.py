@@ -47,25 +47,25 @@ class RecursosDomainErrorsTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.get_json()["error"]["code"], "NOT_FOUND")
 
-    def test_tipo_erogacion_expone_conflicto(self):
+    def test_movimiento_financiero_expone_conflicto(self):
         with self._auth(), patch(
-            "modules.recursos.controllers.tipo_erogacion_controller."
-            "TipoErogacionService.delete",
-            side_effect=ConflictError("Tipo asociado"),
+            "modules.recursos.controllers.movimiento_financiero_controller."
+            "MovimientoFinancieroService.delete",
+            side_effect=ConflictError("Saldo insuficiente"),
         ):
             response = self.client.delete(
-                "/api/v1/recursos/tipo-erogacion/1", headers=self._headers()
+                "/api/v1/recursos/movimientos/1", headers=self._headers()
             )
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.get_json()["error"]["code"], "CONFLICT")
 
-    def test_erogacion_expone_validacion(self):
+    def test_movimiento_financiero_expone_validacion(self):
         with self._auth(), patch(
-            "modules.recursos.controllers.erogacion_controller.ErogacionService.create",
+            "modules.recursos.controllers.movimiento_financiero_controller.MovimientoFinancieroService.create",
             side_effect=ValidationError("El body es obligatorio"),
         ):
             response = self.client.post(
-                "/api/v1/recursos/erogaciones/", json={}, headers=self._headers()
+                "/api/v1/recursos/movimientos/", json={}, headers=self._headers()
             )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json()["error"]["code"], "VALIDATION_ERROR")

@@ -18,7 +18,7 @@ MODULES = {
     "personal-investigador": ("Investigador", "/personal/nuevo?tipo=INVESTIGADOR", "/personal/investigador/{id}/editar"),
     "grupo-uct": ("UCT", "/uct/nueva", "/uct/nueva"),
     "proyectos": ("Proyecto", "/proyectos/nuevo", "/proyectos/editar/{id}"),
-    "recursos-erogaciones": ("Erogación", "/erogaciones/nuevo", "/erogaciones/{id}/editar"),
+    "recursos-erogaciones": ("Movimiento", "/movimientos/nuevo", "/movimientos/{id}/editar"),
     "recursos-equipamiento": ("Equipamiento", "/equipamiento/nuevo", "/equipamiento/{id}/editar"),
     "transferencia": ("Transferencia", "/transferencias/nuevo", "/transferencias/{id}/editar"),
     "memorias": ("Memoria", "/memorias/nueva", "/memorias/nueva"),

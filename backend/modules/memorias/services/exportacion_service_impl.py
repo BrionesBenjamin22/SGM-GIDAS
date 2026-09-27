@@ -19,7 +19,7 @@ from modules.grupo.models.directivos import DirectivoGrupo
 from modules.produccion.models.distinciones import DistincionRecibida
 from modules.produccion.models.documentacion_autores import DocumentacionBibliografica
 from modules.recursos.models.equipamiento import Equipamiento
-from modules.recursos.models.erogacion import Erogacion
+from modules.recursos.models.movimiento_financiero import MovimientoFinanciero
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.proyectos.models.participacion_relevante import ParticipacionRelevante
 from modules.personal.models.personal import Becario, Investigador, Personal
@@ -384,9 +384,12 @@ class ExportService:
     @staticmethod
     def _get_erogaciones(grupo_id: int):
         return (
-            Erogacion.query.options(joinedload(Erogacion.tipo_erogacion), joinedload(Erogacion.fuente_financiamiento))
-            .filter(Erogacion.grupo_utn_id == grupo_id, Erogacion.deleted_at.is_(None))
-            .order_by(Erogacion.fecha.desc(), Erogacion.id.desc())
+            MovimientoFinanciero.query.options(
+                joinedload(MovimientoFinanciero.categoria_erogacion),
+                joinedload(MovimientoFinanciero.fuente_financiamiento),
+            )
+            .filter(MovimientoFinanciero.grupo_utn_id == grupo_id, MovimientoFinanciero.deleted_at.is_(None))
+            .order_by(MovimientoFinanciero.fecha.desc(), MovimientoFinanciero.numero_movimiento.desc())
             .all()
         )
 
@@ -926,11 +929,16 @@ class ExportService:
         return "conocimientos"
 
     @staticmethod
-    def _clasificar_erogacion(tipo_erogacion_nombre: str | None):
-        tipo = (tipo_erogacion_nombre or "").strip().lower()
-        if "capital" in tipo:
+    def _clasificar_erogacion(categoria_codigo: str | None):
+        if categoria_codigo == "CAPITAL":
             return "capital"
-        return "corriente"
+        if categoria_codigo == "CORRIENTE":
+            return "corriente"
+        return None
+
+    @classmethod
+    def _monto_movimiento(cls, item: dict, tipo: str):
+        return cls._money(item.get("monto")) if item.get("tipo_movimiento") == tipo else 0.0
 
     @staticmethod
     def _clasificar_registro(tipo_registro_nombre: str | None):
@@ -1647,19 +1655,21 @@ class ExportService:
 
         erogaciones_corrientes = [
             item for item in snapshot_sources["erogaciones"]
-            if cls._clasificar_erogacion(item.get("tipo_erogacion_nombre")) == "corriente"
+            if item.get("tipo_movimiento") == "EGRESO"
+            and cls._clasificar_erogacion(item.get("categoria_erogacion_codigo")) == "corriente"
         ]
         erogaciones_capital = [
             item for item in snapshot_sources["erogaciones"]
-            if cls._clasificar_erogacion(item.get("tipo_erogacion_nombre")) == "capital"
+            if item.get("tipo_movimiento") == "EGRESO"
+            and cls._clasificar_erogacion(item.get("categoria_erogacion_codigo")) == "capital"
         ]
         erogaciones_corrientes_rows = [
             [
                 idx,
-                item.get("fuente_financiamiento_nombre") or "-",
-                cls._money(item.get("ingresos")),
-                cls._money(item.get("egresos")),
-                cls._money(item.get("ingresos")) - cls._money(item.get("egresos")),
+                item.get("categoria_erogacion_nombre") or "-",
+                cls._monto_movimiento(item, "INGRESO"),
+                cls._monto_movimiento(item, "EGRESO"),
+                cls._monto_movimiento(item, "INGRESO") - cls._monto_movimiento(item, "EGRESO"),
             ]
             for idx, item in enumerate(erogaciones_corrientes, start=1)
         ]
@@ -1673,7 +1683,7 @@ class ExportService:
             erogaciones_corrientes_header_row,
             erogaciones_corrientes_end_row,
             "11.1.- Erogaciones Corrientes",
-            ["Nro.", "Fuente de financiamiento", "Ingresos", "Egresos", "Saldo resultante"],
+            ["Nro.", "Categoría de erogación", "Ingresos", "Egresos", "Saldo resultante"],
             erogaciones_corrientes_rows,
             chars_per_line=30,
         )
@@ -1683,19 +1693,19 @@ class ExportService:
             erogaciones_corrientes_total_row,
             "Totales erogaciones",
             [
-                (3, sum(cls._money(item.get("ingresos")) for item in erogaciones_corrientes)),
-                (4, sum(cls._money(item.get("egresos")) for item in erogaciones_corrientes)),
-                (5, sum(cls._money(item.get("ingresos")) - cls._money(item.get("egresos")) for item in erogaciones_corrientes)),
+                (3, sum(cls._monto_movimiento(item, "INGRESO") for item in erogaciones_corrientes)),
+                (4, sum(cls._monto_movimiento(item, "EGRESO") for item in erogaciones_corrientes)),
+                (5, sum(cls._monto_movimiento(item, "INGRESO") - cls._monto_movimiento(item, "EGRESO") for item in erogaciones_corrientes)),
             ],
             label_end_col=2,
         )
         erogaciones_capital_rows = [
             [
                 idx,
-                item.get("fuente_financiamiento_nombre") or "-",
-                cls._money(item.get("ingresos")),
-                cls._money(item.get("egresos")),
-                cls._money(item.get("ingresos")) - cls._money(item.get("egresos")),
+                item.get("categoria_erogacion_nombre") or "-",
+                cls._monto_movimiento(item, "INGRESO"),
+                cls._monto_movimiento(item, "EGRESO"),
+                cls._monto_movimiento(item, "INGRESO") - cls._monto_movimiento(item, "EGRESO"),
             ]
             for idx, item in enumerate(erogaciones_capital, start=1)
         ]
@@ -1709,7 +1719,7 @@ class ExportService:
             erogaciones_capital_header_row,
             erogaciones_capital_end_row,
             "11.2.- Erogaciones de Capital",
-            ["Nro.", "Fuente de financiamiento", "Ingresos", "Egresos", "Saldo resultante"],
+            ["Nro.", "Categoría de erogación", "Ingresos", "Egresos", "Saldo resultante"],
             erogaciones_capital_rows,
             chars_per_line=30,
         )
@@ -1719,15 +1729,42 @@ class ExportService:
             erogaciones_capital_total_row,
             "Totales erogaciones",
             [
-                (3, sum(cls._money(item.get("ingresos")) for item in erogaciones_capital)),
-                (4, sum(cls._money(item.get("egresos")) for item in erogaciones_capital)),
-                (5, sum(cls._money(item.get("ingresos")) - cls._money(item.get("egresos")) for item in erogaciones_capital)),
+                (3, sum(cls._monto_movimiento(item, "INGRESO") for item in erogaciones_capital)),
+                (4, sum(cls._monto_movimiento(item, "EGRESO") for item in erogaciones_capital)),
+                (5, sum(cls._monto_movimiento(item, "INGRESO") - cls._monto_movimiento(item, "EGRESO") for item in erogaciones_capital)),
             ],
             label_end_col=2,
         )
 
+        ingresos_memoria = [
+            item for item in snapshot_sources["erogaciones"]
+            if item.get("tipo_movimiento") == "INGRESO"
+        ]
+        ingresos_rows = [
+            [idx, item.get("fuente_financiamiento_nombre") or "-",
+             cls._monto_movimiento(item, "INGRESO"), 0.0,
+             cls._monto_movimiento(item, "INGRESO")]
+            for idx, item in enumerate(ingresos_memoria, start=1)
+        ]
+        ingresos_title_row = erogaciones_capital_total_row + 1
+        ingresos_header_row = ingresos_title_row + 1
+        ingresos_end_row = ingresos_header_row + cls._body_row_count(ingresos_rows)
+        cls._write_section_table(
+            ws, ingresos_title_row, ingresos_header_row, ingresos_end_row,
+            "11.3.- Ingresos", ["Nro.", "Fuente de financiamiento", "Ingresos", "Egresos", "Saldo resultante"],
+            ingresos_rows, chars_per_line=30,
+        )
+        ingresos_total_row = ingresos_end_row + 1
+        cls._write_total_row(
+            ws, ingresos_total_row, "Totales ingresos",
+            [(3, sum(cls._monto_movimiento(item, "INGRESO") for item in ingresos_memoria)),
+             (4, 0.0),
+             (5, sum(cls._monto_movimiento(item, "INGRESO") for item in ingresos_memoria))],
+            label_end_col=2,
+        )
+
         original_section12_start = 295 + offset
-        current_row = erogaciones_capital_total_row + 1
+        current_row = ingresos_total_row + 1
         if current_row < original_section12_start:
             cls._clear_rows_content(ws, range(current_row, original_section12_start))
         offset += max(0, current_row - original_section12_start)
@@ -1875,14 +1912,22 @@ class ExportService:
         total_ingresos = 0.0
         total_egresos = 0.0
         for erogacion in erogaciones:
-            ingresos = cls._money(erogacion.ingresos)
-            egresos = cls._money(erogacion.egresos)
+            ingresos = cls._money(erogacion.monto) if erogacion.tipo_movimiento == "INGRESO" else 0.0
+            egresos = cls._money(erogacion.monto) if erogacion.tipo_movimiento == "EGRESO" else 0.0
             total_ingresos += ingresos
             total_egresos += egresos
             saldo = ingresos - egresos
-            tipo = erogacion.tipo_erogacion.nombre if erogacion.tipo_erogacion else "Sin tipo definido"
-            erogaciones_grouped.setdefault(tipo, []).append([len(erogaciones_grouped.get(tipo, [])) + 1, erogacion.numero_erogacion, erogacion.fecha, erogacion.fuente_financiamiento.nombre if erogacion.fuente_financiamiento else "-", ingresos, egresos, saldo])
-        row = cls._write_grouped_tables(ws, row, "12", "RESUMEN DE INGRESOS Y EGRESOS (EROGACIONES)", list(erogaciones_grouped.items()), ["Nro.", "Numero de erogacion", "Fecha", "Fuente de financiamiento", "Ingresos", "Egresos", "Saldo resultante"], accent=True, merge_span=9, date_cols={3}, money_cols={5, 6, 7})
+            tipo = "Ingresos" if erogacion.tipo_movimiento == "INGRESO" else (
+                erogacion.categoria_erogacion.nombre if erogacion.categoria_erogacion else "Egresos"
+            )
+            erogaciones_grouped.setdefault(tipo, []).append([
+                len(erogaciones_grouped.get(tipo, [])) + 1,
+                erogacion.numero_movimiento,
+                erogacion.fecha,
+                erogacion.fuente_financiamiento.nombre if erogacion.fuente_financiamiento else "-",
+                ingresos, egresos, saldo,
+            ])
+        row = cls._write_grouped_tables(ws, row, "12", "RESUMEN DE INGRESOS Y EGRESOS (MOVIMIENTOS)", list(erogaciones_grouped.items()), ["Nro.", "Numero de movimiento", "Fecha", "Fuente de financiamiento", "Ingresos", "Egresos", "Saldo resultante"], accent=True, merge_span=9, date_cols={3}, money_cols={5, 6, 7})
         row = cls._write_totals(ws, row, "Totales erogaciones", [(5, total_ingresos), (6, total_egresos), (7, total_ingresos - total_egresos)])
 
         row = cls._write_section(ws, row, "VI.- PROGRAMA DE ACTIVIDADES FUTURAS")
