@@ -90,3 +90,78 @@ de commit. No ejecutar el commit sin solicitud expresa.
   aislado y `git diff --check` aprobados. No hubo cambios de backend.
 - Estado: finalizada; se traslada a `tasks/finished/` y se agrega expresamente
   al staging porque `tasks/` esta ignorado por `.gitignore`.
+
+
+---
+
+## Segundo alcance del identificador ISS-41 — Movimientos financieros
+
+# ISS-41 — Refactorizar el modelo de erogación a movimiento financiero
+
+## Objetivo
+Reformular la entidad actual de erogaciones para que cada registro represente un único movimiento financiero de tipo `INGRESO` o `EGRESO`.
+
+## Alcance
+- Reemplazar el modelo conceptual basado en campos simultáneos `ingresos` y `egresos`.
+- Incorporar:
+  - `tipo_movimiento`
+  - `monto`
+  - `moneda`
+  - `numero_movimiento`
+- Mantener:
+  - `fecha`
+  - `grupo_utn_id`
+  - auditoría
+  - baja lógica
+- Preparar referencias opcionales para:
+  - fuente de financiamiento
+  - categoría de erogación
+- Utilizar un tipo decimal apropiado para importes monetarios en lugar de `Float`.
+
+## Reglas
+- `tipo_movimiento ∈ {INGRESO, EGRESO}`.
+- `monto > 0`.
+- Un movimiento nunca puede representar simultáneamente ingreso y egreso.
+- El saldo no debe almacenarse como atributo editable del movimiento.
+
+## Criterios de aceptación
+- [ ] Existe un único campo monetario `monto`.
+- [ ] Existe un campo explícito `tipo_movimiento`.
+- [ ] Los importes utilizan un tipo decimal adecuado.
+- [ ] Se conserva la asociación con Grupo/UCT.
+- [ ] Se conserva el esquema de auditoría y baja lógica.
+- [ ] El modelo queda preparado para ARS y USD.
+- [ ] Las validaciones de dominio básicas impiden montos no positivos y tipos inválidos.
+
+## Dependencias
+Ninguna.
+
+## Fuera de alcance
+- Migración de datos existentes.
+- Formularios frontend.
+- Cálculo de saldo.
+- Conversión de moneda.
+
+## Seguimiento — 2026-09-26
+
+- El usuario confirmó que los registros actuales son ficticios y autorizó descartarlos al completar el cambio de esquema; no se requiere una transformación conservadora de esos datos.
+- Se inicia el nuevo modelo en una tabla separada para mantener operativo el contrato anterior durante la transición de servicio, API y frontend.
+- La etapa de USD y tipo de cambio queda para el final del módulo; la cotización será de carga manual por operación.
+- Archivos iniciados: `backend/modules/recursos/models/movimiento_financiero.py` y `backend/migrations/versions/e3a7d9b2c4f1_add_movimiento_financiero.py`.
+- Estado: implementación técnica en curso; validación automática, visual y aceptación pendientes. Próximo paso: conectar el dominio de creación y la numeración automática, y ejecutar tests de backend.
+
+
+## Seguimiento — 2026-09-26 (etapa ARS)
+
+- Modelo y migración nueva: backend/modules/recursos/models/movimiento_financiero.py; backend/migrations/versions/e3a7d9b2c4f1_add_movimiento_financiero.py. El esquema nuevo está aplicado en la base dev. El modelo antiguo permanece de forma temporal para compatibilidad interna; no se transformaron datos ficticios.
+- Validación técnica: pruebas focalizadas del módulo correctas; suite backend completa 498 casos con un error de auth ajeno al módulo por bloqueo de SQLite en Windows; frontend 175 pruebas, typecheck y build correctos.
+- Estado: pendiente de validación visual y funcional del usuario. La documentación técnica, CHANGELOG, cierre y commit se harán solo tras aceptación y solicitud de finalización. Próximo paso: recibir observaciones de la UI y acciones; moneda/cotización quedan para la etapa final con especificación adicional del usuario.
+
+
+
+## Cierre — 2026-09-26
+
+- Aceptación visual y funcional recibida del usuario para la etapa ARS de Movimientos; autorizó documentación y commits antes de comenzar el vínculo con Equipamiento.
+- Validación final: 178 pruebas frontend, typecheck y build correctos; 22 pruebas backend focalizadas correctas. La suite backend completa registró un fallo ajeno al módulo por bloqueo de SQLite en auth sobre Windows.
+- Documentación: backend/modules/recursos/MOVIMIENTOS.md, frontend/src/modules/recursos/MOVIMIENTOS.md, README de módulos afectados y CHANGELOG.md.
+- Estado: cerrado para la etapa ARS. Moneda USD y cotización manual quedan en ISS-57/58; pruebas finales multimoneda en ISS-61/62.

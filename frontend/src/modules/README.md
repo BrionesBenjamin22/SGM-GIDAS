@@ -51,8 +51,9 @@ mantienen fachadas paralelas en `src/pages`, `src/services` ni `src/hooks`.
 
 ## Navegación por rutas (ISS-41)
 
-Las pantallas autenticadas muestran breadcrumbs desde `AppLayout`; la portada,
-el login y el registro los muestran en sus propias vistas. El resolvedor
+Las pantallas autenticadas muestran breadcrumbs desde `AppLayout`; el login y el
+registro los muestran en sus propias vistas. La portada pública no lo muestra.
+El resolvedor
 `shared/utils/routeBreadcrumbs.ts` mantiene etiquetas y destinos alineados con
 las rutas del router sin modificar el contrato de cada módulo. Los listados,
 altas, detalles, ediciones y versiones muestran sus ancestros navegables. Las

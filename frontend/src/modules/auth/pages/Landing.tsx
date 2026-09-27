@@ -10,7 +10,6 @@ import { useAuth } from "@/context/AuthContext";
 import LandingAccessAction from "@/modules/auth/components/LandingAccessAction";
 import { useSystemSetup } from "@/modules/auth/hooks/useSystemSetup";
 import { getLandingAccessState } from "@/modules/auth/utils/landingAccessState";
-import RouteBreadcrumbs from "@/modules/shared/components/RouteBreadcrumbs";
 
 type Task = {
   eyebrow: string;
@@ -85,9 +84,6 @@ export default function Landing() {
       <LandingHeader />
 
       <main>
-        <div className="mx-auto w-full max-w-7xl px-5 pt-4 lg:px-10">
-          <RouteBreadcrumbs />
-        </div>
         <section className="border-b border-slate-200 bg-white">
           <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-5 py-14 sm:py-16 md:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] md:gap-12 lg:gap-24 lg:px-10 lg:py-20">
             <div>

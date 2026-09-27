@@ -17,7 +17,8 @@ a rutas canónicas o llevan al listado de Personal. Las etiquetas `Detalle` y
 navegar. La ruta `/uct/nueva` enlaza a Inicio porque no existe un listado UCT.
 
 `AppLayout` muestra el componente antes del contenido de cada ruta autenticada.
-La portada, el login y el registro lo montan en sus propias vistas. La prueba
+El login y el registro lo montan en sus propias vistas; la portada pública lo
+omite. La prueba
 `frontend/tests/routeBreadcrumbs.test.ts` comprueba la cobertura de las rutas
 declaradas en el router y que ninguna etiqueta muestre un ID.
 

@@ -36,7 +36,7 @@ El módulo implementa la landing pública, inicio y cierre de sesión, recuperac
 
 ## Permisos y navegación
 
-La portada muestra `Portada` como ubicación actual. Login y registro muestran
+La portada pública no muestra breadcrumb. Login y registro muestran
 un breadcrumb con enlace a la portada y el nombre de la vista actual; en login
 reemplaza el enlace anterior de regreso a la página principal. El componente
 compartido se monta también en los estados de verificación, error y sistema ya
