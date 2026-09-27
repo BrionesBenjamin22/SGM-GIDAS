@@ -12,8 +12,9 @@ import { useFuentesFinanciamiento } from "@/modules/catalogos/hooks/useFuenteFin
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 import { useCategoriasErogacion } from "@/modules/recursos/hooks/useCategoriasErogacion";
 import {
-  createErogacion, getErogacionById, getResumenFinanciero, updateErogacion,
-  type CreateErogacionPayload, type TipoMovimiento, type UpdateErogacionPayload,
+  createErogacion, getEquipamientosDisponibles, getErogacionById, getSaldosPorFuente,
+  updateErogacion,
+  type CreateErogacionPayload, type TipoMovimiento, type UpdateMovimientoPayload,
 } from "@/modules/recursos/services/erogacionesServices";
 import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
@@ -28,11 +29,13 @@ type FormData = {
   monto: string;
   fuente_financiamiento_id: string;
   categoria_erogacion_id: string;
+  equipamiento_id: string;
 };
 
 const emptyData: FormData = {
   tipo_movimiento: "", fecha: "", monto: "",
   fuente_financiamiento_id: "", categoria_erogacion_id: "",
+  equipamiento_id: "",
 };
 
 function normalizarMonto(value: string): string {
@@ -49,12 +52,17 @@ export default function ErogacionesForm() {
   const { user } = useAuth();
   const { fuentes } = useFuentesFinanciamiento();
   const { data: categorias = [] } = useCategoriasErogacion();
+  const [data, setData] = useState<FormData>(emptyData);
+  const { data: equipos = [], isError: equiposError, refetch: refetchEquipos } = useQuery({
+    queryKey: ["equipamientos-disponibles", uct?.id, id],
+    queryFn: () => getEquipamientosDisponibles(uct!.id, isEdit ? Number(id) : undefined),
+    enabled: Boolean(uct?.id) && data.tipo_movimiento === "EGRESO",
+  });
   const { data: movimiento, isLoading: loadingMovimiento, refetch: refetchMovimiento } = useQuery({
     queryKey: ["erogaciones", id],
     queryFn: () => getErogacionById(Number(id)),
     enabled: isEdit,
   });
-  const [data, setData] = useState<FormData>(emptyData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [errorMessage, setErrorMessage] = useState("");
   const [checkingSaldo, setCheckingSaldo] = useState(false);
@@ -80,6 +88,7 @@ export default function ErogacionesForm() {
       monto: movimiento.monto,
       fuente_financiamiento_id: movimiento.fuente_financiamiento_id?.toString() ?? "",
       categoria_erogacion_id: movimiento.categoria_erogacion_id?.toString() ?? "",
+      equipamiento_id: movimiento.equipamiento_id?.toString() ?? "",
     });
   }, [movimiento]);
 
@@ -98,14 +107,16 @@ export default function ErogacionesForm() {
   });
 
   const { mutateAsync, isPending } = useMutation({
-    mutationFn: (payload: CreateErogacionPayload | UpdateErogacionPayload) =>
+    mutationFn: (payload: CreateErogacionPayload | UpdateMovimientoPayload) =>
       isEdit
-        ? updateErogacion(Number(id), payload as UpdateErogacionPayload)
+        ? updateErogacion(Number(id), payload as UpdateMovimientoPayload)
         : createErogacion(payload as CreateErogacionPayload),
     onSuccess: async (saved) => {
       clearDraft();
       await qc.invalidateQueries({ queryKey: ["erogaciones"] });
       await qc.invalidateQueries({ queryKey: ["resumen-financiero"] });
+      await qc.invalidateQueries({ queryKey: ["saldos-por-fuente"] });
+      await qc.invalidateQueries({ queryKey: ["equipamientos-disponibles"] });
       await qc.invalidateQueries({ queryKey: ["erogacion-historial", saved.id] });
       await qc.invalidateQueries({ queryKey: ["movimiento-financiero-historial", saved.id] });
       navigate(isEdit ? `/movimientos/${saved.id}` : "/movimientos", {
@@ -119,16 +130,16 @@ export default function ErogacionesForm() {
       if (data.tipo_movimiento === "EGRESO" && error instanceof HttpError &&
           error.status === 409 && getApiFieldErrors(error).monto && uct) {
         try {
-          const resumen = await getResumenFinanciero(uct.id);
-          qc.setQueryData(["resumen-financiero", uct.id], resumen);
-          setInsufficientBalance(resumen.saldo_disponible);
+          const saldos = await getSaldosPorFuente(uct.id);
+          qc.setQueryData(["saldos-por-fuente", uct.id], saldos);
+          setInsufficientBalance(saldos.find((item) => item.fuente_id === Number(data.fuente_financiamiento_id))?.saldo_disponible ?? "0.00");
         } catch {
           setErrorMessage("Lo sentimos, no pudimos consultar el saldo disponible. Intente nuevamente.");
         }
         return;
       }
       if (applyFieldErrors(error, setErrors, [
-        "tipo_movimiento", "fecha", "monto", "fuente_financiamiento_id", "categoria_erogacion_id",
+        "tipo_movimiento", "fecha", "monto", "fuente_financiamiento_id", "categoria_erogacion_id", "equipamiento_id",
       ])) return;
       setErrorMessage(getErrorMessage(
         error,
@@ -151,7 +162,7 @@ export default function ErogacionesForm() {
     if (!/^\d{1,16}(\.\d{1,2})?$/.test(data.monto.trim()) || Number(data.monto) <= 0) {
       nextErrors.monto = "Ingrese un monto mayor que cero, con hasta dos decimales.";
     }
-    if (data.tipo_movimiento === "INGRESO" && !data.fuente_financiamiento_id) {
+    if (!data.fuente_financiamiento_id) {
       nextErrors.fuente_financiamiento_id = "Seleccione la fuente de financiamiento.";
     }
     if (data.tipo_movimiento === "EGRESO" && !data.categoria_erogacion_id) {
@@ -162,27 +173,32 @@ export default function ErogacionesForm() {
     setErrorMessage("");
 
     const monto = normalizarMonto(data.monto);
-    let payload: CreateErogacionPayload | UpdateErogacionPayload;
+    let payload: CreateErogacionPayload | UpdateMovimientoPayload;
     if (!isEdit) {
       payload = {
         tipo_movimiento: data.tipo_movimiento as TipoMovimiento,
         monto, fecha: data.fecha, grupo_utn_id: uct.id,
-        ...(data.tipo_movimiento === "INGRESO"
-          ? { fuente_financiamiento_id: Number(data.fuente_financiamiento_id) }
-          : { categoria_erogacion_id: Number(data.categoria_erogacion_id) }),
+        fuente_financiamiento_id: Number(data.fuente_financiamiento_id),
+        ...(data.tipo_movimiento === "EGRESO" ? {
+          categoria_erogacion_id: Number(data.categoria_erogacion_id),
+          ...(data.equipamiento_id ? { equipamiento_id: Number(data.equipamiento_id) } : {}),
+        } : {}),
       };
     } else {
       if (!movimiento) return;
-      const changes: UpdateErogacionPayload = {};
+      const changes: UpdateMovimientoPayload = {};
       if (data.fecha !== movimiento.fecha) changes.fecha = data.fecha;
       if (monto !== normalizarMonto(movimiento.monto)) changes.monto = monto;
-      if (data.tipo_movimiento === "INGRESO" &&
-          Number(data.fuente_financiamiento_id) !== movimiento.fuente_financiamiento_id) {
+      if (Number(data.fuente_financiamiento_id) !== movimiento.fuente_financiamiento_id) {
         changes.fuente_financiamiento_id = Number(data.fuente_financiamiento_id);
       }
       if (data.tipo_movimiento === "EGRESO" &&
           Number(data.categoria_erogacion_id) !== movimiento.categoria_erogacion_id) {
         changes.categoria_erogacion_id = Number(data.categoria_erogacion_id);
+      }
+      if (data.tipo_movimiento === "EGRESO" &&
+          (data.equipamiento_id ? Number(data.equipamiento_id) : null) !== movimiento.equipamiento_id) {
+        changes.equipamiento_id = data.equipamiento_id ? Number(data.equipamiento_id) : null;
       }
       if (!Object.keys(changes).length) {
         clearDraft();
@@ -197,11 +213,12 @@ export default function ErogacionesForm() {
     if (data.tipo_movimiento === "EGRESO") {
       setCheckingSaldo(true);
       try {
-        const resumen = await getResumenFinanciero(uct.id);
-        qc.setQueryData(["resumen-financiero", uct.id], resumen);
-        const montoAnterior = isEdit && movimiento ? movimiento.monto : "0.00";
-        if (excedeSaldoDisponible(monto, resumen.saldo_disponible, montoAnterior)) {
-          setInsufficientBalance(resumen.saldo_disponible);
+        const saldos = await getSaldosPorFuente(uct.id);
+        qc.setQueryData(["saldos-por-fuente", uct.id], saldos);
+        const saldoFuente = saldos.find((item) => item.fuente_id === Number(data.fuente_financiamiento_id))?.saldo_disponible ?? "0.00";
+        const montoAnterior = isEdit && movimiento?.fuente_financiamiento_id === Number(data.fuente_financiamiento_id) ? movimiento.monto : "0.00";
+        if (excedeSaldoDisponible(monto, saldoFuente, montoAnterior)) {
+          setInsufficientBalance(saldoFuente);
           return;
         }
       } catch {
@@ -233,7 +250,7 @@ export default function ErogacionesForm() {
         <Field required label="Tipo de movimiento" name="tipo_movimiento" error={errors.tipo_movimiento}>
           {isEdit ? <p className="rounded-lg border border-slate-200 bg-slate-50 p-2">{data.tipo_movimiento === "INGRESO" ? "Ingreso" : "Egreso"}</p> : (
             <select className="input" value={data.tipo_movimiento} onChange={(event) => {
-              setData((previous) => ({ ...previous, tipo_movimiento: event.target.value as TipoMovimiento, fuente_financiamiento_id: "", categoria_erogacion_id: "" }));
+              setData((previous) => ({ ...previous, tipo_movimiento: event.target.value as TipoMovimiento, fuente_financiamiento_id: "", categoria_erogacion_id: "", equipamiento_id: "" }));
               setErrors({});
             }}>
               <option value="">Seleccione el tipo</option>
@@ -245,18 +262,36 @@ export default function ErogacionesForm() {
         <Field required label="Fecha" name="fecha" error={errors.fecha}>
           <DatePicker value={data.fecha ? new Date(`${data.fecha}T00:00:00`) : null} maxDate={new Date()} onChange={(date) => setField("fecha", toCivilDateString(date) ?? "")} helperText="DD/MM/AAAA" />
         </Field>
+        {data.tipo_movimiento === "EGRESO" && <Field label="Equipamiento relacionado" name="equipamiento_id" error={errors.equipamiento_id}>
+          <select className="input" value={data.equipamiento_id ?? ""} onChange={(event) => {
+            const equipoId = event.target.value;
+            const equipo = equipos.find((item) => String(item.id) === equipoId);
+            const categoriaCapital = categorias.find((item) => item.codigo === "CAPITAL");
+            setData((previous) => ({
+              ...previous,
+              equipamiento_id: equipoId,
+              monto: equipo ? movimiento?.equipamiento_id === equipo.id ? movimiento.monto : equipo.monto_invertido : previous.monto,
+              categoria_erogacion_id: equipo && categoriaCapital ? String(categoriaCapital.id) : previous.categoria_erogacion_id,
+            }));
+            setErrors((previous) => ({ ...previous, equipamiento_id: "", monto: "" }));
+          }}>
+            <option value="">Sin equipamiento relacionado</option>
+            {data.equipamiento_id && movimiento?.equipamiento_id === Number(data.equipamiento_id) && !equipos.some((item) => item.id === movimiento.equipamiento_id) && <option value={data.equipamiento_id}>{movimiento.equipamiento?.denominacion ?? "Equipamiento vinculado"}</option>}
+            {equipos.map((equipo) => <option key={equipo.id} value={equipo.id}>{equipo.denominacion}</option>)}
+          </select>
+          {equiposError && <p role="alert" className="mt-2 text-sm text-rose-700">Lo sentimos, no pudimos recuperar el equipamiento. <button type="button" className="underline" onClick={() => refetchEquipos()}>Intente nuevamente.</button></p>}
+        </Field>}
         <Field required label="Monto" name="monto" error={errors.monto}>
-          <input type="number" min="0.01" step="0.01" className="input" value={data.monto} placeholder="Ej.: 150000.00" onChange={(event) => setField("monto", event.target.value)} />
+          <input type="number" min="0.01" step="0.01" readOnly={Boolean(data.equipamiento_id)} className="input" value={data.monto} placeholder="Ej.: 150000.00" onChange={(event) => setField("monto", event.target.value)} />
+          {data.equipamiento_id && <p className="mt-1 text-xs text-slate-500">El monto se toma del equipamiento al vincularlo y se conserva como importe histórico.</p>}
         </Field>
         <Field label="Moneda" name="moneda"><p className="rounded-lg border border-slate-200 bg-slate-50 p-2">ARS</p></Field>
-        {data.tipo_movimiento === "INGRESO" && (
-          <Field required label="Fuente de financiamiento" name="fuente_financiamiento_id" error={errors.fuente_financiamiento_id}>
+        <Field required label="Fuente de financiamiento" name="fuente_financiamiento_id" error={errors.fuente_financiamiento_id}>
             <select className="input" value={data.fuente_financiamiento_id} onChange={(event) => setField("fuente_financiamiento_id", event.target.value)}>
               <option value="">Seleccione una fuente</option>
               {fuentes.map((fuente) => <option key={fuente.id} value={fuente.id}>{fuente.nombre}</option>)}
             </select>
-          </Field>
-        )}
+        </Field>
         {data.tipo_movimiento === "EGRESO" && (
           <Field required label="Categoría de erogación" name="categoria_erogacion_id" error={errors.categoria_erogacion_id}>
             <select className="input" value={data.categoria_erogacion_id} onChange={(event) => setField("categoria_erogacion_id", event.target.value)}>
@@ -273,8 +308,8 @@ export default function ErogacionesForm() {
       <SuccessToast open={Boolean(errorMessage)} message={errorMessage} onClose={() => setErrorMessage("")} variant="error" />
       <dialog ref={balanceDialog} aria-labelledby="saldo-insuficiente-title" aria-describedby="saldo-insuficiente-description" onCancel={() => setInsufficientBalance(null)} onClose={() => setInsufficientBalance(null)} className="fixed inset-0 m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl backdrop:bg-slate-950/50">
         <h3 id="saldo-insuficiente-title" className="text-xl font-semibold text-slate-900">Saldo Insuficiente</h3>
-        <p id="saldo-insuficiente-description" className="mt-3 text-sm text-slate-600">El egreso supera el saldo disponible al momento. Revise el monto e intente nuevamente.</p>
-        <p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">Saldo disponible: <strong className="block text-lg text-slate-900">{insufficientBalance === null ? "" : formatMovimientoMoney(insufficientBalance)}</strong></p>
+        <p id="saldo-insuficiente-description" className="mt-3 text-sm text-slate-600">El egreso supera el saldo disponible de la fuente seleccionada. Revise el monto e intente nuevamente.</p>
+        <p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">Saldo disponible en la fuente: <strong className="block text-lg text-slate-900">{insufficientBalance === null ? "" : formatMovimientoMoney(insufficientBalance)}</strong></p>
         <div className="mt-6 flex justify-end"><Button type="button" size="sm" onClick={() => setInsufficientBalance(null)}>Aceptar</Button></div>
       </dialog>
       {uctGuard}

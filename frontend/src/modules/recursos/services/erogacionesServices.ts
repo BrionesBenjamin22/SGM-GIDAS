@@ -21,8 +21,10 @@ export type Erogacion = {
   grupo_utn_id: number;
   fuente_financiamiento_id: number | null;
   categoria_erogacion_id: number | null;
+  equipamiento_id: number | null;
   fuente: { id: number; nombre: string } | null;
   categoria_erogacion: CategoriaErogacion | null;
+  equipamiento: { id: number; denominacion: string } | null;
   grupo: { id: number; nombre: string } | null;
   activo: boolean;
   created_at: string | null;
@@ -56,19 +58,36 @@ export type ResumenFinanciero = {
   cantidad_movimientos: number;
 };
 
+export type SaldoPorFuente = {
+  fuente_id: number;
+  fuente_nombre: string;
+  total_ingresos: string;
+  total_egresos: string;
+  saldo_disponible: string;
+  cantidad_movimientos: number;
+};
+
+export type EquipamientoDisponible = {
+  id: number;
+  denominacion: string;
+  monto_invertido: string;
+};
+
 export type CreateErogacionPayload = {
   tipo_movimiento: TipoMovimiento;
   monto: string;
   fecha: string;
   grupo_utn_id: number;
-  fuente_financiamiento_id?: number;
+  fuente_financiamiento_id: number;
   categoria_erogacion_id?: number;
+  equipamiento_id?: number;
 };
 
 export type UpdateErogacionPayload = Partial<Pick<
   CreateErogacionPayload,
   "monto" | "fecha" | "fuente_financiamiento_id" | "categoria_erogacion_id"
 >>;
+export type UpdateMovimientoPayload = UpdateErogacionPayload & { equipamiento_id?: number | null };
 
 export async function getErogaciones(activos: "true" | "false" | "all" = "true", grupoId?: number) {
   const params = new URLSearchParams({ activos });
@@ -92,6 +111,15 @@ export async function getResumenFinanciero(grupoId: number) {
   return http<ResumenFinanciero>(`${BASE}/grupos/${grupoId}/resumen`);
 }
 
+export async function getSaldosPorFuente(grupoId: number) {
+  return http<SaldoPorFuente[]>(`${BASE}/grupos/${grupoId}/saldos-por-fuente`);
+}
+
+export async function getEquipamientosDisponibles(grupoId: number, movimientoId?: number) {
+  const params = movimientoId ? `?movimiento_id=${movimientoId}` : "";
+  return http<EquipamientoDisponible[]>(`${BASE}/grupos/${grupoId}/equipamientos-disponibles${params}`);
+}
+
 export async function createErogacion(payload: CreateErogacionPayload) {
   return http<Erogacion>(`${BASE}/`, {
     method: "POST",
@@ -99,7 +127,7 @@ export async function createErogacion(payload: CreateErogacionPayload) {
   });
 }
 
-export async function updateErogacion(id: number, payload: UpdateErogacionPayload) {
+export async function updateErogacion(id: number, payload: UpdateMovimientoPayload) {
   return http<Erogacion>(`${BASE}/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),

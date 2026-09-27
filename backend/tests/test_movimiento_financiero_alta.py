@@ -17,6 +17,7 @@ from modules.memorias.services.exportacion_service_impl import ExportService
 from modules.recursos.models.movimiento_financiero import (
     CategoriaErogacion, MovimientoFinanciero, MovimientoMemoriaVersion,
 )
+from modules.recursos.models.equipamiento import Equipamiento
 from modules.recursos.services.movimiento_financiero_service import MovimientoFinancieroService
 from modules.recursos.services.saldo_financiero_service import SaldoFinancieroService
 from modules.shared.exceptions import ConflictError, ValidationError
@@ -55,6 +56,7 @@ class MovimientoFinancieroAltaTestCase(unittest.TestCase):
             "fecha": "2026-09-01",
             "tipo_movimiento": tipo,
             "monto": "100.25",
+            "fuente_financiamiento_id": self.fuente.id,
         }
         payload.update(changes)
         return payload
@@ -94,6 +96,41 @@ class MovimientoFinancieroAltaTestCase(unittest.TestCase):
         self.assertEqual(movimientos[0]["numero_movimiento"], 1)
         self.assertEqual(SaldoFinancieroService.calcular(self.grupo.id).saldo_disponible, Decimal("100.25"))
 
+    def test_saldos_por_fuente_incluyen_egresos_y_excluyen_bajas_y_otros_grupos(self):
+        otra_fuente = FuenteFinanciamiento(nombre="Provincia")
+        otro_grupo = GrupoInvestigacionUtn(
+            mail="otro@example.org", nombre_unidad_academica="UTN",
+            objetivo_desarrollo="Investigación", nombre_sigla_grupo="OTRO",
+        )
+        db.session.add_all([otra_fuente, otro_grupo])
+        db.session.commit()
+        MovimientoFinancieroService.create(
+            self._payload("INGRESO", fuente_financiamiento_id=self.fuente.id), 1,
+        )
+        MovimientoFinancieroService.create(
+            self._payload("INGRESO", monto="50.10", fuente_financiamiento_id=otra_fuente.id), 1,
+        )
+        eliminado = MovimientoFinancieroService.create(
+            self._payload("INGRESO", monto="5.00", fuente_financiamiento_id=otra_fuente.id), 1,
+        )
+        MovimientoFinancieroService.create(
+            self._payload("EGRESO", monto="25.00", categoria_erogacion_id=self.categoria.id), 1,
+        )
+        MovimientoFinancieroService.create({
+            **self._payload("INGRESO", monto="300.00", fuente_financiamiento_id=self.fuente.id),
+            "grupo_utn_id": otro_grupo.id,
+        }, 1)
+        MovimientoFinancieroService.delete(eliminado["id"], 1)
+
+        self.assertEqual(SaldoFinancieroService.saldos_por_fuente(self.grupo.id), [
+            {"fuente_id": self.fuente.id, "fuente_nombre": "UTN",
+             "total_ingresos": "100.25", "total_egresos": "25.00",
+             "saldo_disponible": "75.25", "cantidad_movimientos": 2},
+            {"fuente_id": otra_fuente.id, "fuente_nombre": "Provincia",
+             "total_ingresos": "50.10", "total_egresos": "0.00",
+             "saldo_disponible": "50.10", "cantidad_movimientos": 1},
+        ])
+
     def test_no_acepta_numero_elegido_por_cliente(self):
         with self.assertRaises(ValidationError):
             MovimientoFinancieroService.create(
@@ -124,11 +161,11 @@ class MovimientoFinancieroAltaTestCase(unittest.TestCase):
 
     def test_exige_relacion_segun_tipo(self):
         for payload in (
-            self._payload("INGRESO"),
+            self._payload("INGRESO", fuente_financiamiento_id=None),
             self._payload("EGRESO"),
             self._payload("INGRESO", fuente_financiamiento_id=self.fuente.id,
                           categoria_erogacion_id=self.categoria.id),
-            self._payload("EGRESO", fuente_financiamiento_id=self.fuente.id,
+            self._payload("EGRESO", fuente_financiamiento_id=None,
                           categoria_erogacion_id=self.categoria.id),
         ):
             with self.subTest(payload=payload), self.assertRaises(ValidationError):
@@ -163,6 +200,92 @@ class MovimientoFinancieroAltaTestCase(unittest.TestCase):
             MovimientoFinancieroService.update(egreso["id"], {"monto": "100.26"}, 1)
         with self.assertRaises(ValidationError):
             MovimientoFinancieroService.update(egreso["id"], {"tipo_movimiento": "INGRESO"}, 1)
+
+    def test_egreso_respeta_saldo_de_su_fuente(self):
+        otra_fuente = FuenteFinanciamiento(nombre="Provincia")
+        db.session.add(otra_fuente)
+        db.session.commit()
+        MovimientoFinancieroService.create(self._payload("INGRESO", monto="100.00"), 1)
+        MovimientoFinancieroService.create(self._payload(
+            "INGRESO", monto="20.00", fuente_financiamiento_id=otra_fuente.id,
+        ), 1)
+        with self.assertRaises(ConflictError):
+            MovimientoFinancieroService.create(self._payload(
+                "EGRESO", monto="25.00", fuente_financiamiento_id=otra_fuente.id,
+                categoria_erogacion_id=self.categoria.id,
+            ), 1)
+        egreso = MovimientoFinancieroService.create(self._payload(
+            "EGRESO", monto="50.00", categoria_erogacion_id=self.categoria.id,
+        ), 1)
+        with self.assertRaises(ConflictError):
+            MovimientoFinancieroService.update(
+                egreso["id"], {"fuente_financiamiento_id": otra_fuente.id}, 1,
+            )
+        self.assertEqual(SaldoFinancieroService.saldo_de_fuente(self.grupo.id, self.fuente.id), Decimal("50.00"))
+        self.assertEqual(SaldoFinancieroService.saldo_de_fuente(self.grupo.id, otra_fuente.id), Decimal("20.00"))
+
+    def test_ingreso_no_puede_abandonar_fuente_con_egresos_pendientes(self):
+        otra_fuente = FuenteFinanciamiento(nombre="Provincia")
+        db.session.add(otra_fuente)
+        db.session.commit()
+        ingreso = MovimientoFinancieroService.create(self._payload("INGRESO", monto="100.00"), 1)
+        MovimientoFinancieroService.create(self._payload(
+            "INGRESO", monto="100.00", fuente_financiamiento_id=otra_fuente.id,
+        ), 1)
+        MovimientoFinancieroService.create(self._payload(
+            "EGRESO", monto="70.00", categoria_erogacion_id=self.categoria.id,
+        ), 1)
+        with self.assertRaises(ConflictError):
+            MovimientoFinancieroService.update(
+                ingreso["id"], {"fuente_financiamiento_id": otra_fuente.id}, 1,
+            )
+        with self.assertRaises(ConflictError):
+            MovimientoFinancieroService.delete(ingreso["id"], 1)
+
+    def test_equipamiento_unico_toma_monto_y_conserva_snapshot(self):
+        equipo = Equipamiento(
+            denominacion="Microscopio", descripcion_breve="Equipo de laboratorio",
+            fecha_incorporacion=date(2026, 8, 1), monto_invertido=75.5,
+            grupo_utn_id=self.grupo.id,
+        )
+        db.session.add(equipo)
+        db.session.commit()
+        MovimientoFinancieroService.create(self._payload("INGRESO", monto="200.00"), 1)
+        egreso = MovimientoFinancieroService.create(self._payload(
+            "EGRESO", monto="1.00", categoria_erogacion_id=self.categoria.id,
+            equipamiento_id=equipo.id,
+        ), 1)
+        self.assertEqual(egreso["monto"], "75.50")
+        self.assertEqual(egreso["equipamiento"]["denominacion"], "Microscopio")
+        version = SimpleNamespace(id=82, memoria=None)
+        MovimientoFinancieroService.snapshot_para_memoria_version(version, 1)
+        db.session.commit()
+        foto = MovimientoMemoriaVersion.query.filter_by(
+            memoria_version_id=82, movimiento_id=egreso["id"]
+        ).one()
+        self.assertEqual(foto.equipamiento_denominacion, "Microscopio")
+        self.assertEqual(MovimientoFinancieroService.equipamientos_disponibles(self.grupo.id), [])
+        self.assertEqual(len(MovimientoFinancieroService.equipamientos_disponibles(
+            self.grupo.id, egreso["id"]
+        )), 1)
+        with self.assertRaises(ConflictError):
+            MovimientoFinancieroService.create(self._payload(
+                "EGRESO", categoria_erogacion_id=self.categoria.id,
+                equipamiento_id=equipo.id,
+            ), 1)
+        equipo.monto_invertido = 90.0
+        equipo.denominacion = "Microscopio actualizado"
+        db.session.commit()
+        self.assertEqual(MovimientoFinancieroService.get_by_id(egreso["id"])["monto"], "75.50")
+        self.assertEqual(foto.equipamiento_denominacion, "Microscopio")
+        with self.assertRaises(ValidationError):
+            MovimientoFinancieroService.update(egreso["id"], {"monto": "90.00"}, 1)
+        desvinculado = MovimientoFinancieroService.update(
+            egreso["id"], {"equipamiento_id": None, "monto": "80.00"}, 1,
+        )
+        self.assertIsNone(desvinculado["equipamiento_id"])
+        self.assertEqual(desvinculado["monto"], "80.00")
+        self.assertEqual(len(MovimientoFinancieroService.equipamientos_disponibles(self.grupo.id)), 1)
 
     def test_baja_de_ingreso_no_permite_saldo_negativo(self):
         ingreso = MovimientoFinancieroService.create(

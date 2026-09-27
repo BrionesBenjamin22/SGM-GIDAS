@@ -65,8 +65,15 @@ tipos explicitos. Las llamadas HTTP se concentran en services dedicados.
   inclusive. El formulario informa el rango y lo aplica al selector de fecha; la
   funcion pura `utils/equipamientoValidation.ts` conserva la misma regla para el
   envio.
-- Movimientos valida fecha, monto positivo y fuente o categoría según el tipo.
-  Número y tipo no se editan; en edición se envían solo los campos modificados.
+- Movimientos valida fecha, monto positivo y fuente obligatoria para ambos tipos.
+  Los egresos requieren categoría y pueden seleccionar un equipamiento disponible;
+  se propone su monto y la categoría Capital. Número y tipo no se editan; en
+  edición se envían solo los campos modificados.
+
+El home de Movimientos muestra el saldo global y el saldo neto por fuente, con
+ingresos y egresos desglosados. El panel permite seleccionar una fuente y muestra
+hasta tres tarjetas por página; el historial en tabla conserva nueve filas por página.
+El formulario muestra un modal con el saldo de la fuente si el egreso lo supera.
 
 ## Seguridad, permisos y errores
 
@@ -106,7 +113,7 @@ mutateAsync para que el diálogo cubra toda la operación.
 
 ## Indicadores de campos obligatorios (ISS-21)
 
-Equipamiento y movimientos muestran el indicador en cada campo que el formulario exige para guardar, incluida la relación requerida según el tipo de movimiento.
+Equipamiento y movimientos muestran el indicador en cada campo que el formulario exige para guardar, incluida la fuente para todo movimiento y la categoría para egresos. El equipamiento relacionado es opcional.
 
 ## Errores de formularios (ISS-19, en curso)
 

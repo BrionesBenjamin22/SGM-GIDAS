@@ -68,9 +68,11 @@ export default function ErogacionesDetalle() {
             <div><dt className="font-medium text-slate-700">Fecha</dt><dd className="text-slate-600">{formatFecha(data.fecha)}</dd></div>
             <div><dt className="font-medium text-slate-700">Monto</dt><dd className="text-slate-600">{formatMovimientoMoney(data.monto, data.moneda)}</dd></div>
             <div><dt className="font-medium text-slate-700">Moneda</dt><dd className="text-slate-600">{data.moneda}</dd></div>
-            {data.tipo_movimiento === "INGRESO"
-              ? <div><dt className="font-medium text-slate-700">Fuente de financiamiento</dt><dd className="text-slate-600">{data.fuente?.nombre ?? "—"}</dd></div>
-              : <div><dt className="font-medium text-slate-700">Categoría de erogación</dt><dd className="text-slate-600">{data.categoria_erogacion?.nombre ?? "—"}</dd></div>}
+            <div><dt className="font-medium text-slate-700">Fuente de financiamiento</dt><dd className="text-slate-600">{data.fuente?.nombre ?? "—"}</dd></div>
+            {data.tipo_movimiento === "EGRESO" && <>
+              <div><dt className="font-medium text-slate-700">Categoría de erogación</dt><dd className="text-slate-600">{data.categoria_erogacion?.nombre ?? "—"}</dd></div>
+              <div><dt className="font-medium text-slate-700">Equipamiento relacionado</dt><dd className="text-slate-600">{data.equipamiento?.denominacion ?? "—"}</dd></div>
+            </>}
           </dl>
         </article>
 

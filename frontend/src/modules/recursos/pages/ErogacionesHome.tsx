@@ -16,12 +16,14 @@ import { useFuentesFinanciamiento } from "@/modules/catalogos/hooks/useFuenteFin
 import { useUct } from "@/modules/grupo/hooks/useUct";
 import { useCategoriasErogacion } from "@/modules/recursos/hooks/useCategoriasErogacion";
 import { useErogaciones } from "@/modules/recursos/hooks/useErogaciones";
+import { useSaldosPorFuente } from "@/modules/recursos/hooks/useSaldosPorFuente";
 import { deleteErogaciones, getHistorialErogacionById, getResumenFinanciero, type Erogacion } from "@/modules/recursos/services/erogacionesServices";
 import { formatMovimientoHistoryEntry, formatMovimientoMoney, presentMovimientoHistoryItems } from "@/modules/recursos/utils/movimientoHistory";
 import { formatFecha, formatFechaHora, getCivilYear } from "@/utils/dateTime";
 
 const ITEMS_PER_PAGE = 9;
 const HISTORY_PER_PAGE = 3;
+const SOURCES_PER_PAGE = 3;
 const initialFilters = { estado: "", tipo: "", fuente: "", categoria: "", anio: "", desde: "", hasta: "" };
 const movementLabel = (item: Erogacion) => `Movimiento N.º ${String(item.numero_movimiento).padStart(6, "0")}`;
 
@@ -34,6 +36,8 @@ export default function ErogacionesLanding() {
   const { fuentes } = useFuentesFinanciamiento();
   const { data: categorias = [] } = useCategoriasErogacion();
   const [filters, setFilters] = useState(initialFilters);
+  const [fuenteDashboard, setFuenteDashboard] = useState<string | undefined>();
+  const [fuentesPage, setFuentesPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [sortKey, setSortKey] = useState("fecha");
@@ -47,6 +51,19 @@ export default function ErogacionesLanding() {
   const memoriaFilter = useMemo(() => getMemoriaSectionFilter(location.state, "erogaciones"), [location.state]);
   const activos = memoriaFilter || filters.estado === "todos" ? "all" : filters.estado === "inactivos" ? "false" : "true";
   const movimientos = useErogaciones(activos, uct?.id);
+  const saldosPorFuente = useSaldosPorFuente(uct?.id);
+  const fuentesDashboard = saldosPorFuente.data ?? [];
+  const fuenteDashboardActual = fuentesDashboard.some((item) => String(item.fuente_id) === fuenteDashboard)
+    ? fuenteDashboard : undefined;
+  const saldosPorFuenteVisibles = fuenteDashboardActual
+    ? fuentesDashboard.filter((item) => String(item.fuente_id) === fuenteDashboardActual)
+    : fuentesDashboard;
+  const fuentesTotalPages = Math.max(1, Math.ceil(saldosPorFuenteVisibles.length / SOURCES_PER_PAGE));
+  const fuentesCurrentPage = Math.min(fuentesPage, fuentesTotalPages);
+  const fuentesPaginadas = saldosPorFuenteVisibles.slice(
+    (fuentesCurrentPage - 1) * SOURCES_PER_PAGE,
+    fuentesCurrentPage * SOURCES_PER_PAGE,
+  );
   const resumen = useQuery({
     queryKey: ["resumen-financiero", uct?.id],
     queryFn: () => getResumenFinanciero(uct!.id),
@@ -103,6 +120,7 @@ export default function ErogacionesLanding() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["erogaciones"] }),
         queryClient.invalidateQueries({ queryKey: ["resumen-financiero"] }),
+        queryClient.invalidateQueries({ queryKey: ["saldos-por-fuente"] }),
         queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
       ]);
       setPendingDelete(null);
@@ -135,10 +153,10 @@ export default function ErogacionesLanding() {
   };
 
   const columns: TableColumn<Erogacion>[] = [
-    { id: "numero", header: "Movimiento", sortable: true, render: (item) => <span className="font-medium text-slate-900">{movementLabel(item)}</span> },
+    { id: "numero", header: "Movimiento", sortable: true, render: (item) => <span className="font-medium text-slate-900">{item.numero_movimiento}</span> },
     { id: "fecha", header: "Fecha", sortable: true, render: (item) => formatFecha(item.fecha) },
     { id: "tipo", header: "Tipo", render: (item) => <span className={item.tipo_movimiento === "INGRESO" ? "font-medium text-emerald-700" : "font-medium text-rose-700"}>{item.tipo_movimiento === "INGRESO" ? "Ingreso" : "Egreso"}</span> },
-    { id: "detalle", header: "Fuente / categoría", priority: "secondary", render: (item) => item.tipo_movimiento === "INGRESO" ? item.fuente?.nombre ?? "—" : item.categoria_erogacion?.nombre ?? "—" },
+    { id: "fuente", header: "Fuente", render: (item) => item.fuente?.nombre ?? "—" },
     { id: "monto", header: "Monto", sortable: true, align: "right", render: (item) => <span className="whitespace-nowrap font-medium">{formatMovimientoMoney(item.monto, item.moneda)}</span> },
     { id: "estado", header: "Estado", priority: "tertiary", render: (item) => <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${item.deleted_at ? "text-rose-700" : "text-emerald-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${item.deleted_at ? "bg-rose-500" : "bg-emerald-500"}`} />{item.deleted_at ? "Inactivo" : "Activo"}</span> },
     { id: "acciones", header: "Acciones", align: "right", render: (item) => <TableActions>
@@ -167,6 +185,37 @@ export default function ErogacionesLanding() {
       </div>
       {resumen.isLoading && <p role="status" className="mb-4 text-sm text-slate-500">Cargando saldo disponible…</p>}
       {resumen.isError && <div role="alert" className="mb-4 flex items-center gap-3 text-sm text-rose-700"><span>Lo sentimos, no pudimos recuperar el saldo. Intente nuevamente.</span><TableActionButton onClick={() => resumen.refetch()}>Reintentar</TableActionButton></div>}
+      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="saldos-por-fuente-title">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h3 id="saldos-por-fuente-title" className="text-lg font-semibold text-slate-900">Saldo por fuente de financiamiento</h3>
+          <TableFilterSelect
+            label="Filtrar dashboard por fuente de financiamiento"
+            placeholder="Todas las fuentes"
+            value={fuenteDashboardActual}
+            onValueChange={(value) => { setFuenteDashboard(value); setFuentesPage(1); }}
+            options={fuentesDashboard.map((item) => ({ value: String(item.fuente_id), label: item.fuente_nombre }))}
+            disabled={fuentesDashboard.length === 0}
+            className="max-w-full sm:max-w-64"
+          />
+        </div>
+        <p className="mt-1 text-sm text-slate-500">Ingresos menos egresos activos imputados a cada fuente.</p>
+        {saldosPorFuente.isLoading && <p role="status" className="mt-4 text-sm text-slate-500">Cargando saldos por fuente…</p>}
+        {saldosPorFuente.isError && <div role="alert" className="mt-4 flex items-center gap-3 text-sm text-rose-700"><span>Lo sentimos, no pudimos recuperar los saldos por fuente. Intente nuevamente.</span><TableActionButton onClick={() => saldosPorFuente.refetch()}>Reintentar</TableActionButton></div>}
+        {saldosPorFuente.isSuccess && saldosPorFuente.data.length === 0 && <p className="mt-4 text-sm text-slate-500">Aún no hay movimientos registrados para este grupo.</p>}
+        {saldosPorFuente.isSuccess && saldosPorFuente.data.length > 0 && <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {fuentesPaginadas.map((item) => <article key={item.fuente_id} className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <h4 className="truncate text-sm font-medium text-slate-600" title={item.fuente_nombre}>{item.fuente_nombre}</h4>
+            <p className="mt-2 break-words text-xl font-semibold text-slate-900">{formatMovimientoMoney(item.saldo_disponible)}</p>
+            <p className="mt-2 text-xs text-slate-600">Ingresos: {formatMovimientoMoney(item.total_ingresos)}</p>
+            <p className="mt-1 text-xs text-slate-600">Egresos: {formatMovimientoMoney(item.total_egresos)}</p>
+          </article>)}
+        </div>}
+        {saldosPorFuente.isSuccess && fuentesTotalPages > 1 && <nav aria-label="Paginación de fuentes de financiamiento" className="mt-4 flex items-center justify-center gap-3">
+          <TableActionButton disabled={fuentesCurrentPage === 1} onClick={() => setFuentesPage(fuentesCurrentPage - 1)}>Anterior</TableActionButton>
+          <span className="text-xs text-slate-500">Página {fuentesCurrentPage} de {fuentesTotalPages}</span>
+          <TableActionButton disabled={fuentesCurrentPage === fuentesTotalPages} onClick={() => setFuentesPage(fuentesCurrentPage + 1)}>Siguiente</TableActionButton>
+        </nav>}
+      </section>
       {memoriaFilter && <div className="mb-4"><MemoriaFilterBanner filter={memoriaFilter} /></div>}
       {movimientos.isError && movimientos.list.length > 0 && <div role="alert" className="mb-4 flex items-center gap-3 text-sm text-rose-700"><span>Lo sentimos, no pudimos actualizar los movimientos. Intente nuevamente.</span><TableActionButton onClick={() => movimientos.refetch()}>Reintentar</TableActionButton></div>}
       <Table caption="Historial de movimientos financieros" columns={columns} rows={paginated} getRowId={(item) => item.id}

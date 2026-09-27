@@ -27,6 +27,18 @@ def get_resumen(grupo_id):
     return MovimientoFinancieroController.get_resumen(grupo_id)
 
 
+@movimiento_financiero_bp.route("/grupos/<int:grupo_id>/saldos-por-fuente", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_saldos_por_fuente(grupo_id):
+    return MovimientoFinancieroController.get_saldos_por_fuente(grupo_id)
+
+
+@movimiento_financiero_bp.route("/grupos/<int:grupo_id>/equipamientos-disponibles", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_equipamientos_disponibles(grupo_id):
+    return MovimientoFinancieroController.get_equipamientos_disponibles(grupo_id)
+
+
 @movimiento_financiero_bp.route("/<int:movimiento_id>", methods=["GET"])
 @requiere_rol("ADMIN", "GESTOR", "LECTURA")
 def get_by_id(movimiento_id):

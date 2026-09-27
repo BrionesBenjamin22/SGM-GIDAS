@@ -7,6 +7,7 @@ from decimal import Decimal
 from sqlalchemy import case, func, select
 
 from extension import db
+from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.recursos.models.movimiento_financiero import MovimientoFinanciero
 from modules.shared.exceptions import ConflictError, NotFoundError
@@ -33,6 +34,58 @@ class ResumenFinanciero:
 
 
 class SaldoFinancieroService:
+    @staticmethod
+    def saldos_por_fuente(grupo_utn_id: int) -> list[dict]:
+        # Reutiliza la validación de grupo y moneda del saldo consolidado.
+        SaldoFinancieroService.calcular(grupo_utn_id)
+        ingresos = func.coalesce(func.sum(case(
+            (MovimientoFinanciero.tipo_movimiento == "INGRESO", MovimientoFinanciero.monto),
+            else_=0,
+        )), 0)
+        egresos = func.coalesce(func.sum(case(
+            (MovimientoFinanciero.tipo_movimiento == "EGRESO", MovimientoFinanciero.monto),
+            else_=0,
+        )), 0)
+        filas = db.session.execute(
+            select(
+                FuenteFinanciamiento.id,
+                FuenteFinanciamiento.nombre,
+                ingresos.label("total_ingresos"),
+                egresos.label("total_egresos"),
+                func.count(MovimientoFinanciero.id).label("cantidad_movimientos"),
+            )
+            .join(MovimientoFinanciero, MovimientoFinanciero.fuente_financiamiento_id == FuenteFinanciamiento.id)
+            .where(
+                MovimientoFinanciero.grupo_utn_id == grupo_utn_id,
+                MovimientoFinanciero.deleted_at.is_(None),
+            )
+            .group_by(FuenteFinanciamiento.id, FuenteFinanciamiento.nombre)
+            .order_by((ingresos - egresos).desc(), FuenteFinanciamiento.nombre.asc())
+        ).all()
+        return [
+            {
+                "fuente_id": fuente_id,
+                "fuente_nombre": nombre,
+                "total_ingresos": str(Decimal(str(total_ingresos))),
+                "total_egresos": str(Decimal(str(total_egresos))),
+                "saldo_disponible": str(Decimal(str(total_ingresos)) - Decimal(str(total_egresos))),
+                "cantidad_movimientos": int(cantidad),
+            }
+            for fuente_id, nombre, total_ingresos, total_egresos, cantidad in filas
+        ]
+
+    @staticmethod
+    def saldo_de_fuente(grupo_utn_id: int, fuente_id: int) -> Decimal:
+        total = db.session.scalar(select(func.coalesce(func.sum(case(
+            (MovimientoFinanciero.tipo_movimiento == "INGRESO", MovimientoFinanciero.monto),
+            else_=-MovimientoFinanciero.monto,
+        )), 0)).where(
+            MovimientoFinanciero.grupo_utn_id == grupo_utn_id,
+            MovimientoFinanciero.fuente_financiamiento_id == fuente_id,
+            MovimientoFinanciero.deleted_at.is_(None),
+        ))
+        return Decimal(str(total))
+
     @staticmethod
     def calcular(
         grupo_utn_id: int | None,

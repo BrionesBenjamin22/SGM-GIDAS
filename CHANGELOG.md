@@ -8,6 +8,16 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### Movimientos: fuente de egresos y equipamiento (ISS-51, ISS-63 e ISS-64)
+
+- La fuente de financiamiento ahora es obligatoria para ingresos y egresos. El backend calcula el saldo de cada fuente como ingresos activos menos egresos activos y rechaza altas, ediciones o bajas que produzcan un saldo negativo.
+- El home presenta ingresos, egresos y saldo disponible por fuente, con selector de fuente y hasta tres tarjetas por página. El historial conserva nueve filas por página y separa número de movimiento, tipo y fuente en columnas.
+- Un egreso puede vincular un equipamiento activo de la misma UCT. Al seleccionarlo se toma su importe y se propone la categoría Capital, editable por el usuario. La relación es única, el importe del egreso queda histórico y el vínculo se registra en detalle, auditoría y snapshots.
+- La migración `f4b8c6d2e9a1` descarta movimientos y snapshots ficticios previos, incorpora la fuente obligatoria y el vínculo de equipamiento. La semilla de pruebas los regenera con el nuevo esquema; la migración se aplicó en PostgreSQL de desarrollo.
+- Se actualizó la expectativa de la búsqueda global a 23 módulos indexados, acorde con la unificación previa de movimientos.
+
+Validaciones: aceptación visual y funcional del usuario, 44 pruebas backend focalizadas de Recursos, prueba de migración SQLite, 21 pruebas focalizadas de Búsqueda y logging, 178 pruebas frontend, `typecheck` y build correctos. La suite backend completa encontró un bloqueo de archivo SQLite en la prueba concurrente de autenticación sobre Windows.
+
 ### Movimientos financieros (ISS-41 a ISS-56, ISS-59 e ISS-60)
 
 - Los ingresos y egresos usan un movimiento único con monto decimal, numeración por UCT, fuente o categoría condicional, auditoría y baja lógica. El saldo se deriva de movimientos activos y el backend rechaza operaciones que lo vuelvan negativo.

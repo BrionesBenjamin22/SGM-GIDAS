@@ -3,6 +3,7 @@ from modules.memorias.services.memoria_periodo_service import (
 )
 import builtins
 from datetime import datetime, date
+from sqlalchemy import select
 
 from modules.recursos.models.equipamiento import Equipamiento, EquipamientoMemoriaVersion
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
@@ -19,6 +20,13 @@ class EquipamientoService:
     # ==========================================
     # HELPERS
     # ==========================================
+
+    @staticmethod
+    def _tiene_movimiento(equipamiento_id: int) -> bool:
+        from modules.recursos.models.movimiento_financiero import MovimientoFinanciero
+        return db.session.scalar(select(MovimientoFinanciero.id).where(
+            MovimientoFinanciero.equipamiento_id == equipamiento_id
+        )) is not None
 
     @staticmethod
     def _validar_payload(data: dict):
@@ -231,6 +239,8 @@ class EquipamientoService:
             nuevo_valor = EquipamientoService._validar_grupo(
                 data["grupo_utn_id"]
             )
+            if nuevo_valor != equipamiento.grupo_utn_id and EquipamientoService._tiene_movimiento(equipamiento.id):
+                raise ValueError("No se puede cambiar el grupo de un equipamiento vinculado a un movimiento.")
             cambio = AuditoriaService.construir_cambio(
                 equipamiento.grupo_utn_id,
                 nuevo_valor

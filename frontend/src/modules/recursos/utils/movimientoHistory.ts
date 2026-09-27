@@ -26,6 +26,7 @@ function readableValue(item: HistorialErogacionItem, value: unknown, movement: E
   if (item.campo === "tipo_movimiento") return value === "INGRESO" ? "Ingreso" : value === "EGRESO" ? "Egreso" : "—";
   if (item.campo === "activo") return value === true || value === "true" ? "Activo" : "Inactivo";
   if (item.campo === "fuente_financiamiento_id") return Number(value) === movement.fuente?.id ? movement.fuente.nombre : "Otra fuente de financiamiento";
+  if (item.campo === "equipamiento_id") return Number(value) === movement.equipamiento?.id ? movement.equipamiento.denominacion : "Otro equipamiento";
   if (item.campo === "categoria_erogacion_id") return Number(value) === movement.categoria_erogacion?.id ? movement.categoria_erogacion.nombre : "Otra categoría de erogación";
   if (item.campo?.endsWith("_id")) return "Valor relacionado actualizado";
   if (typeof value === "object") {
@@ -39,6 +40,7 @@ function readableValue(item: HistorialErogacionItem, value: unknown, movement: E
 const fieldLabels: Record<string, string> = {
   monto: "Monto", fecha: "Fecha", tipo_movimiento: "Tipo de movimiento",
   fuente_financiamiento_id: "Fuente de financiamiento",
+  equipamiento_id: "Equipamiento relacionado",
   categoria_erogacion_id: "Categoría de erogación", activo: "Estado",
 };
 

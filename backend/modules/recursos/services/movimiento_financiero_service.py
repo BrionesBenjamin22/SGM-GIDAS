@@ -1,6 +1,7 @@
 """Operaciones de dominio para los movimientos financieros del grupo."""
 
 from datetime import datetime
+from decimal import Decimal, ROUND_HALF_UP
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
@@ -11,6 +12,7 @@ from modules.memorias.services.memoria_periodo_service import (
 )
 from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.recursos.models.equipamiento import Equipamiento
 from modules.recursos.models.movimiento_financiero import (
     CategoriaErogacion, MovimientoFinanciero, MovimientoMemoriaVersion,
     validar_monto_financiero,
@@ -25,9 +27,11 @@ class MovimientoFinancieroService:
     _CAMPOS_ALTA = frozenset({
         "grupo_utn_id", "fecha", "tipo_movimiento", "monto",
         "fuente_financiamiento_id", "categoria_erogacion_id",
+        "equipamiento_id",
     })
     _CAMPOS_EDICION = frozenset({
         "fecha", "monto", "fuente_financiamiento_id", "categoria_erogacion_id",
+        "equipamiento_id",
     })
 
     @staticmethod
@@ -67,12 +71,37 @@ class MovimientoFinancieroService:
             )
 
     @staticmethod
+    def _equipamiento_disponible(equipamiento_id: int, grupo_id: int, movimiento_id: int | None = None):
+        equipo = db.session.get(Equipamiento, MovimientoFinancieroService._id_positivo(
+            equipamiento_id, "equipamiento_id"
+        ))
+        if not equipo or equipo.deleted_at is not None or equipo.grupo_utn_id != grupo_id:
+            raise NotFoundError("El equipamiento no está disponible para este grupo.")
+        vinculado = db.session.scalar(select(MovimientoFinanciero.id).where(
+            MovimientoFinanciero.equipamiento_id == equipo.id,
+            MovimientoFinanciero.id != movimiento_id if movimiento_id is not None else True,
+        ))
+        if vinculado is not None:
+            raise ConflictError(
+                "El equipamiento ya está vinculado a otro egreso.",
+                details={"fields": {"equipamiento_id": "Seleccione otro equipamiento."}},
+            )
+        return equipo
+
+    @staticmethod
+    def _monto_equipo(equipo: Equipamiento) -> Decimal:
+        return validar_monto_financiero(
+            Decimal(str(equipo.monto_invertido)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        )
+
+    @staticmethod
     def get_all(filters: dict | None = None):
         filters = filters or {}
         query = select(MovimientoFinanciero).options(
             joinedload(MovimientoFinanciero.grupo_utn),
             joinedload(MovimientoFinanciero.fuente_financiamiento),
             joinedload(MovimientoFinanciero.categoria_erogacion),
+            joinedload(MovimientoFinanciero.equipamiento),
         )
         activos = filters.get("activos", "true")
         if activos == "true":
@@ -112,6 +141,29 @@ class MovimientoFinancieroService:
         )
 
     @staticmethod
+    def equipamientos_disponibles(grupo_id: int, movimiento_id: int | None = None):
+        MovimientoFinancieroService._id_positivo(grupo_id, "grupo_utn_id")
+        if movimiento_id is not None:
+            MovimientoFinancieroService._id_positivo(movimiento_id, "movimiento_id")
+        grupo = db.session.get(GrupoInvestigacionUtn, grupo_id)
+        if not grupo or grupo.deleted_at is not None:
+            raise NotFoundError("El grupo no está disponible.")
+        usado = select(MovimientoFinanciero.id).where(
+            MovimientoFinanciero.equipamiento_id == Equipamiento.id,
+            MovimientoFinanciero.id != movimiento_id if movimiento_id is not None else True,
+        ).exists()
+        equipos = db.session.scalars(select(Equipamiento).where(
+            Equipamiento.grupo_utn_id == grupo_id,
+            Equipamiento.deleted_at.is_(None),
+            ~usado,
+        ).order_by(Equipamiento.denominacion.asc())).unique().all()
+        return [{
+            "id": equipo.id,
+            "denominacion": equipo.denominacion,
+            "monto_invertido": str(MovimientoFinancieroService._monto_equipo(equipo)),
+        } for equipo in equipos]
+
+    @staticmethod
     def create(data: dict, user_id: int):
         if not isinstance(data, dict) or not data:
             raise ValidationError("Envíe los datos del movimiento e intente nuevamente.")
@@ -128,37 +180,42 @@ class MovimientoFinancieroService:
                 details={"fields": {"tipo_movimiento": "Seleccione ingreso o egreso."}},
             )
         fecha = MovimientoFinancieroService._fecha(data.get("fecha"))
-        # El modelo valida precisión y positividad antes de iniciar la escritura.
+        # Serializa la numeración, el saldo y la unicidad del equipo dentro del grupo.
+        MovimientoFinancieroService._bloquear_grupo(grupo_id)
+        equipo = None
+        if data.get("equipamiento_id") is not None:
+            if tipo != "EGRESO":
+                raise ValidationError("Un ingreso no puede incluir equipamiento.")
+            equipo = MovimientoFinancieroService._equipamiento_disponible(
+                data["equipamiento_id"], grupo_id
+            )
+        # El monto del equipamiento se toma solo al vincularlo; luego queda como snapshot.
         movimiento = MovimientoFinanciero(
             grupo_utn_id=grupo_id,
             tipo_movimiento=tipo,
-            monto=data.get("monto"),
+            monto=MovimientoFinancieroService._monto_equipo(equipo) if equipo else data.get("monto"),
             moneda="ARS",
             fecha=fecha,
             created_by=user_id,
+            equipamiento_id=equipo.id if equipo else None,
         )
 
         fuente_id = data.get("fuente_financiamiento_id")
         categoria_id = data.get("categoria_erogacion_id")
+        fuente_id = MovimientoFinancieroService._id_positivo(
+            fuente_id, "fuente_financiamiento_id"
+        )
+        fuente = db.session.get(FuenteFinanciamiento, fuente_id)
+        if not fuente or fuente.deleted_at is not None:
+            raise NotFoundError("La fuente ya no está disponible. Elija otra e intente nuevamente.")
+        movimiento.fuente_financiamiento_id = fuente.id
         if tipo == "INGRESO":
             if categoria_id is not None:
                 raise ValidationError(
                     "Un ingreso no debe incluir una categoría de erogación.",
                     details={"fields": {"categoria_erogacion_id": "Quite la categoría."}},
                 )
-            fuente_id = MovimientoFinancieroService._id_positivo(
-                fuente_id, "fuente_financiamiento_id"
-            )
-            fuente = db.session.get(FuenteFinanciamiento, fuente_id)
-            if not fuente or fuente.deleted_at is not None:
-                raise NotFoundError("La fuente ya no está disponible. Elija otra e intente nuevamente.")
-            movimiento.fuente_financiamiento_id = fuente.id
         else:
-            if fuente_id is not None:
-                raise ValidationError(
-                    "Un egreso no debe incluir una fuente de financiamiento.",
-                    details={"fields": {"fuente_financiamiento_id": "Quite la fuente."}},
-                )
             categoria_id = MovimientoFinancieroService._id_positivo(
                 categoria_id, "categoria_erogacion_id"
             )
@@ -167,14 +224,13 @@ class MovimientoFinancieroService:
                 raise NotFoundError("La categoría ya no está disponible. Elija otra e intente nuevamente.")
             movimiento.categoria_erogacion_id = categoria.id
 
-        # El bloqueo del grupo serializa numeración y comprobación del saldo.
-        MovimientoFinancieroService._bloquear_grupo(grupo_id)
         if tipo == "EGRESO":
             saldo = SaldoFinancieroService.calcular(grupo_id).saldo_disponible
-            if movimiento.monto > saldo:
+            saldo_fuente = SaldoFinancieroService.saldo_de_fuente(grupo_id, fuente_id)
+            if movimiento.monto > saldo or movimiento.monto > saldo_fuente:
                 raise ConflictError(
-                    "El saldo disponible no alcanza para registrar el egreso.",
-                    details={"fields": {"monto": "Ingrese un monto igual o menor al saldo disponible."}},
+                    "El saldo disponible de la fuente no alcanza para registrar el egreso.",
+                    details={"fields": {"monto": "Ingrese un monto igual o menor al saldo disponible de la fuente."}},
                 )
 
         ultimo = db.session.scalar(
@@ -210,8 +266,6 @@ class MovimientoFinancieroService:
         if "monto" in data:
             nuevos["monto"] = validar_monto_financiero(data["monto"])
         if "fuente_financiamiento_id" in data:
-            if movimiento.tipo_movimiento != "INGRESO":
-                raise ValidationError("Un egreso no puede tener fuente de financiamiento.")
             fuente_id = MovimientoFinancieroService._id_positivo(
                 data["fuente_financiamiento_id"], "fuente_financiamiento_id"
             )
@@ -219,6 +273,22 @@ class MovimientoFinancieroService:
             if not fuente or fuente.deleted_at is not None:
                 raise NotFoundError("La fuente ya no está disponible. Elija otra e intente nuevamente.")
             nuevos["fuente_financiamiento_id"] = fuente.id
+        if "equipamiento_id" in data:
+            if movimiento.tipo_movimiento != "EGRESO":
+                raise ValidationError("Un ingreso no puede incluir equipamiento.")
+            if data["equipamiento_id"] is None:
+                nuevos["equipamiento_id"] = None
+            else:
+                equipo = MovimientoFinancieroService._equipamiento_disponible(
+                    data["equipamiento_id"], movimiento.grupo_utn_id, movimiento.id
+                )
+                nuevos["equipamiento_id"] = equipo.id
+                if equipo.id != movimiento.equipamiento_id:
+                    nuevos["monto"] = MovimientoFinancieroService._monto_equipo(equipo)
+        if "monto" in data and movimiento.equipamiento_id is not None and (
+            "equipamiento_id" not in data or nuevos["equipamiento_id"] == movimiento.equipamiento_id
+        ) and validar_monto_financiero(data["monto"]) != movimiento.monto:
+            raise ValidationError("Desvincule el equipamiento antes de modificar el monto.")
         if "categoria_erogacion_id" in data:
             if movimiento.tipo_movimiento != "EGRESO":
                 raise ValidationError("Un ingreso no puede tener categoría de erogación.")
@@ -231,6 +301,24 @@ class MovimientoFinancieroService:
             nuevos["categoria_erogacion_id"] = categoria.id
 
         nuevo_monto = nuevos.get("monto", movimiento.monto)
+        nueva_fuente = nuevos.get("fuente_financiamiento_id", movimiento.fuente_financiamiento_id)
+        signo = 1 if movimiento.tipo_movimiento == "INGRESO" else -1
+        saldo_fuente_anterior = SaldoFinancieroService.saldo_de_fuente(
+            movimiento.grupo_utn_id, movimiento.fuente_financiamiento_id
+        )
+        if nueva_fuente == movimiento.fuente_financiamiento_id:
+            saldo_fuente_resultante = saldo_fuente_anterior + signo * (nuevo_monto - movimiento.monto)
+        else:
+            saldo_fuente_resultante = saldo_fuente_anterior - signo * movimiento.monto
+            saldo_fuente_nueva = SaldoFinancieroService.saldo_de_fuente(
+                movimiento.grupo_utn_id, nueva_fuente
+            ) + signo * nuevo_monto
+            if saldo_fuente_nueva < 0:
+                raise ConflictError("El saldo disponible de la nueva fuente es insuficiente.",
+                                    details={"fields": {"monto": "El monto supera el saldo de la fuente."}})
+        if saldo_fuente_resultante < 0:
+            raise ConflictError("El cambio dejaría a la fuente sin saldo suficiente.",
+                                details={"fields": {"monto": "El monto supera el saldo de la fuente."}})
         if nuevo_monto != movimiento.monto:
             saldo = SaldoFinancieroService.calcular(movimiento.grupo_utn_id).saldo_disponible
             if movimiento.tipo_movimiento == "EGRESO":
@@ -274,7 +362,10 @@ class MovimientoFinancieroService:
             raise NotFoundError("Movimiento no encontrado.")
         if movimiento.tipo_movimiento == "INGRESO":
             saldo = SaldoFinancieroService.calcular(movimiento.grupo_utn_id).saldo_disponible
-            if saldo - movimiento.monto < 0:
+            saldo_fuente = SaldoFinancieroService.saldo_de_fuente(
+                movimiento.grupo_utn_id, movimiento.fuente_financiamiento_id
+            )
+            if saldo - movimiento.monto < 0 or saldo_fuente - movimiento.monto < 0:
                 raise ConflictError(
                     "No se puede eliminar el ingreso porque el saldo resultante sería negativo."
                 )
@@ -312,6 +403,10 @@ class MovimientoFinancieroService:
                 categoria_erogacion_nombre=(
                     movimiento.categoria_erogacion.nombre
                     if movimiento.categoria_erogacion else None
+                ),
+                equipamiento_id=movimiento.equipamiento_id,
+                equipamiento_denominacion=(
+                    movimiento.equipamiento.denominacion if movimiento.equipamiento else None
                 ),
                 grupo_utn_id=movimiento.grupo_utn_id,
                 grupo_utn_nombre=(

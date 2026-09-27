@@ -21,18 +21,24 @@ class EquipamientoServiceTestCase(unittest.TestCase):
         self.registrar_cambios_patcher = patch(
             "modules.recursos.services.equipamiento_service.AuditoriaService.registrar_cambios"
         )
+        self.tiene_movimiento_patcher = patch(
+            "modules.recursos.services.equipamiento_service.EquipamientoService._tiene_movimiento",
+            return_value=False,
+        )
 
         self.mock_commit = self.commit_patcher.start()
         self.mock_rollback = self.rollback_patcher.start()
         self.mock_get_activo = self.get_activo_patcher.start()
         self.mock_validar_grupo = self.validar_grupo_patcher.start()
         self.mock_registrar_cambios = self.registrar_cambios_patcher.start()
+        self.mock_tiene_movimiento = self.tiene_movimiento_patcher.start()
 
         self.addCleanup(self.commit_patcher.stop)
         self.addCleanup(self.rollback_patcher.stop)
         self.addCleanup(self.get_activo_patcher.stop)
         self.addCleanup(self.validar_grupo_patcher.stop)
         self.addCleanup(self.registrar_cambios_patcher.stop)
+        self.addCleanup(self.tiene_movimiento_patcher.stop)
 
     def _make_equipamiento(self):
         equipamiento = Equipamiento(
@@ -91,6 +97,17 @@ class EquipamientoServiceTestCase(unittest.TestCase):
         self.assertIsNone(equipamiento.updated_by)
         self.mock_registrar_cambios.assert_not_called()
         self.mock_commit.assert_called_once()
+
+    def test_no_cambia_grupo_si_el_equipo_esta_vinculado_a_un_movimiento(self):
+        equipamiento = self._make_equipamiento()
+        self.mock_get_activo.return_value = equipamiento
+        self.mock_validar_grupo.return_value = 3
+        self.mock_tiene_movimiento.return_value = True
+
+        with self.assertRaisesRegex(ValueError, "vinculado a un movimiento"):
+            EquipamientoService.update(1, {"grupo_utn_id": 3}, 99)
+        self.assertEqual(equipamiento.grupo_utn_id, 2)
+        self.mock_commit.assert_not_called()
 
     def test_delete_aplica_baja_logica_y_auditoria(self):
         equipamiento = self._make_equipamiento()

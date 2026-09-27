@@ -3,6 +3,7 @@ from flask import g, jsonify, request
 from modules.recursos.models.movimiento_financiero import CategoriaErogacion
 from modules.recursos.services.movimiento_financiero_service import MovimientoFinancieroService
 from modules.recursos.services.saldo_financiero_service import SaldoFinancieroService
+from modules.shared.exceptions import ValidationError
 from modules.shared.controllers.responses import exception_response
 
 
@@ -34,6 +35,26 @@ class MovimientoFinancieroController:
             return jsonify(SaldoFinancieroService.calcular(grupo_id).serialize()), 200
         except Exception as error:
             return exception_response(error, operation="consultar saldo financiero")
+
+    @staticmethod
+    def get_saldos_por_fuente(grupo_id):
+        try:
+            return jsonify(SaldoFinancieroService.saldos_por_fuente(grupo_id)), 200
+        except Exception as error:
+            return exception_response(error, operation="consultar saldos por fuente")
+
+    @staticmethod
+    def get_equipamientos_disponibles(grupo_id):
+        try:
+            raw_movimiento_id = request.args.get("movimiento_id")
+            if raw_movimiento_id is not None and (not raw_movimiento_id.isdecimal() or int(raw_movimiento_id) <= 0):
+                raise ValidationError("El movimiento indicado no es válido.")
+            movimiento_id = int(raw_movimiento_id) if raw_movimiento_id is not None else None
+            return jsonify(MovimientoFinancieroService.equipamientos_disponibles(
+                grupo_id, movimiento_id
+            )), 200
+        except Exception as error:
+            return exception_response(error, operation="consultar equipamiento disponible")
 
     @staticmethod
     def get_categorias():

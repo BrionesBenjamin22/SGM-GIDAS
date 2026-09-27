@@ -47,20 +47,25 @@ class MovimientoFinanciero(db.Model, AuditMixin):
     monto = db.Column(db.Numeric(18, 2, asdecimal=True), nullable=False)
     moneda = db.Column(db.String(3), nullable=False, default="ARS")
     fuente_financiamiento_id = db.Column(
-        db.Integer, db.ForeignKey("fuente_financiamiento.id"), nullable=True
+        db.Integer, db.ForeignKey("fuente_financiamiento.id"), nullable=False
     )
     categoria_erogacion_id = db.Column(
         db.Integer, db.ForeignKey("categoria_erogacion.id"), nullable=True
+    )
+    equipamiento_id = db.Column(
+        db.Integer, db.ForeignKey("equipamiento_grupo.id"), nullable=True
     )
 
     grupo_utn = db.relationship("GrupoInvestigacionUtn")
     fuente_financiamiento = db.relationship("FuenteFinanciamiento")
     categoria_erogacion = db.relationship("CategoriaErogacion", back_populates="movimientos")
+    equipamiento = db.relationship("Equipamiento")
 
     __table_args__ = (
         db.UniqueConstraint(
             "grupo_utn_id", "numero_movimiento", name="uq_movimiento_numero_grupo"
         ),
+        db.UniqueConstraint("equipamiento_id", name="uq_movimiento_equipamiento"),
         db.CheckConstraint(
             "tipo_movimiento IN ('INGRESO', 'EGRESO')", name="ck_movimiento_tipo"
         ),
@@ -68,10 +73,10 @@ class MovimientoFinanciero(db.Model, AuditMixin):
         db.CheckConstraint("moneda IN ('ARS', 'USD')", name="ck_movimiento_moneda"),
         db.CheckConstraint("numero_movimiento > 0", name="ck_movimiento_numero_positivo"),
         db.CheckConstraint(
-            "(tipo_movimiento = 'INGRESO' AND fuente_financiamiento_id IS NOT NULL "
-            "AND categoria_erogacion_id IS NULL) OR "
-            "(tipo_movimiento = 'EGRESO' AND categoria_erogacion_id IS NOT NULL "
-            "AND fuente_financiamiento_id IS NULL)",
+            "fuente_financiamiento_id IS NOT NULL AND "
+            "((tipo_movimiento = 'INGRESO' AND categoria_erogacion_id IS NULL "
+            "AND equipamiento_id IS NULL) OR "
+            "(tipo_movimiento = 'EGRESO' AND categoria_erogacion_id IS NOT NULL))",
             name="ck_movimiento_relacion_tipo",
         ),
     )
@@ -117,6 +122,10 @@ class MovimientoFinanciero(db.Model, AuditMixin):
             }
             if self.categoria_erogacion else None
         )
+        data["equipamiento"] = (
+            {"id": self.equipamiento.id, "denominacion": self.equipamiento.denominacion}
+            if self.equipamiento else None
+        )
         return data
 
 
@@ -142,6 +151,8 @@ class MovimientoMemoriaVersion(db.Model, AuditMixin):
     categoria_erogacion_id = db.Column(db.Integer, nullable=True)
     categoria_erogacion_codigo = db.Column(db.String(20), nullable=True)
     categoria_erogacion_nombre = db.Column(db.String(100), nullable=True)
+    equipamiento_id = db.Column(db.Integer, nullable=True)
+    equipamiento_denominacion = db.Column(db.Text, nullable=True)
     grupo_utn_id = db.Column(db.Integer, nullable=False)
     grupo_utn_nombre = db.Column(db.String(255), nullable=True)
 

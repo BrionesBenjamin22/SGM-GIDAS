@@ -43,18 +43,25 @@ de validacion y no se persiste. Los cambios reales se registran en la auditoria 
 La eliminacion es logica. Los snapshots de memoria conservan los datos del
 equipamiento correspondientes al periodo versionado para mantener trazabilidad.
 
+Un equipamiento activo puede vincularse con un solo egreso de su UCT. La
+relación conserva el monto del egreso como importe histórico aunque luego se
+modifique `monto_invertido`. Un equipo vinculado no puede trasladarse a otra
+UCT; la baja lógica del movimiento conserva el vínculo para la trazabilidad.
+
 ## Errores
 
-La edición de movimientos acepta diferencias de fecha, monto y de la relación
-correspondiente al tipo. El backend comprueba saldo y relaciones antes de guardar,
-registra cada cambio real en la auditoría y mantiene inmutables los snapshots de
+La edición de movimientos acepta diferencias de fecha, monto y relaciones. La
+fuente es obligatoria para ingresos y egresos; el egreso requiere categoría y
+puede vincular equipamiento. El backend comprueba el saldo global y el de la
+fuente, además de las relaciones, antes de guardar. Registra cada cambio real
+en la auditoría y mantiene inmutables los snapshots de
 Memorias ya creados.
 
 Los controladores delegan en el contrato uniforme de errores. Los datos ausentes,
 formatos invalidos, montos no positivos, grupos inexistentes y fechas fuera del
 rango se responden como errores de validacion sin exponer detalles internos.
 
-ISS-19: equipamiento identifica `denominacion`, `descripcion_breve`, `monto_invertido` y `fecha_incorporacion` en `error.details.fields`. Movimientos identifica `tipo_movimiento`, `fecha`, `monto`, `fuente_financiamiento_id` y `categoria_erogacion_id` según corresponda. Los conflictos de saldo responden HTTP 409.
+ISS-19: equipamiento identifica `denominacion`, `descripcion_breve`, `monto_invertido` y `fecha_incorporacion` en `error.details.fields`. Movimientos identifica `tipo_movimiento`, `fecha`, `monto`, `fuente_financiamiento_id`, `categoria_erogacion_id` y `equipamiento_id` según corresponda. Los conflictos de saldo o de vínculo duplicado responden HTTP 409.
 
 ## Snapshots de memorias (ISS-16)
 
