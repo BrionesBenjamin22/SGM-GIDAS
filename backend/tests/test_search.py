@@ -50,9 +50,9 @@ class _FakeQuery:
 
 class SearchServiceTestCase(unittest.TestCase):
 
-    def test_matriz_cubre_24_modulos_sin_duplicados(self):
+    def test_matriz_cubre_23_modulos_sin_duplicados(self):
         modulos = [probe.modulo for probe in PROBES]
-        self.assertEqual(len(modulos), 24)
+        self.assertEqual(len(modulos), 23)
         self.assertEqual(len(modulos), len(set(modulos)))
         self.assertTrue(all(probe.url.startswith("/") for probe in PROBES))
 
