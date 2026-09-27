@@ -227,10 +227,10 @@ const router = createBrowserRouter([
 
 
       // Erogaciones / Compras
-      { path: "erogaciones", element: <ErogacionesLanding /> },
-      { path: "erogaciones/nuevo", element: editorOnly(<ErogacionesForm />) },
-      { path: "erogaciones/:id", element: <ErogacionesDetalle /> },
-      { path: "erogaciones/:id/editar", element: editorOnly(<ErogacionesForm />) },
+      { path: "movimientos", element: <ErogacionesLanding /> },
+      { path: "movimientos/nuevo", element: editorOnly(<ErogacionesForm />) },
+      { path: "movimientos/:id", element: <ErogacionesDetalle /> },
+      { path: "movimientos/:id/editar", element: editorOnly(<ErogacionesForm />) },
 
       // Equipamiento
       { path: "equipamiento", element: <EquipamientoLanding /> },

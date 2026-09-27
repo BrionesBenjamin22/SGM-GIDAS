@@ -8,9 +8,22 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### Movimientos financieros (ISS-41 a ISS-56, ISS-59 e ISS-60)
+
+- Los ingresos y egresos usan un movimiento único con monto decimal, numeración por UCT, fuente o categoría condicional, auditoría y baja lógica. El saldo se deriva de movimientos activos y el backend rechaza operaciones que lo vuelvan negativo.
+- La sección `/movimientos` presenta el saldo disponible y un historial en tabla de 9 filas por página, con filtros, detalle, formulario e historial de cambios de 3 eventos por página. Un egreso superior al saldo abre un diálogo modal enfocado con el saldo actualizado.
+- API, Memorias, exportaciones, dashboard y búsqueda consumen el nuevo modelo. La semilla de pruebas usa la UCT activa para que los movimientos recuperados por Búsqueda aparezcan en el historial financiero. Los datos ficticios del entorno se alinearon con esa UCT.
+- La portada pública dejó de mostrar el breadcrumb `Portada`. Login, registro y home autenticado conservan sus rutas de navegación.
+- La moneda USD y la cotización manual histórica quedan para una etapa posterior con especificación adicional. Los modelos y tablas antiguos siguen internamente sin rutas públicas; no se realizó migración histórica controlada porque los datos existentes son ficticios.
+
+Validaciones: aceptación visual y funcional del usuario, 178 pruebas frontend,
+23 pruebas backend focalizadas, `typecheck`, build de producción y
+`git diff --check` correctos. La suite backend completa tuvo un fallo ajeno al
+módulo por bloqueo de un archivo SQLite en una prueba de autenticación en Windows.
+
 ### ISS-41: breadcrumbs en todas las rutas del frontend
 
-- Se incorporó una ruta de navegación accesible en las pantallas públicas y
+- Se incorporó una ruta de navegación accesible en login, registro y pantallas
   autenticadas, incluidos listados, altas, detalles, ediciones y versiones.
 - Los enlaces llevan a páginas reales y conservan el contexto de navegación de
   Memorias sin repetir mensajes de éxito. Las etiquetas `Detalle` y `Versión`

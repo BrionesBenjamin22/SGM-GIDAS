@@ -32,7 +32,7 @@ const baseItems: Item[] = [
     ],
   },
   { label: "Equipamiento e Infraestructura", to: "/equipamiento" },
-  { label: "Resumen de Ingresos y Egresos", to: "/erogaciones" },
+  { label: "Movimientos financieros", to: "/movimientos" },
   { label: "Documentación y Biblioteca", to: "/documentacion" },
   { label: "Memorias", to: "/memorias" },
   {

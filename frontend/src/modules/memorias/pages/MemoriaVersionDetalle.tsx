@@ -108,7 +108,7 @@ const sections: SnapshotSection[] = [
     label: "Erogaciones",
     queryKey: "memoria-snapshot-erogaciones",
     queryFn: getErogacionesSnapshot,
-    homePath: "/erogaciones",
+    homePath: "/movimientos",
   },
   {
     key: "transferencias",
@@ -174,7 +174,7 @@ const snapshotEntityIdKeys: Record<string, string> = {
   "participaciones-relevantes": "participacion_relevante_id",
   "documentacion-bibliografica": "documentacion_bibliografica_id",
   equipamiento: "equipamiento_id",
-  erogaciones: "erogacion_id",
+  erogaciones: "movimiento_id",
   transferencias: "transferencia_id",
   "trabajos-reunion-cientifica": "trabajo_reunion_id",
   "trabajos-revistas": "trabajo_revista_id",

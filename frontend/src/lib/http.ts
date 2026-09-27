@@ -17,7 +17,6 @@ const LEGACY_PATH_PREFIXES: Array<[string, string]> = [
   ["/distinciones", "/produccion/distinciones"],
   ["/documentacion-bibliografica", "/produccion/documentacion-bibliografica"],
   ["/equipamiento", "/recursos/equipamiento"],
-  ["/erogaciones", "/recursos/erogaciones"],
   ["/fuente-financiamiento", "/catalogos/fuente-financiamiento"],
   ["/grado-academico", "/produccion/grado-academico"],
   ["/grupos-utn", "/grupo/grupo-utn"],

@@ -1,5 +1,9 @@
 # Busqueda global
 
+Los movimientos financieros recuperados enlazan a `/movimientos/:id`. El detalle
+conserva el contexto de retorno a Búsqueda; el listado financiero muestra los
+registros de la UCT activa.
+
 La busqueda se ejecuta automaticamente luego de 400 ms sin escritura y requiere
 al menos dos caracteres. Cada nueva consulta cancela la anterior mediante
 `AbortController`; un identificador interno impide que una respuesta antigua

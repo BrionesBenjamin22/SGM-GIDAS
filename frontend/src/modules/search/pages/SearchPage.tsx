@@ -34,7 +34,8 @@ const TYPE_CONFIG: Record<string, { color: string; bgColor: string; icon: React.
   "Trabajo en Revista con Referato": { color: "text-violet-700", bgColor: "bg-violet-50", icon: BookOpen },
   "Artículo de Divulgación": { color: "text-amber-700", bgColor: "bg-amber-50", icon: FileText },
   "Directivo": { color: "text-slate-700", bgColor: "bg-slate-100", icon: Building },
-  "Tipo de Erogación": { color: "text-rose-700", bgColor: "bg-rose-50", icon: TrendingUp },
+  "Categoría de Erogación": { color: "text-rose-700", bgColor: "bg-rose-50", icon: TrendingUp },
+  "Movimiento financiero": { color: "text-emerald-700", bgColor: "bg-emerald-50", icon: TrendingUp },
   "Fuente de Financiamiento": { color: "text-emerald-700", bgColor: "bg-emerald-50", icon: Building },
   "Tipo Personal": { color: "text-slate-700", bgColor: "bg-slate-100", icon: Users },
   "Persona": { color: "text-slate-700", bgColor: "bg-slate-100", icon: Users },
@@ -157,7 +158,7 @@ export default function SearchPage() {
       { key: "autores", tipo: "Autor" },
       { key: "participaciones_relevantes", tipo: "Participación" },
       { key: "trabajos_reunion", tipo: "Trabajo" },
-      { key: "erogaciones_recientes", tipo: "Erogación" },
+      { key: "erogaciones_recientes", tipo: "Movimiento" },
       { key: "transferencias", tipo: "Transferencia" },
       { key: "registros", tipo: "Registro" },
       { key: "personal", tipo: "Personal" },
@@ -239,9 +240,9 @@ export default function SearchPage() {
         label = "Proyectos";
         break;
 
-      case "Tipo de Erogación":
+      case "Categoría de Erogación":
         items = getExtraNames(extra, "erogaciones_recientes");
-        label = "Erogaciones";
+        label = "Movimientos";
         break;
 
       case "Tipo de Contrato":

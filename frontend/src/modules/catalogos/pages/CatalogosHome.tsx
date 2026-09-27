@@ -140,11 +140,6 @@ const CATALOGS: CatalogDef[] = [
     description: "Define el origen de fondos usado en becas, proyectos y erogaciones.",
   },
   {
-    label: "Tipo de Erogación",
-    endpoint: "/tipo-erogacion/",
-    description: "Clasifica movimientos administrativos y erogaciones.",
-  },
-  {
     label: "Tipo de Contrato",
     endpoint: "/tipo-contrato/",
     description: "Clasifica contratos usados en transferencias socio-productivas.",

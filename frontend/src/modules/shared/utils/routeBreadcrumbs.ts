@@ -14,7 +14,7 @@ const sectionNames: Record<string, string> = {
   "trabajos-reunion": "Trabajos en Reunión Científica",
   "trabajos-revistas": "Trabajos en Revistas",
   "articulos-divulgacion": "Artículos de Divulgación",
-  erogaciones: "Resumen de Ingresos y Egresos",
+  movimientos: "Movimientos financieros",
   equipamiento: "Equipamiento e Infraestructura",
   objetosfinanciamiento: "Objetos de financiamiento",
   documentacion: "Documentación y Biblioteca",
@@ -33,7 +33,7 @@ const personalAliases = new Set(["investigadores", "becarios", "ptaa", "profesio
 const personalEditAliases = new Set(["investigadores", "becarios"]);
 const detailSections = new Set([
   "proyectos", "docenciaInvestigador", "registros-propiedad", "trabajos-reunion",
-  "trabajos-revistas", "articulos-divulgacion", "erogaciones", "equipamiento",
+  "trabajos-revistas", "articulos-divulgacion", "movimientos", "equipamiento",
   "documentacion", "transferencias", "distinciones", "participaciones",
   "visitantes", "memorias",
 ]);

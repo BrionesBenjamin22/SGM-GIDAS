@@ -1,5 +1,9 @@
 # Memorias
 
+La vista de versión muestra los movimientos financieros de su snapshot con tipo,
+importe ARS, fuente o categoría y enlace al detalle en `/movimientos/:id`. La
+sección interna del contrato de Memorias conserva la clave `erogaciones`.
+
 ## Errores por campo (ISS-09)
 
 Los formularios del módulo consumen `error.details.fields` mediante

@@ -103,7 +103,7 @@ export default function ObjetosLanding() {
 
   const confirmItemsText = selectedItems.map((item) =>
     item.tipo === "Erogacion"
-      ? `Erogación N° ${String(item.numero_erogacion).padStart(6, "0")}`
+      ? `Movimiento N.º ${String(item.numero_movimiento).padStart(6, "0")}`
       : item.denominacion
   );
 
@@ -153,12 +153,12 @@ export default function ObjetosLanding() {
                 item={item}
                 title={() =>
                   item.tipo === "Erogacion"
-                    ? `Erogación N° ${String(item.numero_erogacion).padStart(6, "0")}`
+                    ? `Movimiento N.º ${String(item.numero_movimiento).padStart(6, "0")}`
                     : item.denominacion
                 }
                 subtitle={() =>
                   item.tipo === "Erogacion"
-                    ? item.tipo_erogacion?.nombre || "-"
+                    ? `${item.tipo_movimiento === "INGRESO" ? "Ingreso" : "Egreso"} · ${item.monto} ${item.moneda}`
                     : formatearFecha(item.fecha_incorporacion)
                 }
                 selectable={selectMode}
@@ -169,7 +169,7 @@ export default function ObjetosLanding() {
                 onClick={() =>
                   navigate(
                     item.tipo === "Erogacion"
-                      ? `/erogaciones/${item.id}`
+                      ? `/movimientos/${item.id}`
                       : `/equipamiento/${item.id}`
                   )
                 }

@@ -1,5 +1,9 @@
 # Dashboard frontend
 
+`dashboardGeneralService.ts` tipa los importes financieros como cadenas
+decimales (`total_ingresos`, `total_egresos`, `saldo_financiero`,
+`egresos_corrientes`, `egresos_capital`) conforme al backend de movimientos.
+
 ## Alcance
 
 El home combina la configuracion institucional de la UCT con un resumen visual de

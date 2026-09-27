@@ -1,5 +1,8 @@
 # Recursos
 
+El contrato vigente de pantallas, rutas, services, hooks, permisos y validaciones
+del historial financiero está en [MOVIMIENTOS.md](MOVIMIENTOS.md).
+
 El formulario de equipamiento muestra el error junto a la denominación cuando
 se ingresan solo números.
 
@@ -22,7 +25,7 @@ futuras en incorporaciones y erogaciones.
 
 ## Funcionalidad
 
-El modulo administra equipamiento e infraestructura y el resumen de ingresos y
+El modulo administra equipamiento e infraestructura y los movimientos de ingresos y
 egresos. Cada entidad dispone de home, formulario, detalle, auditoria e historial.
 Los homes muestran hasta 9 elementos y los historiales 3 items por pagina.
 
@@ -62,10 +65,8 @@ tipos explicitos. Las llamadas HTTP se concentran en services dedicados.
   inclusive. El formulario informa el rango y lo aplica al selector de fecha; la
   funcion pura `utils/equipamientoValidation.ts` conserva la misma regla para el
   envio.
-- Erogaciones valida numero entero positivo, catalogos, fecha e importes finitos no
-  negativos; ingresos y egresos no pueden ser ambos cero.
-- En edicion de erogaciones se pueden corregir numero, tipo, fuente, fecha,
-  ingresos y egresos. Se envian solo los campos modificados.
+- Movimientos valida fecha, monto positivo y fuente o categoría según el tipo.
+  Número y tipo no se editan; en edición se envían solo los campos modificados.
 
 ## Seguridad, permisos y errores
 
@@ -105,7 +106,7 @@ mutateAsync para que el diálogo cubra toda la operación.
 
 ## Indicadores de campos obligatorios (ISS-21)
 
-Equipamiento y erogaciones muestran el indicador en cada campo que el formulario exige para guardar, incluidos ingresos y egresos de erogaciones.
+Equipamiento y movimientos muestran el indicador en cada campo que el formulario exige para guardar, incluida la relación requerida según el tipo de movimiento.
 
 ## Errores de formularios (ISS-19, en curso)
 
@@ -114,7 +115,7 @@ conserva los separadores al reemplazar dia, mes o anio y permite sobrescribir
 digitos al ubicar el cursor en una fecha completa. Se mantienen los limites y
 la validacion de fecha.
 
-Equipamiento y erogaciones dejaron de inferir el campo inválido a partir del texto del error. `applyFieldErrors` utiliza `error.details.fields`; los errores restantes se muestran como aviso general. Alta y edición usan fallbacks propios. Las claves HTTP de fecha, monto, número, tipo y fuente se asocian a controles visibles.
+Equipamiento y movimientos no infieren el campo inválido a partir del texto del error. `applyFieldErrors` utiliza `error.details.fields`; los errores restantes se muestran como aviso general. Alta y edición usan fallbacks propios. Las claves HTTP de fecha, monto, tipo, fuente y categoría se asocian a controles visibles.
 
 ## Borradores de formularios (ISS-22)
 
