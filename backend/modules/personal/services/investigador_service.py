@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_
 
 from extension import db
+from modules.personal.services.identidad_service import asignar_identidad, conflicto_identidad_por_integridad
 from modules.shared.services.text_validation import has_only_letters_and_spaces
 from modules.personal.services.horas_validation import validar_horas_semanales as _validar_horas
 from modules.shared.exceptions import (
@@ -176,9 +177,17 @@ def crear_investigador(data, user_id):
         activo=True,
         created_by=user_id
     )
+    asignar_identidad(investigador, data, nueva=True)
 
-    db.session.add(investigador)
-    db.session.flush()
+    try:
+        db.session.add(investigador)
+        db.session.flush()
+    except IntegrityError as error:
+        db.session.rollback()
+        try:
+            conflicto_identidad_por_integridad(error)
+        except IntegrityError:
+            raise ConflictError("Error de integridad al crear el investigador.") from error
 
     historial = InvestigadorHorasHistorial(
         investigador_id=investigador.id,
@@ -193,9 +202,12 @@ def crear_investigador(data, user_id):
     try:
         db.session.commit()
         return investigador
-    except IntegrityError:
+    except IntegrityError as error:
         db.session.rollback()
-        raise ConflictError("Error de integridad al crear el investigador.")
+        try:
+            conflicto_identidad_por_integridad(error)
+        except IntegrityError:
+            raise ConflictError("Error de integridad al crear el investigador.") from error
 
 
 # =====================================================
@@ -210,6 +222,7 @@ def actualizar_investigador(id, data, user_id):
 
     investigador = _obtener_investigador_activo(id)
     cambios = {}
+    cambios.update(asignar_identidad(investigador, data))
 
     if "nombre_apellido" in data:
         nuevo_valor = _validar_nombre(data["nombre_apellido"])
@@ -323,6 +336,9 @@ def actualizar_investigador(id, data, user_id):
     try:
         db.session.commit()
         return investigador
+    except IntegrityError as error:
+        db.session.rollback()
+        conflicto_identidad_por_integridad(error)
     except Exception:
         db.session.rollback()
         raise

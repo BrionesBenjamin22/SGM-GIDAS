@@ -42,6 +42,8 @@ export interface PersonalPage {
 }
 export interface PersonalPayload {
   nombre_apellido: string;
+  dni: string;
+  cuil: string;
   horas_semanales: number;
   fecha_alta_grupo: string;
   grupo_utn_id: number;

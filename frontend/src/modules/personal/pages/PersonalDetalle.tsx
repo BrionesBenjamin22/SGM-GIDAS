@@ -211,6 +211,8 @@ export default function PersonalDetalle() {
 
         <article className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
           <div className="space-y-2 text-sm text-slate-500 md:text-base">
+            <p><span className="font-medium text-slate-700">DNI:</span> {data.dni || "Sin registrar"}</p>
+            <p><span className="font-medium text-slate-700">CUIL:</span> {data.cuil || "Sin registrar"}</p>
             {relaciones.tipo_personal?.nombre && (
               <p>
                 <span className="font-medium text-slate-700">
@@ -370,6 +372,9 @@ export default function PersonalDetalle() {
                   ![
                     "id",
                     "nombre_apellido",
+                    "dni",
+                    "cuil",
+                    "identidad_id",
                     "activo",
                     "rol",
                     "relaciones",

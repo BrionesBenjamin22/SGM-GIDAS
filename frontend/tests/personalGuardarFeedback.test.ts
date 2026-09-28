@@ -36,9 +36,9 @@ test("formularios Personal, Investigador y Becario enfocan errores y muestran gu
     export default function Component() {}`);
   try {
     for (const config of [
-      {name: "FormPTAAProfesional", values: ["Persona", 20, 1, new Date(2026, 0, 1), true, {}, false], initialData: {id: 1, nombre_apellido: "Persona", horas_semanales: 20, tipo_personal_id: 1, fecha_alta_grupo: "2026-01-01", activo: true}},
-      {name: "FormInvestigador", values: ["Persona", 20, 1, 1, 1, new Date(2026, 0, 1), true, {}, false], initialData: {id: 1, nombre_apellido: "Persona", horas_semanales: 20, tipo_dedicacion_id: 1, categoria_utn_id: 1, programa_incentivos_id: 1, fecha_alta_grupo: "2026-01-01", activo: true}},
-      {name: "FormBecario", values: ["Persona", 20, 1, new Date(2026, 0, 1), true, {}, false, [], false], initialData: {id: 1, nombre_apellido: "Persona", horas_semanales: 20, tipo_formacion_id: 1, fecha_alta_grupo: "2026-01-01", activo: true, becas: []}},
+      {name: "FormPTAAProfesional", values: ["Persona", "12345678", "20-12345678-6", 20, 1, new Date(2026, 0, 1), true, {}, false], initialData: {id: 1, nombre_apellido: "Persona", dni: "12345678", cuil: "20-12345678-6", horas_semanales: 20, tipo_personal_id: 1, fecha_alta_grupo: "2026-01-01", activo: true}},
+      {name: "FormInvestigador", values: ["Persona", "12345678", "20-12345678-6", 20, 1, 1, 1, new Date(2026, 0, 1), true, {}, false], initialData: {id: 1, nombre_apellido: "Persona", dni: "12345678", cuil: "20-12345678-6", horas_semanales: 20, tipo_dedicacion_id: 1, categoria_utn_id: 1, programa_incentivos_id: 1, fecha_alta_grupo: "2026-01-01", activo: true}},
+      {name: "FormBecario", values: ["Persona", "12345678", "20-12345678-6", 20, 1, new Date(2026, 0, 1), true, {}, false, [], false], initialData: {id: 1, nombre_apellido: "Persona", dni: "12345678", cuil: "20-12345678-6", horas_semanales: 20, tipo_formacion_id: 1, fecha_alta_grupo: "2026-01-01", activo: true, becas: []}},
     ]) {
       const queryClient = new QueryClient({defaultOptions: {queries: {staleTime: 60_000, retry: false}}});
       const key = ["personal", undefined, "true"];

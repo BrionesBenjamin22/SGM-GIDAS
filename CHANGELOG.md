@@ -8,6 +8,20 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-76: identidad documental en Personal
+
+- Personal, Becario e Investigador requieren DNI y CUIL en las altas, validan
+  formato, coincidencia con el DNI y digito verificador, y muestran errores de
+  campo al editar o crear.
+- La identidad compartida asegura unicidad de DNI y CUIL entre las tres
+  variantes, conserva historiales y permite completar registros heredados.
+- Se aplico la migracion de desarrollo y se regeneraron datos ficticios sin
+  eliminar registros existentes.
+
+Validaciones: aprobacion visual y funcional del usuario, 49 pruebas backend del
+modulo, 186 pruebas frontend, `typecheck`, build de produccion y
+`git diff --check` correctos.
+
 ### ISS-75: paginacion de Gestion de Catalogos
 
 - Los valores de catalogos, incluida la seccion Becas, muestran controles de

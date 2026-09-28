@@ -4,6 +4,8 @@ from modules.memorias.services.memoria_periodo_service import (
 from datetime import date
 
 from extension import db
+from sqlalchemy.exc import IntegrityError
+from modules.personal.services.identidad_service import asignar_identidad, conflicto_identidad_por_integridad
 from modules.shared.services.text_validation import has_only_letters_and_spaces
 from modules.personal.services.horas_validation import validar_horas_semanales as _validar_horas
 from modules.shared.exceptions import (
@@ -221,6 +223,7 @@ def crear_personal(data, user_id):
         activo=True,
         created_by=user_id
     )
+    asignar_identidad(nuevo, data, nueva=True)
 
     try:
         db.session.add(nuevo)
@@ -234,6 +237,9 @@ def crear_personal(data, user_id):
         )
         db.session.add(historial)
         db.session.commit()
+    except IntegrityError as error:
+        db.session.rollback()
+        conflicto_identidad_por_integridad(error)
     except Exception:
         db.session.rollback()
         raise
@@ -259,6 +265,8 @@ def actualizar_personal(id, data, rol, user_id: int):
 
     if entidad.deleted_at is not None:
         raise ConflictError("No se puede modificar un registro eliminado.")
+
+    cambios.update(asignar_identidad(entidad, data))
 
     if "nombre_apellido" in data:
         nuevo_valor = _validar_nombre(data["nombre_apellido"])
@@ -427,6 +435,9 @@ def actualizar_personal(id, data, rol, user_id: int):
 
     try:
         db.session.commit()
+    except IntegrityError as error:
+        db.session.rollback()
+        conflicto_identidad_por_integridad(error)
     except Exception:
         db.session.rollback()
         raise

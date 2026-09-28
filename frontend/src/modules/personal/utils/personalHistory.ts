@@ -11,6 +11,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function formatLabel(value?: string) {
   if (!value) return "Cambio";
+  if (value === "dni" || value === "cuil") return value.toUpperCase();
   const normalized = value.endsWith("_id") ? value.slice(0, -3) : value;
   const label = normalized.replace(/_/g, " ");
   return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;

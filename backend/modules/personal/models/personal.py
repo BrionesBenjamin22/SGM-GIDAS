@@ -1,6 +1,7 @@
 from extension import db
 from datetime import date
 from modules.shared.models.audit_mixin import AuditMixin
+from modules.personal.models.identidad import IdentidadPersonal
 
 # =====================================================
 # PERSONAL
@@ -10,6 +11,8 @@ class Personal(db.Model, AuditMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     nombre_apellido = db.Column(db.String(120), nullable=False)
+    identidad_id = db.Column(db.Integer, db.ForeignKey('identidad_personal.id'), unique=True, nullable=True)
+    identidad = db.relationship(IdentidadPersonal, lazy='joined')
     horas_semanales = db.Column(db.Integer, nullable=False)
     activo = db.Column(db.Boolean, default=True, nullable=False)
     fecha_alta_grupo = db.Column(db.Date, nullable=True)
@@ -30,6 +33,8 @@ class Personal(db.Model, AuditMixin):
 
     def serialize(self):
         data = self.to_dict()
+        data.update(dni=self.identidad.dni if self.identidad else None,
+                    cuil=self.identidad.cuil if self.identidad else None)
         horas_activas = next(
             (h.horas_semanales for h in self.historial_horas if h.fecha_fin is None),
             self.horas_semanales
@@ -114,6 +119,8 @@ class Becario(db.Model, AuditMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     nombre_apellido = db.Column(db.String(120), nullable=False)
+    identidad_id = db.Column(db.Integer, db.ForeignKey('identidad_personal.id'), unique=True, nullable=True)
+    identidad = db.relationship(IdentidadPersonal, lazy='joined')
     horas_semanales = db.Column(db.Integer, nullable=False)
     activo = db.Column(db.Boolean, default=True, nullable=False)
     fecha_alta_grupo = db.Column(db.Date, nullable=True)
@@ -162,6 +169,8 @@ class Becario(db.Model, AuditMixin):
 
     def serialize(self):
         data = self.to_dict()
+        data.update(dni=self.identidad.dni if self.identidad else None,
+                    cuil=self.identidad.cuil if self.identidad else None)
 
         horas_activas = next(
             (h.horas_semanales for h in self.historial_horas if h.fecha_fin is None),
@@ -232,6 +241,8 @@ class Investigador(db.Model, AuditMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     nombre_apellido = db.Column(db.String(120), nullable=False)
+    identidad_id = db.Column(db.Integer, db.ForeignKey('identidad_personal.id'), unique=True, nullable=True)
+    identidad = db.relationship(IdentidadPersonal, lazy='joined')
     horas_semanales = db.Column(db.Integer, nullable=False)
     activo = db.Column(db.Boolean, default=True, nullable=False)
     fecha_alta_grupo = db.Column(db.Date, nullable=True)
@@ -287,6 +298,8 @@ class Investigador(db.Model, AuditMixin):
 
     def serialize(self):
         data = self.to_dict()
+        data.update(dni=self.identidad.dni if self.identidad else None,
+                    cuil=self.identidad.cuil if self.identidad else None)
 
         historial_activo = next(
             (h for h in self.historial_horas if h.fecha_fin is None),

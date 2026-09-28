@@ -5,6 +5,8 @@ import builtins
 from datetime import date, datetime
 
 from extension import db
+from sqlalchemy.exc import IntegrityError
+from modules.personal.services.identidad_service import asignar_identidad, conflicto_identidad_por_integridad
 from modules.shared.services.text_validation import has_only_letters_and_spaces
 from modules.personal.services.horas_validation import validar_horas_semanales as _validar_horas
 from modules.shared.exceptions import (
@@ -301,9 +303,14 @@ def crear_becario(data: dict, user_id: int):
         activo=True,
         created_by=user_id
     )
+    asignar_identidad(becario, data, nueva=True)
 
-    db.session.add(becario)
-    db.session.flush()
+    try:
+        db.session.add(becario)
+        db.session.flush()
+    except IntegrityError as error:
+        db.session.rollback()
+        conflicto_identidad_por_integridad(error)
 
     historial = BecarioHorasHistorial(
         becario_id=becario.id,
@@ -329,6 +336,9 @@ def crear_becario(data: dict, user_id: int):
     try:
         db.session.commit()
         return becario
+    except IntegrityError as error:
+        db.session.rollback()
+        conflicto_identidad_por_integridad(error)
     except Exception:
         db.session.rollback()
         raise
@@ -346,6 +356,7 @@ def actualizar_becario(id: int, data: dict, user_id: int):
 
     becario = _get_activo_or_404(id)
     cambios = {}
+    cambios.update(asignar_identidad(becario, data))
 
     if "activo" in data:
         if not isinstance(data["activo"], bool):
@@ -463,6 +474,9 @@ def actualizar_becario(id: int, data: dict, user_id: int):
     try:
         db.session.commit()
         return becario
+    except IntegrityError as error:
+        db.session.rollback()
+        conflicto_identidad_por_integridad(error)
     except Exception:
         db.session.rollback()
         raise

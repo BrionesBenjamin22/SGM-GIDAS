@@ -23,6 +23,8 @@ import {
 import type { PersonalCompleto } from "@/modules/personal/services/personalCompletoServices";
 import { MAX_HORAS_SEMANALES, validWeeklyHours, WEEKLY_HOURS_ERROR } from "@/modules/personal/utils/weeklyHours";
 import { personalFieldErrors } from "@/modules/personal/utils/personalFieldErrors";
+import { validateDni, validateCuil } from "@/modules/personal/utils/identidadValidation";
+import IdentidadFields from "@/modules/personal/components/IdentidadFields";
 
 interface Props {
   initialData?: PersonalCompleto;
@@ -46,6 +48,8 @@ export default function FormInvestigador({
   const { user } = useAuth();
 
   const [nombreApellido, setNombre] = useState("");
+  const [dni, setDni] = useState("");
+  const [cuil, setCuil] = useState("");
   const [horasSemanales, setHoras] = useState<number | "">("");
   const [dedicacionId, setDedicacionId] = useState<number | "">("");
   const [categoriaId, setCategoriaId] = useState<number | null>(null);
@@ -59,6 +63,8 @@ export default function FormInvestigador({
   useEffect(() => {
     if (!initialData) {
       setNombre("");
+      setDni("");
+      setCuil("");
       setHoras("");
       setDedicacionId("");
       setCategoriaId(null);
@@ -69,6 +75,8 @@ export default function FormInvestigador({
     }
 
     setNombre(initialData.nombre_apellido ?? "");
+    setDni(initialData.dni ?? "");
+    setCuil(initialData.cuil ?? "");
     setHoras(initialData.horas_semanales ?? "");
     setActivo(initialData.activo ?? true);
     setFechaAltaGrupo(
@@ -98,12 +106,12 @@ export default function FormInvestigador({
     userId: user?.id,
     module: "personal-investigador",
     recordId: initialData?.id,
-    value: { nombreApellido, horasSemanales, dedicacionId, categoriaId, programaId, fechaAltaGrupo: toCivilDateString(fechaAltaGrupo), activo },
+    value: { nombreApellido, dni, cuil, horasSemanales, dedicacionId, categoriaId, programaId, fechaAltaGrupo: toCivilDateString(fechaAltaGrupo), activo },
     ready: hydrated,
     autosave: false,
-    hasContent: (draft) => Boolean(draft.nombreApellido || draft.horasSemanales || draft.dedicacionId || draft.categoriaId || draft.programaId || draft.fechaAltaGrupo),
+    hasContent: (draft) => Boolean(draft.nombreApellido || draft.dni || draft.cuil || draft.horasSemanales || draft.dedicacionId || draft.categoriaId || draft.programaId || draft.fechaAltaGrupo),
     onRestore: (draft) => {
-      setNombre(draft.nombreApellido); setHoras(draft.horasSemanales); setDedicacionId(draft.dedicacionId);
+      setNombre(draft.nombreApellido); setDni(draft.dni ?? ""); setCuil(draft.cuil ?? ""); setHoras(draft.horasSemanales); setDedicacionId(draft.dedicacionId);
       setCategoriaId(draft.categoriaId); setProgramaId(draft.programaId);
       setFechaAltaGrupo(draft.fechaAltaGrupo ? new Date(`${draft.fechaAltaGrupo}T00:00:00`) : null); setActivo(draft.activo);
     },
@@ -112,6 +120,7 @@ export default function FormInvestigador({
   const hasUnsavedChanges = () => {
     if (!initialData) return true;
     return nombreApellido !== (initialData.nombre_apellido ?? "") ||
+      dni !== (initialData.dni ?? "") || cuil !== (initialData.cuil ?? "") ||
       Number(horasSemanales) !== Number(initialData.horas_semanales) ||
       Number(dedicacionId) !== Number(initialData.relaciones?.tipo_dedicacion?.id ?? initialData.tipo_dedicacion_id) ||
       categoriaId !== (initialData.relaciones?.categoria_utn?.id ?? initialData.categoria_utn_id ?? null) ||
@@ -154,6 +163,11 @@ export default function FormInvestigador({
       newErrors.nombre = "Use solo letras y espacios en nombre y apellido";
     }
 
+    const dniError = validateDni(dni);
+    if (dniError) newErrors.dni = dniError;
+    const cuilError = validateCuil(cuil, dni);
+    if (cuilError) newErrors.cuil = cuilError;
+
     if (!validWeeklyHours(horasSemanales)) {
       newErrors.horas = WEEKLY_HOURS_ERROR;
     }
@@ -181,7 +195,7 @@ export default function FormInvestigador({
       return true;
     } catch (error) {
       onError(error);
-      if (applyFieldErrors(error, setErrors, ["nombre","horas","dedicacion","categoria","programa","fechaAltaGrupo"])) return false;
+      if (applyFieldErrors(error, setErrors, ["nombre","dni","cuil","horas","dedicacion","categoria","programa","fechaAltaGrupo"])) return false;
       const fieldErrors = personalFieldErrors(error);
       if (fieldErrors.horas) {
         setErrors((prev) => ({ ...prev, horas: fieldErrors.horas }));
@@ -200,6 +214,8 @@ export default function FormInvestigador({
 
       const payload = {
         nombre_apellido: nombreApellido,
+        dni,
+        cuil,
         horas_semanales: Number(horasSemanales),
         tipo_dedicacion_id: Number(dedicacionId),
         categoria_utn_id: categoriaId,
@@ -212,6 +228,8 @@ export default function FormInvestigador({
       if (isEdit && initialData?.id) {
         const original = {
           nombre_apellido: initialData.nombre_apellido,
+          dni: initialData.dni ?? "",
+          cuil: initialData.cuil ?? "",
           horas_semanales: Number(initialData.horas_semanales),
           tipo_dedicacion_id: Number(initialData.relaciones?.tipo_dedicacion?.id ?? initialData.tipo_dedicacion_id),
           categoria_utn_id: initialData.relaciones?.categoria_utn?.id ?? initialData.categoria_utn_id ?? null,
@@ -290,6 +308,10 @@ export default function FormInvestigador({
           )}
         </>
       </Field>
+
+      <IdentidadFields prefix="investigador" dni={dni} cuil={cuil} errors={errors}
+        onDniChange={(value) => { setDni(value); clearError("dni"); clearError("cuil"); }}
+        onCuilChange={(value) => { setCuil(value); clearError("cuil"); }} />
 
       <Field required label="Horas semanales" name="horas" error={errors.horas}>
         <>

@@ -1,5 +1,35 @@
 # Modulo backend de personal
 
+## Identidad documental (ISS-76)
+
+Personal, Becario e Investigador comparten la tabla `identidad_personal`, con
+restricciones `UNIQUE` para `dni` y `cuil`. Cada registro tiene una referencia
+opcional y unica a esa tabla; la migracion
+`a76d1e2f3b4c_personal_identidad.py` conserva los registros anteriores con
+identidad nula. Las altas nuevas requieren ambos campos. Al editar un registro
+heredado, se completan juntos; las actualizaciones parciales de un registro que
+ya tiene identidad pueden enviar solo el campo modificado.
+
+Los endpoints existentes `POST /api/v1/personal`, `POST /api/v1/becarios` y
+`POST /api/v1/investigadores/`, y sus `PUT` de edicion, aceptan `dni` y `cuil`.
+Las lecturas de detalle serializan ambos como cadenas o `null`. El service
+`services/identidad_service.py` valida DNI de 7 u 8 digitos, CUIL en formato
+`XX-XXXXXXXX-X`, coincidencia con el DNI y digito verificador. Antes de guardar
+comprueba unicidad sin confundir la identidad del propio registro; las
+restricciones de base de datos cubren las escrituras concurrentes. La identidad
+se conserva tras la baja logica, de modo que el DNI no se puede reutilizar.
+
+Un formato o digito invalido devuelve HTTP 400 y `error.details.fields.dni` o
+`error.details.fields.cuil`; un duplicado devuelve HTTP 409 con el mismo mapa
+de campo. Las modificaciones registran cambios de DNI/CUIL en el historial
+existente. Los permisos no cambian: `ADMIN` y `GESTOR` escriben;
+`ADMIN`, `GESTOR` y `LECTURA` consultan. `tools/seed_testing_data.py` genera
+identidades ficticias deterministas de forma idempotente y conserva la
+proteccion contra ejecucion en produccion.
+
+Pruebas: `tests/test_personal_alta_ptaa.py` y suites relacionadas de auditoria,
+relaciones y memorias.
+
 ## Listado combinado y relaciones opcionales (ISS-25)
 
 `GET /api/v1/personal/all` es el listado canonico de Personal, Becarios e
@@ -80,7 +110,8 @@ pertenencia al grupo, carga horaria, proyectos y relaciones con becas.
 categorías. El catálogo `tipo_personal_id` determina el tipo; no se requieren
 formación, dedicación, categoría UTN ni incentivos de otros subtipos.
 
-Payload obligatorio: `nombre_apellido` (hasta 120 caracteres),
+Payload obligatorio: `nombre_apellido` (hasta 120 caracteres), `dni` (7 u 8
+digitos), `cuil` (`XX-XXXXXXXX-X` con digito verificador valido),
 `horas_semanales` (entero entre 1 y 168), `tipo_personal_id`, `grupo_utn_id` y
 `fecha_alta_grupo` (`YYYY-MM-DD`, desde 2010-01-01). Tipo y grupo deben existir
 y estar activos. El alta establece `activo=true` y registra `created_by`.

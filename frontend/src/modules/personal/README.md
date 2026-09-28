@@ -1,5 +1,28 @@
 # Modulo frontend de personal
 
+## Identidad documental (ISS-76)
+
+Las vistas `PersonalForm` (Personal/PTAA/Profesional, Becario e Investigador)
+comparten `components/IdentidadFields.tsx` para DNI y CUIL. Ambos campos son
+obligatorios en altas y al completar una identidad heredada en edicion. La
+validacion de `utils/identidadValidation.ts` exige DNI de 7 u 8 digitos y CUIL
+`XX-XXXXXXXX-X`, con el DNI en sus ocho posiciones centrales y digito
+verificador correcto. Los inputs muestran placeholders, errores junto al campo
+y referencias accesibles mediante `Field`.
+
+Los tres services dedicados incluyen `dni` y `cuil` en sus tipos TypeScript y
+payloads; `personalCompletoServices` los recibe como `string | null` para
+registros anteriores a la migracion. Los formularios guardan ambos valores en
+su borrador y envian solo diferencias reales al editar. Una colision del DNI o
+CUIL, o un valor invalido, se muestra junto al campo a partir de
+`error.details.fields`. El detalle presenta ambos datos y el historial muestra
+sus modificaciones. `usePersonal` sigue consultando el home con nueve elementos
+por pagina; los permisos de lectura y escritura existentes gobiernan estas
+vistas sin una ruta adicional.
+
+Pruebas: `tests/identidadPersonal.test.ts`, las suites de formularios de Personal,
+`npm run typecheck` y `npm run build:production`.
+
 ## Rutas de edición (ISS-68)
 
 El detalle de Personal navega a `/personal/:rol/:id/editar` para personal,

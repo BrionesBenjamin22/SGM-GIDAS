@@ -4,6 +4,8 @@ import { LoaderCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { MAX_HORAS_SEMANALES, validWeeklyHours, WEEKLY_HOURS_ERROR } from "@/modules/personal/utils/weeklyHours";
 import { personalFieldErrors } from "@/modules/personal/utils/personalFieldErrors";
+import { validateDni, validateCuil } from "@/modules/personal/utils/identidadValidation";
+import IdentidadFields from "@/modules/personal/components/IdentidadFields";
 import { useNavigate } from "react-router-dom";
 import Button from "@/components/Button";
 import Field from "@/components/Field";
@@ -48,6 +50,8 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
   const { user } = useAuth();
 
   const [nombreApellido, setNombre] = useState("");
+  const [dni, setDni] = useState("");
+  const [cuil, setCuil] = useState("");
   const [horasSemanales, setHoras] = useState<number | "">("");
   const [tipoFormacionId, setTipoFormacionId] = useState<number | "">("");
   const [fechaAltaGrupo, setFechaAltaGrupo] = useState<Date | null>(null);
@@ -87,6 +91,8 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
   useEffect(() => {
     if (!initialData) {
       setNombre("");
+      setDni("");
+      setCuil("");
       setHoras("");
       setTipoFormacionId("");
       setFechaAltaGrupo(null);
@@ -97,6 +103,8 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
     }
 
     setNombre(initialData.nombre_apellido ?? "");
+    setDni(initialData.dni ?? "");
+    setCuil(initialData.cuil ?? "");
     setHoras(initialData.horas_semanales ?? "");
     setActivo(initialData.activo ?? true);
     setFechaAltaGrupo(
@@ -140,14 +148,14 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
     module: "personal-becario",
     recordId: initialData?.id,
     value: {
-      nombreApellido, horasSemanales, tipoFormacionId, fechaAltaGrupo: toCivilDateString(fechaAltaGrupo), activo, agregarBeca,
+      nombreApellido, dni, cuil, horasSemanales, tipoFormacionId, fechaAltaGrupo: toCivilDateString(fechaAltaGrupo), activo, agregarBeca,
       becasVinculadas: becasVinculadas.map((beca) => ({ ...beca, fechaInicio: toCivilDateString(beca.fechaInicio), fechaFin: toCivilDateString(beca.fechaFin) })),
     },
     ready: hydrated,
     autosave: false,
-    hasContent: (draft) => Boolean(draft.nombreApellido || draft.horasSemanales || draft.tipoFormacionId || draft.fechaAltaGrupo || draft.becasVinculadas.length),
+    hasContent: (draft) => Boolean(draft.nombreApellido || draft.dni || draft.cuil || draft.horasSemanales || draft.tipoFormacionId || draft.fechaAltaGrupo || draft.becasVinculadas.length),
     onRestore: (draft) => {
-      setNombre(draft.nombreApellido); setHoras(draft.horasSemanales); setTipoFormacionId(draft.tipoFormacionId);
+      setNombre(draft.nombreApellido); setDni(draft.dni ?? ""); setCuil(draft.cuil ?? ""); setHoras(draft.horasSemanales); setTipoFormacionId(draft.tipoFormacionId);
       setFechaAltaGrupo(draft.fechaAltaGrupo ? new Date(`${draft.fechaAltaGrupo}T00:00:00`) : null);
       setActivo(draft.activo); setAgregarBeca(draft.agregarBeca);
       setBecasVinculadas(draft.becasVinculadas.map((beca) => ({
@@ -174,6 +182,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
       monto_percibido: beca.monto_percibido ?? undefined,
     }));
     return nombreApellido !== (initialData.nombre_apellido ?? "") ||
+      dni !== (initialData.dni ?? "") || cuil !== (initialData.cuil ?? "") ||
       Number(horasSemanales) !== Number(initialData.horas_semanales) ||
       Number(tipoFormacionId) !== Number(initialData.relaciones?.tipo_formacion?.id ?? initialData.tipo_formacion_id) ||
       toCivilDateString(fechaAltaGrupo) !== (initialData.fecha_alta_grupo ?? "") ||
@@ -217,6 +226,11 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
     } else if (!hasOnlyLettersAndSpaces(nombreApellido)) {
       newErrors.nombre = "Use solo letras y espacios en nombre y apellido";
     }
+
+    const dniError = validateDni(dni);
+    if (dniError) newErrors.dni = dniError;
+    const cuilError = validateCuil(cuil, dni);
+    if (cuilError) newErrors.cuil = cuilError;
 
     if (!validWeeklyHours(horasSemanales)) {
       newErrors.horas = WEEKLY_HOURS_ERROR;
@@ -267,7 +281,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
       return true;
     } catch (error) {
       onError(error);
-      if (applyFieldErrors(error, setErrors, ["nombre","horas","tipoFormacion","fechaAltaGrupo","becaGlobal"])) return false;
+      if (applyFieldErrors(error, setErrors, ["nombre","dni","cuil","horas","tipoFormacion","fechaAltaGrupo","becaGlobal"])) return false;
       const fieldErrors = personalFieldErrors(error);
       if (fieldErrors.horas) {
         setErrors((prev) => ({ ...prev, horas: fieldErrors.horas }));
@@ -286,6 +300,8 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
 
       const payload = {
         nombre_apellido: nombreApellido,
+        dni,
+        cuil,
         horas_semanales: Number(horasSemanales),
         tipo_formacion_id: Number(tipoFormacionId),
         fecha_alta_grupo: formatDateStr(fechaAltaGrupo)!,
@@ -304,6 +320,8 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
       if (isEdit && initialData?.id) {
         const original = {
           nombre_apellido: initialData.nombre_apellido,
+          dni: initialData.dni ?? "",
+          cuil: initialData.cuil ?? "",
           horas_semanales: Number(initialData.horas_semanales),
           tipo_formacion_id: Number(initialData.relaciones?.tipo_formacion?.id ?? initialData.tipo_formacion_id),
           fecha_alta_grupo: initialData.fecha_alta_grupo,
@@ -383,6 +401,10 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
           )}
         </>
       </Field>
+
+      <IdentidadFields prefix="becario" dni={dni} cuil={cuil} errors={errors}
+        onDniChange={(value) => { setDni(value); clearError("dni"); clearError("cuil"); }}
+        onCuilChange={(value) => { setCuil(value); clearError("cuil"); }} />
 
       <Field required label="Horas semanales" name="horas" error={errors.horas}>
         <>

@@ -16,7 +16,7 @@ from modules.personal.services.investigador_service import actualizar_investigad
 from modules.personal.services.personal_service import crear_personal, actualizar_personal
 from modules.personal.services.horas_validation import validar_horas_semanales
 from modules.personal.services.tipo_personal_service import listar_tipos
-from modules.shared.exceptions import ValidationError
+from modules.shared.exceptions import ConflictError, ValidationError
 from modules.personal.models.personal import Becario, Investigador
 from modules.personal.services.personal_completo_service import listar_personal_completo, listar_personal_paginado
 from modules.search.services.search_service import SearchService
@@ -52,7 +52,7 @@ class PersonalAltaPTAATest(unittest.TestCase):
         self.context.pop()
 
     def payload(self, **changes):
-        return {"nombre_apellido": "Persona PTAA", "horas_semanales": 20,
+        return {"nombre_apellido": "Persona PTAA", "dni": "12345678", "cuil": "20-12345678-6", "horas_semanales": 20,
                 "tipo_personal_id": 1, "grupo_utn_id": 1,
                 "fecha_alta_grupo": "2026-09-01", **changes}
 
@@ -76,6 +76,28 @@ class PersonalAltaPTAATest(unittest.TestCase):
         result = SearchService.search("Persona PTAA")[0]
         self.assertEqual(result["url"], f"/personal/personal/{record_id}")
         self.assertEqual(PersonalHorasHistorial.query.count(), 1)
+
+    def test_dni_unico_entre_variantes_y_edicion_propia(self):
+        response = self.post(self.payload())
+        self.assertEqual(response.status_code, 201)
+        record_id = response.get_json()["id"]
+        self.assertEqual(response.get_json()["dni"], "12345678")
+        self.assertEqual(response.get_json()["cuil"], "20-12345678-6")
+
+        with self.assertRaisesRegex(ConflictError, "DNI ya esta registrado"):
+            crear_becario({**self.payload(), "tipo_formacion_id": 1}, 1)
+
+        own = actualizar_personal(record_id, {"dni": "12345678"}, "personal", 1)
+        self.assertEqual(own.identidad.dni, "12345678")
+        self.assertEqual(self.post(self.payload()).status_code, 409)
+
+    def test_cuil_formato_digito_y_coincidencia_con_dni(self):
+        for cuil in ("20123456786", "20-12345678-7", "20-12345679-4"):
+            with self.subTest(cuil=cuil):
+                response = self.post(self.payload(cuil=cuil))
+                self.assertEqual(response.status_code, 400)
+                self.assertIn("cuil", response.get_json()["error"]["details"]["fields"])
+        self.assertEqual(Personal.query.count(), 0)
 
     def test_listado_combina_subtipos_con_altas_recientes_primero(self):
         for id in range(1, 12):
@@ -174,8 +196,8 @@ class PersonalAltaPTAATest(unittest.TestCase):
         self.assertEqual(self.post(self.payload(tipo_personal_id=2)).status_code, 201)
         base = self.payload()
         del base["tipo_personal_id"]
-        self.assertIsNotNone(crear_becario({**base, "tipo_formacion_id": 1}, 1).id)
-        self.assertIsNotNone(crear_investigador({**base, "tipo_dedicacion_id": 1}, 1).id)
+        self.assertIsNotNone(crear_becario({**base, "dni": "12345679", "cuil": "20-12345679-4", "tipo_formacion_id": 1}, 1).id)
+        self.assertIsNotNone(crear_investigador({**base, "dni": "12345670", "cuil": "20-12345670-0", "tipo_dedicacion_id": 1}, 1).id)
 
     def test_lectura_no_puede_crear(self):
         with patch("modules.shared.services.middleware.AuthService.verify_token",
@@ -187,8 +209,8 @@ class PersonalAltaPTAATest(unittest.TestCase):
         base = self.payload()
         cases = [
             (Personal, crear_personal, lambda i, p: actualizar_personal(i, p, "personal", 1), base),
-            (Becario, crear_becario, lambda i, p: actualizar_becario(i, p, 1), {**base, "tipo_formacion_id": 1}),
-            (Investigador, crear_investigador, lambda i, p: actualizar_investigador(i, p, 1), {**base, "tipo_dedicacion_id": 1}),
+            (Becario, crear_becario, lambda i, p: actualizar_becario(i, p, 1), {**base, "dni": "12345679", "cuil": "20-12345679-4", "tipo_formacion_id": 1}),
+            (Investigador, crear_investigador, lambda i, p: actualizar_investigador(i, p, 1), {**base, "dni": "12345670", "cuil": "20-12345670-0", "tipo_dedicacion_id": 1}),
         ]
         for model, create, update, payload in cases:
             with self.subTest(entity=model.__name__):

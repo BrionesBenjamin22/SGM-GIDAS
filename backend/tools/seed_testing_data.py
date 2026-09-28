@@ -32,6 +32,7 @@ from modules.proyectos.models.proyecto_investigacion import (
     TipoProyecto,
 )
 from modules.personal.models.tipo_personal import TipoPersonal
+from modules.personal.models.identidad import IdentidadPersonal
 from modules.produccion.models.actividad_docencia import ActividadDocencia
 from modules.produccion.models.articulo_divulgacion import ArticuloDivulgacion
 from modules.produccion.models.documentacion_autores import (
@@ -57,6 +58,17 @@ from modules.auth.models.usuario import RolUsuario, Usuario
 
 TEST_PASSWORD = "Testing123!"
 MANUAL_VARIANT_COUNT = 12
+
+
+def _ensure_testing_identity(entity, dni_number):
+    """Completa identidades ficticias de forma repetible."""
+    if entity.identidad:
+        return
+    dni = str(dni_number)
+    base = f"20{dni}"
+    remainder = 11 - sum(int(digit) * weight for digit, weight in zip(base, (5, 4, 3, 2, 7, 6, 5, 4, 3, 2))) % 11
+    check = 0 if remainder == 11 else 9 if remainder == 10 else remainder
+    entity.identidad = IdentidadPersonal(dni=dni, cuil=f"20-{dni}-{check}")
 
 
 def _assert_testing_environment():
@@ -173,6 +185,7 @@ def _seed_people(grupo, catalogs, admin_user_id):
             "created_by": admin_user_id,
         },
     )
+    _ensure_testing_identity(investigador, 90000001)
     if not investigador.historial_horas:
         db.session.add(
             InvestigadorHorasHistorial(
@@ -194,6 +207,7 @@ def _seed_people(grupo, catalogs, admin_user_id):
             "created_by": admin_user_id,
         },
     )
+    _ensure_testing_identity(becario, 90000002)
     if not becario.historial_horas:
         db.session.add(
             BecarioHorasHistorial(
@@ -215,6 +229,7 @@ def _seed_people(grupo, catalogs, admin_user_id):
             "created_by": admin_user_id,
         },
     )
+    _ensure_testing_identity(personal, 90000003)
     if not personal.historial_horas:
         db.session.add(
             PersonalHorasHistorial(
@@ -251,6 +266,7 @@ def _seed_manual_people(grupo, catalogs, admin_user_id):
                     "created_by": admin_user_id,
                 },
             )
+            _ensure_testing_identity(person, 90001000 + index * 4 + (0 if prefix.startswith("Tecnico") else 1))
             if not person.historial_horas:
                 db.session.add(
                     PersonalHorasHistorial(
@@ -272,6 +288,7 @@ def _seed_manual_people(grupo, catalogs, admin_user_id):
                 "created_by": admin_user_id,
             },
         )
+        _ensure_testing_identity(becario, 90001000 + index * 4 + 2)
         if not becario.historial_horas:
             db.session.add(
                 BecarioHorasHistorial(
@@ -295,6 +312,7 @@ def _seed_manual_people(grupo, catalogs, admin_user_id):
                 "created_by": admin_user_id,
             },
         )
+        _ensure_testing_identity(investigador, 90001000 + index * 4 + 3)
         if not investigador.historial_horas:
             db.session.add(
                 InvestigadorHorasHistorial(
