@@ -85,32 +85,35 @@ test("El buscador añade solo por botón, excluye personal e inactivos y conserv
   assert.equal(contratos.mismasAutorias([investigador, becario], [becario, investigador]), true);
 });
 
-test("Búsqueda por apellido e iniciales sin tildes, categoría, Ver más y reinicio de resultados", () => {
+test("Búsqueda y paginación de cinco autores conservan las selecciones pendientes", () => {
   const options = Array.from({ length: 20 }, (_, index) => ({ ...investigador, id: index + 1,
     nombre_apellido: `Ángela Pérez ${index}`, rol: index % 2 ? "becario" : "investigador" }));
   const h = selectorHarness([], options);
   const addButtons = () => h.render().filter(node => node.type === "Button" && node.props.children === "Añadir");
   const search = (value: string) => h.render().find(node => node.type === "input").props.onChange({ target: { value } });
-  assert.equal(addButtons().length, 9);
-  h.render().find(node => node.type === "Button" && node.props.children === "Ver más").props.onClick();
-  assert.equal(addButtons().length, 18);
+  assert.equal(addButtons().length, 5);
+  h.render().find(node => node.type === "Button" && node.props.children === "Siguiente").props.onClick();
+  assert.equal(addButtons().length, 5);
+  addButtons()[0].props.onClick();
+  assert.equal(h.value().length, 1);
   search("perez angela");
-  assert.equal(addButtons().length, 9);
+  assert.equal(addButtons().length, 5);
   search("A.P.");
-  assert.equal(addButtons().length, 9);
+  assert.equal(addButtons().length, 5);
   h.render().find(node => node.type === "select").props.onChange({ target: { value: "becario" } });
-  assert.equal(addButtons().length, 9);
-  h.render().find(node => node.type === "Button" && node.props.children === "Ver más").props.onClick();
-  assert.equal(addButtons().length, 10);
+  assert.equal(addButtons().length, 5);
+  h.render().find(node => node.type === "Button" && node.props.children === "Siguiente").props.onClick();
+  assert.equal(addButtons().length, 4);
   search("no existe");
   assert.equal(addButtons().length, 0);
   assert.ok(h.render().some(node => node.props.role === "status" && /No hay coincidencias/.test(node.props.children)));
   search("");
-  assert.equal(addButtons().length, 9);
+  assert.equal(addButtons().length, 5);
+  assert.equal(h.value().length, 1);
   const disabledNodes = h.render(true);
   assert.ok(disabledNodes.filter(node => ["input", "select", "Button"].includes(node.type)).every(node => node.props.disabled));
   disabledNodes.find(node => node.type === "Button" && node.props.children === "Añadir").props.onClick();
-  assert.equal(h.value().length, 0);
+  assert.equal(h.value().length, 1);
 });
 
 for (const [page, route] of [

@@ -13,8 +13,9 @@ Auditoría e Historial de cambios, con 3 eventos por página y regreso al origen
 
 `DocumentacionForm` usa `DocumentacionAutoresField` para buscar autores por
 nombre o iniciales, añadir existentes, preparar autores nuevos y quitar
-selecciones. La búsqueda omite nombres ya seleccionados y muestra 9 resultados
-por vez. Las altas y bajas se aplican al guardar, no al interactuar con el
+selecciones. La búsqueda omite nombres ya seleccionados y muestra 5 resultados
+por página, con navegación Anterior/Siguiente. Los autores seleccionados también
+se muestran de a 5. Las altas y bajas se aplican al guardar, no al interactuar con el
 selector. El formulario exige al menos un autor, valida nombres y duplicados,
 envía solo diferencias en edición y evita la actualización si no hay cambios.
 Los borradores anteriores con filas vacías de autor se recuperan sin esas filas.
@@ -204,15 +205,16 @@ y build:production; validación del navegador contra backend temporal.
 
 IntegrantesAutoresField, compartido por congresos y revistas, filtra localmente
 por fragmentos de nombre/apellido o prefijo de iniciales, sin distinguir tildes
-ni mayúsculas. Permite categoría Investigador/Becario, muestra nueve resultados
-y amplía de nueve en nueve con Ver más. Cambiar búsqueda o categoría reinicia
-el límite. El listado excluye seleccionados, personal e inactivos.
+ni mayúsculas. Permite categoría Investigador/Becario y muestra hasta cinco
+resultados por página con navegación Anterior/Siguiente. Cambiar búsqueda o
+categoría reinicia la página. El listado excluye seleccionados, personal e
+inactivos. La selección muestra hasta cinco autores por página.
 Cada resultado tiene Añadir; escribir, perder foco o pulsar Enter en el buscador
 no añade ni envía el formulario. Autores seleccionados permite Quitar;
 las relaciones se persisten únicamente al guardar el formulario. Los controles
 se bloquean durante guardado según el formulario. Etiquetas asociadas, botones
 con type=button y estado de resultados anunciado. Sin cambio de API: se reutiliza
-la consulta cacheada de integrantes; la búsqueda y ampliación son locales,
+la consulta cacheada de integrantes; la búsqueda y paginación son locales,
 no paginación de servidor. La validación visual queda a cargo del usuario.
 
 ## ISS-13: fecha de presentación

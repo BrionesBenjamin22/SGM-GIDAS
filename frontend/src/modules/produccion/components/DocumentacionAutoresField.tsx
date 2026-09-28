@@ -16,8 +16,13 @@ export default function DocumentacionAutoresField({ value, options, onChange, di
   const [search, setSearch] = useState("");
   const [newName, setNewName] = useState("");
   const [newNameError, setNewNameError] = useState("");
-  const [limit, setLimit] = useState(9);
+  const [availablePage, setAvailablePage] = useState(1);
+  const [selectedPage, setSelectedPage] = useState(1);
   const available = buscarAutoresDisponibles(options, value, search);
+  const currentAvailablePage = Math.min(availablePage, Math.max(1, Math.ceil(available.length / 5)));
+  const currentSelectedPage = Math.min(selectedPage, Math.max(1, Math.ceil(value.length / 5)));
+  const availableStart = (currentAvailablePage - 1) * 5;
+  const selectedStart = (currentSelectedPage - 1) * 5;
 
   const addNew = () => {
     if (disabled) return;
@@ -35,6 +40,7 @@ export default function DocumentacionAutoresField({ value, options, onChange, di
       return;
     }
     onChange([...value, { id: Math.min(0, ...value.map((autor) => autor.id)) - 1, nombre_apellido: name }]);
+    setSelectedPage(Math.ceil((value.length + 1) / 5));
     setNewName("");
     setNewNameError("");
   };
@@ -44,22 +50,26 @@ export default function DocumentacionAutoresField({ value, options, onChange, di
       <label htmlFor={`${id}-search`} className="mb-1 block text-sm">Buscar autores</label>
       <input id={`${id}-search`} type="search" className="input w-full" value={search} disabled={disabled}
         placeholder="Nombre, apellido o iniciales" aria-describedby={`${id}-search-help`}
-        onChange={(event) => { setSearch(event.target.value); setLimit(9); }}
+        onChange={(event) => { setSearch(event.target.value); setAvailablePage(1); }}
         onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }} />
     </div>
     <p id={`${id}-search-help`} className="text-xs text-slate-500">Busque un autor y pulse Añadir para incorporarlo al documento.</p>
     <p role="status" className="text-xs text-slate-500">
-      {available.length ? `Mostrando ${Math.min(limit, available.length)} de ${available.length} autores disponibles.` :
+      {available.length ? `Mostrando ${availableStart + 1} a ${Math.min(availableStart + 5, available.length)} de ${available.length} autores disponibles.` :
         search ? "No hay coincidencias. Pruebe otro nombre o iniciales." : "No hay más autores disponibles para añadir."}
     </p>
     <ul aria-label="Resultados de autores" className="space-y-2">
-      {available.slice(0, limit).map((autor) => <li key={autor.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 text-sm">
+      {available.slice(availableStart, availableStart + 5).map((autor) => <li key={autor.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 text-sm">
         <span className="min-w-0 break-words">{autor.nombre_apellido}</span>
         <Button type="button" variant="secondary" size="sm" disabled={disabled}
-          aria-label={`Añadir a ${autor.nombre_apellido}`} onClick={() => onChange([...value, autor])}>Añadir</Button>
+          aria-label={`Añadir a ${autor.nombre_apellido}`} onClick={() => { onChange([...value, autor]); setSelectedPage(Math.ceil((value.length + 1) / 5)); }}>Añadir</Button>
       </li>)}
     </ul>
-    {available.length > limit && <Button type="button" variant="secondary" size="sm" disabled={disabled} onClick={() => setLimit((current) => current + 9)}>Ver más</Button>}
+    {available.length > 5 && <nav aria-label="Páginas de autores disponibles" className="flex items-center gap-2 text-sm">
+      <Button type="button" variant="secondary" size="sm" disabled={disabled || currentAvailablePage === 1} onClick={() => setAvailablePage(currentAvailablePage - 1)}>Anterior</Button>
+      <span role="status">Página {currentAvailablePage} de {Math.ceil(available.length / 5)}</span>
+      <Button type="button" variant="secondary" size="sm" disabled={disabled || currentAvailablePage === Math.ceil(available.length / 5)} onClick={() => setAvailablePage(currentAvailablePage + 1)}>Siguiente</Button>
+    </nav>}
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
       <label htmlFor={`${id}-new`} className="mb-1 block text-sm font-medium">Nuevo autor</label>
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -74,12 +84,17 @@ export default function DocumentacionAutoresField({ value, options, onChange, di
     <p className="text-sm font-medium">Autores seleccionados ({value.length})</p>
     {value.length === 0 && <p className="text-sm text-slate-500">Todavía no añadió autores.</p>}
     <ul aria-label="Autores seleccionados" className="space-y-2">
-      {value.map((autor) => <li key={autor.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 text-sm">
+      {value.slice(selectedStart, selectedStart + 5).map((autor) => <li key={autor.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 text-sm">
         <span className="min-w-0 break-words">{autor.nombre_apellido}{autor.id <= 0 && <span className="ml-1 text-xs text-slate-500">(nuevo)</span>}</span>
         <Button type="button" variant="secondary" size="sm" disabled={disabled} aria-label={`Quitar a ${autor.nombre_apellido}`}
           onClick={() => onChange(value.filter((item) => item.id !== autor.id))}>Quitar</Button>
       </li>)}
     </ul>
+    {value.length > 5 && <nav aria-label="Páginas de autores seleccionados" className="flex items-center gap-2 text-sm">
+      <Button type="button" variant="secondary" size="sm" disabled={disabled || currentSelectedPage === 1} onClick={() => setSelectedPage(currentSelectedPage - 1)}>Anterior</Button>
+      <span role="status">Página {currentSelectedPage} de {Math.ceil(value.length / 5)}</span>
+      <Button type="button" variant="secondary" size="sm" disabled={disabled || currentSelectedPage === Math.ceil(value.length / 5)} onClick={() => setSelectedPage(currentSelectedPage + 1)}>Siguiente</Button>
+    </nav>}
     <p className="text-xs text-slate-500">Las altas y bajas de autores se aplicarán al guardar el documento.</p>
   </div>;
 }
