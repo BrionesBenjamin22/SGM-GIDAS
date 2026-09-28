@@ -39,6 +39,14 @@ Los formularios admitidos pasan un objeto de valores serializable y una función
 guardar el borrador, descartarlo o seguir editando. El guardado definitivo elimina
 el borrador. El estado visible distingue guardando, guardado y fallo.
 
+La confirmación de salida compara los valores actuales con la base capturada al
+iniciar el formulario de alta o edición. Después de recuperar o guardar un
+borrador, la última versión guardada pasa a ser la base. «Volver» y la navegación
+por rutas salen sin confirmación cuando no hay diferencias; si el usuario revierte
+todos los cambios, tampoco se muestra el diálogo. La prueba
+`frontend/tests/formDraftLeave.test.ts` cubre estos casos y las acciones de guardar
+y descartar desde la confirmación.
+
 El payload lleva `__draft_meta.schema=1` y una huella de los valores originales.
 Al recuperar una edición, si esos valores difieren de los actuales, el diálogo
 avisa que el registro cambió para que se revisen los datos antes de guardar.

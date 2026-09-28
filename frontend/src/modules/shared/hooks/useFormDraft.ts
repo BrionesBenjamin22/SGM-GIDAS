@@ -42,7 +42,6 @@ export function useFormDraft<T>({ userId, module, recordId, value, ready = true,
   const restoreRef = useRef(onRestore);
   const canSaveRef = useRef(false);
   const disabledRef = useRef(false);
-  const dirtyRef = useRef(false);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const pendingLeave = useRef<(() => void) | null>(null);
   const initializedKey = useRef<string | null>(null);
@@ -61,7 +60,6 @@ export function useFormDraft<T>({ userId, module, recordId, value, ready = true,
       setSourceChanged(false);
       setCanSave(false);
       canSaveRef.current = false;
-      dirtyRef.current = false;
       disabledRef.current = false;
       baseline.current = JSON.stringify(valueRef.current);
       readyInitializedKey.current = null;
@@ -118,22 +116,26 @@ export function useFormDraft<T>({ userId, module, recordId, value, ready = true,
 
   useEffect(() => {
     if (!ready || disabledRef.current || serializedValue === baseline.current) return;
-    dirtyRef.current = true;
     if (!canSave || !autosave) return;
     const timer = window.setTimeout(() => { void saveNow(); }, 900);
     return () => window.clearTimeout(timer);
   }, [autosave, canSave, ready, saveNow, serializedValue]);
 
-  const blocker = useBlocker(() => dirtyRef.current && !disabledRef.current);
+  const hasUnsavedChanges = useCallback(() =>
+    ready && readyInitializedKey.current === key &&
+    JSON.stringify(valueRef.current) !== baseline.current && !disabledRef.current,
+  [key, ready]);
+
+  const blocker = useBlocker(hasUnsavedChanges);
 
   const requestLeave = useCallback((action: () => void) => {
-    if (dirtyRef.current || JSON.stringify(valueRef.current) !== baseline.current) {
+    if (hasUnsavedChanges()) {
       pendingLeave.current = action;
       setManualBlocked(true);
       return;
     }
     action();
-  }, []);
+  }, [hasUnsavedChanges]);
 
   const resetLeave = useCallback(() => {
     pendingLeave.current = null;
@@ -145,7 +147,6 @@ export function useFormDraft<T>({ userId, module, recordId, value, ready = true,
     if (!availableDraft) return;
     restoreRef.current(availableDraft.data);
     baseline.current = JSON.stringify(availableDraft.data);
-    dirtyRef.current = true;
     setAvailableDraft(null);
     setCanSave(true);
     canSaveRef.current = true;
@@ -163,7 +164,6 @@ export function useFormDraft<T>({ userId, module, recordId, value, ready = true,
       canSaveRef.current = true;
       disabledRef.current = false;
       baseline.current = JSON.stringify(valueRef.current);
-      dirtyRef.current = false;
       queryClient.setQueryData<Array<{ module: string; record_key: string }>>(["form-drafts", userId], (previous) =>
         previous?.filter((draft) => draft.module !== module || draft.record_key !== String(recordId ?? "new"))
       );
@@ -177,7 +177,6 @@ export function useFormDraft<T>({ userId, module, recordId, value, ready = true,
 
   const clearDraft = useCallback(() => {
     disabledRef.current = true;
-    dirtyRef.current = false;
     setAvailableDraft(null);
     setCanSave(false);
     queue.current = queue.current.catch(() => undefined).then(() => deleteFormDraft(module, recordId));

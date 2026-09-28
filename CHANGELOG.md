@@ -8,6 +8,17 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-65: salida de formularios con borradores
+
+- «Volver» y la navegación por rutas ya no muestran la confirmación de borrador
+  cuando el formulario de alta o edición no tiene cambios reales.
+- Revertir los campos al valor inicial, o al borrador recuperado, elimina la
+  confirmación. Guardar y descartar el borrador conservan sus acciones.
+
+Validaciones: aceptación visual y funcional del usuario, 181 pruebas frontend,
+`typecheck`, build de producción y `git diff --check` correctos. No hubo cambios
+de backend.
+
 ### Movimientos: fuente de egresos y equipamiento (ISS-51, ISS-63 e ISS-64)
 
 - La fuente de financiamiento ahora es obligatoria para ingresos y egresos. El backend calcula el saldo de cada fuente como ingresos activos menos egresos activos y rechaza altas, ediciones o bajas que produzcan un saldo negativo.
