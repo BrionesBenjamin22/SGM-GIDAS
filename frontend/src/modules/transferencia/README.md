@@ -50,7 +50,10 @@ disponibles, permite añadir o quitar vínculos en la grilla y crear nombres nue
 sin persistirlos de inmediato. Enter en «Nombre del adoptante» equivale a
 «Añadir al formulario» y evita el envío anticipado de la transferencia. Los
 botones «Quitar» usan el formato secundario pequeño de los formularios de
-referencia. `transferenciaHistory.ts` presenta nombres legibles y omite eventos
+referencia. Las tablas de disponibles y seleccionados muestran hasta cinco
+adoptantes por página, con navegación Anterior/Siguiente; la búsqueda reinicia
+la página de disponibles y el conteo indica el filtro vigente. Las vinculaciones
+pendientes se conservan al cambiar de página. `transferenciaHistory.ts` presenta nombres legibles y omite eventos
 técnicos del historial.
 
 ## Services y contratos
