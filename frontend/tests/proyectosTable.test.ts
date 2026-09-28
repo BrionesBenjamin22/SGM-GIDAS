@@ -52,7 +52,9 @@ test("Proyectos usa la tabla comun y nomenclatura de acciones consistente", () =
   assert.match(filterSelect, /import \{ Select \} from "radix-ui"/);
   assert.match(filterSelect, /Select\.Content/);
   assert.match(filterSelect, /data-\[highlighted\]:bg-slate-100/);
-  assert.match(field, /import \{ X \} from "lucide-react"/);
-  assert.match(field, /title="Quitar"/);
-  assert.doesNotMatch(field, />\s*[Ã—✕xX]\s*<\/Button>/);
+  assert.match(field, /type="search"/);
+  assert.match(field, /const PAGE_SIZE = 5/);
+  assert.match(field, /available\.slice\(availableStart, availableStart \+ PAGE_SIZE\)/);
+  assert.match(field, /value\.slice\(selectedStart, selectedStart \+ PAGE_SIZE\)/);
+  assert.match(field, />Siguiente<\/Button>/);
 });

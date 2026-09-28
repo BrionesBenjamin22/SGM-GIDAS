@@ -49,7 +49,7 @@ test("formulario y contrato distinguen investigadores y becarios por rol e ID", 
   assert.match(participanteField, /Buscar participante/);
   assert.match(participanteField, /Nombre, apellido o iniciales/);
   assert.match(participanteField, /Investigadores y becarios/);
-  assert.match(participanteField, /RESULTADOS_POR_PAGINA = 9/);
+  assert.match(participanteField, /RESULTADOS_POR_PAGINA = 5/);
   assert.match(form, /changed\.participante = participante/);
 });
 

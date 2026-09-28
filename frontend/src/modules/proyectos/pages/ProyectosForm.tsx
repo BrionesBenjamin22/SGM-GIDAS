@@ -92,6 +92,7 @@ export default function ProyectosForm() {
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [formInitialized, setFormInitialized] = useState(!isEdit);
+  const [coordinatorPage, setCoordinatorPage] = useState(1);
 
   const proyectoCerrado = initialData?.cerrado === true;
 
@@ -194,6 +195,7 @@ export default function ProyectosForm() {
       investigadoresIds.includes(investigador.id)
     );
   }, [investigadores, investigadoresIds, initialData]);
+  const currentCoordinatorPage = Math.min(coordinatorPage, Math.max(1, Math.ceil(investigadoresSeleccionados.length / 5)));
 
   const investigadoresInicialesIds = useMemo(
     () => initialData?.investigadores?.map((investigador) => investigador.id) ?? [],
@@ -611,6 +613,7 @@ export default function ProyectosForm() {
             {investigadoresSeleccionados.length === 0 && investigadores.length > 0 &&
               <p>Agregue un investigador al proyecto para seleccionar su coordinador.</p>}
             <PersonalProyectoField
+              label="investigadores"
               value={investigadoresIds}
               options={[
                 ...investigadores,
@@ -632,7 +635,7 @@ export default function ProyectosForm() {
                 </p>
 
                 <div className="space-y-2">
-                  {investigadoresSeleccionados.map((investigador) => (
+                  {investigadoresSeleccionados.slice((currentCoordinatorPage - 1) * 5, currentCoordinatorPage * 5).map((investigador) => (
                     <label
                       key={investigador.id}
                       className={`flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 ${
@@ -659,6 +662,12 @@ export default function ProyectosForm() {
                   ))}
                 </div>
 
+                {investigadoresSeleccionados.length > 5 && <nav aria-label="Páginas de candidatos a coordinador" className="mt-3 flex items-center gap-2 text-sm">
+                  <Button type="button" variant="secondary" size="sm" disabled={currentCoordinatorPage === 1} onClick={() => setCoordinatorPage(currentCoordinatorPage - 1)}>Anterior</Button>
+                  <span role="status">Página {currentCoordinatorPage} de {Math.ceil(investigadoresSeleccionados.length / 5)}</span>
+                  <Button type="button" variant="secondary" size="sm" disabled={currentCoordinatorPage === Math.ceil(investigadoresSeleccionados.length / 5)} onClick={() => setCoordinatorPage(currentCoordinatorPage + 1)}>Siguiente</Button>
+                </nav>}
+
                 <p className="mt-3 text-xs text-slate-500">
                   Solo un investigador puede quedar marcado como coordinador.
                 </p>
@@ -675,8 +684,12 @@ export default function ProyectosForm() {
 
         <Field label="Becarios" name="becariosIds" error={errors.becariosIds}>
           <PersonalProyectoField
+            label="becarios"
             value={becariosIds}
-            options={becarios}
+            options={[
+              ...becarios,
+              ...(initialData?.becarios ?? []).filter((becario) => !becarios.some((candidate) => candidate.id === becario.id)),
+            ]}
             onChange={(ids) => {
               if (proyectoCerrado) return;
               setBecariosIds(ids);

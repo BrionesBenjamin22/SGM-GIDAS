@@ -73,6 +73,14 @@ dejó de estar activo se conserva visible; no puede recibir una nueva asignació
 como coordinador. El detalle identifica al coordinador inactivo sin ocultar su
 nombre ni su historial.
 
+`PersonalProyectoField` busca investigadores y becarios por nombre o apellido.
+Presenta hasta cinco candidatos y cinco seleccionados por página, con navegación
+Anterior/Siguiente y conteos del filtro. Añadir y quitar modifica únicamente el
+estado local; las relaciones se envían juntas al guardar. Las asignaciones previas
+mantienen su nombre visible aunque ya no aparezcan entre los candidatos activos.
+La lista de candidatos a coordinador también muestra hasta cinco investigadores
+por página y conserva la selección al navegar.
+
 `upsertProyectos` envía campos y relaciones en un solo POST o PUT:
 `investigadoresIds` pasa a `investigadores_ids`, `becariosIds` a `becarios_ids`
 y `coordinadorId` a `coordinador_id`. En alta se envían las selecciones; en
@@ -115,7 +123,9 @@ cargo del usuario.
 - el service admite listas planas o envueltas en `data` y conserva compatibilidad
   de lectura con registros anteriores de investigadores
 - el formulario permite buscar por nombre, apellido o iniciales sin depender de
-  tildes, filtrar por investigadores o becarios y mostrar resultados de a 9
+  tildes, filtrar por investigadores o becarios y mostrar resultados de a 5
+- la búsqueda y el filtro reinician la página; Anterior/Siguiente recorren todas
+  las coincidencias sin ampliar indefinidamente el formulario
 - la persona elegida se presenta en una tarjeta y la seleccion se consolida al
   guardar; la edicion envia solo diferencias reales y no llama al backend cuando
   no existen cambios

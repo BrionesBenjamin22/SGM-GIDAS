@@ -14,7 +14,7 @@ test("formulario real guarda coordinador en una petición, conserva edición y m
   };
   const h = {
     values: ["Proyecto", "ABC1", "Descripción", "", "", new Date(2026, 0, 1), null,
-      1, null, [1, 2], 1, [], {}, false, "", true] as any[],
+      1, null, [1, 2], 1, [], {}, false, "", true, 1] as any[],
     cursor: 0, id: undefined as string | undefined, initial,
     candidates: [{id: 1, nombre_apellido: "Persona A"}, {id: 2, nombre_apellido: "Persona B"}],
     loading: false, error: false, calls: [] as any[], navigations: [] as any[], pending: Promise.resolve(),

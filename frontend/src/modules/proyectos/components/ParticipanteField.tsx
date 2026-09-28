@@ -15,14 +15,17 @@ type Props = {
   disabled?: boolean;
 };
 
-const RESULTADOS_POR_PAGINA = 9;
+const RESULTADOS_POR_PAGINA = 5;
 
 export default function ParticipanteField({ value, options, onChange, disabled }: Props) {
   const id = useId();
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState<ParticipanteRol | "">("");
-  const [limite, setLimite] = useState(RESULTADOS_POR_PAGINA);
+  const [pagina, setPagina] = useState(1);
   const resultados = filtrarParticipantes(options, busqueda, categoria, value);
+  const totalPaginas = Math.max(1, Math.ceil(resultados.length / RESULTADOS_POR_PAGINA));
+  const paginaActual = Math.min(pagina, totalPaginas);
+  const inicio = (paginaActual - 1) * RESULTADOS_POR_PAGINA;
 
   return (
     <div className="space-y-3">
@@ -39,7 +42,7 @@ export default function ParticipanteField({ value, options, onChange, disabled }
             aria-describedby={`${id}-ayuda`}
             onChange={(event) => {
               setBusqueda(event.target.value);
-              setLimite(RESULTADOS_POR_PAGINA);
+              setPagina(1);
             }}
             onKeyDown={(event) => {
               if (event.key === "Enter") event.preventDefault();
@@ -55,7 +58,7 @@ export default function ParticipanteField({ value, options, onChange, disabled }
             disabled={disabled}
             onChange={(event) => {
               setCategoria(event.target.value as ParticipanteRol | "");
-              setLimite(RESULTADOS_POR_PAGINA);
+              setPagina(1);
             }}
           >
             <option value="">Investigadores y becarios</option>
@@ -70,14 +73,14 @@ export default function ParticipanteField({ value, options, onChange, disabled }
       </p>
       <p role="status" className="text-xs text-slate-500">
         {resultados.length
-          ? `Mostrando ${Math.min(limite, resultados.length)} de ${resultados.length} participantes disponibles.`
+          ? `Mostrando ${inicio + 1} a ${Math.min(inicio + RESULTADOS_POR_PAGINA, resultados.length)} de ${resultados.length} participantes disponibles.`
           : options.length > (value ? 1 : 0)
             ? "No hay coincidencias. Pruebe otro nombre o categoría."
             : "No hay más participantes disponibles para seleccionar."}
       </p>
 
       <ul aria-label="Resultados de participantes" className="space-y-2">
-        {resultados.slice(0, limite).map((participante) => (
+        {resultados.slice(inicio, inicio + RESULTADOS_POR_PAGINA).map((participante) => (
           <li
             key={participanteClave(participante)}
             className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 text-sm"
@@ -101,16 +104,12 @@ export default function ParticipanteField({ value, options, onChange, disabled }
         ))}
       </ul>
 
-      {resultados.length > limite && (
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          disabled={disabled}
-          onClick={() => setLimite((actual) => actual + RESULTADOS_POR_PAGINA)}
-        >
-          Ver más
-        </Button>
+      {totalPaginas > 1 && (
+        <nav aria-label="Páginas de participantes" className="flex items-center gap-2">
+          <Button type="button" variant="secondary" size="sm" disabled={disabled || paginaActual === 1} onClick={() => setPagina(paginaActual - 1)}>Anterior</Button>
+          <span className="text-sm" role="status">Página {paginaActual} de {totalPaginas}</span>
+          <Button type="button" variant="secondary" size="sm" disabled={disabled || paginaActual === totalPaginas} onClick={() => setPagina(paginaActual + 1)}>Siguiente</Button>
+        </nav>
       )}
 
       <p className="text-sm font-medium">Participante seleccionado</p>
