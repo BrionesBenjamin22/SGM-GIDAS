@@ -8,6 +8,22 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-66: listas relacionadas en formularios
+
+- Los selectores de participantes, autores, adoptantes y personal de proyectos
+  muestran hasta cinco resultados por página con búsqueda y navegación
+  Anterior/Siguiente. Las colecciones seleccionadas también se limitan a cinco
+  elementos visibles por página.
+- Proyectos presenta candidatos en tarjetas con acción Añadir y conserva las
+  relaciones pendientes al buscar o cambiar de página. Las becas vinculadas
+  admiten búsqueda y paginación sin alterar el índice de edición de cada fila.
+- Los cambios de relaciones continúan consolidándose al guardar el formulario.
+  La paginación de homes e historiales permanece en nueve y tres elementos,
+  respectivamente. No cambió el contrato del backend.
+
+Validaciones: aceptación visual y funcional del usuario, 183 pruebas frontend,
+`typecheck`, build de producción y `git diff --check` correctos.
+
 ### ISS-65: salida de formularios con borradores
 
 - «Volver» y la navegación por rutas ya no muestran la confirmación de borrador

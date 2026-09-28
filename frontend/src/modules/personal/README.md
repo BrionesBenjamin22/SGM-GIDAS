@@ -112,7 +112,10 @@ normalizado con los datos iniciales y envian solo las diferencias reales. Si no
 hay cambios no ejecutan el `PUT`, pero conservan la navegacion al detalle.
 
 Las becas de un becario se editan localmente y se envian juntas en `becas` al
-guardar. El frontend no desvincula ni vincula cada fila individualmente.
+guardar. El frontend no desvincula ni vincula cada fila individualmente. El
+formulario permite buscar por tipo de beca y muestra hasta cinco vínculos por
+página, con navegación Anterior/Siguiente. Los índices reales de los campos se
+conservan al filtrar para editar, quitar y validar la beca correcta.
 
 La selección inicial define la clase de registro: Personal, Becario o Investigador.
 Las dos últimas requieren campos y relaciones especializados. Personal selecciona

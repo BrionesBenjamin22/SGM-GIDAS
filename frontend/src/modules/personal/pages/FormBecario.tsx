@@ -65,8 +65,16 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
   });
 
   const [becasVinculadas, setBecasVinculadas] = useState<BecaVinculada[]>([]);
+  const [becasPage, setBecasPage] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
   const [hydrated, setHydrated] = useState(!isEdit);
+  const [becasSearch, setBecasSearch] = useState("");
+  const filteredBecas = becasVinculadas.map((beca, index) => ({ beca, index })).filter(({ beca }) => {
+    const name = becasLista.find((option) => option.id === beca.becaId)?.nombre_beca ?? "sin seleccionar";
+    const normalize = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es").trim();
+    return normalize(name).includes(normalize(becasSearch));
+  });
+  const currentBecasPage = Math.min(becasPage, Math.max(1, Math.ceil(filteredBecas.length / 5)));
 
   const formatDateStr = (d: Date | null) => {
     if (!d) return undefined;
@@ -242,6 +250,11 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length) {
+      const firstBecaError = Object.keys(newErrors).find((key) => /^beca_\d+_/.test(key));
+      if (firstBecaError) {
+        setBecasSearch("");
+        setBecasPage(Math.floor(Number(firstBecaError.split("_")[1]) / 5) + 1);
+      }
       focusFieldErrors(newErrors);
       onError(new Error("No pudimos guardar el registro. Complete o corrija los campos indicados e intente nuevamente."));
     }
@@ -487,7 +500,17 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
 
         {agregarBeca && (
           <div className="space-y-6">
-            {becasVinculadas.map((beca, index) => (
+            <div>
+              <label htmlFor="becas-search" className="mb-1 block text-sm">Buscar becas vinculadas</label>
+              <input id="becas-search" type="search" className="input w-full" value={becasSearch} placeholder="Tipo de beca" onChange={(event) => { setBecasSearch(event.target.value); setBecasPage(1); }} onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }} />
+            </div>
+            <p role="status" className="text-xs text-slate-500">
+              {filteredBecas.length
+                ? `Mostrando ${(currentBecasPage - 1) * 5 + 1} a ${Math.min(currentBecasPage * 5, filteredBecas.length)} de ${filteredBecas.length} becas vinculadas.`
+                : "No hay coincidencias. Pruebe otro tipo de beca."}
+            </p>
+            {filteredBecas.slice((currentBecasPage - 1) * 5, currentBecasPage * 5).map(({ beca, index }) => {
+              return (
               <div
                 key={beca.idLocal}
                 className="group relative rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
@@ -609,16 +632,25 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
                   </Field>
                 </div>
               </div>
-            ))}
+              );
+            })}
+
+            {filteredBecas.length > 5 && <nav aria-label="Páginas de becas vinculadas" className="flex items-center gap-2 text-sm">
+              <Button type="button" variant="secondary" size="sm" disabled={currentBecasPage === 1} onClick={() => setBecasPage(currentBecasPage - 1)}>Anterior</Button>
+              <span role="status">Página {currentBecasPage} de {Math.ceil(filteredBecas.length / 5)}</span>
+              <Button type="button" variant="secondary" size="sm" disabled={currentBecasPage === Math.ceil(filteredBecas.length / 5)} onClick={() => setBecasPage(currentBecasPage + 1)}>Siguiente</Button>
+            </nav>}
 
             <div className="flex pt-2">
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={() =>
-                  setBecasVinculadas((prev) => [...prev, createEmptyBeca()])
-                }
+                onClick={() => {
+                  setBecasVinculadas((prev) => [...prev, createEmptyBeca()]);
+                  setBecasSearch("");
+                  setBecasPage(Math.ceil((becasVinculadas.length + 1) / 5));
+                }}
                 className="px-3 py-1 text-xs"
               >
                 + Agregar beca
