@@ -118,3 +118,10 @@ autenticación conservan sus estados de carga existentes.
 ## Campos obligatorios (ISS-21)
 
 Los formularios usan `Field required` para marcar con un asterisco rojo los campos que la validacion exige antes de guardar. Los campos opcionales y las condiciones que solo se validan cuando tienen valor no se marcan. Los controles con etiqueta propia siguen el mismo criterio visual. Esta marca no sustituye la validacion de frontend ni la del backend.
+
+## Foco de teclado (ISS-67)
+
+`src/styles/index.css` aplica un contorno azul de dos píxeles con separación a
+enlaces, botones, campos y controles interactivos cuando reciben `focus-visible`.
+El contorno también se conserva en modo de colores forzados. Las interacciones
+con puntero mantienen el tratamiento de foco propio de cada control.

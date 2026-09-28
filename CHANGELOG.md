@@ -8,6 +8,14 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-67: foco visible consistente
+
+- Los controles interactivos presentan un contorno uniforme al navegar con
+  teclado, incluido el modo de colores forzados.
+
+Validaciones: aceptación visual y funcional del usuario, 183 pruebas frontend,
+`typecheck` y build de producción con cargador `runner` correctos.
+
 ### ISS-66: listas relacionadas en formularios
 
 - Los selectores de participantes, autores, adoptantes y personal de proyectos
