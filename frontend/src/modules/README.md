@@ -162,3 +162,12 @@ tabla y sección compacta. Las vistas y el router lo muestran mientras esperan
 datos o código diferido, con una etiqueta de estado accesible y animación
 respetuosa de movimiento reducido. Cada módulo conserva sus estados de error,
 reintento y vacío. La tabla compartida evita duplicar anuncios de carga.
+
+## Descripción accesible de errores (ISS-73)
+
+`Field` asocia el mensaje de error existente con cada control real del grupo
+mediante `aria-describedby` y marca `aria-invalid="true"`. Conserva los IDs de
+ayuda que el control ya tenía y evita referencias a mensajes inexistentes. El
+mensaje mantiene `role="alert"`; al limpiarse el error se restauran los
+atributos anteriores. La comprobación manual con NVDA confirmó la descripción
+de los controles del sistema.

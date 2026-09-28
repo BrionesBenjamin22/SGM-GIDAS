@@ -1,5 +1,12 @@
 # Transferencia frontend
 
+## Error accesible en adoptantes (ISS-73)
+
+El alta inline de adoptantes vincula el error de nombre al input con
+`aria-describedby="adoptante-nombre-error"` solo mientras el mensaje existe.
+El input conserva `aria-invalid` y el mensaje visible tiene `role="alert"`.
+La validación y el guardado consolidado de la transferencia no cambian.
+
 El listado consulta `/transferencias/?activos=...` con la barra final exigida
 por la ruta GET del backend. Así el proxy de desarrollo no recibe un 308 hacia
 el nombre interno `backend`, inaccesible desde el navegador.

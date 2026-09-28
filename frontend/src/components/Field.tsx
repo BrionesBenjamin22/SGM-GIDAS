@@ -28,31 +28,34 @@ export default function Field({
   const id = useId();
   const inlineError = !!error && hasInlineError(children, error);
   useEffect(() => {
-    const control = root.current?.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("input:not([type=hidden]):not([type=checkbox]), select, textarea");
+    const controls = Array.from(root.current?.querySelectorAll<HTMLElement>("input:not([type=hidden]), select, textarea, [role=combobox]") ?? []);
     const label = root.current?.querySelector("label");
-    if (!control) return;
-    if (!control.id) control.id = `${id}-control`;
-    if (label) label.htmlFor = control.id;
+    if (!controls.length) return;
+    if (!controls[0].id) controls[0].id = `${id}-control`;
+    if (label) label.htmlFor = controls[0].id;
     if (!error) return;
     const paragraph = Array.from(root.current?.querySelectorAll("p") ?? []).find(node => node.textContent === error);
-    if (paragraph) {
-      if (!paragraph.id) paragraph.id = `${id}-error`;
-      paragraph.setAttribute("role", "alert");
-    }
-    const previousInvalid = control.getAttribute("aria-invalid");
-    const previousDescription = control.getAttribute("aria-describedby");
-    const description = Array.from(new Set([...(previousDescription?.split(/\s+/) ?? []), paragraph?.id ?? `${id}-error`])).join(" ");
-    control.setAttribute("aria-invalid", "true");
-    control.setAttribute("aria-describedby", description);
+    if (!paragraph) return;
+    if (!paragraph.id) paragraph.id = `${id}-error`;
+    paragraph.setAttribute("role", "alert");
+    const previous = controls.map(control => {
+      const invalid = control.getAttribute("aria-invalid");
+      const describedBy = control.getAttribute("aria-describedby");
+      const description = Array.from(new Set([...(describedBy?.split(/\s+/).filter(Boolean) ?? []), paragraph.id])).join(" ");
+      control.setAttribute("aria-invalid", "true");
+      control.setAttribute("aria-describedby", description);
+      return { control, invalid, describedBy, description };
+    });
     return () => {
-      // Preserve attributes that React already updated when the error was cleared.
-      if (control.getAttribute("aria-invalid") === "true") {
-        if (previousInvalid === null) control.removeAttribute("aria-invalid");
-        else control.setAttribute("aria-invalid", previousInvalid);
-      }
-      if (control.getAttribute("aria-describedby") === description) {
-        if (previousDescription === null) control.removeAttribute("aria-describedby");
-        else control.setAttribute("aria-describedby", previousDescription);
+      for (const { control, invalid, describedBy, description } of previous) {
+        if (control.getAttribute("aria-invalid") === "true") {
+          if (invalid === null) control.removeAttribute("aria-invalid");
+          else control.setAttribute("aria-invalid", invalid);
+        }
+        if (control.getAttribute("aria-describedby") === description) {
+          if (describedBy === null) control.removeAttribute("aria-describedby");
+          else control.setAttribute("aria-describedby", describedBy);
+        }
       }
     };
   }, [children, error, id]);

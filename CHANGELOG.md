@@ -8,6 +8,16 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-73: errores de campo descritos para lectores de pantalla
+
+- Los controles de `Field`, incluidos los grupos compuestos, referencian sus
+  errores visibles sin perder las ayudas existentes.
+- El nombre del adoptante creado desde Transferencias vincula su error inline
+  al input correspondiente.
+
+Validaciones: aprobación funcional del usuario con NVDA, 184 pruebas frontend,
+`typecheck` y build de producción con cargador `runner` correctos.
+
 ### ISS-70: indicadores de carga y exportación
 
 - Las vistas, tablas y secciones con datos diferidos muestran skeletons con
