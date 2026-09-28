@@ -8,6 +8,16 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-75: paginacion de Gestion de Catalogos
+
+- Los valores de catalogos, incluida la seccion Becas, muestran controles de
+  paginacion con el mismo aspecto compacto que las tablas del sistema.
+- Se conservan nueve valores por pagina, la pagina activa y los extremos
+  deshabilitados.
+
+Validaciones: aprobacion visual y funcional del usuario, 184 pruebas frontend,
+`typecheck`, build de produccion y `git diff --check` correctos.
+
 ### ISS-73: errores de campo descritos para lectores de pantalla
 
 - Los controles de `Field`, incluidos los grupos compuestos, referencian sus

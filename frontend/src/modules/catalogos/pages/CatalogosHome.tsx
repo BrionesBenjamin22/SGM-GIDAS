@@ -24,6 +24,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import ErrorText from "@/components/ErrorText";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
+import { TableActionButton } from "@/components/Table";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage as getSafeErrorMessage } from "@/lib/httpError";
 import { hasDescriptiveCatalogName } from "@/modules/catalogos/utils/catalogNameValidation";
@@ -930,28 +931,28 @@ function CatalogPanel({
 
           {totalPages > 1 && (
             <div className="mt-8">
-              <nav aria-label="Paginación" className="flex flex-wrap items-center justify-center gap-2">
-                <Button type="button" size="sm" variant="secondary" aria-label="Página anterior"
+              <nav aria-label="Paginación" className="flex flex-wrap items-center justify-center gap-1">
+                <TableActionButton aria-label="Página anterior"
                   disabled={currentPage === 1} onClick={() => setCurrentPage((current) => current - 1)}>
-                  {"<"}
-                </Button>
+                  Anterior
+                </TableActionButton>
                 {[...Array(totalPages)].map((_, index) => {
                   const pageNumber = index + 1;
                   return (
                     <button type="button" key={pageNumber} aria-label={`Página ${pageNumber}`}
                       aria-current={currentPage === pageNumber ? "page" : undefined}
                       onClick={() => setCurrentPage(pageNumber)}
-                      className={`rounded-lg px-3 py-1 text-sm ${
-                        currentPage === pageNumber ? "bg-slate-800 text-white" : "bg-slate-100 hover:bg-slate-200"
+                      className={`h-8 min-w-8 rounded-lg px-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-slate-500 ${
+                        currentPage === pageNumber ? "bg-slate-800 text-white" : "hover:bg-slate-100"
                       }`}>
                       {pageNumber}
                     </button>
                   );
                 })}
-                <Button type="button" size="sm" variant="secondary" aria-label="Página siguiente"
+                <TableActionButton aria-label="Página siguiente"
                   disabled={currentPage === totalPages} onClick={() => setCurrentPage((current) => current + 1)}>
-                  {">"}
-                </Button>
+                  Siguiente
+                </TableActionButton>
               </nav>
             </div>
           )}

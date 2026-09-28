@@ -1,5 +1,13 @@
 # Catalogos frontend
 
+## Paginacion de Gestion de Catalogos (ISS-75)
+
+El listado de valores, incluida la seccion Becas, usa el aspecto compacto de la
+paginacion de `Table`: botones `Anterior` y `Siguiente`, numeros de pagina y
+resaltado de la pagina actual. Los extremos se deshabilitan segun la pagina
+seleccionada. Se mantienen nueve valores por pagina y tres eventos por pagina
+en el historial de cada valor.
+
 ## Alcance
 
 El modulo centraliza la consulta y administracion de valores reutilizados por
