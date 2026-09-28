@@ -125,3 +125,12 @@ Los formularios usan `Field required` para marcar con un asterisco rojo los camp
 enlaces, botones, campos y controles interactivos cuando reciben `focus-visible`.
 El contorno también se conserva en modo de colores forzados. Las interacciones
 con puntero mantienen el tratamiento de foco propio de cada control.
+
+## Limpieza de código sin uso (ISS-69)
+
+Se retiraron entradas heredadas sin consumidores: `src/App.tsx`, el índice
+agregador de módulos, páginas antiguas de planificaciones fuera del router,
+servicios y hooks duplicados, datos de prueba aislados y componentes globales
+sin importaciones. El router y los imports directos de cada módulo siguen
+siendo la fuente de las vistas activas. Para incorporar una vista nueva,
+declararla en `src/main.tsx` y mantener su service y hook en el módulo propio.

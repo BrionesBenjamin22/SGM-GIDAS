@@ -8,6 +8,16 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-69: limpieza de frontend
+
+- Se eliminaron vistas, hooks, services, utilidades, componentes y datos mock
+  sin consumidores, incluidos los restos de planificaciones fuera del router.
+- Se conservaron las rutas activas y los contratos aún utilizados.
+
+Validaciones: aceptación visual y funcional del usuario, 183 pruebas frontend,
+`typecheck`, build de producción con cargador `runner` y `git diff --check`
+correctos.
+
 ### ISS-68: rutas de edición coherentes
 
 - Los proyectos usan `/proyectos/:id/editar`; la ruta anterior redirige sin
