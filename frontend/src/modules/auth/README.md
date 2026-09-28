@@ -1,5 +1,15 @@
 # Autenticación y usuarios en frontend
 
+## Mensaje de bloqueo de login (ISS-78)
+
+`Login` envía credenciales por `authService` y presenta en su aviso accesible
+(`role="alert"`) el mensaje público del backend. Después del tercer fallo,
+`LOGIN_LOCKED` (429) indica cuántos minutos esperar antes de reintentar. El
+formulario conserva sus valores para que el usuario pueda corregirlos después
+del vencimiento. El backend decide el bloqueo y el frontend no guarda ni calcula
+contadores de intentos. El contrato de error usa `getErrorMessage` y mantiene el
+fallback accionable si la respuesta no contiene un mensaje público válido.
+
 ## Diálogos de teclado (ISS-71)
 
 La edición y la baja de usuarios usan diálogos modales con foco inicial y

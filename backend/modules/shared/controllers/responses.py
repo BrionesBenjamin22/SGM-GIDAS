@@ -16,6 +16,7 @@ DEFAULT_ERROR_MESSAGES = {
         "Verifique los datos e intente nuevamente."
     ),
     "AUTH_REQUIRED": "Lo sentimos, debe iniciar sesión para continuar.",
+    "LOGIN_LOCKED": "Lo sentimos, se alcanzó el límite de intentos. Intente nuevamente en 15 minutos.",
     "FORBIDDEN": "Lo sentimos, no tiene permisos para realizar esta acción.",
     "NOT_FOUND": "Lo sentimos, no pudimos encontrar la información solicitada.",
     "CONFLICT": (

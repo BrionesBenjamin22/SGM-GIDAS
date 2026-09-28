@@ -6,7 +6,7 @@ from flask import current_app
 
 from modules.auth.services.auth_service import AuthService
 from modules.shared.controllers.responses import error_response, exception_response
-from modules.shared.exceptions import DomainError, ValidationError
+from modules.shared.exceptions import DomainError, LoginLockedError, ValidationError
 from modules.shared.services.logging_config import get_logger
 
 
@@ -225,6 +225,10 @@ class AuthController:
             AuthController._set_refresh_cookie(response, result["refresh_token"])
             return response, 200
 
+        except LoginLockedError as error:
+            response, status = exception_response(error, operation="autenticación")
+            response.headers["Retry-After"] = str(error.retry_after_seconds)
+            return AuthController._no_store((response, status))
         except DomainError as error:
             return AuthController._no_store(exception_response(error, operation="autenticación"))
         except Exception:

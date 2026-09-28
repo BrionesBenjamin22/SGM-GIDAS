@@ -1,5 +1,27 @@
 # Autenticación y usuarios en backend
 
+## Bloqueo de login (ISS-78)
+
+`POST /api/v1/auth/login` cuenta fallos consecutivos por nombre de usuario
+ingresado. Los primeros dos fallos devuelven `AUTH_REQUIRED` (401). El tercero
+activa un bloqueo de 15 minutos y devuelve `LOGIN_LOCKED` (429), con el encabezado
+`Retry-After` en segundos. Durante el bloqueo se rechaza incluso la contraseña
+correcta, sin emitir tokens ni cookie. Tras vencer, el contador comienza en cero;
+un login correcto también lo limpia.
+
+`LoginAttempt` conserva contador, último fallo, vencimiento y marcas de tiempo en
+la base de datos. La clave del registro es un HMAC del nombre de usuario con
+`SECRET_KEY`, que debe ser estable entre instancias y reinicios. Se crea estado
+también para nombres inexistentes; su secuencia de códigos y mensajes coincide
+con la de una cuenta válida. La transacción bloquea la fila por identificador
+para serializar intentos concurrentes en PostgreSQL. El evento de bloqueo registra
+solo un prefijo del HMAC, sin credenciales ni tokens. El límite de frecuencia por
+IP existente sigue aplicándose.
+
+El cambio de contraseña autenticado no levanta un bloqueo de login activo. La
+recuperación de contraseña futura deberá definir su propia regla de desbloqueo.
+Antes de desplegar, ejecutar la migración `f0a8c1d2e3b4`.
+
 ## Errores de autenticación (ISS-09)
 
 Las credenciales inválidas y los tokens no utilizables responden `AUTH_REQUIRED`

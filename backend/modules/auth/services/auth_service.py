@@ -1,13 +1,27 @@
 import jwt
 import datetime
 import hashlib
+import hmac
+import math
 import uuid
+import bcrypt
+from flask import current_app
+from sqlalchemy import text
 from modules.auth.models.persona import Persona
+from modules.auth.models.login_attempt import LoginAttempt
 from modules.auth.models.refresh_token_session import RefreshTokenSession
 from modules.auth.models.usuario import Usuario, RolUsuario
 from extension import db
 from config import Config
-from modules.shared.exceptions import AuthenticationError, ConflictError, NotFoundError, ValidationError
+from modules.shared.exceptions import AuthenticationError, ConflictError, LoginLockedError, NotFoundError, ValidationError
+from modules.shared.services.logging_config import get_logger
+
+
+logger = get_logger(__name__)
+_DUMMY_PASSWORD_HASH = bcrypt.hashpw(b"unused-login-secret", bcrypt.gensalt())
+_LOGIN_FAILURE_MESSAGE = 'Lo sentimos, no pudimos iniciar sesión. Verifique su usuario y contraseña e intente nuevamente.'
+_LOGIN_LOCK_MINUTES = 15
+_LOGIN_MAX_FAILURES = 3
 
 
 class AuthService:
@@ -200,19 +214,73 @@ class AuthService:
     # Login
     # -------------------------
     @staticmethod
+    def _login_identifier_hash(nombre_usuario: str) -> str:
+        secret = current_app.config.get("SECRET_KEY") or Config.SECRET_KEY
+        if isinstance(secret, str):
+            secret = secret.encode("utf-8")
+        return hmac.new(secret, nombre_usuario.encode("utf-8"), hashlib.sha256).hexdigest()
+
+    @staticmethod
+    def _lock_login_attempt(nombre_usuario: str, now: datetime.datetime) -> LoginAttempt:
+        identifier_hash = AuthService._login_identifier_hash(nombre_usuario)
+        # SQLite has no SELECT FOR UPDATE; BEGIN IMMEDIATE serializes its test/local writes.
+        if db.engine.dialect.name == "sqlite":
+            db.session.execute(text("BEGIN IMMEDIATE"))
+        db.session.execute(
+            text("""
+                INSERT INTO login_attempt
+                    (identifier_hash, failed_count, created_at, updated_at)
+                VALUES (:identifier_hash, 0, :now, :now)
+                ON CONFLICT (identifier_hash) DO NOTHING
+            """),
+            {"identifier_hash": identifier_hash, "now": now},
+        )
+        return LoginAttempt.query.filter_by(identifier_hash=identifier_hash).with_for_update().one()
+
+    @staticmethod
     def login(
         nombre_usuario: str,
         password: str,
         metadata: dict | None = None,
     ) -> dict:
 
+        now = datetime.datetime.utcnow()
+        nombre_usuario = nombre_usuario.strip()
+        attempt = AuthService._lock_login_attempt(nombre_usuario, now)
+        now = datetime.datetime.utcnow()
+
+        if attempt.locked_until and attempt.locked_until > now:
+            remaining = max(1, math.ceil((attempt.locked_until - now).total_seconds()))
+            db.session.rollback()
+            raise LoginLockedError(remaining)
+
+        if attempt.locked_until:
+            attempt.failed_count = 0
+            attempt.locked_until = None
+
         user = Usuario.query.filter_by(
             nombre_usuario=nombre_usuario,
-            activo=True   # importante para evitar login de usuarios eliminados
+            activo=True
         ).filter(Usuario.deleted_at.is_(None)).first()
+        valid_password = (
+            user.verificar_password(password)
+            if user else bcrypt.checkpw(password.encode("utf-8"), _DUMMY_PASSWORD_HASH)
+        )
 
-        if not user or not user.verificar_password(password):
-            raise AuthenticationError('Lo sentimos, no pudimos iniciar sesión. Verifique su usuario y contraseña e intente nuevamente.')
+        if not user or not valid_password:
+            attempt.failed_count += 1
+            attempt.last_failed_at = now
+            if attempt.failed_count >= _LOGIN_MAX_FAILURES:
+                attempt.locked_until = now + datetime.timedelta(minutes=_LOGIN_LOCK_MINUTES)
+                identifier_prefix = attempt.identifier_hash[:16]
+                db.session.commit()
+                logger.info("login_locked identifier_hash_prefix=%s", identifier_prefix)
+                raise LoginLockedError(_LOGIN_LOCK_MINUTES * 60)
+            db.session.commit()
+            raise AuthenticationError(_LOGIN_FAILURE_MESSAGE)
+
+        attempt.failed_count = 0
+        attempt.locked_until = None
 
         tokens = AuthService.generate_tokens(
             user,

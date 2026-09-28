@@ -8,6 +8,18 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-78: bloqueo temporal de login
+
+- Tres fallos consecutivos por nombre de usuario bloquean nuevos intentos durante
+  15 minutos, incluso con la contraseña correcta. El contador persiste en la base
+  de datos y se reinicia al vencer el bloqueo o tras un acceso válido.
+- El mismo contrato de error se aplica a nombres existentes e inexistentes. El
+  login muestra el tiempo de espera en una alerta accesible y la API incluye
+  `Retry-After`. El cambio de contraseña autenticado no elimina el bloqueo.
+
+Validaciones: 41 pruebas backend de Auth, 188 pruebas frontend, `typecheck`,
+build de producción y `git diff --check` correctos.
+
 ### ISS-77: duracion y prorrogas de proyectos
 
 - Los proyectos nuevos o con fechas editadas requieren un periodo inicial
