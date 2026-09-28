@@ -1,5 +1,13 @@
 # Modulo frontend de proyectos
 
+## Rutas de edición (ISS-68)
+
+La edición de un proyecto usa `/proyectos/:id/editar` desde el listado, el
+detalle y los enlaces internos. `/proyectos/editar/:id` redirige a la ruta
+canónica y conserva la búsqueda y el estado de navegación para enlaces previos.
+El formulario mantiene el control de permisos y, al guardar, vuelve al detalle
+con `successMessage`. El alta sigue volviendo al home.
+
 En Participaciones relevantes, home, detalle y confirmación de baja presentan
 el nombre del evento con mayúsculas consistentes mediante `toTitleCase`. El
 valor persistido y el formulario conservan la escritura ingresada.

@@ -8,6 +8,16 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-68: rutas de edición coherentes
+
+- Los proyectos usan `/proyectos/:id/editar`; la ruta anterior redirige sin
+  perder búsqueda ni estado. Los enlaces del home, detalle y borradores se
+  alinearon con la ruta canónica. Personal usa su ruta canónica desde el detalle.
+
+Validaciones: aceptación funcional del usuario, 183 pruebas frontend,
+8 pruebas backend de borradores, `typecheck` y build de producción con cargador
+`runner` correctos.
+
 ### ISS-67: foco visible consistente
 
 - Los controles interactivos presentan un contorno uniforme al navegar con

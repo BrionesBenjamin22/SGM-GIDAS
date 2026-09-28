@@ -163,7 +163,7 @@ export default function ProyectoDetalle() {
           {puedeEditar && !data.deleted_at && !estaCerrado ? (
             <Button
               size="sm"
-              onClick={() => navigate(`/proyectos/editar/${data.id}`)}
+              onClick={() => navigate(`/proyectos/${data.id}/editar`)}
             >
               Editar
             </Button>

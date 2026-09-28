@@ -124,9 +124,7 @@ export default function PersonalDetalle() {
   };
 
   const handleEditar = () => {
-    if (rol === "becario") navigate(`/becarios/${id}/editar`);
-    else if (rol === "investigador") navigate(`/investigadores/${id}/editar`);
-    else navigate(`/personal/${rol}/${id}/editar`);
+    navigate(`/personal/${rol}/${id}/editar`);
   };
 
   const getCatalogName = (

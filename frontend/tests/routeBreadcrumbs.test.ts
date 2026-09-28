@@ -21,13 +21,17 @@ test("resuelve detalle y edición de Personal con enlaces a rutas reales", () =>
   });
 });
 
-test("resuelve rutas de edición de los módulos y la excepción de Proyectos", () => {
+test("resuelve rutas de edición de los módulos y el alias anterior de Proyectos", () => {
   assert.deepEqual(getRouteBreadcrumbs("/trabajos-reunion/8/editar"), [
     { label: "Inicio", to: "/inicio" },
     { label: "Trabajos en Reunión Científica", to: "/trabajos-reunion" },
     { label: "Detalle", to: "/trabajos-reunion/8" },
     { label: "Editar" },
   ]);
+  assert.deepEqual(getRouteBreadcrumbs("/proyectos/5/editar")[2], {
+    label: "Detalle",
+    to: "/proyectos/5",
+  });
   assert.deepEqual(getRouteBreadcrumbs("/proyectos/editar/5")[2], {
     label: "Detalle",
     to: "/proyectos/5",

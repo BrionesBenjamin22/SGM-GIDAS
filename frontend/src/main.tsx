@@ -2,7 +2,7 @@ import { Component, lazy, Suspense, type ReactElement, type ReactNode } from "re
 import { createRoot } from "react-dom/client";
 
 
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, useLocation, useParams } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
 
@@ -88,6 +88,12 @@ function RouteLoading() {
       <p className="text-sm text-slate-600">Cargando contenido...</p>
     </div>
   );
+}
+
+function LegacyProjectEditRedirect() {
+  const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  return <Navigate to={`/proyectos/${id}/editar${location.search}`} replace state={location.state} />;
 }
 
 class RouteErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -186,7 +192,8 @@ const router = createBrowserRouter([
       { path: "proyectos", element: <ProyectosLanding /> },
       { path: "proyectos/nuevo", element: editorOnly(<ProyectosForm />) },
       { path: "proyectos/:id", element: <ProyectosDetalle /> },
-      { path: "proyectos/editar/:id", element: editorOnly(<ProyectosForm />) },
+      { path: "proyectos/:id/editar", element: editorOnly(<ProyectosForm />) },
+      { path: "proyectos/editar/:id", element: editorOnly(<LegacyProjectEditRedirect />) },
       // Docencia
       { path: "docenciaInvestigador", element: <DocenciaLanding /> },
       { path: "docenciaInvestigador/nuevo", element: editorOnly(<DocenciaForm />) },

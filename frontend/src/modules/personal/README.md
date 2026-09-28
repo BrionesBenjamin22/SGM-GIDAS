@@ -1,5 +1,12 @@
 # Modulo frontend de personal
 
+## Rutas de edición (ISS-68)
+
+El detalle de Personal navega a `/personal/:rol/:id/editar` para personal,
+becarios e investigadores. Los alias públicos previos siguen disponibles para
+enlaces existentes. El formulario conserva permisos, guardado y retorno al
+detalle con `successMessage`.
+
 ## Tabla y formularios de Personal (ISS-25)
 
 `PersonalHome` consume el listado paginado de servidor mediante `usePersonal` y

@@ -1,5 +1,12 @@
 # Borradores de formularios
 
+## Ruta de retorno de proyectos (ISS-68)
+
+El servicio de borradores devuelve `/proyectos/:id/editar` para un proyecto
+existente y `/proyectos/nuevo` para uno nuevo. El payload del borrador y sus
+validaciones no cambian; el frontend conserva la redirección desde la ruta
+anterior para enlaces guardados.
+
 El backend guarda un único borrador por usuario, módulo y registro en `form_draft`.
 Un `PUT` reemplaza la última versión del mismo elemento. Los datos viven en la base
 de datos y vencen a los siete días. La lista muestra metadatos, nunca el contenido.

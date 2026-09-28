@@ -89,6 +89,11 @@ class FormDraftServiceTestCase(unittest.TestCase):
                 self.assertEqual(summary["display_name"], expected)
                 self.assertNotIn("data", summary)
 
+    def test_borrador_de_proyecto_en_edicion_abre_ruta_canonica(self):
+        FormDraftService.save(1, "proyectos", "42", {"nombreProyecto": "Proyecto Delta"})
+        summary = FormDraftService.list_for_user(1)[0]
+        self.assertEqual(summary["path"], "/proyectos/42/editar")
+
 
 class FormDraftRouteTestCase(unittest.TestCase):
     def setUp(self):
