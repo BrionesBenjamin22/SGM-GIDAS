@@ -76,6 +76,11 @@ export type Proyecto = {
   nombreProyecto: string;
   fechaInicio: string;
   fechaFinalizacion?: string | null;
+  fechaFinOriginal?: string | null;
+  fechaFinProrrogada?: string | null;
+  prorrogaMotivo?: string | null;
+  prorrogaByNombre?: string | null;
+  prorrogaAt?: string | null;
   fuenteFinanciamientoId?: number | null;
   fuenteFinanciamientoNombre?: string;
   descripcionProyecto?: string;
@@ -124,6 +129,11 @@ type ProyectoApiResponse = {
   monto_destinado?: string | number | null;
   fecha_inicio: string;
   fecha_fin?: string | null;
+  fecha_fin_original?: string | null;
+  fecha_fin_prorrogada?: string | null;
+  prorroga_motivo?: string | null;
+  prorroga_by_nombre?: string | null;
+  prorroga_at?: string | null;
   tipo_proyecto_id: number;
   tipo_proyecto?: { id: number; nombre?: string | null } | null;
   fuente_financiamiento_id?: number | null;
@@ -164,6 +174,11 @@ function mapProyecto(p: ProyectoApiResponse): Proyecto {
         : undefined,
     fechaInicio: p.fecha_inicio,
     fechaFinalizacion: p.fecha_fin,
+    fechaFinOriginal: p.fecha_fin_original,
+    fechaFinProrrogada: p.fecha_fin_prorrogada,
+    prorrogaMotivo: p.prorroga_motivo,
+    prorrogaByNombre: p.prorroga_by_nombre,
+    prorrogaAt: p.prorroga_at,
     tipoProyectoId: p.tipo_proyecto?.id ?? p.tipo_proyecto_id,
     tipoProyectoNombre: p.tipo_proyecto?.nombre || "N/A",
     fuenteFinanciamientoId:
@@ -317,8 +332,8 @@ export async function getHistorialProyectoById(
 }
 
 export async function cerrarProyecto(id: string, fechaFin: string) {
-  return http(`/proyectos/${id}`, {
-    method: "PUT",
+  return http(`/proyectos/${id}/cerrar`, {
+    method: "POST",
     body: JSON.stringify({
       fecha_fin: fechaFin,
     }),
@@ -329,6 +344,14 @@ export async function reabrirProyecto(id: string) {
   return http(`/proyectos/${id}/reabrir`, {
     method: "PUT",
   });
+}
+
+export async function prorrogarProyecto(id: string, motivo: string): Promise<Proyecto> {
+  const response = await http<ProyectoApiResponse>(`/proyectos/${id}/prorroga`, {
+    method: "POST",
+    body: JSON.stringify({ motivo }),
+  });
+  return mapProyecto(response);
 }
 
 export function vincularInvestigadores(

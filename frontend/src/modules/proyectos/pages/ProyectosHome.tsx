@@ -20,7 +20,7 @@ import { useProyectosPage } from "@/modules/proyectos/hooks/useProyectos";
 import { useTiposProyecto } from "@/modules/proyectos/hooks/useTiposProyecto";
 import { cerrarProyecto, getHistorialProyectoById, reabrirProyecto, type Proyecto, type ProyectoSort } from "@/modules/proyectos/services/proyectosServices";
 import { formatProyectoHistoryEntry } from "@/modules/proyectos/utils/proyectoHistory";
-import { formatFecha, toCivilDateString } from "@/utils/dateTime";
+import { formatFecha, getLocalTodayIso, toCivilDateString } from "@/utils/dateTime";
 
 const ITEMS_PER_PAGE = 9;
 const HISTORY_PER_PAGE = 3;
@@ -131,12 +131,12 @@ export default function ProyectosLanding() {
     { id: "tipo", header: "Tipo", sortable: true, priority: "secondary", render: (project) => project.tipoProyectoNombre || "—" },
     { id: "coordinador", header: "Coordinador", priority: "secondary", render: (project) => project.investigadores?.find((item) => item.es_coordinador)?.nombre_apellido || "—" },
     { id: "fecha_inicio", header: "Inicio", sortable: true, priority: "tertiary", render: (project) => formatFecha(project.fechaInicio) },
-    { id: "estado", header: "Estado", sortable: true, render: (project) => <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${project.cerrado ? "text-amber-700" : "text-emerald-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${project.cerrado ? "bg-amber-500" : "bg-emerald-500"}`} />{project.cerrado ? "Cerrado" : "Activo"}</span> },
+    { id: "estado", header: "Estado", sortable: true, render: (project) => <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${project.cerrado ? "text-amber-700" : "text-emerald-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${project.cerrado ? "bg-amber-500" : "bg-emerald-500"}`} />{project.cerrado ? "Cerrado" : "Activo"}{project.fechaFinProrrogada ? " · Prorrogado" : ""}</span> },
     { id: "acciones", header: "Acciones", align: "right", render: (project) => <TableActions>
       <TableRowActionButton action="view" aria-label={`Ver detalle de ${project.nombreProyecto}`} onClick={() => navigate(`/proyectos/${project.id}`, { state: buildMemoriaDetailState(location) })} />
       {!project.cerrado && canEditRecords() && <TableRowActionButton action="edit" aria-label={`Editar ${project.nombreProyecto}`} onClick={() => navigate(`/proyectos/${project.id}/editar`)} />}
       {!project.cerrado && canDeleteRecords() && <TableRowActionButton action="delete" label="Cerrar" aria-label={`Cerrar ${project.nombreProyecto}`} onClick={() => { setCloseDate(new Date()); setPendingClose(project); }} />}
-      {project.cerrado && canEditRecords() && <TableRowActionButton action="restore" label="Reabrir" aria-label={`Reabrir ${project.nombreProyecto}`} onClick={() => setPendingReopen(project)} />}
+      {project.cerrado && canEditRecords() && (!project.fechaFinProrrogada || project.fechaFinProrrogada > getLocalTodayIso()) && <TableRowActionButton action="restore" label="Reabrir" aria-label={`Reabrir ${project.nombreProyecto}`} onClick={() => setPendingReopen(project)} />}
     </TableActions> },
   ], [canDeleteRecords, canEditRecords, location, navigate]);
 

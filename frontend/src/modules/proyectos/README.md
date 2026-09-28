@@ -146,6 +146,38 @@ cargo del usuario.
 - el detalle consume auditoria e historial y conserva acciones condicionadas por
   permisos y estado activo
 
+## Duracion y prorroga de proyectos (ISS-77)
+
+`ProyectosForm` valida el intervalo inicial inclusivo de 12 a 36 meses con
+`validateDuracionProyecto`. El error se presenta junto a fecha fin; en edicion
+solo se valida de nuevo cuando cambia una fecha, para conservar proyectos
+historicos fuera del rango. El formulario envia solo diferencias reales y no
+permite cambiar fechas de un proyecto prorrogado. El alta vuelve al home y la
+edicion al detalle con `successMessage`.
+
+`proyectosServices` tipa y transforma `fecha_fin_original`,
+`fecha_fin_prorrogada`, `prorroga_motivo`, `prorroga_by_nombre` y
+`prorroga_at`. La accion del detalle envia `POST /proyectos/{id}/prorroga` con
+`{ motivo }`, exige 10 a 2000 caracteres, muestra errores de campo y evita
+envios duplicados. Solo ADMIN y GESTOR pueden verla para proyectos activos sin
+prorroga y con fecha final definida; backend aplica los permisos definitivos.
+Tras el exito se invalidan lista, detalle e historial y aparece un mensaje de
+confirmacion. El evento de historial muestra fin nuevo y justificacion, con
+paginacion de tres items.
+
+El detalle ordena inicio, fin original y fin prorrogado cuando existe prorroga,
+y fecha fin vigente al final. Esta ultima se etiqueta `Fecha fin prevista`
+mientras el proyecto sigue abierto y `Fecha fin real` al cerrarse. Muestra
+ademas motivo, autor y fecha de decision. El home identifica proyectos
+prorrogados y toma su estado del fin vigente. El cierre con fecha usa
+`POST /proyectos/{id}/cerrar`; PUT de solo `fecha_fin` queda reservado para
+editar el periodo inicial. La reapertura no se ofrece si la prorroga vencio.
+
+Las consultas y mutaciones siguen React Query mediante los hooks y servicios
+del modulo; los errores HTTP se muestran con los helpers compartidos. Las
+pruebas de limites y presentacion estan en
+`tests/proyectoDuracion.test.ts` y `tests/proyectoCoordinador.test.ts`.
+
 ## Services, hooks y contratos
 
 Los services concentran HTTP, conversion de datos y payloads tipados. Los hooks
@@ -187,7 +219,10 @@ reapertura de una selección bloquea nuevas acciones hasta finalizar.
 
 ## Indicadores de campos obligatorios (ISS-21)
 
-En proyectos son obligatorios codigo, nombre, tipo y fecha de inicio. El coordinador se indica como obligatorio cuando se seleccionan investigadores. Las relaciones y los datos opcionales no llevan marca. Participaciones marca participante, evento, forma y fecha.
+En proyectos son obligatorios codigo, nombre, tipo, fecha de inicio y fecha de
+fin inicial. El coordinador se indica como obligatorio cuando se seleccionan
+investigadores. Las relaciones y los demas datos opcionales no llevan marca.
+Participaciones marca participante, evento, forma y fecha.
 
 ## Errores de Participaciones (ISS-19)
 

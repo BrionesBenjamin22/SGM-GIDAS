@@ -41,6 +41,7 @@ class ProyectoCodigoAlfanumericoTestCase(unittest.TestCase):
             "nombre_proyecto": "SAVIA",
             "descripcion_proyecto": "Descripción",
             "fecha_inicio": "2026-01-01",
+            "fecha_fin": "2026-12-31",
             "tipo_proyecto_id": 1,
         }
 

@@ -8,6 +8,21 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-77: duracion y prorrogas de proyectos
+
+- Los proyectos nuevos o con fechas editadas requieren un periodo inicial
+  inclusivo de 12 a 36 meses. Los registros existentes se conservan y se
+  validan al cambiar sus fechas.
+- Una accion protegida registra una unica prorroga de 12 meses con
+  justificacion, autor, fecha de decision e historial. Detalle y listado
+  distinguen el fin original, el fin prorrogado y la fecha final vigente.
+- El cierre manual tiene un endpoint propio; editar solo `fecha_fin` ya no
+  cierra el proyecto. La migracion conserva el fin original existente.
+
+Validaciones: aprobacion visual y funcional del usuario, 31 pruebas backend
+focalizadas, 188 pruebas frontend, `typecheck`, build de produccion y
+`git diff --check` correctos.
+
 ### ISS-76: identidad documental en Personal
 
 - Personal, Becario e Investigador requieren DNI y CUIL en las altas, validan

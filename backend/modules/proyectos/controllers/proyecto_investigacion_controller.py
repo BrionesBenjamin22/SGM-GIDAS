@@ -120,11 +120,32 @@ class ProyectoInvestigacionController:
             return exception_response(error, operation="cerrar proyecto de investigacion")
 
     @staticmethod
+    def cerrar_con_fecha(proyecto_id):
+        try:
+            data = request.get_json(silent=True)
+            if not isinstance(data, dict) or not data.get("fecha_fin"):
+                raise ValidationError("La fecha de cierre es obligatoria.", details={"fields": {"fecha_fin": "Seleccione una fecha de cierre."}})
+            return jsonify(ProyectoInvestigacionService.cerrar_proyecto(
+                proyecto_id, g.current_user_id, data["fecha_fin"]
+            )), 200
+        except Exception as error:
+            return exception_response(error, operation="cerrar proyecto de investigacion")
+
+    @staticmethod
     def reabrir(proyecto_id):
         try:
             return jsonify(ProyectoInvestigacionService.reabrir_proyecto(proyecto_id)), 200
         except Exception as error:
             return exception_response(error, operation="reabrir proyecto de investigacion")
+
+    @staticmethod
+    def prorrogar(proyecto_id):
+        try:
+            return jsonify(ProyectoInvestigacionService.prorrogar_proyecto(
+                proyecto_id, request.get_json(silent=True), g.current_user_id
+            )), 200
+        except Exception as error:
+            return exception_response(error, operation="prorrogar proyecto de investigacion")
 
     @staticmethod
     def _participaciones():

@@ -46,7 +46,7 @@ class ProyectoCoordinadorTest(unittest.TestCase):
     def create(self, **changes):
         return self.client.post("/api/v1/proyectos", headers=self.headers, json={
             "codigo_proyecto": "ABC1", "nombre_proyecto": "Proyecto",
-            "descripcion_proyecto": "Descripción", "fecha_inicio": "2026-01-01",
+            "descripcion_proyecto": "Descripción", "fecha_inicio": "2026-01-01", "fecha_fin": "2026-12-31",
             "tipo_proyecto_id": 1, "investigadores_ids": [1, 2], "coordinador_id": 1,
             **changes,
         })
@@ -110,7 +110,7 @@ class ProyectoCoordinadorTest(unittest.TestCase):
         closed = self.create(
             codigo_proyecto="CERRADO",
             nombre_proyecto="Proyecto cerrado",
-            fecha_fin="2026-02-01",
+            fecha_inicio="2024-01-01", fecha_fin="2024-12-31",
         )
         self.assertEqual(active.status_code, 201, active.get_json())
         self.assertEqual(closed.status_code, 201, closed.get_json())
@@ -215,9 +215,9 @@ class ProyectoCoordinadorTest(unittest.TestCase):
         self.assertEqual(AuditoriaCampo.query.count(), 0)
 
     def test_alta_con_fecha_fin_pasada_presente_y_futura(self):
-        for fecha_fin in ("2026-02-01", date.today().isoformat(), "2099-12-31"):
+        for fecha_fin in ("2024-12-31", date.today().isoformat(), "2026-12-31"):
             with self.subTest(fecha_fin=fecha_fin):
-                response = self.create(fecha_fin=fecha_fin, becarios_ids=[5])
+                response = self.create(fecha_inicio="2024-01-01", fecha_fin=fecha_fin, becarios_ids=[5])
                 self.assertEqual(response.status_code, 201, response.get_json())
                 id = response.get_json()["id"]
                 detail = self.client.get(f"/api/v1/proyectos/{id}", headers=self.headers).get_json()
@@ -228,7 +228,7 @@ class ProyectoCoordinadorTest(unittest.TestCase):
                 self.assertEqual(detail["investigadores"][0]["fecha_fin"], expected)
 
     def test_proyecto_previamente_cerrado_no_admite_cambio(self):
-        response = self.create(fecha_fin="2026-02-01")
+        response = self.create(fecha_inicio="2024-01-01", fecha_fin="2024-12-31")
         self.assertEqual(response.status_code, 201, response.get_json())
         self.assertEqual(self.update(response.get_json()["id"], {"coordinador_id": 2}).status_code, 409)
 
@@ -236,6 +236,69 @@ class ProyectoCoordinadorTest(unittest.TestCase):
         response = self.create(fecha_fin="2025-12-31")
         self.assertEqual(response.status_code, 400)
         self.assertEqual(ProyectoInvestigacion.query.count(), 0)
+
+    def test_prorroga_registra_motivo_y_rechaza_duplicado(self):
+        created = self.create().get_json()
+        url = f"/api/v1/proyectos/{created['id']}/prorroga"
+
+        invalid = self.client.post(url, headers=self.headers, json={"motivo": " "})
+        self.assertEqual(invalid.status_code, 400)
+        self.assertIn("motivo", invalid.get_json()["error"]["details"]["fields"])
+
+        response = self.client.post(url, headers=self.headers, json={
+            "motivo": "Se requiere completar los resultados pendientes."
+        })
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(response.get_json()["fecha_fin_original"], "2026-12-31")
+        self.assertEqual(response.get_json()["fecha_fin_prorrogada"], "2027-12-31")
+        self.assertEqual(response.get_json()["fecha_fin"], "2027-12-31")
+        self.assertEqual(AuditoriaCampo.query.filter_by(campo="prorroga").count(), 1)
+
+        repeated = self.client.post(url, headers=self.headers, json={
+            "motivo": "Se requiere completar los resultados pendientes."
+        })
+        self.assertEqual(repeated.status_code, 409)
+
+        closed = self.client.post(
+            f"/api/v1/proyectos/{created['id']}/cerrar",
+            headers=self.headers,
+            json={"fecha_fin": date.today().isoformat()},
+        )
+        self.assertEqual(closed.status_code, 200, closed.get_json())
+        detail = self.client.get(f"/api/v1/proyectos/{created['id']}", headers=self.headers).get_json()
+        self.assertEqual(detail["fecha_fin_original"], "2026-12-31")
+        self.assertEqual(detail["fecha_fin_prorrogada"], "2027-12-31")
+
+    def test_editar_solo_fecha_fin_no_cierra_proyecto(self):
+        created = self.create().get_json()
+        changed = self.update(created["id"], {"fecha_fin": "2027-06-30"})
+        self.assertEqual(changed.status_code, 200, changed.get_json())
+        self.assertEqual(changed.get_json()["fecha_fin"], "2027-06-30")
+        self.assertIsNone(changed.get_json()["deleted_at"])
+
+        invalid = self.update(created["id"], {"fecha_fin": "2029-01-01"})
+        self.assertEqual(invalid.status_code, 400)
+        self.assertIn("fecha_fin", invalid.get_json()["error"]["details"]["fields"])
+
+    def test_prorroga_admite_proyecto_vencido_sin_baja_manual(self):
+        created = self.create(fecha_inicio="2024-01-01", fecha_fin="2024-12-31").get_json()
+        response = self.client.post(
+            f"/api/v1/proyectos/{created['id']}/prorroga",
+            headers=self.headers,
+            json={"motivo": "Los resultados finales requieren más tiempo."},
+        )
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(response.get_json()["fecha_fin_prorrogada"], "2025-12-31")
+
+    def test_prorroga_rechaza_rol_de_lectura(self):
+        created = self.create().get_json()
+        with patch("modules.shared.services.middleware.AuthService.verify_token", return_value={"sub": "7", "rol": "LECTURA"}):
+            response = self.client.post(
+                f"/api/v1/proyectos/{created['id']}/prorroga",
+                headers=self.headers,
+                json={"motivo": "Resultados pendientes de revisión."},
+            )
+        self.assertEqual(response.status_code, 403)
 
 
 if __name__ == "__main__":

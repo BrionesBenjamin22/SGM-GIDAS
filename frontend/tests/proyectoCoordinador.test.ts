@@ -8,12 +8,12 @@ type Element = { type: any; props: Record<string, any>; children: any[] };
 test("formulario real guarda coordinador en una petición, conserva edición y muestra estados", async () => {
   const initial = {
     id: "1", nombreProyecto: "Proyecto", codigoProyecto: "ABC1", descripcionProyecto: "Descripción",
-    dificultadesProyecto: "", fechaInicio: "2026-01-01", tipoProyectoId: 1, grupoUtnId: 1,
+    dificultadesProyecto: "", fechaInicio: "2026-01-01", fechaFinalizacion: "2026-12-31", tipoProyectoId: 1, grupoUtnId: 1,
     investigadores: [{ id: 1, nombre_apellido: "Persona A", es_coordinador: true },
       { id: 2, nombre_apellido: "Persona B", es_coordinador: false }],
   };
   const h = {
-    values: ["Proyecto", "ABC1", "Descripción", "", "", new Date(2026, 0, 1), null,
+    values: ["Proyecto", "ABC1", "Descripción", "", "", new Date(2026, 0, 1), new Date(2026, 11, 31),
       1, null, [1, 2], 1, [], {}, false, "", true, 1] as any[],
     cursor: 0, id: undefined as string | undefined, initial,
     candidates: [{id: 1, nombre_apellido: "Persona A"}, {id: 2, nombre_apellido: "Persona B"}],
@@ -132,7 +132,7 @@ test("formulario real guarda coordinador en una petición, conserva edición y m
     h.calls = []; h.serverError = undefined; h.values[6] = new Date(2025, 11, 31);
     await submit();
     assert.equal(h.calls.length, 0);
-    assert.match(h.values[12].fechaFin, /anterior/);
+    assert.match(h.values[12].fechaFin, /12 a 36/);
   } finally {
     globalThis.document = previousDocument;
     globalThis.requestAnimationFrame = previousFrame;

@@ -19,6 +19,50 @@ El código de proyecto conserva su regla vigente: texto alfanumérico de hasta
 Los proyectos y sus relaciones se validan desde el 01/01/2010. Los services
 mantienen el orden inicio-fin y la prohibición de cierres futuros.
 
+## Duracion inicial y prorrogas (ISS-77)
+
+El alta exige `fecha_inicio` y `fecha_fin`. El intervalo inicial inclusivo debe
+abarcar entre 12 y 36 meses: el limite es el dia anterior al aniversario de 12
+o 36 meses. Si el aniversario no existe en el mes destino, se utiliza su ultimo
+dia (29/02/2024 a 28/02/2025). La misma regla se aplica cuando PUT modifica
+cualquiera de las fechas. Un PUT que solo cambia `fecha_fin` es una edicion, no
+un cierre. La falta de fecha final o una duracion fuera de rango devuelve
+`400 VALIDATION_ERROR` con `error.details.fields.fecha_fin`.
+
+`POST /api/v1/proyectos/{id}/prorroga` requiere ADMIN o GESTOR y el body
+`{"motivo":"justificacion de 10 a 2000 caracteres"}`. Registra una sola
+prorroga de exactamente 12 meses inclusivos a partir del dia siguiente al fin
+original. Se permite despues del vencimiento si el proyecto no tiene baja
+manual. Un motivo invalido devuelve `400 VALIDATION_ERROR` con
+`error.details.fields.motivo`; una segunda prorroga devuelve `409 CONFLICT`.
+Las fechas no pueden editarse una vez prorrogado.
+
+El modelo conserva `fecha_fin_original`, `fecha_fin_prorrogada`,
+`prorroga_motivo`, `prorroga_by` y `prorroga_at`. `fecha_fin` sigue siendo la
+fecha vigente usada por estado, listados, busqueda y snapshots posteriores de
+Memorias. Hasta el cierre representa el fin previsto; un cierre manual la
+sustituye por la fecha real. La respuesta agrega `prorroga_by_nombre` y expone
+ambas fechas planificadas. Auditoria registra un evento `prorroga` con el fin
+anterior, el nuevo, el motivo, autor y fecha.
+
+El cierre manual con fecha usa `POST /api/v1/proyectos/{id}/cerrar` y
+`{"fecha_fin":"YYYY-MM-DD"}`; exige una fecha entre el inicio y hoy, aplica
+baja logica y conserva original y prorroga. DELETE conserva el cierre con fecha
+de hoy. La reapertura de un proyecto prorrogado restaura el fin prorrogado si
+aun esta vigente; rechaza una prorroga ya vencida. Las rutas de escritura
+requieren ADMIN o GESTOR; LECTURA solo puede consultar datos e historial.
+
+La migracion `e77a1b2c3d4e` agrega las columnas y copia `fecha_fin` de
+proyectos existentes a `fecha_fin_original` sin corregir duraciones historicas.
+Esos registros se conservan y solo deben cumplir el nuevo rango al cambiar sus
+fechas. Los snapshots ya guardados de Memorias permanecen intactos; los
+posteriores capturan la fecha vigente. Las participaciones continuan usando el
+fin vigente del proyecto para sus reglas de cierre.
+
+Pruebas: `tests/test_proyecto_prorroga.py`,
+`tests/test_proyecto_coordinador.py` y
+`tests/test_proyecto_codigo_alfanumerico.py`.
+
 ## Responsabilidad
 
 Gestiona proyectos de investigacion, sus tipos, participaciones relevantes y

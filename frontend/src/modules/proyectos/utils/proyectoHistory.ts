@@ -93,6 +93,14 @@ export function formatProyectoRelationHistoryEntry(
   entry: HistorialProyectoItem,
   personal?: ProyectoPersonal
 ): HistoryPresentation | null {
+  if (entry.campo === "prorroga" && isRecord(entry.valor_nuevo)) {
+    const fecha = entry.valor_nuevo.fecha_fin;
+    const motivo = entry.valor_nuevo.motivo;
+    return {
+      title: "Prórroga de 12 meses",
+      description: `Nuevo fin: ${typeof fecha === "string" ? valueLabel(fecha, "fecha_fin") : "-"}. Justificación: ${typeof motivo === "string" ? motivo : "-"}`,
+    };
+  }
   const coordinator = coordinatorEvent(entry, personal);
   if (coordinator) return coordinator;
 

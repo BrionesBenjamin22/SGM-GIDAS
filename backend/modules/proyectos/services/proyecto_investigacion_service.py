@@ -1,7 +1,8 @@
 from modules.memorias.services.memoria_periodo_service import (
     consultar_entidades_memoria, fin_vigencia,
 )
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
+from calendar import monthrange
 import builtins
 import re
 
@@ -28,6 +29,30 @@ from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_p
 
 
 class ProyectoInvestigacionService:
+
+    @staticmethod
+    def _sumar_meses(fecha: date, meses: int) -> date:
+        indice = fecha.year * 12 + fecha.month - 1 + meses
+        anio, mes = divmod(indice, 12)
+        return date(anio, mes + 1, min(fecha.day, monthrange(anio, mes + 1)[1]))
+
+    @staticmethod
+    def _fin_inclusivo(fecha: date, meses: int) -> date:
+        aniversario = ProyectoInvestigacionService._sumar_meses(fecha, meses)
+        # El 29/02 conserva el último día de febrero al pasar a un año no bisiesto.
+        if fecha.day > monthrange(aniversario.year, aniversario.month)[1]:
+            return aniversario
+        return aniversario - timedelta(days=1)
+
+    @staticmethod
+    def _validar_duracion(fecha_inicio: date, fecha_fin: date | None):
+        mensaje = "La duración inicial debe ser de 12 a 36 meses inclusive."
+        if fecha_fin is None or not (
+            ProyectoInvestigacionService._fin_inclusivo(fecha_inicio, 12)
+            <= fecha_fin <=
+            ProyectoInvestigacionService._fin_inclusivo(fecha_inicio, 36)
+        ):
+            raise ValueError(mensaje, details={"fields": {"fecha_fin": mensaje}})
 
     CODIGO_PROYECTO_MAX_LENGTH = 50
     CODIGO_PROYECTO_PATTERN = re.compile(r"^[A-Za-z0-9]+$")
@@ -451,11 +476,8 @@ class ProyectoInvestigacionService:
 
         fecha_inicio = ProyectoInvestigacionService._validar_fecha_proyecto(data.get("fecha_inicio"), "fecha_inicio")
 
-        fecha_fin = None
-        if data.get("fecha_fin"):
-            fecha_fin = ProyectoInvestigacionService._validar_fecha_proyecto(data["fecha_fin"], "fecha_fin")
-            if fecha_fin < fecha_inicio:
-                raise ValueError("La fecha fin no puede ser anterior a la fecha inicio", details={"fields": {"fecha_fin": "La fecha de fin debe ser posterior o igual al inicio"}})
+        fecha_fin = ProyectoInvestigacionService._validar_fecha_proyecto(data.get("fecha_fin"), "fecha_fin") if data.get("fecha_fin") else None
+        ProyectoInvestigacionService._validar_duracion(fecha_inicio, fecha_fin)
 
         if not TipoProyecto.query.get(data.get("tipo_proyecto_id")):
             raise ValueError('Seleccione un tipo de proyecto disponible e intente nuevamente.', details={"fields": {'tipo_proyecto_id': 'Seleccione un tipo de proyecto disponible e intente nuevamente.'}})
@@ -481,6 +503,7 @@ class ProyectoInvestigacionService:
             descripcion_proyecto=data["descripcion_proyecto"],
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
+            fecha_fin_original=fecha_fin,
             dificultades_proyecto=data.get("dificultades_proyecto"),
             monto_destinado=data.get("monto_destinado"),
             tipo_proyecto_id=data["tipo_proyecto_id"],
@@ -513,13 +536,9 @@ class ProyectoInvestigacionService:
 
         if user_id is not None:
             ProyectoInvestigacionService._validar_id(user_id, "user_id")
+        if getattr(proyecto, "fecha_fin_prorrogada", None) and ({"fecha_inicio", "fecha_fin"} & data.keys()):
+            raise ConflictError("No se pueden modificar las fechas de un proyecto prorrogado.")
         cambios = {}
-
-        es_cierre_por_update = (
-            user_id is not None and
-            set(data.keys()) == {"fecha_fin"} and
-            data.get("fecha_fin")
-        )
 
         if "codigo_proyecto" in data:
             codigo_proyecto = ProyectoInvestigacionService._validar_codigo_proyecto(
@@ -639,13 +658,9 @@ class ProyectoInvestigacionService:
                 cambios["fecha_fin"] = cambio
                 proyecto.fecha_fin = nueva_fecha_fin
 
-        if proyecto.fecha_fin and proyecto.fecha_fin < proyecto.fecha_inicio:
-            raise ValueError("La fecha fin no puede ser anterior a la fecha inicio", details={"fields": {"fecha_fin": "La fecha de fin debe ser posterior o igual al inicio"}})
-
-        if es_cierre_por_update:
-            if proyecto.fecha_fin > date.today():
-                raise ValueError("No se puede cerrar el proyecto con una fecha futura", details={"fields": {"fecha_fin": "Elija una fecha de cierre hasta hoy"}})
-            proyecto.soft_delete(user_id)
+        if {"fecha_inicio", "fecha_fin"} & data.keys():
+            ProyectoInvestigacionService._validar_duracion(proyecto.fecha_inicio, proyecto.fecha_fin)
+            proyecto.fecha_fin_original = proyecto.fecha_fin
 
         if cambios and user_id is not None:
             proyecto.mark_updated(user_id)
@@ -662,11 +677,47 @@ class ProyectoInvestigacionService:
             db.session.flush()
         return proyecto.serialize()
 
+    @staticmethod
+    def prorrogar_proyecto(proyecto_id: int, data: dict, user_id: int):
+        proyecto = ProyectoInvestigacionService._get_proyecto_activo_or_404(proyecto_id)
+        ProyectoInvestigacionService._validar_id(user_id, "user_id")
+        if not getattr(proyecto, "activo", True):
+            raise ConflictError("No se puede prorrogar un proyecto inactivo.")
+        if not isinstance(data, dict):
+            raise ValueError("Envíe una justificación válida.", details={"fields": {"motivo": "La justificación es obligatoria."}})
+        motivo = data.get("motivo")
+        if not isinstance(motivo, str) or not motivo.strip():
+            raise ValueError("La justificación es obligatoria.", details={"fields": {"motivo": "La justificación es obligatoria."}})
+        motivo = " ".join(motivo.split())
+        if len(motivo) < 10 or len(motivo) > 2000:
+            raise ValueError("La justificación debe tener entre 10 y 2000 caracteres.", details={"fields": {"motivo": "Ingrese entre 10 y 2000 caracteres."}})
+        if proyecto.fecha_fin_prorrogada:
+            raise ConflictError("El proyecto ya tiene una prórroga.")
+        original = proyecto.fecha_fin_original or proyecto.fecha_fin
+        if not original:
+            raise ConflictError("Defina primero la fecha de fin inicial del proyecto.")
+        ProyectoInvestigacionService._validar_duracion(proyecto.fecha_inicio, original)
+        nueva_fecha = ProyectoInvestigacionService._fin_inclusivo(original + timedelta(days=1), 12)
+        proyecto.fecha_fin_original = original
+        proyecto.fecha_fin_prorrogada = nueva_fecha
+        proyecto.fecha_fin = nueva_fecha
+        proyecto.prorroga_motivo = motivo
+        proyecto.prorroga_by = user_id
+        proyecto.prorroga_at = datetime.utcnow()
+        proyecto.mark_updated(user_id)
+        AuditoriaService.registrar_cambios("proyecto_investigacion", proyecto.id, {
+            "prorroga": {"valor_anterior": {"fecha_fin": original.isoformat()}, "valor_nuevo": {
+                "fecha_fin": nueva_fecha.isoformat(), "motivo": motivo,
+            }}
+        }, user_id)
+        db.session.commit()
+        return proyecto.serialize()
+
     # =========================
     # CERRAR PROYECTO
     # =========================
     @staticmethod
-    def cerrar_proyecto(proyecto_id: int, user_id: int):
+    def cerrar_proyecto(proyecto_id: int, user_id: int, fecha_fin=None):
         proyecto = ProyectoInvestigacionService._get_proyecto_activo_or_404(
             proyecto_id
         )
@@ -675,8 +726,14 @@ class ProyectoInvestigacionService:
         if ProyectoInvestigacionService._proyecto_esta_cerrado(proyecto):
             raise ConflictError("El proyecto ya se encuentra cerrado")
 
-        proyecto.fecha_fin = func.current_date()
+        cierre = ProyectoInvestigacionService._validar_fecha_proyecto(fecha_fin, "fecha_fin") if fecha_fin else date.today()
+        if cierre > date.today() or cierre < proyecto.fecha_inicio:
+            raise ValueError("Ingrese una fecha de cierre válida.", details={"fields": {"fecha_fin": "Elija una fecha entre el inicio y hoy."}})
+        cambio = AuditoriaService.construir_cambio(proyecto.fecha_fin, cierre)
+        proyecto.fecha_fin = cierre
         proyecto.soft_delete(user_id)
+        if cambio:
+            AuditoriaService.registrar_cambios("proyecto_investigacion", proyecto.id, {"fecha_fin": cambio}, user_id)
         db.session.commit()
 
         return {"message": "Proyecto cerrado correctamente"}
@@ -692,8 +749,11 @@ class ProyectoInvestigacionService:
         if proyecto.deleted_at is None and not ProyectoInvestigacionService._proyecto_esta_cerrado(proyecto):
             raise ConflictError("El proyecto no se encuentra cerrado")
 
+        if proyecto.fecha_fin_prorrogada and proyecto.fecha_fin_prorrogada <= date.today():
+            raise ConflictError("No se puede reabrir un proyecto cuya prórroga ya venció.")
+
         proyecto.restore()
-        proyecto.fecha_fin = None
+        proyecto.fecha_fin = proyecto.fecha_fin_prorrogada or None
         db.session.commit()
 
         return {"message": "Proyecto reabierto correctamente"}

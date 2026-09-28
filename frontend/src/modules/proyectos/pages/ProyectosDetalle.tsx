@@ -1,15 +1,16 @@
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Button from "@/components/Button";
 import HistorialCambiosCard from "@/components/HistorialCambiosCard";
-import { formatFechaHora } from "@/utils/dateTime";
+import { formatFechaHora, getLocalTodayIso } from "@/utils/dateTime";
 import SuccessToast from "@/components/SuccessToast";
 import {
   getProyectoById,
   getHistorialProyectoById,
   reabrirProyecto,
+  prorrogarProyecto,
   type Proyecto,
 } from "@/modules/proyectos/services/proyectosServices";
 import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
@@ -21,6 +22,7 @@ import {
   stripSuccessMessageState,
 } from "@/lib/memoriaNavigation";
 import { formatProyectoRelationHistoryEntry } from "@/modules/proyectos/utils/proyectoHistory";
+import { getErrorMessage, mapFieldErrors } from "@/lib/httpError";
 
 export default function ProyectoDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +36,9 @@ export default function ProyectoDetalle() {
   const puedeEditar = canEditRecords();
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [motivoProrroga, setMotivoProrroga] = useState("");
+  const [prorrogaError, setProrrogaError] = useState("");
+  const prorrogaSubmitting = useRef(false);
 
   const { data, isLoading } = useQuery<Proyecto | null>({
     queryKey: ["proyecto", id],
@@ -70,6 +75,26 @@ export default function ProyectoDetalle() {
       setSuccessMessage("Proyecto reabierto con éxito.");
       setShowSuccess(true);
     },
+  });
+
+  const prorrogaMutation = useMutation({
+    mutationFn: (motivo: string) => prorrogarProyecto(String(id), motivo),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["proyectos"] }),
+        qc.invalidateQueries({ queryKey: ["proyecto", id] }),
+        qc.invalidateQueries({ queryKey: ["proyecto-historial", id] }),
+      ]);
+      setMotivoProrroga("");
+      setProrrogaError("");
+      setSuccessMessage("Prórroga registrada con éxito.");
+      setShowSuccess(true);
+    },
+    onError: (error) => {
+      const fields = mapFieldErrors(error, ["motivo"]);
+      setProrrogaError(fields.motivo || getErrorMessage(error, "Lo sentimos, no pudimos registrar la prórroga. Verifique los datos e intente nuevamente."));
+    },
+    onSettled: () => { prorrogaSubmitting.current = false; },
   });
 
   if (isLoading) return <LoadingSkeleton variant="detail" label="Cargando..." />;
@@ -149,7 +174,7 @@ export default function ProyectoDetalle() {
         </div>
 
         <div className="flex gap-2">
-          {puedeEditar && estaCerrado && data.id ? (
+          {puedeEditar && estaCerrado && data.id && (!data.fechaFinProrrogada || data.fechaFinProrrogada > getLocalTodayIso()) ? (
             <Button
               size="sm"
               onClick={() => reabrirMutation.mutate(String(data.id))}
@@ -231,12 +256,40 @@ export default function ProyectoDetalle() {
             {formatFecha(data.fechaInicio)}
           </p>
 
+          {data.fechaFinProrrogada && <>
+            <p><span className="font-medium text-slate-700">Fin original:</span>{" "}{formatFecha(data.fechaFinOriginal)}</p>
+            <p><span className="font-medium text-slate-700">Fin prorrogado:</span>{" "}{formatFecha(data.fechaFinProrrogada)}</p>
+          </>}
           <p>
-            <span className="font-medium text-slate-700">Fecha fin:</span>{" "}
+            <span className="font-medium text-slate-700">{estaCerrado ? "Fecha fin real:" : "Fecha fin prevista:"}</span>{" "}
             {formatFecha(data.fechaFinalizacion)}
           </p>
+          {data.fechaFinProrrogada && <>
+            <p><span className="font-medium text-slate-700">Justificación:</span>{" "}{data.prorrogaMotivo}</p>
+            <p><span className="font-medium text-slate-700">Decisión:</span>{" "}{data.prorrogaByNombre || "-"} · {formatFechaHora(data.prorrogaAt)}</p>
+          </>}
         </div>
       </article>
+
+      {puedeEditar && data.activo !== false && !data.deleted_at && !data.fechaFinProrrogada && data.fechaFinOriginal && (
+        <form noValidate className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm" onSubmit={(event) => {
+          event.preventDefault();
+          if (motivoProrroga.trim().length < 10) {
+            setProrrogaError("Ingrese una justificación de al menos 10 caracteres.");
+            return;
+          }
+          if (prorrogaSubmitting.current) return;
+          prorrogaSubmitting.current = true;
+          prorrogaMutation.mutate(motivoProrroga.trim());
+        }}>
+          <h3 className="text-lg font-semibold text-slate-700">Prórroga de 12 meses</h3>
+          <p className="mt-1 text-sm text-slate-500">Se agregará una única prórroga al período original. Puede registrarse después del vencimiento.</p>
+          <label htmlFor="motivo-prorroga" className="mt-4 block text-sm font-medium text-slate-700">Justificación</label>
+          <textarea id="motivo-prorroga" className="input mt-2 w-full" value={motivoProrroga} maxLength={2000} aria-invalid={Boolean(prorrogaError)} aria-describedby={prorrogaError ? "motivo-prorroga-error" : undefined} onChange={(event) => {setMotivoProrroga(event.target.value); setProrrogaError("");}} />
+          {prorrogaError && <p id="motivo-prorroga-error" role="alert" className="mt-2 text-sm text-rose-700">{prorrogaError}</p>}
+          <div className="mt-4"><Button type="submit" size="sm" loading={prorrogaMutation.isPending} disabled={prorrogaMutation.isPending}>Registrar prórroga</Button></div>
+        </form>
+      )}
 
       <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
         <div className="mb-4">

@@ -27,6 +27,7 @@ import {
 import {
   PROYECTO_CODIGO_MAX_LENGTH,
   validateCodigoProyecto,
+  validateDuracionProyecto,
 } from "@/modules/proyectos/utils/proyectoValidation";
 import { parseCivilDate, toCivilDateString } from "@/utils/dateTime";
 import { useAuth } from "@/context/AuthContext";
@@ -281,8 +282,9 @@ export default function ProyectosForm() {
     if (!fechaInicio) {
       newErrors.fechaInicio = "Debe seleccionar fecha de inicio";
     }
-    if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
-      newErrors.fechaFin = "La fecha de fin no puede ser anterior a la fecha de inicio.";
+    if (!isEdit || toCivilDateString(fechaInicio) !== initialData?.fechaInicio || toCivilDateString(fechaFin) !== (initialData?.fechaFinalizacion ?? null)) {
+      const durationError = validateDuracionProyecto(fechaInicio, fechaFin);
+      if (durationError) newErrors.fechaFin = durationError;
     }
 
     if (
@@ -703,7 +705,7 @@ export default function ProyectosForm() {
             <Calendar
               value={fechaInicio}
               onChange={(date) => {
-                if (proyectoCerrado) return;
+                if (proyectoCerrado || initialData?.fechaFinProrrogada) return;
                 setFechaInicio(date);
                 if (date) clearError("fechaInicio");
               }}
@@ -712,17 +714,19 @@ export default function ProyectosForm() {
             />
           </Field>
 
-          <Field label="Fecha fin" name="fechaFin" error={errors.fechaFin}>
+          <Field required label={initialData?.fechaFinProrrogada ? "Fecha fin vigente" : "Fecha fin inicial"} name="fechaFin" error={errors.fechaFin}>
             <Calendar
               value={fechaFin}
               onChange={(date) => {
-                if (proyectoCerrado) return;
+                if (proyectoCerrado || initialData?.fechaFinProrrogada) return;
                 setFechaFin(date);
+                if (date) clearError("fechaFin");
               }}
               minDate={fechaInicio ?? undefined}
               className="input"
             />
           </Field>
+          {initialData?.fechaFinProrrogada && <p className="text-sm text-slate-500">Las fechas de un proyecto prorrogado no se pueden editar.</p>}
         </div>
 
         <div className="flex justify-between pt-6">

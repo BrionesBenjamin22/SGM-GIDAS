@@ -97,6 +97,12 @@ class ProyectoInvestigacion(db.Model, AuditMixin):
     descripcion_proyecto = db.Column(db.Text, nullable=False)
     fecha_inicio = db.Column(db.Date, nullable=False) 
     fecha_fin = db.Column(db.Date, nullable=True)
+    fecha_fin_original = db.Column(db.Date, nullable=True)
+    fecha_fin_prorrogada = db.Column(db.Date, nullable=True)
+    prorroga_motivo = db.Column(db.Text, nullable=True)
+    prorroga_by = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=True)
+    prorroga_at = db.Column(db.DateTime, nullable=True)
+    prorroga_usuario = db.relationship('Usuario', foreign_keys=[prorroga_by], lazy='joined')
     dificultades_proyecto = db.Column(db.Text, nullable=True)
     monto_destinado = db.Column(db.Float, nullable=True)
 
@@ -127,6 +133,8 @@ class ProyectoInvestigacion(db.Model, AuditMixin):
 
     def serialize(self):
         data = self.to_dict()
+        data["fecha_fin_original"] = (self.fecha_fin_original or self.fecha_fin).isoformat() if (self.fecha_fin_original or self.fecha_fin) else None
+        data["prorroga_by_nombre"] = self._get_audit_user_name(self.prorroga_usuario)
         data["cerrado"] = bool(self.fecha_fin and self.fecha_fin <= date.today())
 
         # Grupo
