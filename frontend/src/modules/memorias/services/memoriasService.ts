@@ -147,9 +147,11 @@ function getFilenameFromDisposition(contentDisposition: string | null): string {
 
 export async function exportarExcelMemoria(
   memoriaId: number,
-  versionId: number
+  versionId: number,
+  onStage?: (stage: "generating" | "receiving" | "saving") => void
 ): Promise<{ filename: string; size: number }> {
   try {
+    onStage?.("generating");
     const response = await httpDownload(
       `/memorias/${memoriaId}/versiones/${versionId}/exportar-excel`,
       {
@@ -157,6 +159,7 @@ export async function exportarExcelMemoria(
       }
     );
 
+    onStage?.("receiving");
     const blob = await response.blob();
 
     if (!blob || blob.size === 0) {
@@ -170,6 +173,7 @@ export async function exportarExcelMemoria(
     const url = window.URL.createObjectURL(blob);
 
     try {
+      onStage?.("saving");
       const a = document.createElement("a");
       a.href = url;
       a.download = filename;

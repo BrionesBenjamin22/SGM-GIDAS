@@ -108,7 +108,7 @@ test("formulario real guarda coordinador en una petición, conserva edición y m
     h.values[9] = []; h.values[10] = null; h.id = undefined; h.candidates = [];
     assert.match(text(render()), /No hay investigadores activos disponibles/);
     h.loading = true;
-    assert.match(text(render()), /Cargando investigadores/);
+    assert.ok(walk(render()).some(node => node.props.label === "Cargando investigadores..."));
     h.loading = false; h.error = true;
     assert.match(text(render()), /Reintentar/);
     await submit();

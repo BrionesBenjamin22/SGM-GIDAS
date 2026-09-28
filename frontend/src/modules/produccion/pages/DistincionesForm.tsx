@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -179,7 +180,7 @@ export default function DistincionesForm() {
   };
 
   if (isEdit && isLoading) {
-    return <p role="status" className="text-slate-500">Cargando distinción...</p>;
+    return <LoadingSkeleton variant="form" label="Cargando distinción..." />;
   }
 
   if ((isEdit && isError) || proyectosQuery.isError) {

@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -108,7 +109,7 @@ export default function VisitantesDetalle() {
     return dateStr;
   };
 
-  if (isLoading) return <p role="status" className="text-slate-500">Cargando visita...</p>;
+  if (isLoading) return <LoadingSkeleton variant="detail" label="Cargando visita..." />;
   if (isError || !data) {
     return (
       <p role="alert" className="text-slate-500">

@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -270,7 +271,7 @@ export default function MemoriasHome() {
 
       <div className="flex flex-1 flex-col">
         {isLoading ? (
-          <p className="py-10 text-center text-slate-500">Cargando...</p>
+          <LoadingSkeleton variant="table" label="Cargando memorias…" />
         ) : isError ? (
           <p className="py-10 text-center text-slate-500">
             Lo sentimos, no pudimos recuperar la información. Intente nuevamente.

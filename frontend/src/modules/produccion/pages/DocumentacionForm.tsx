@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { applyFieldErrors } from "@/lib/httpError";
 import { hasOnlyLettersAndSpaces } from "../../../lib/textValidation";
 import { useParams, useNavigate } from "react-router-dom";
@@ -262,7 +263,7 @@ export default function DocumentacionForm() {
     },
   });
 
-  if (isLoading) return <p role="status" className="text-slate-500">Cargando documentación...</p>;
+  if (isLoading) return <LoadingSkeleton variant="form" label="Cargando documentación..." />;
 
   const inputClass = (field: string) =>
     `input ${errors[field] ? "!border-red-500 !ring-2 !ring-red-500" : ""}`;
@@ -304,7 +305,7 @@ export default function DocumentacionForm() {
         <Field required label="Autores" name="autores" error={errors.autores}>
           <>
             {autoresQuery.isError && <div className="mb-3 space-y-2"><p role="alert" className="text-sm text-rose-700">Lo sentimos, no pudimos recuperar los autores. Intente nuevamente.</p><Button type="button" variant="secondary" size="sm" loading={autoresQuery.isFetching} loadingText="Cargando autores..." onClick={() => { void autoresQuery.refetch(); }}>Reintentar</Button></div>}
-            {autoresNoDisponibles && !autoresQuery.isError && <p role="status" className="mb-3 text-sm text-slate-500">Cargando autores...</p>}
+            {autoresNoDisponibles && !autoresQuery.isError && <LoadingSkeleton variant="compact" label="Cargando autores..." />}
             {autoresQuery.data?.length === 0 && <p role="status" className="mb-3 text-sm text-slate-500">No hay autores registrados. Puede añadir uno nuevo.</p>}
             <DocumentacionAutoresField value={autores} options={autoresDisponibles}
               disabled={isPending || autoresNoDisponibles}

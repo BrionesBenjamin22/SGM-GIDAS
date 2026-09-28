@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import MemoriaPeriodoForm from "@/modules/memorias/components/MemoriaPeriodoForm";
 import HistorialCambiosCard from "@/components/HistorialCambiosCard";
 import { useEffect, useMemo, useState } from "react";
@@ -126,7 +127,7 @@ export default function MemoriaDetalle() {
   }, [versionActual?.estado]);
 
   if (isLoading) {
-    return <p className="text-slate-500">Cargando memoria...</p>;
+    return <LoadingSkeleton variant="detail" label="Cargando memoria..." />;
   }
 
   if (isError) return <p role="alert">Lo sentimos, no pudimos recuperar la información. Intente nuevamente.</p>;

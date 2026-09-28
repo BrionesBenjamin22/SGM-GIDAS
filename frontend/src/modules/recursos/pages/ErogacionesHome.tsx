@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -132,7 +133,7 @@ export default function ErogacionesLanding() {
   };
 
   const renderHistory = () => {
-    if (history.isLoading) return <p role="status" className="text-sm text-slate-500">Cargando historial…</p>;
+    if (history.isLoading) return <LoadingSkeleton variant="compact" label="Cargando historial…" />;
     if (history.isError) return <div role="alert" className="flex items-center gap-3 text-sm text-rose-700"><span>Lo sentimos, no pudimos recuperar el historial. Intente nuevamente.</span><TableActionButton onClick={() => history.refetch()}>Reintentar</TableActionButton></div>;
     const entries = presentMovimientoHistoryItems(history.data ?? []);
     if (!expandedItem || !entries.length) return <p className="text-sm text-slate-500">No hay cambios registrados.</p>;
@@ -183,7 +184,7 @@ export default function ErogacionesLanding() {
           <p className="mt-2 text-xl font-semibold text-slate-900">{resumen.data ? key === "cantidad_movimientos" ? resumen.data[key] : formatMovimientoMoney(resumen.data[key]) : "—"}</p>
         </article>)}
       </div>
-      {resumen.isLoading && <p role="status" className="mb-4 text-sm text-slate-500">Cargando saldo disponible…</p>}
+      {resumen.isLoading && <LoadingSkeleton variant="compact" label="Cargando saldo disponible…" />}
       {resumen.isError && <div role="alert" className="mb-4 flex items-center gap-3 text-sm text-rose-700"><span>Lo sentimos, no pudimos recuperar el saldo. Intente nuevamente.</span><TableActionButton onClick={() => resumen.refetch()}>Reintentar</TableActionButton></div>}
       <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="saldos-por-fuente-title">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -199,7 +200,7 @@ export default function ErogacionesLanding() {
           />
         </div>
         <p className="mt-1 text-sm text-slate-500">Ingresos menos egresos activos imputados a cada fuente.</p>
-        {saldosPorFuente.isLoading && <p role="status" className="mt-4 text-sm text-slate-500">Cargando saldos por fuente…</p>}
+        {saldosPorFuente.isLoading && <LoadingSkeleton variant="compact" label="Cargando saldos por fuente…" />}
         {saldosPorFuente.isError && <div role="alert" className="mt-4 flex items-center gap-3 text-sm text-rose-700"><span>Lo sentimos, no pudimos recuperar los saldos por fuente. Intente nuevamente.</span><TableActionButton onClick={() => saldosPorFuente.refetch()}>Reintentar</TableActionButton></div>}
         {saldosPorFuente.isSuccess && saldosPorFuente.data.length === 0 && <p className="mt-4 text-sm text-slate-500">Aún no hay movimientos registrados para este grupo.</p>}
         {saldosPorFuente.isSuccess && saldosPorFuente.data.length > 0 && <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

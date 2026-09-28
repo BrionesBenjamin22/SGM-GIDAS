@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
@@ -235,7 +236,7 @@ export default function ErogacionesForm() {
     }
   };
 
-  if (isEdit && loadingMovimiento) return <p className="text-slate-500">Cargando movimiento...</p>;
+  if (isEdit && loadingMovimiento) return <LoadingSkeleton variant="form" label="Cargando movimiento..." />;
   if (isEdit && !movimiento) return <div role="alert" className="flex items-center gap-3 text-slate-600">Lo sentimos, no pudimos recuperar el movimiento. Intente nuevamente.<Button size="sm" variant="secondary" onClick={() => refetchMovimiento()}>Reintentar</Button></div>;
 
   return (

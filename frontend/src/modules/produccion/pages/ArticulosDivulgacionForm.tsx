@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -196,7 +197,7 @@ export default function ArticulosDivulgacionForm() {
   };
 
   if (isEdit && isLoading) {
-    return <p role="status" className="text-slate-500">Cargando artículo...</p>;
+    return <LoadingSkeleton variant="form" label="Cargando artículo..." />;
   }
 
   if (isEdit && (initialQuery.isError || !initialData)) {

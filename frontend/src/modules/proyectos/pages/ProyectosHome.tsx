@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -140,7 +141,7 @@ export default function ProyectosLanding() {
   ], [canDeleteRecords, canEditRecords, location, navigate]);
 
   const renderHistory = () => {
-    if (history.isLoading) return <p role="status" aria-live="polite" className="text-sm text-slate-500">Cargando historial…</p>;
+    if (history.isLoading) return <LoadingSkeleton variant="compact" label="Cargando historial…" />;
     if (history.isError) return <div role="alert" className="flex items-center gap-3 text-sm text-rose-700"><span>Lo sentimos, no pudimos recuperar el historial. Intente nuevamente.</span><TableActionButton onClick={() => history.refetch()}>Reintentar</TableActionButton></div>;
     const entries = history.data ?? [];
     if (!entries.length) return <p className="text-sm text-slate-500">No hay cambios registrados.</p>;

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowUp,
@@ -649,7 +650,7 @@ function CatalogPanel({
         </div>
       </div>
 
-      {loading && <p className="text-sm text-slate-400">Cargando...</p>}
+      {loading && <LoadingSkeleton variant="table" label="Cargando catálogo…" />}
       {!!errorMessage && <ErrorText>{errorMessage}</ErrorText>}
 
       {!loading && items.length === 0 && (
@@ -832,7 +833,7 @@ function CatalogPanel({
                   {openHistoryId === item.id && (
                     <div className="rounded-lg bg-slate-50 px-3 py-3 md:col-span-2" role="region" aria-label={`Historial de ${getDisplayName(item)}`}>
                       {historyLoadingId === item.id ? (
-                        <p role="status" className="text-sm text-slate-500">Cargando historial...</p>
+                        <LoadingSkeleton variant="compact" label="Cargando historial…" />
                       ) : historyErrorId === item.id ? (
                         <div>
                           <ErrorText>Lo sentimos, no pudimos recuperar el historial. Intente nuevamente.</ErrorText>

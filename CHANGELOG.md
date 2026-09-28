@@ -8,6 +8,17 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-70: indicadores de carga y exportación
+
+- Las vistas, tablas y secciones con datos diferidos muestran skeletons con
+  etiquetas accesibles durante la carga.
+- La exportación Excel de Memorias informa generación, recepción e inicio de
+  descarga, bloquea solicitudes duplicadas y permite reintentar tras un error.
+
+Validaciones: aceptación visual y funcional del usuario, incluida una
+exportación fallida, 184 pruebas frontend, `typecheck` y build de producción
+con cargador `runner` correctos.
+
 ### ISS-71: recorrido de teclado en diálogos y listados
 
 - Los diálogos modales contienen el foco, permiten Escape cuando la operación

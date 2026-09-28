@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -71,7 +72,7 @@ export default function ProyectoDetalle() {
     },
   });
 
-  if (isLoading) return <p className="text-slate-500">Cargando...</p>;
+  if (isLoading) return <LoadingSkeleton variant="detail" label="Cargando..." />;
   if (!data) return <p className="text-slate-500">No se encontró el proyecto.</p>;
 
   const formatFecha = (fecha?: string | null) => {

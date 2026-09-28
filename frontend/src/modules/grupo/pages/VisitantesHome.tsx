@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -217,9 +218,7 @@ export default function VisitantesHome() {
   const renderHistory = () => {
     if (history.isLoading) {
       return (
-        <p role="status" aria-live="polite" className="text-sm text-slate-500">
-          Cargando historial…
-        </p>
+        <LoadingSkeleton variant="compact" label="Cargando historial..." />
       );
     }
 

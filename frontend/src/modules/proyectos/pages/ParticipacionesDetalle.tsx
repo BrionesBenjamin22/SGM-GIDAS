@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -60,7 +61,7 @@ export default function ParticipacionesDetalle() {
     navigate(location.pathname, { replace: true, state: stripSuccessMessageState(location.state) });
   }, [location.pathname, location.state, navigate]);
 
-  if (detail.isLoading) return <p role="status" className="text-slate-500">Cargando participación…</p>;
+  if (detail.isLoading) return <LoadingSkeleton variant="detail" label="Cargando participación…" />;
   if (detail.isError || !detail.data) {
     return <div role="alert" className="space-y-3 text-slate-600"><p>Lo sentimos, no pudimos recuperar la información. Intente nuevamente.</p><Button size="sm" onClick={() => detail.refetch()}>Reintentar</Button></div>;
   }

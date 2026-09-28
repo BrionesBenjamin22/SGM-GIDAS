@@ -4,6 +4,7 @@ import { useUct } from "@/modules/grupo/hooks/useUct";
 import { useDirectivos } from "@/modules/grupo/hooks/useDirectivos";
 import { useDashboardResumen } from "@/modules/dashboard/hooks/useDashboardGeneral";
 import Button from "@/components/Button";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 import { useAuth } from "@/context/AuthContext";
@@ -83,9 +84,7 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="grid place-items-center min-h-[60vh] text-slate-500">
-        Cargando configuración…
-      </div>
+      <LoadingSkeleton label="Cargando configuración…" />
     );
   }
 
@@ -233,9 +232,7 @@ export default function Home() {
               </div>
 
               {dashboardLoading && (
-                <div className="rounded-3xl border border-slate-200 bg-white p-8 text-slate-500 shadow-sm">
-                  Cargando métricas…
-                </div>
+                <LoadingSkeleton variant="table" label="Cargando métricas…" />
               )}
 
               {dashboardError && (

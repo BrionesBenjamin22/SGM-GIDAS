@@ -9,6 +9,7 @@ import { Navigate } from "react-router-dom";
 import "./styles/index.css";
 
 import AppLayout from "@/layouts/AppLayout";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 const Home = lazy(() => import("@/modules/dashboard/pages/Home"));
 const UctForm = lazy(() => import("@/modules/grupo/pages/UctForm"));
 const NotFound = lazy(() => import("@/modules/shared/pages/NotFound"));
@@ -84,8 +85,8 @@ function editorOnly(element: ReactElement) {
 
 function RouteLoading() {
   return (
-    <div className="flex min-h-screen items-center justify-center px-4" role="status" aria-live="polite">
-      <p className="text-sm text-slate-600">Cargando contenido...</p>
+    <div className="mx-auto w-full max-w-7xl px-6 py-8">
+      <LoadingSkeleton label="Cargando contenido…" />
     </div>
   );
 }

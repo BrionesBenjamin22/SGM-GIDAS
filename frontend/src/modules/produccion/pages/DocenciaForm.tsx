@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -247,7 +248,7 @@ export default function FormDocenciaInvestigador() {
     mutation.mutate(changedPayload);
   };
 
-  if (isEdit && isLoading) return <p>Cargando actividad...</p>;
+  if (isEdit && isLoading) return <LoadingSkeleton variant="form" label="Cargando actividad..." />;
 
   const inputClass = (field: string) =>
     `input ${errors[field] ? "!border-red-500 !ring-2 !ring-red-500" : ""}`;

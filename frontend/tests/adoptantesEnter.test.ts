@@ -25,6 +25,7 @@ test("Enter en nombre de adoptante lo añade sin enviar el formulario", () => {
     };
     if (name === "react/jsx-runtime") return { jsx: (type: unknown, props: unknown) => ({ type, props }), jsxs: (type: unknown, props: unknown) => ({ type, props }) };
     if (name === "@/components/Button") return { default: "button" };
+    if (name === "@/components/LoadingSkeleton") return { default: "div" };
     if (name === "@/modules/transferencia/hooks/useAdoptantes") return { useAdoptantes: () => ({ list: [], isLoading: false, isError: false }) };
     if (name === "@/lib/textValidation") return require("../src/lib/textValidation.ts");
     return require(name);

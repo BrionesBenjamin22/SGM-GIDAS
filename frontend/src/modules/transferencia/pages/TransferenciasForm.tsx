@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { applyFieldErrors } from "@/lib/httpError";
 import { hasLetter } from "../../../lib/textValidation";
 import { useState, useEffect, useRef } from "react";
@@ -240,7 +241,7 @@ export default function TransferenciasForm() {
   });
 
   if (isEdit && isLoading) {
-    return <p className="text-slate-500">Cargando transferencia...</p>;
+    return <LoadingSkeleton variant="form" label="Cargando transferencia..." />;
   }
 
   if (isTiposError || isTransferenciaError) {

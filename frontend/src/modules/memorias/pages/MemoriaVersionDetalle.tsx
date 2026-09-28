@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -213,6 +214,8 @@ export default function MemoriaVersionDetalle() {
   const programaDialogRef = useRef<HTMLDialogElement>(null);
   const [programaDescripcion, setProgramaDescripcion] = useState("");
   const [programaError, setProgramaError] = useState("");
+  const [exportStage, setExportStage] = useState<"generating" | "receiving" | "saving" | null>(null);
+  const exportInFlight = useRef(false);
 
   const { data: memoria, isLoading: isLoadingMemoria } = useQuery({
     queryKey: ["memoria", id],
@@ -283,7 +286,7 @@ export default function MemoriaVersionDetalle() {
   }, [showProgramaModal]);
 
   const { mutate: descargarExcel, isPending: isExportingExcel } = useMutation({
-    mutationFn: () => exportarExcelMemoria(memoriaId, memoriaVersionId),
+    mutationFn: () => exportarExcelMemoria(memoriaId, memoriaVersionId, setExportStage),
     onSuccess: (result) => {
       setMessage(`Excel generado con éxito: ${result.filename}`);
       setShowSuccess(true);
@@ -296,7 +299,18 @@ export default function MemoriaVersionDetalle() {
       );
       setShowError(true);
     },
+    onSettled: () => {
+      exportInFlight.current = false;
+      setExportStage(null);
+    },
   });
+
+  const startExport = () => {
+    if (exportInFlight.current || isExportingExcel) return;
+    exportInFlight.current = true;
+    setExportStage("generating");
+    descargarExcel();
+  };
 
   const { mutate: guardarPrograma, isPending: isSavingPrograma } = useMutation({
     mutationFn: async () => {
@@ -383,7 +397,7 @@ export default function MemoriaVersionDetalle() {
   };
 
   if (isLoadingMemoria) {
-    return <p className="text-slate-500">Cargando memoria...</p>;
+    return <LoadingSkeleton variant="detail" label="Cargando memoria..." />;
   }
 
   if (!memoria) {
@@ -417,9 +431,14 @@ export default function MemoriaVersionDetalle() {
           )}
 
           {puedeExportarExcel && (
-            <Button size="sm" onClick={() => descargarExcel()} disabled={isExportingExcel} loading={isExportingExcel} loadingText="Generando Excel...">
-              {isExportingExcel ? "Generando Excel..." : "Generar Excel"}
-            </Button>
+            <>
+              <Button size="sm" onClick={startExport} disabled={isExportingExcel} loading={isExportingExcel} loadingText="Exportando Excel...">
+                Generar Excel
+              </Button>
+              {isExportingExcel && <span role="status" aria-live="polite" className="text-sm text-slate-600">
+                {exportStage === "receiving" ? "Recibiendo el archivo…" : exportStage === "saving" ? "Iniciando descarga…" : "Generando el archivo…"}
+              </span>}
+            </>
           )}
 
           <Button
@@ -433,7 +452,7 @@ export default function MemoriaVersionDetalle() {
       </div>
 
       {isLoadingSnapshots ? (
-        <p className="text-slate-500">Cargando elementos registrados...</p>
+        <LoadingSkeleton variant="table" label="Cargando elementos registrados…" />
       ) : !versionCerrada ? (
         <div className="flex flex-col gap-6">
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">

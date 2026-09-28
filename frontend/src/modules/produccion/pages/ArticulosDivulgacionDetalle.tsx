@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -99,7 +100,7 @@ export default function ArticulosDivulgacionDetalle() {
     return dateStr;
   };
 
-  if (isLoading) return <p role="status" className="text-slate-500">Cargando artículo...</p>;
+  if (isLoading) return <LoadingSkeleton variant="detail" label="Cargando artículo..." />;
 
   if (isError || !data) {
     return <p role="alert" className="text-slate-500">Lo sentimos, no pudimos recuperar la información. Intente nuevamente.</p>;

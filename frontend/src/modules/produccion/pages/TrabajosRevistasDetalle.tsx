@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { enlaceSeguro } from "@/modules/produccion/utils/trabajoEnlace";
 import { autorEtiqueta } from "@/modules/produccion/services/trabajoAutoresServices";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -73,7 +74,7 @@ export default function TrabajoRevistaDetalle() {
     }
   }, [location.state, navigate, location.pathname]);
 
-  if (isLoading) return <p className="text-slate-500">Cargando...</p>;
+  if (isLoading) return <LoadingSkeleton variant="detail" label="Cargando..." />;
   if (isError || !data) {
     return <p className="text-slate-500">Lo sentimos, no pudimos recuperar la información. Intente nuevamente.</p>;
   }

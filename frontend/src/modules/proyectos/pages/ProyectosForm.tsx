@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
 import { hasLetter } from "../../../lib/textValidation";
 import { LoaderCircle } from "lucide-react";
@@ -420,7 +421,7 @@ export default function ProyectosForm() {
   };
 
   if (isEdit && isLoading) {
-    return <p>Cargando proyecto...</p>;
+    return <LoadingSkeleton variant="form" label="Cargando proyecto..." />;
   }
 
   const inputClass = (field: string) =>
@@ -603,7 +604,7 @@ export default function ProyectosForm() {
 
         <Field label="Investigadores" name="investigadoresIds" error={errors.investigadoresIds}>
           <div className="space-y-4" data-error-field="coordinadorId" tabIndex={-1}>
-            {investigadoresQuery.isLoading && <p role="status">Cargando investigadores...</p>}
+            {investigadoresQuery.isLoading && <LoadingSkeleton variant="compact" label="Cargando investigadores..." />}
             {investigadoresQuery.isError && <div role="alert">
               <p>Lo sentimos, no pudimos recuperar los investigadores. Intente nuevamente.</p>
               <Button type="button" variant="secondary" onClick={() => void investigadoresQuery.refetch()} loading={investigadoresQuery.isFetching} loadingText="Reintentando...">Reintentar</Button>

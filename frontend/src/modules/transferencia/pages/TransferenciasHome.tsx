@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -80,7 +81,7 @@ export default function TransferenciasHome() {
     { id: "acciones", header: "Acciones", align: "right", render: item => <TableActions><TableRowActionButton action="view" aria-label={`Ver transferencia ${item.numeroTransferencia}`} onClick={() => navigate(`/transferencias/${item.id}`, { state: buildMemoriaDetailState(location) })} />{isActive(item) && canEditRecords() && <TableRowActionButton action="edit" aria-label={`Editar transferencia ${item.numeroTransferencia}`} onClick={() => navigate(`/transferencias/${item.id}/editar`)} />}{isActive(item) && canDeleteRecords() && <TableRowActionButton action="delete" aria-label={`Eliminar transferencia ${item.numeroTransferencia}`} onClick={() => setPendingDelete(item)} />}</TableActions> },
   ];
   const renderHistory = () => {
-    if (history.isLoading) return <p role="status" className="text-sm text-slate-500">Cargando historial…</p>;
+    if (history.isLoading) return <LoadingSkeleton variant="compact" label="Cargando historial…" />;
     if (history.isError) return <p role="alert" className="text-sm text-rose-700">Lo sentimos, no pudimos recuperar el historial. <TableActionButton onClick={() => history.refetch()}>Reintentar</TableActionButton></p>;
     const items = presentTransferenciaHistory(history.data ?? []);
     if (!items.length) return <p className="text-sm text-slate-500">No hay cambios registrados.</p>;

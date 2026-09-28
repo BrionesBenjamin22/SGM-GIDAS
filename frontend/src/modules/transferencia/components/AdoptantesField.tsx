@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useMemo, useState } from "react";
 import Button from "@/components/Button";
 import { hasOnlyLettersAndSpaces } from "@/lib/textValidation";
@@ -32,7 +33,7 @@ export default function AdoptantesField({ selected, onChange, disabled = false }
 
   return <div className="space-y-3">
     <div><h3 className="text-base font-semibold">Adoptantes</h3><p className="text-sm text-slate-500">Agregue o quite adoptantes. Las vinculaciones se guardarán con la transferencia.</p></div>
-    {query.isLoading && <p role="status" className="text-sm text-slate-500">Cargando adoptantes…</p>}
+    {query.isLoading && <LoadingSkeleton variant="compact" label="Cargando adoptantes…" />}
     {query.isError && <p role="alert" className="text-sm text-rose-700">Lo sentimos, no pudimos recuperar los adoptantes. <button type="button" className="underline" onClick={() => query.refetch()}>Reintentar</button></p>}
     {(!query.isError || query.list.length > 0) && <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row">

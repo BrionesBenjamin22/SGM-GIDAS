@@ -1,5 +1,6 @@
 import { useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { ChevronRight, Eye, Pencil, RotateCcw, X } from "lucide-react";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 
 export type TableSortDirection = "asc" | "desc";
 
@@ -185,8 +186,8 @@ export default function Table<T>({
           <tbody className={`divide-y divide-slate-100 transition-opacity duration-200 motion-reduce:transition-none ${refreshing ? "opacity-60" : "opacity-100"}`}>
             {status ? (
               <tr><td colSpan={columns.length + (onToggleRow ? 1 : 0)} className="px-4 py-12 text-center text-slate-500">
-                <div role={error ? "alert" : "status"} aria-live="polite">
-                  {loading ? loadingMessage : error ? errorMessage : emptyMessage}
+                <div role={error ? "alert" : loading ? undefined : "status"} aria-live={loading ? undefined : "polite"}>
+                  {loading ? <LoadingSkeleton variant="table" label={loadingMessage} /> : error ? errorMessage : emptyMessage}
                   {error && onRetry && <div className="mt-3"><TableActionButton onClick={onRetry} className="border border-slate-300">Reintentar</TableActionButton></div>}
                 </div>
               </td></tr>

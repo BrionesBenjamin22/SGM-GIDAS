@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { applyFieldErrors } from "@/lib/httpError";
 import { hasLetter } from "../../../lib/textValidation";
 import { useNavigate, useParams } from "react-router-dom";
@@ -214,7 +215,7 @@ export default function RegistrosPropiedadForm() {
     `input ${errors[field] ? "!border-red-500 !ring-2 !ring-red-500" : ""}`;
 
   if (isEdit && isLoading) {
-    return <p className="text-slate-500">Cargando...</p>;
+    return <LoadingSkeleton variant="form" label="Cargando..." />;
   }
 
   return (

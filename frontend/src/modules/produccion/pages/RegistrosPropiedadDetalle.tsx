@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -59,7 +60,7 @@ export default function RegistrosPropiedadDetalle() {
     }
   }, [location.state, navigate, location.pathname]);
 
-  if (isLoading) return <p className="text-slate-500">Cargando...</p>;
+  if (isLoading) return <LoadingSkeleton variant="detail" label="Cargando..." />;
   if (isError || !data) {
     return <p className="text-slate-500">No se encontró el registro.</p>;
   }

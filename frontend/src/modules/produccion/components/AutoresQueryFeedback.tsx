@@ -1,5 +1,6 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 import Button from "@/components/Button";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import type { IntegranteAutor } from "@/modules/produccion/services/trabajoAutoresServices";
 
 type Props = {
@@ -23,7 +24,7 @@ export default function AutoresQueryFeedback({ query }: Props) {
   }
 
   if (query.data === undefined) {
-    return <p role="status" className="text-sm text-slate-500">Cargando integrantes autores...</p>;
+    return <LoadingSkeleton variant="compact" label="Cargando integrantes autores…" />;
   }
 
   if (query.data.length === 0) {

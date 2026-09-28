@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -42,7 +43,7 @@ export default function ErogacionesDetalle() {
     });
   }, [location.state, location.pathname, navigate]);
 
-  if (isLoading) return <p role="status" className="text-slate-500">Cargando movimiento...</p>;
+  if (isLoading) return <LoadingSkeleton variant="detail" label="Cargando movimiento..." />;
   if (isError || !data) return <div role="alert" className="flex items-center gap-3 text-slate-600">Lo sentimos, no pudimos recuperar el movimiento. Intente nuevamente.<Button size="sm" variant="secondary" onClick={() => refetch()}>Reintentar</Button></div>;
 
   const titulo = `Movimiento N.º ${String(data.numero_movimiento).padStart(6, "0")}`;

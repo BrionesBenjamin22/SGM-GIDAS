@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -137,7 +138,7 @@ export default function ObjetosLanding() {
       </div>
 
       <div className="flex-1">
-        {isLoading && <p className="text-slate-500">Cargando...</p>}
+        {isLoading && <LoadingSkeleton variant="table" label="Cargando objetos de financiamiento…" />}
 
         {!isLoading && items.length === 0 && (
           <p className="text-slate-500">

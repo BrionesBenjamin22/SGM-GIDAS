@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/Button";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { formatFechaHora } from "@/utils/dateTime";
 import {
   Collapsible,
@@ -215,7 +216,7 @@ export default function HistorialCambiosCard({
 
         <CollapsibleContent className="pt-4">
           {isLoading ? (
-            <p className="text-sm text-slate-500">Cargando historial...</p>
+            <LoadingSkeleton variant="compact" label="Cargando historial…" />
           ) : normalizedItems.length === 0 ? (
             <p className="text-sm text-slate-500">No hay cambios registrados.</p>
           ) : (

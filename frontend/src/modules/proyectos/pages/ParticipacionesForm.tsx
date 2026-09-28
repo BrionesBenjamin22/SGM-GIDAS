@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
@@ -209,7 +210,7 @@ export default function ParticipacionesForm() {
     await mutation.mutateAsync({ mode: "edit", payload: changed });
   };
 
-  if (isEdit && initialQuery.isLoading) return <p role="status" className="text-slate-500">Cargando participación…</p>;
+  if (isEdit && initialQuery.isLoading) return <LoadingSkeleton variant="form" label="Cargando participación…" />;
   if (isEdit && initialQuery.isError) {
     return (
       <div role="alert" className="space-y-3 text-slate-600">
@@ -251,7 +252,7 @@ export default function ParticipacionesForm() {
               </div>
             )}
             {!participantesConError && participantesNoDisponibles && (
-              <p role="status" className="text-sm text-slate-500">Cargando participantes...</p>
+              <LoadingSkeleton variant="compact" label="Cargando participantes..." />
             )}
             {!participantesConError && !participantesNoDisponibles && participantOptions.length === 0 && (
               <p role="status" className="text-sm text-slate-500">

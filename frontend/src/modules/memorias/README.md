@@ -7,6 +7,16 @@ título y descripción asociados, foco inicial en el texto y retorno al botón a
 cerrar. Escape y el fondo lo cierran antes de guardar; mientras el guardado
 está pendiente conserva el diálogo y bloquea la cancelación.
 
+## Carga y exportación Excel (ISS-70)
+
+El detalle de versión y sus snapshots muestran skeletons durante la carga.
+`exportarExcelMemoria` informa etapas `generating`, `receiving` y `saving` al
+componente; corresponden a solicitud, lectura de respuesta e inicio de descarga,
+sin porcentaje estimado. `MemoriaVersionDetalle` bloquea envíos duplicados,
+muestra el estado en curso y, al terminar, presenta éxito o un error accionable.
+Tras un fallo se libera el botón para reintentar. El endpoint y el archivo
+descargado conservan su contrato.
+
 La vista de versión muestra los movimientos financieros de su snapshot con tipo,
 importe ARS, fuente o categoría y enlace al detalle en `/movimientos/:id`. La
 sección interna del contrato de Memorias conserva la clave `erogaciones`.

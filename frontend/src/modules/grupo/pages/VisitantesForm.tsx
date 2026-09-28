@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -210,7 +211,7 @@ export default function VisitantesForm() {
   };
 
   if ((isEdit && isLoading) || isLoadingTiposVisita) {
-    return <p role="status" className="text-slate-500">Cargando visita...</p>;
+    return <LoadingSkeleton variant="form" label="Cargando visita..." />;
   }
 
   if (isEdit && isInitialDataError) {

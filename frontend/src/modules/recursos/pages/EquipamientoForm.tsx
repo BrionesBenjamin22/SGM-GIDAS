@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { applyFieldErrors } from "@/lib/httpError";
 import { hasLetter } from "../../../lib/textValidation";
 import { useParams, useNavigate } from "react-router-dom";
@@ -194,7 +195,7 @@ export default function EquipamientoForm() {
     await mutateAsync(changedPayload);
   };
 
-  if (isLoading) return <p className="text-slate-500">Cargando...</p>;
+  if (isLoading) return <LoadingSkeleton variant="form" label="Cargando..." />;
 
   const maxFechaIncorporacion = getLocalIsoDate();
 

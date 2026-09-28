@@ -32,6 +32,7 @@ test("Feedback distingue carga, vacio y fallo; reintenta y conserva contenido du
   const Button = load("src/components/Button.tsx");
   const Feedback = load("src/modules/produccion/components/AutoresQueryFeedback.tsx", {
     "@/components/Button": { default: Button },
+    "@/components/LoadingSkeleton": { default: ({ label }: { label: string }) => createElement("div", { role: "status" }, label) },
   });
   let retries = 0;
   const query = { data: undefined as any, isError: false, isFetching: true,

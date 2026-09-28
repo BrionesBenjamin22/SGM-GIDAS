@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -111,7 +112,7 @@ export default function DistincionesDetalle() {
     return dateStr;
   };
 
-  if (isLoading) return <p role="status" className="text-slate-500">Cargando distinción...</p>;
+  if (isLoading) return <LoadingSkeleton variant="detail" label="Cargando distinción..." />;
   if (isError || !data) {
     return <p role="alert" className="text-slate-500">Lo sentimos, no pudimos recuperar la información. Intente nuevamente.</p>;
   }

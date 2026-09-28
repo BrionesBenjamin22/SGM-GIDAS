@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Pencil, Trash2 } from "lucide-react";
 import Button from "@/components/Button";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import Field from "@/components/Field";
@@ -704,13 +705,7 @@ export default function UctForm() {
         )}
 
         {isEdit && isLoadingDirectivos && (
-          <div
-            className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600"
-            role="status"
-            aria-live="polite"
-          >
-            Cargando equipo directivo…
-          </div>
+          <LoadingSkeleton variant="compact" label="Cargando equipo directivo…" />
         )}
 
         {isEdit && !isLoadingDirectivos && !tieneDirectivos && !mostrarAltaDirectivos && (

@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
@@ -96,7 +97,7 @@ export default function PersonalForm() {
     if (mapped) setTipo(mapped);
   }, [inferredRol]);
 
-  if (isLoading) return <p>Cargando…</p>;
+  if (isLoading) return <LoadingSkeleton variant="form" label="Cargando…" />;
   if (isEdit && isError) {
     return (
       <p className="text-slate-500">

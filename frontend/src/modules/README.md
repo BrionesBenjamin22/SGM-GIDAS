@@ -154,3 +154,11 @@ El menú mantiene el foco del desplegable al expandirlo y excluye las opciones
 cerradas del recorrido. En las tablas, los encabezados ordenables ocupan una
 sola parada de Tab y se recorren con flechas, Inicio y Fin. Un enlace enfocable
 permite ir directamente al primer resultado o acción de la primera fila.
+
+## Estados de carga (ISS-70)
+
+`src/components/LoadingSkeleton.tsx` ofrece variantes de detalle, formulario,
+tabla y sección compacta. Las vistas y el router lo muestran mientras esperan
+datos o código diferido, con una etiqueta de estado accesible y animación
+respetuosa de movimiento reducido. Cada módulo conserva sus estados de error,
+reintento y vacío. La tabla compartida evita duplicar anuncios de carga.

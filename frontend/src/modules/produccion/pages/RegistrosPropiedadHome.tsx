@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -208,9 +209,7 @@ export default function RegistrosPropiedadLanding() {
   const renderHistory = () => {
     if (history.isLoading) {
       return (
-        <p role="status" aria-live="polite" className="text-sm text-slate-500">
-          Cargando historial…
-        </p>
+        <LoadingSkeleton variant="compact" label="Cargando historial..." />
       );
     }
     if (history.isError) {

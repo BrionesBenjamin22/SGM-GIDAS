@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { errorEnlace, MAX_ENLACE } from "@/modules/produccion/utils/trabajoEnlace";
 import { applyFieldErrors } from "@/lib/httpError";
 import { hasLetter } from "../../../lib/textValidation";
@@ -233,7 +234,7 @@ export default function TrabajoReunionForm() {
   };
 
   if (isEdit && isLoading) {
-    return <p className="text-slate-500">Cargando trabajo...</p>;
+    return <LoadingSkeleton variant="form" label="Cargando trabajo..." />;
   }
 
   if (isEdit && !initialData) {

@@ -1,3 +1,4 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
 import { hasOnlyLettersAndSpaces } from "../../../lib/textValidation";
 import { LoaderCircle } from "lucide-react";
@@ -311,7 +312,7 @@ export default function FormPTAAProfesional({
       </div>
 
       <div>
-        {tiposLoading && <p role="status">Cargando tipos de personal…</p>}
+        {tiposLoading && <LoadingSkeleton variant="compact" label="Cargando tipos de personal…" />}
         {tiposError && <div role="alert">
           <p>Lo sentimos, no pudimos recuperar los tipos de personal. Intente nuevamente.</p>
           <Button type="button" variant="secondary" onClick={() => void refetchTipos()} loading={tiposFetching} loadingText="Reintentando...">Reintentar</Button>

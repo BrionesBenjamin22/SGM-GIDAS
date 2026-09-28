@@ -13,7 +13,11 @@ const code = ts.transpileModule(source, { compilerOptions: {
   target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX,
 } }).outputText;
 const module = { exports: {} as any };
-runInNewContext(code, { module, exports: module.exports, require });
+runInNewContext(code, { module, exports: module.exports, require: (name: string) =>
+  name === "@/components/LoadingSkeleton"
+    ? { default: ({ label }: { label: string }) => createElement("div", { role: "status" }, label) }
+    : require(name)
+});
 const Table = module.exports.default;
 const TableRowActionButton = module.exports.TableRowActionButton;
 
