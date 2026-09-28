@@ -134,3 +134,10 @@ servicios y hooks duplicados, datos de prueba aislados y componentes globales
 sin importaciones. El router y los imports directos de cada módulo siguen
 siendo la fuente de las vistas activas. Para incorporar una vista nueva,
 declararla en `src/main.tsx` y mantener su service y hook en el módulo propio.
+
+## Acceso directo al contenido (ISS-72)
+
+`AppLayout` coloca «Saltar al contenido principal» como primer enlace de
+teclado en las rutas autenticadas. El enlace se hace visible al recibir foco y
+lleva a `<main id="main-content" tabIndex={-1}>`, que permanece como destino
+estable al cambiar de vista. El menú lateral conserva su navegación habitual.

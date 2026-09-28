@@ -8,6 +8,14 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-72: acceso directo al contenido
+
+- Se agregó un enlace visible al recibir foco para ir al contenido principal
+  desde el inicio del recorrido de teclado de las rutas autenticadas.
+
+Validaciones: aceptación funcional del usuario, 183 pruebas frontend,
+`typecheck` y build de producción con cargador `runner` correctos.
+
 ### ISS-69: limpieza de frontend
 
 - Se eliminaron vistas, hooks, services, utilidades, componentes y datos mock

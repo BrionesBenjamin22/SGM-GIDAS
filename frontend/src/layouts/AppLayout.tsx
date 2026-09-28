@@ -87,6 +87,13 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-[#F6F6FB] text-slate-800 flex flex-col">
+      <a
+        href="#main-content"
+        onClick={() => document.getElementById("main-content")?.focus()}
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-2 focus:z-[10000] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-sky-800 focus:shadow-lg"
+      >
+        Saltar al contenido principal
+      </a>
       <header className="w-full flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-white h-[56px]">
         <Sidebar />
         <h1 className="font-semibold text-sm tracking-tight"></h1>
@@ -197,7 +204,7 @@ export default function AppLayout() {
         </dialog>
       )}
 
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1">
         <div className="w-full max-w-7xl mx-auto px-6 lg:px-10 py-4">
           <RouteBreadcrumbs />
           {drafts.length > 0 && (
