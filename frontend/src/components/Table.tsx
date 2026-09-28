@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { ChevronRight, Eye, Pencil, RotateCcw, X } from "lucide-react";
 
 export type TableSortDirection = "asc" | "desc";
@@ -131,10 +131,34 @@ export default function Table<T>({
 }: TableProps<T>) {
   const padding = density === "compact" ? "px-3 py-2.5" : "px-4 py-4";
   const status = loading || error || rows.length === 0;
+  const firstRowRef = useRef<HTMLTableRowElement>(null);
+  const sortButtons = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [activeHeader, setActiveHeader] = useState<string | null>(null);
+  const sortableIds = columns.filter((column) => column.sortable).map((column) => column.id);
+  const tabStop = activeHeader && sortableIds.includes(activeHeader) ? activeHeader : sortableIds[0];
+
+  const moveHeaderFocus = (event: React.KeyboardEvent<HTMLButtonElement>, id: string) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    const visibleIds = sortableIds.filter((key) => sortButtons.current[key]?.getClientRects().length);
+    if (!visibleIds.length) return;
+    const current = visibleIds.indexOf(id);
+    const next = event.key === "Home" ? 0 : event.key === "End" ? visibleIds.length - 1
+      : (current + (event.key === "ArrowRight" ? 1 : -1) + visibleIds.length) % visibleIds.length;
+    event.preventDefault();
+    setActiveHeader(visibleIds[next]);
+    sortButtons.current[visibleIds[next]]?.focus();
+  };
+
+  const focusFirstResult = () => {
+    const firstRow = firstRowRef.current;
+    const action = firstRow?.querySelector<HTMLElement>("button:not([disabled]), a[href], input:not([disabled])");
+    (action ?? firstRow)?.focus();
+  };
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       {toolbar}
+      {!status && <button type="button" onClick={focusFirstResult} className="sr-only focus:not-sr-only focus:block focus:w-full focus:bg-sky-50 focus:px-4 focus:py-2 focus:text-left focus:text-sm focus:font-medium focus:text-sky-800">Saltar los encabezados e ir al primer resultado</button>}
       <div className="overflow-x-auto">
         <table aria-busy={loading || refreshing} className="w-full min-w-[760px] border-collapse text-sm">
           <caption className="sr-only">{caption}</caption>
@@ -148,7 +172,7 @@ export default function Table<T>({
                   <th key={column.id} scope="col" aria-sort={active ? (sortDirection === "asc" ? "ascending" : "descending") : column.sortable ? "none" : undefined}
                     className={`${padding} ${alignment} ${priorityClasses[column.priority ?? "primary"]} ${column.headerClassName ?? ""}`}>
                     {column.sortable ? (
-                      <button type="button" className="inline-flex items-center gap-1 rounded outline-none hover:text-slate-950 focus-visible:ring-2 focus-visible:ring-slate-500"
+                      <button type="button" ref={(node) => { sortButtons.current[column.id] = node; }} tabIndex={column.id === tabStop ? 0 : -1} onFocus={() => setActiveHeader(column.id)} onKeyDown={(event) => moveHeaderFocus(event, column.id)} className="inline-flex items-center gap-1 rounded outline-none hover:text-slate-950 focus-visible:ring-2 focus-visible:ring-slate-500"
                         onClick={() => onSortChange?.(column.sortKey ?? column.id, active && sortDirection === "asc" ? "desc" : "asc")}>
                         {column.header}<span aria-hidden="true">{active ? (sortDirection === "asc" ? "↑" : "↓") : "↕"}</span>
                       </button>
@@ -166,19 +190,21 @@ export default function Table<T>({
                   {error && onRetry && <div className="mt-3"><TableActionButton onClick={onRetry} className="border border-slate-300">Reintentar</TableActionButton></div>}
                 </div>
               </td></tr>
-            ) : rows.map((row) => {
+            ) : rows.map((row, index) => {
               const id = getRowId(row);
               const expanded = expandedRowId != null && String(expandedRowId) === String(id);
               return [
                 <tr
                   key={String(id)}
+                  ref={index === 0 ? firstRowRef : undefined}
+                  tabIndex={index === 0 ? -1 : undefined}
                   title={onRowClick ? getRowTitle?.(row) ?? "Ver detalle" : undefined}
                   onClick={onRowClick ? (event) => {
                     const target = event.target;
                     if (target instanceof Element && target.closest("button, a, input, select, textarea, [role='button']")) return;
                     onRowClick(row);
                   } : undefined}
-                  className={`transition-colors motion-reduce:transition-none hover:bg-slate-50/80 ${onRowClick ? "cursor-pointer" : ""}`}
+                  className={`transition-colors motion-reduce:transition-none hover:bg-slate-50/80 focus:outline focus:outline-2 focus:outline-sky-700 ${onRowClick ? "cursor-pointer" : ""}`}
                 >
                   {onToggleRow && (
                     <td className={`${padding} w-10`}>

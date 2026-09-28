@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/Button";
@@ -210,6 +210,7 @@ export default function MemoriaVersionDetalle() {
   const [showError, setShowError] = useState(false);
   const [message, setMessage] = useState("");
   const [showProgramaModal, setShowProgramaModal] = useState(false);
+  const programaDialogRef = useRef<HTMLDialogElement>(null);
   const [programaDescripcion, setProgramaDescripcion] = useState("");
   const [programaError, setProgramaError] = useState("");
 
@@ -268,6 +269,18 @@ export default function MemoriaVersionDetalle() {
     setProgramaDescripcion(planificacionActual?.descripcion ?? "");
     setProgramaError("");
   }, [planificacionActual, showProgramaModal]);
+
+  useEffect(() => {
+    const dialog = programaDialogRef.current;
+    if (!showProgramaModal || !dialog) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialog.showModal();
+    dialog.querySelector<HTMLElement>("textarea")?.focus();
+    return () => {
+      if (dialog.open) dialog.close();
+      if (opener?.isConnected) opener.focus();
+    };
+  }, [showProgramaModal]);
 
   const { mutate: descargarExcel, isPending: isExportingExcel } = useMutation({
     mutationFn: () => exportarExcelMemoria(memoriaId, memoriaVersionId),
@@ -538,24 +551,23 @@ export default function MemoriaVersionDetalle() {
       />
 
       {showProgramaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div
-            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-            onClick={() => {
-              if (isSavingPrograma) return;
-              setShowProgramaModal(false);
-            }}
-          />
-
-          <div
-            className="relative z-10 w-full max-w-2xl rounded-2xl border border-slate-200 bg-white/95 p-6 shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <dialog
+          ref={programaDialogRef}
+          aria-labelledby="programa-actividades-title"
+          aria-describedby="programa-actividades-description"
+          onCancel={(event) => { event.preventDefault(); if (!isSavingPrograma) setShowProgramaModal(false); }}
+          onClick={(event) => {
+            if (event.target !== event.currentTarget || isSavingPrograma) return;
+            const rect = event.currentTarget.getBoundingClientRect();
+            if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) setShowProgramaModal(false);
+          }}
+          className="fixed inset-0 m-auto w-[calc(100%-2rem)] max-w-2xl rounded-2xl border border-slate-200 bg-white/95 p-6 shadow-lg backdrop:bg-black/30 backdrop:backdrop-blur-sm"
+        >
             <div className="mb-4">
-              <h3 className="text-lg font-semibold text-slate-900">
+              <h3 id="programa-actividades-title" className="text-lg font-semibold text-slate-900">
                 Programa de Actividades {anioPrograma ?? ""}
               </h3>
-              <p className="mt-1 text-sm text-slate-500">
+              <p id="programa-actividades-description" className="mt-1 text-sm text-slate-500">
                 Registra los objetivos y actividades actuales del grupo para el año siguiente al fin del período. Los cambios no modifican los datos históricos ni el Excel de esta versión cerrada.
               </p>
             </div>
@@ -600,8 +612,7 @@ export default function MemoriaVersionDetalle() {
                 {isSavingPrograma ? "Guardando..." : planificacionActual ? "Actualizar" : "Guardar"}
               </Button>
             </div>
-          </div>
-        </div>
+        </dialog>
       )}
     </section>
   );

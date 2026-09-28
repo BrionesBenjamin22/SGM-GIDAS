@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { NavLink, type To } from "react-router-dom";
 import { ChevronDown, Lock, LogOut, Menu, Shield, User, X } from "lucide-react";
@@ -50,76 +50,24 @@ const adminItems: Item[] = [
 
 const catalogosItem: Item = { label: "Gestionar Catálogos", to: "/catalogos" };
 
-export default function Sidebar() {
-  const { user, logout, isAdmin, isGestor } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+type MenuListProps = {
+  nodes: Item[];
+  parentKey?: string;
+  level?: number;
+  expanded: Record<string, boolean>;
+  onToggle: (key: string) => void;
+  close: () => void;
+};
 
-  const close = () => {
-    setIsOpen(false);
-    setTimeout(() => setIsVisible(false), 300);
-  };
+function keyFrom(label: string, to: To | undefined, idx: number, parentKey: string) {
+  const base = `${parentKey}/${idx}-${label}`;
+  if (typeof to === "string") return `${base}::${to}`;
+  if (to && typeof to === "object") return `${base}::${to.pathname ?? ""}${to.search ?? ""}${to.hash ?? ""}`;
+  return `${base}::nolink`;
+}
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
-
-  useEffect(() => {
-    document.body.style.overflow = isVisible ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isVisible]);
-
-  const open = () => {
-    setIsVisible(true);
-    setTimeout(() => setIsOpen(true), 10);
-  };
-
-  const toggleNode = (key: string) =>
-    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
-
-  const keyFrom = (label: string, to: To | undefined, idx: number, parentKey: string) => {
-    const base = `${parentKey}/${idx}-${label}`;
-    if (typeof to === "string") return `${base}::${to}`;
-    if (to && typeof to === "object") {
-      return `${base}::${to.pathname ?? ""}${to.search ?? ""}${to.hash ?? ""}`;
-    }
-    return `${base}::nolink`;
-  };
-
-  const resolvedNodes = isAdmin()
-    ? adminItems
-    : isGestor()
-      ? [...baseItems, catalogosItem]
-      : baseItems;
-
-  const roleLabel = isAdmin()
-    ? "Administrador"
-    : user?.rol === "LECTURA"
-      ? "Lector"
-      : "Gestor";
-
-  const handleLogout = async () => {
-    close();
-    await logout();
-  };
-
-  const MenuList = ({
-    nodes,
-    parentKey = "root",
-    level = 0,
-  }: {
-    nodes: Item[];
-    parentKey?: string;
-    level?: number;
-  }) => (
+function MenuList({ nodes, parentKey = "root", level = 0, expanded, onToggle, close }: MenuListProps) {
+  return (
     <ul className={level === 0 ? "select-none" : "pl-5 border-l border-black/10"}>
       {nodes.map((node, idx) => {
         const hasChildren = !!node.children?.length;
@@ -153,7 +101,7 @@ export default function Sidebar() {
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
-                    toggleNode(key);
+                    onToggle(key);
                   }}
                   aria-expanded={isNodeOpen}
                   aria-label={`Desplegar ${node.label}`}
@@ -164,19 +112,77 @@ export default function Sidebar() {
               )}
             </div>
 
-            <div className={`transition-all duration-300 overflow-hidden ${isNodeOpen ? "max-h-[500px] opacity-100 py-2" : "max-h-0 opacity-0"}`}>
-              {hasChildren && <MenuList nodes={node.children!} parentKey={key} level={level + 1} />}
+            <div inert={!isNodeOpen} aria-hidden={!isNodeOpen} className={`transition-all duration-300 overflow-hidden ${isNodeOpen ? "max-h-[500px] opacity-100 py-2" : "max-h-0 opacity-0"}`}>
+              {hasChildren && <MenuList nodes={node.children!} parentKey={key} level={level + 1} expanded={expanded} onToggle={onToggle} close={close} />}
             </div>
           </li>
         );
       })}
     </ul>
   );
+}
+
+export default function Sidebar() {
+  const { user, logout, isAdmin, isGestor } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  const close = () => {
+    setIsOpen(false);
+    setTimeout(() => setIsVisible(false), 300);
+  };
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!isVisible || !dialog) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialog.showModal();
+    dialog.querySelector<HTMLElement>("button[aria-label='Cerrar menú']")?.focus();
+    return () => {
+      if (dialog.open) dialog.close();
+      if (opener?.isConnected) opener.focus();
+    };
+  }, [isVisible]);
+
+  useEffect(() => {
+    document.body.style.overflow = isVisible ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isVisible]);
+
+  const open = () => {
+    setIsVisible(true);
+    setTimeout(() => setIsOpen(true), 10);
+  };
+
+  const toggleNode = (key: string) =>
+    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+
+
+  const resolvedNodes = isAdmin()
+    ? adminItems
+    : isGestor()
+      ? [...baseItems, catalogosItem]
+      : baseItems;
+
+  const roleLabel = isAdmin()
+    ? "Administrador"
+    : user?.rol === "LECTURA"
+      ? "Lector"
+      : "Gestor";
+
+  const handleLogout = async () => {
+    close();
+    await logout();
+  };
+
 
   const overlay = (
-    <div className="fixed inset-0 z-[9999]">
-      <div className="absolute inset-0 bg-black/45 transition-opacity duration-300" onClick={close} />
-
+    <dialog ref={dialogRef} aria-label="Menú de navegación" onCancel={(event) => { event.preventDefault(); close(); }} className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none border-0 bg-transparent p-0 backdrop:bg-black/45">
       <div className="absolute inset-0 flex">
         <aside
           className={`flex h-full w-[280px] max-w-[88vw] flex-col bg-[#e9eaec] shadow-2xl border-r border-black/10 transform transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
@@ -189,7 +195,7 @@ export default function Sidebar() {
           </div>
 
           <nav className="flex-1 overflow-y-auto px-4 py-2 text-xs">
-            <MenuList nodes={resolvedNodes} />
+            <MenuList nodes={resolvedNodes} expanded={expanded} onToggle={toggleNode} close={close} />
           </nav>
 
           <div className="border-t border-black/10 p-3">
@@ -212,6 +218,8 @@ export default function Sidebar() {
 
             <div
               id="sidebar-user-actions"
+              inert={!isUserMenuOpen}
+              aria-hidden={!isUserMenuOpen}
               className={`overflow-hidden transition-all duration-300 ${isUserMenuOpen ? "max-h-56 opacity-100" : "max-h-0 opacity-0"}`}
             >
               <div className="mt-2 border-t border-black/10 pt-2 text-sm">
@@ -238,7 +246,7 @@ export default function Sidebar() {
 
         <div className="flex-1 h-full" onClick={close} />
       </div>
-    </div>
+    </dialog>
   );
 
   return (

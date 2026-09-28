@@ -19,25 +19,32 @@ export default function SessionExpiryDialog({
   onContinue,
   onLogout,
 }: Props) {
-  const dialogRef = useRef<HTMLElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    if (open) dialogRef.current?.focus();
+    const dialog = dialogRef.current;
+    if (!open || !dialog) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialog.showModal();
+    dialog.querySelector<HTMLElement>("button")?.focus();
+    return () => {
+      if (dialog.open) dialog.close();
+      if (opener?.isConnected) opener.focus();
+    };
   }, [open]);
 
   if (!open) return null;
   const minutes = Math.max(1, Math.ceil(remainingSeconds / 60));
 
   return (
-    <div className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/40 px-4">
-      <section
+      <dialog
         ref={dialogRef}
-        tabIndex={-1}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="session-warning-title"
         aria-describedby="session-warning-description"
-        className="w-full max-w-md rounded-2xl border border-amber-200 bg-white p-6 shadow-xl"
+        onCancel={(event) => event.preventDefault()}
+        className="fixed inset-0 m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-amber-200 bg-white p-6 shadow-xl backdrop:bg-slate-950/40"
       >
         <Clock3 className="mb-4 h-8 w-8 text-amber-600" aria-hidden="true" />
         <h2 id="session-warning-title" className="text-xl font-semibold text-slate-900">
@@ -73,7 +80,6 @@ export default function SessionExpiryDialog({
             </span>
           </Button>
         </div>
-      </section>
-    </div>
+      </dialog>
   );
 }

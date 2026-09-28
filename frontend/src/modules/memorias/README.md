@@ -1,5 +1,12 @@
 # Memorias
 
+## Programa de actividades modal (ISS-71)
+
+La edición del programa en el detalle de versión abre un diálogo modal con
+título y descripción asociados, foco inicial en el texto y retorno al botón al
+cerrar. Escape y el fondo lo cierran antes de guardar; mientras el guardado
+está pendiente conserva el diálogo y bloquea la cancelación.
+
 La vista de versión muestra los movimientos financieros de su snapshot con tipo,
 importe ARS, fuente o categoría y enlace al detalle en `/movimientos/:id`. La
 sección interna del contrato de Memorias conserva la clave `erogaciones`.

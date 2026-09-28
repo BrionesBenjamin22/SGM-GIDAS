@@ -48,6 +48,16 @@ test("Table renderiza semantica, orden controlado, expansion y paginacion accesi
   assert.match(html, /hidden md:table-cell/);
 });
 
+test("Table permite saltar encabezados y usa una sola parada de teclado para ordenar", () => {
+  const html = render({ columns: [
+    { id: "name", header: "Nombre", sortable: true, render: (row: { name: string }) => row.name },
+    { id: "other", header: "Otro", sortable: true, render: () => "Dato" },
+  ] });
+  assert.match(html, /Saltar los encabezados e ir al primer resultado/);
+  assert.equal((html.match(/tabindex="0"/g) ?? []).length, 1);
+  assert.equal((html.match(/tabindex="-1"/g) ?? []).length, 2);
+});
+
 test("Table presenta estados uniformes y recuperables", () => {
   assert.match(render({ loading: true }), /Cargando información/);
   assert.match(render({ rows: [], totalRecords: 0, totalPages: 0 }), /No hay registros para mostrar/);

@@ -1,5 +1,12 @@
 # Autenticación y usuarios en frontend
 
+## Diálogos de teclado (ISS-71)
+
+La edición y la baja de usuarios usan diálogos modales con foco inicial y
+retorno al disparador. Escape cierra el diálogo antes del envío; durante una
+mutación pendiente se espera el resultado. El aviso de vencimiento de sesión
+mantiene las acciones explícitas de continuar o cerrar sesión.
+
 ## Errores por campo (ISS-09)
 
 Al cambiar la contraseña, el service instala el nuevo access token y el

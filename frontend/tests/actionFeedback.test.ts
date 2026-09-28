@@ -44,6 +44,7 @@ test("ConfirmDialog bloquea doble confirmacion y cancelacion hasta resolver o fa
   let cursor = 0;
   const react = {
     useEffect() {},
+    useId() { return "dialog-test-id"; },
     useState(initial: unknown) {
       const index = cursor++;
       if (!(index in values)) values[index] = initial;

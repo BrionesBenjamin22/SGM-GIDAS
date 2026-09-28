@@ -8,6 +8,16 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-71: recorrido de teclado en diálogos y listados
+
+- Los diálogos modales contienen el foco, permiten Escape cuando la operación
+  es cancelable y devuelven el foco al disparador al cerrarse.
+- El menú conserva el foco al abrir submenús. Las tablas ofrecen una sola parada
+  para encabezados ordenables y acceso directo al primer resultado.
+
+Validaciones: aceptación funcional del usuario, 184 pruebas frontend,
+`typecheck` y build de producción con cargador `runner` correctos.
+
 ### ISS-72: acceso directo al contenido
 
 - Se agregó un enlace visible al recibir foco para ir al contenido principal

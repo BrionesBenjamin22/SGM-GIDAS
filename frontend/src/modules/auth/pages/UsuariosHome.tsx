@@ -24,7 +24,7 @@ import {
   BookOpen,
   Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 function normalizeRolForForm(rol: UsuarioRol): Rol {
   return rol;
@@ -77,6 +77,8 @@ export default function UsuariosHome() {
   const queryClient = useQueryClient();
 
   const [usuarioAEliminar, setUsuarioAEliminar] = useState<Usuario | null>(null);
+  const editDialogRef = useRef<HTMLDialogElement>(null);
+  const deleteDialogRef = useRef<HTMLDialogElement>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [usuarioAEditar, setUsuarioAEditar] = useState<Usuario | null>(null);
   const [editForm, setEditForm] = useState({
@@ -90,6 +92,30 @@ export default function UsuariosHome() {
     rol?: string;
     general?: string;
   }>({});
+
+  useEffect(() => {
+    const dialog = editDialogRef.current;
+    if (!usuarioAEditar || !dialog) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialog.showModal();
+    dialog.querySelector<HTMLElement>("input")?.focus();
+    return () => {
+      if (dialog.open) dialog.close();
+      if (opener?.isConnected) opener.focus();
+    };
+  }, [usuarioAEditar]);
+
+  useEffect(() => {
+    const dialog = deleteDialogRef.current;
+    if (!usuarioAEliminar || !dialog) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialog.showModal();
+    dialog.querySelector<HTMLElement>("button")?.focus();
+    return () => {
+      if (dialog.open) dialog.close();
+      if (opener?.isConnected) opener.focus();
+    };
+  }, [usuarioAEliminar]);
 
   if (!isAdmin()) {
     return (
@@ -439,10 +465,10 @@ export default function UsuariosHome() {
       </div>
 
       {usuarioAEditar && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <dialog ref={editDialogRef} aria-labelledby="editar-usuario-title" onCancel={(event) => { event.preventDefault(); if (!editarMutation.isPending) handleCerrarEditar(); }} className="fixed inset-0 m-auto w-[calc(100%-2rem)] max-w-lg rounded-2xl p-0 shadow-xl backdrop:bg-black/50">
           <div className="bg-white rounded-2xl p-6 max-w-lg w-full mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Editar usuario</h3>
+              <h3 id="editar-usuario-title" className="text-lg font-semibold">Editar usuario</h3>
               <button
                 onClick={handleCerrarEditar}
                 className="p-1 hover:bg-slate-100 rounded"
@@ -577,14 +603,14 @@ export default function UsuariosHome() {
               </Button>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
 
       {usuarioAEliminar && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <dialog ref={deleteDialogRef} aria-labelledby="eliminar-usuario-title" aria-describedby="eliminar-usuario-description" onCancel={(event) => { event.preventDefault(); if (!eliminarMutation.isPending) handleCerrarModal(); }} className="fixed inset-0 m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl p-0 shadow-xl backdrop:bg-black/50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">¿Eliminar usuario?</h3>
+              <h3 id="eliminar-usuario-title" className="text-lg font-semibold">¿Eliminar usuario?</h3>
               <button
                 onClick={handleCerrarModal}
                 className="p-1 hover:bg-slate-100 rounded"
@@ -593,7 +619,7 @@ export default function UsuariosHome() {
               </button>
             </div>
 
-            <p className="text-slate-600 mb-6">
+            <p id="eliminar-usuario-description" className="text-slate-600 mb-6">
               Estás a punto de eliminar al usuario{" "}
               <strong>{usuarioAEliminar.nombre_usuario}</strong>.
             </p>
@@ -623,7 +649,7 @@ export default function UsuariosHome() {
               </Button>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
     </section>
   );

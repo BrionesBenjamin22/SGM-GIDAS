@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import Button from "@/components/Button";
 import { getErrorMessage } from "@/lib/httpError";
 
@@ -34,7 +34,22 @@ export default function ConfirmDialog({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const inFlight = useRef(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const messageId = useId();
   const busy = loading || pending;
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!open || !dialog) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialog.showModal();
+    const firstControl = dialog.querySelector<HTMLElement>("input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])");
+    firstControl?.focus();
+    return () => {
+      if (dialog.open) dialog.close();
+      if (opener?.isConnected) opener.focus();
+    };
+  }, [open]);
   useEffect(() => {
     if (open) setError("");
   }, [open]);
@@ -63,20 +78,22 @@ export default function ConfirmDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div
-        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-        onClick={cancel}
-      />
-
-      <div
-        className="relative z-10 w-full max-w-md rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-lg"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="mb-2 text-lg font-semibold">{title}</h3>
+    <dialog
+      ref={dialogRef}
+      aria-labelledby={titleId}
+      aria-describedby={message ? messageId : undefined}
+      onCancel={(event) => { event.preventDefault(); cancel(); }}
+      onClick={(event) => {
+        if (event.target !== event.currentTarget) return;
+        const rect = event.currentTarget.getBoundingClientRect();
+        if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) cancel();
+      }}
+      className="fixed inset-0 m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-lg backdrop:bg-black/30 backdrop:backdrop-blur-sm"
+    >
+        <h3 id={titleId} className="mb-2 text-lg font-semibold">{title}</h3>
 
         {message && (
-          <p className="mb-3 text-sm text-slate-600">
+          <p id={messageId} className="mb-3 text-sm text-slate-600">
             {message}
           </p>
         )}
@@ -116,7 +133,6 @@ export default function ConfirmDialog({
             {confirmText}
           </Button>
         </div>
-      </div>
-    </div>
+    </dialog>
   );
 }

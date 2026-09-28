@@ -141,3 +141,16 @@ declararla en `src/main.tsx` y mantener su service y hook en el módulo propio.
 teclado en las rutas autenticadas. El enlace se hace visible al recibir foco y
 lleva a `<main id="main-content" tabIndex={-1}>`, que permanece como destino
 estable al cambiar de vista. El menú lateral conserva su navegación habitual.
+
+## Teclado en diálogos, menú y tablas (ISS-71)
+
+Los diálogos de confirmación y aviso se muestran como `<dialog>` modal. Al
+abrirse enfocan un control útil, contienen Tab y Shift+Tab y devuelven el foco
+al disparador si sigue presente. Escape cierra los diálogos cancelables y el
+menú lateral; durante una operación pendiente la cancelación queda bloqueada.
+El aviso de sesión vencida requiere una decisión explícita.
+
+El menú mantiene el foco del desplegable al expandirlo y excluye las opciones
+cerradas del recorrido. En las tablas, los encabezados ordenables ocupan una
+sola parada de Tab y se recorren con flechas, Inicio y Fin. Un enlace enfocable
+permite ir directamente al primer resultado o acción de la primera fila.
