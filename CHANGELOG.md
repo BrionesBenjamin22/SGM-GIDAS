@@ -8,6 +8,22 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### security-multitenancy-uct: aislamiento por UCT asignada
+
+- ADMIN, GESTOR y LECTURA consumen y modifican, segun su rol, solo los datos
+  de su UCT activa. Las pertenencias se almacenan con auditoria y las altas de
+  usuarios heredan la UCT del administrador.
+- Listas, detalles, relaciones, historiales, busqueda, dashboard, saldos y
+  exportaciones aplican el mismo alcance. Memorias y snapshots validan la UCT
+  de la memoria y de cada dato de origen; se omite el contexto historico de
+  otra UCT.
+- El frontend limpia la cache al cambiar o perder la sesion. La seleccion de
+  varias UCT queda para una entrega posterior.
+
+Validaciones: 120 pruebas backend focalizadas y 38 pruebas adicionales de
+autenticacion y aislamiento, migraciones upgrade/downgrade en SQLite,
+`typecheck`, build frontend y validacion manual aceptada por el usuario.
+
 ### ISS-78: bloqueo temporal de login
 
 - Tres fallos consecutivos por nombre de usuario bloquean nuevos intentos durante
