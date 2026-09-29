@@ -212,6 +212,7 @@ class AuthConcurrentRefreshTokenTestCase(unittest.TestCase):
         with self.app.app_context():
             db.session.remove()
             db.drop_all()
+            db.engine.dispose()
         self.temp_dir.cleanup()
 
     def test_doble_refresh_concurrente_solo_rota_una_vez(self):

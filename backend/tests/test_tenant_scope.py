@@ -12,13 +12,15 @@ from modules.auth.services.auth_service import AuthService
 from modules.dashboard.services.dashboard_service import DashboardService
 from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
-from modules.memorias.models.memorias import Memoria, MemoriaVersion
+from modules.memorias.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
 from modules.memorias.routes.memorias_rutas import memoria_bp
 from modules.memorias.services.exportacion_service_impl import ExportService
 from modules.memorias.services.memoria_periodo_service import consultar_entidades_memoria
+from modules.memorias.services.memoria_service import MemoriaService
 from modules.personal.models.personal import Investigador, InvestigadorMemoriaVersion
 from modules.personal.models.personal import Becario, TipoFormacion
 from modules.recursos.models.becas import Beca, Beca_Becario
+from modules.recursos.services.becas_service import BecaService
 from modules.recursos.models.movimiento_financiero import MovimientoFinanciero
 from modules.recursos.services.saldo_financiero_service import SaldoFinancieroService
 from modules.search.services.search_service import SearchService
@@ -78,6 +80,51 @@ class TenantScopeTest(unittest.TestCase):
             self.assertIsNone(db.session.get(Memoria, 2))
             self.assertEqual([item.id for item in GrupoInvestigacionUtn.query.all()], [1])
 
+    def test_filtros_cacheados_respetan_cambio_de_uct_entre_solicitudes(self):
+        for group_id in (1, 2, 1):
+            db.session.remove()
+            with self.app.test_request_context("/api/v1/grupo/grupo-utn"):
+                g.current_grupo_utn_id = group_id
+                self.assertEqual(
+                    [item.id for item in GrupoInvestigacionUtn.query.all()],
+                    [group_id],
+                )
+                self.assertEqual(
+                    [item.id for item in Memoria.query.all()],
+                    [group_id],
+                )
+
+    def test_conteo_de_memoria_cerrada_respeta_uct_y_borrado_logico(self):
+        version = MemoriaVersion(
+            memoria_id=1, numero_version=1, fecha_apertura=datetime.utcnow(),
+            estado=EstadoMemoria.CERRADA,
+        )
+        db.session.add(version)
+        db.session.flush()
+        version_id = version.id
+        db.session.get(Memoria, 1).version_actual_id = version_id
+        db.session.commit()
+
+        table = db.metadata.tables["movimiento_memoria_version"]
+        base = {
+            "memoria_version_id": version_id, "fecha": date(2025, 1, 1),
+            "tipo_movimiento": "INGRESO", "monto": 10, "moneda": "ARS",
+            "deleted_at": None,
+        }
+        db.session.execute(table.insert(), [
+            {**base, "movimiento_id": 1, "numero_movimiento": 1, "grupo_utn_id": 1},
+            {**base, "movimiento_id": 2, "numero_movimiento": 2, "grupo_utn_id": 1,
+             "deleted_at": datetime.utcnow()},
+            {**base, "movimiento_id": 3, "numero_movimiento": 3, "grupo_utn_id": 2},
+        ])
+        db.session.commit()
+        db.session.remove()
+
+        with self.app.test_request_context("/api/v1/memorias"):
+            g.current_grupo_utn_id = 1
+            scoped_version = db.session.get(MemoriaVersion, version_id)
+            self.assertEqual(MemoriaService._contar_elementos_version(scoped_version), 1)
+
     def test_rechaza_escritura_de_otra_uct(self):
         with self.app.test_request_context("/api/v1/memorias"):
             g.current_grupo_utn_id = 1
@@ -95,6 +142,34 @@ class TenantScopeTest(unittest.TestCase):
             db.session.flush()
             self.assertEqual(beca.grupo_utn_id, 1)
             db.session.rollback()
+
+    def test_becas_activas_por_anio_respetan_periodo_y_uct(self):
+        db.session.add(TipoFormacion(id=1, nombre="Doctorado"))
+        db.session.add_all([
+            Beca(id=1, nombre_beca="Vigente", grupo_utn_id=1),
+            Beca(id=2, nombre_beca="Finalizada", grupo_utn_id=1),
+            Beca(id=3, nombre_beca="Otra UCT", grupo_utn_id=2),
+            Becario(id=1, nombre_apellido="Becario A", horas_semanales=10,
+                    grupo_utn_id=1, tipo_formacion_id=1),
+            Becario(id=2, nombre_apellido="Becario B", horas_semanales=10,
+                    grupo_utn_id=2, tipo_formacion_id=1),
+        ])
+        db.session.flush()
+        db.session.add_all([
+            Beca_Becario(id_beca=1, id_becario=1, fecha_inicio=date(2025, 1, 1)),
+            Beca_Becario(id_beca=2, id_becario=1, fecha_inicio=date(2023, 1, 1),
+                         fecha_fin=date(2024, 12, 31)),
+            Beca_Becario(id_beca=3, id_becario=2, fecha_inicio=date(2025, 1, 1)),
+        ])
+        db.session.commit()
+        db.session.remove()
+
+        with self.app.test_request_context("/api/v1/recursos/becas/activas?anio=2025"):
+            g.current_grupo_utn_id = 1
+            self.assertEqual(
+                [beca["id"] for beca in BecaService.get_becas_activas_en_anio(2025)],
+                [1],
+            )
 
     def test_alta_de_usuario_hereda_uct_del_administrador(self):
         with self.app.test_request_context("/api/v1/auth/usuarios"):

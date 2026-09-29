@@ -7,7 +7,8 @@ from modules.shared.exceptions import ConflictError
 
 class MovimientoFinancieroApiTestCase(unittest.TestCase):
     def setUp(self):
-        self.client = create_app().test_client()
+        with patch("app.register_tenant_request_scope"):
+            self.client = create_app().test_client()
         self.base = "/api/v1/recursos/movimientos"
 
     @staticmethod

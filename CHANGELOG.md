@@ -8,6 +8,16 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-84: respuesta inicial de los módulos
+
+- Se reutilizan los criterios de lectura por UCT para reducir el tiempo de
+  preparación de consultas sin cambiar el aislamiento de datos.
+- Memorias cuenta los elementos de versiones cerradas con una agregación en
+  base de datos. La consulta de becas activas por año vuelve a responder.
+
+Validaciones: 548 pruebas backend correctas desde Windows, lecturas de los
+módulos con respuestas válidas y aceptación manual del rendimiento.
+
 ### security-multitenancy-uct: aislamiento por UCT asignada
 
 - ADMIN, GESTOR y LECTURA consumen y modifican, segun su rol, solo los datos

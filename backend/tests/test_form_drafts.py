@@ -98,7 +98,8 @@ class FormDraftServiceTestCase(unittest.TestCase):
 class FormDraftRouteTestCase(unittest.TestCase):
     def setUp(self):
         from app import create_app
-        self.app = create_app()
+        with patch("app.register_tenant_request_scope"):
+            self.app = create_app()
         self.client = self.app.test_client()
 
     def test_roles_y_auth_protegen_borradores(self):

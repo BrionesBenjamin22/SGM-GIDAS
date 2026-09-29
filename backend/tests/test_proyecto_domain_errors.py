@@ -14,7 +14,8 @@ class ProyectoDomainErrorsTestCase(unittest.TestCase):
             self.assertIn("fecha_inicio", caught.exception.details["fields"])
 
     def setUp(self):
-        self.app = create_app()
+        with patch("app.register_tenant_request_scope"):
+            self.app = create_app()
         self.app.testing = True
         self.client = self.app.test_client()
 
