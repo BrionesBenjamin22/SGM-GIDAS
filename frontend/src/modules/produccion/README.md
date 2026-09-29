@@ -1,5 +1,19 @@
 # Produccion
 
+## ISS-82: autores bibliográficos e historial de Documentación
+
+El formulario de Documentación conserva la búsqueda, selección y creación de
+autores. Los autores se administran además en Catálogos, donde se editan, dan
+de baja y consultan sus cambios; las correcciones de nombre se reflejan en las
+documentaciones activas. Los nombres guardados en versiones cerradas de
+Memorias no cambian.
+
+`documentacionHistory.ts` presenta solo cambios de los campos de Documentación
+(`titulo`, `editorial`, `anio`, `fecha`, `grupo_id`) y eventos `autores` de
+vinculación o desvinculación. Omite cambios propios del autor y eventos
+técnicos ajenos al documento. Los historiales conservan tres eventos por página
+en home y detalle; el historial propio del autor se ve en Catálogos.
+
 ## ISS-39: Documentación y Biblioteca
 
 `DocumentacionHome` usa la tabla compartida con un máximo de 9 documentos por

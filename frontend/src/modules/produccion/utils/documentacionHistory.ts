@@ -7,6 +7,7 @@ const labels: Record<string, string> = {
   fecha: "Fecha",
   grupo_id: "Grupo",
 };
+const documentacionFields = new Set(Object.keys(labels));
 
 function readable(value: unknown): string {
   if (value === null || value === undefined || value === "") return "Sin dato";
@@ -21,7 +22,7 @@ function readable(value: unknown): string {
 function authorEvent(item: HistorialDocumentacionItem) {
   if (item.campo !== "autores" || !item.valor_nuevo || typeof item.valor_nuevo !== "object") return null;
   const value = item.valor_nuevo as Record<string, unknown>;
-  if (typeof value.accion !== "string") return null;
+  if (value.accion !== "vincular" && value.accion !== "desvincular") return null;
   const detail = value.detalle && typeof value.detalle === "object" ? value.detalle : value;
   return { title: value.accion === "desvincular" ? "Autor desvinculado" : "Autor vinculado", description: readable(detail) };
 }
@@ -29,8 +30,9 @@ function authorEvent(item: HistorialDocumentacionItem) {
 export function presentDocumentacionHistoryItems(items: HistorialDocumentacionItem[]) {
   return items.filter((item) => {
     const field = item.campo?.trim().toLocaleLowerCase("es") ?? "";
-    if (!field || field === "accion" || field === "acciones") return false;
+    if (!documentacionFields.has(field) && field !== "autores") return false;
     if (authorEvent(item)) return true;
+    if (field === "autores") return false;
     if (Object.is(item.valor_anterior, item.valor_nuevo)) return false;
     if (item.valor_anterior == null || item.valor_anterior === "") return false;
     if (typeof item.valor_anterior === "object" && typeof item.valor_nuevo === "object" && JSON.stringify(item.valor_anterior) === JSON.stringify(item.valor_nuevo)) return false;

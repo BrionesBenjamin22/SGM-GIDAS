@@ -17,6 +17,9 @@ from modules.shared.exceptions import ConflictError, NotFoundError, ValidationEr
 from modules.shared.services.date_time import INSTITUTIONAL_MIN_DATE
 
 
+DOCUMENTACION_HISTORY_FIELDS = frozenset({"titulo", "editorial", "anio", "fecha", "grupo_id"})
+
+
 class DocumentacionBibliograficaService:
 
     # =========================
@@ -97,10 +100,18 @@ class DocumentacionBibliograficaService:
         doc = db.session.get(DocumentacionBibliografica, doc_id)
         if not doc:
             raise NotFoundError("Documentacion bibliografica no encontrada")
-        return AuditoriaService.obtener_historial_entidad(
+        historial = AuditoriaService.obtener_historial_entidad(
             entidad="documentacion_bibliografica",
             registro_id=doc.id
         )
+        return [evento for evento in historial if (
+            evento.get("campo") in DOCUMENTACION_HISTORY_FIELDS
+            or (
+                evento.get("campo") == "autores"
+                and isinstance(evento.get("valor_nuevo"), dict)
+                and evento["valor_nuevo"].get("accion") in {"vincular", "desvincular"}
+            )
+        )]
 
     # =========================
     # CREATE

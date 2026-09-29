@@ -1,5 +1,42 @@
 # Producción
 
+## ISS-82: autores de documentación bibliográfica
+
+`Autor` pertenece a una UCT, incorpora auditoría y usa baja lógica. La revisión
+`d5a7e9c1b3f2` agrega las columnas de auditoría a los autores existentes sin
+reconstruir eventos anteriores. Las lecturas se aíslan por UCT; ADMIN, GESTOR y
+LECTURA pueden consultar, mientras que solo ADMIN y GESTOR pueden modificar.
+
+La base de las rutas es `/api/v1/produccion/autores`. `GET /` admite
+`activos=true|false|all` (`true` por defecto), `GET /<id>` devuelve el autor y
+`GET /<id>/historial` devuelve los cambios del autor. `POST /` recibe
+`{ "nombre_apellido": "..." }`; `PUT /<id>` admite ese campo cuando cambia;
+`DELETE /<id>` aplica soft delete. Los nombres aceptan letras Unicode y
+espacios, se recortan y normalizan; un nombre ya usado en la misma UCT se
+rechaza. La respuesta incluye ID, UCT, nombre, estado y marcas de auditoría.
+Las entradas inválidas devuelven error de validación, los duplicados y las
+bajas no permitidas devuelven conflicto, y los registros de otra UCT no se
+resuelven.
+
+Un cambio real de nombre registra una sola entrada `nombre_apellido` con valor
+anterior, nuevo, usuario y fecha. Repetir el mismo nombre no registra un evento
+ni actualiza las marcas de modificación. La baja registra el cambio de estado.
+Solo una vinculación con documentación activa impide dar de baja al autor; los
+vínculos con documentación inactiva permanecen y permiten la baja lógica. Las
+documentaciones activas muestran el nombre corregido; las versiones cerradas
+de Memorias conservan el nombre almacenado en su snapshot.
+
+`POST /<id>/libros` y `DELETE /<id>/libros/<libro_id>` delegan en el servicio
+de Documentación. Las vinculaciones y desvinculaciones se auditan únicamente
+en `documentacion_bibliografica`, sin duplicarlas en el historial del autor.
+El historial de Documentación expone solo sus campos bibliográficos y esos
+eventos relacionales; omite cambios de nombre atribuidos por error al documento.
+
+Validación: siete pruebas del flujo de autores, una prueba de upgrade y
+downgrade en SQLite, cinco pruebas de historial de Documentación y Memorias y
+21 pruebas de aislamiento UCT. La migración se aplicó en la base de desarrollo
+y se comprobó el listado y una inserción revertida.
+
 ## ISS-39: Documentación y Biblioteca
 
 Las rutas de `documentacion_bibliografica_bp` exponen
