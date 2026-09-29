@@ -55,6 +55,9 @@ export function getRouteBreadcrumbs(pathname: string): BreadcrumbItem[] {
   if (section === "uct" && second === "nueva" && segments.length === 2) {
     return [start, { label: "Nueva UCT" }];
   }
+  if (section === "uct" && second === "editar" && segments.length === 2) {
+    return [start, { label: "Editar UCT" }];
+  }
 
   if (section === "personal" && segments.length === 4 && fourth === "editar") {
     return [...sectionTrail("personal"), { label: "Detalle", to: `/personal/${second}/${third}` }, { label: "Editar" }];

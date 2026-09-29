@@ -67,6 +67,10 @@ test("incluye rutas de primer nivel, altas, acceso público y página inexistent
     { label: "Inicio", to: "/inicio" },
     { label: "Nueva UCT" },
   ]);
+  assert.deepEqual(getRouteBreadcrumbs("/uct/editar"), [
+    { label: "Inicio", to: "/inicio" },
+    { label: "Editar UCT" },
+  ]);
   assert.deepEqual(getRouteBreadcrumbs("/login"), [
     { label: "Portada", to: "/" },
     { label: "Iniciar sesión" },

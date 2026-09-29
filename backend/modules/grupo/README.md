@@ -18,6 +18,23 @@ admiten fechas futuras y su finalización debe ser igual o posterior al inicio.
 Gestiona la UCT, directivos, cargos, programas, planificaciones y visitas
 academicas. Todas las rutas de dominio requieren rol.
 
+## Historial de campos de UCT (ISS-80)
+
+`PUT /api/v1/grupo/grupo-utn/` admite diferencias de
+`nombre_unidad_academica`, `nombre_sigla_grupo`, `mail` y
+`objetivo_desarrollo`. El service recorta espacios, valida los valores y registra
+una fila por campo realmente modificado en `auditoria_campo` con entidad
+`grupo_utn`, valores anterior y nuevo, autor y fecha. Un guardado sin cambios no
+genera eventos ni actualiza la auditoria del registro. El alta conserva los datos
+iniciales sin construir un historial retroactivo.
+
+`GET /api/v1/grupo/grupo-utn/{id}/historial` devuelve los eventos ordenados del
+mas reciente al mas antiguo. Requiere `ADMIN`, `GESTOR` o `LECTURA` y responde
+`NOT_FOUND` si el ID no corresponde a la UCT visible o el grupo fue eliminado.
+Los errores de dominio mantienen el contrato `error.code`, `error.message` y
+`error.details`. Los periodos de directivos permanecen en su endpoint propio y
+no se presentan como cambios de campos del grupo.
+
 ## Planificaciones
 
 Endpoints principales:

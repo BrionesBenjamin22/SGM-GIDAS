@@ -1,7 +1,7 @@
 import { applyFieldErrors, focusFieldErrors, getApiFieldErrors } from "@/lib/httpError";
 import { hasLetter, hasOnlyLettersAndSpaces } from "../../../lib/textValidation";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Pencil, Trash2 } from "lucide-react";
 import Button from "@/components/Button";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
@@ -49,9 +49,19 @@ export default function UctForm() {
   const { uct, save, isLoading: isLoadingUct } = useUct();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const isEdit = !!uct;
   const grupoId = uct?.id;
+
+  useEffect(() => {
+    if (isLoadingUct || hasStartedSave.current) return;
+    if (isEdit && location.pathname === "/uct/nueva") {
+      navigate("/uct/editar", { replace: true });
+    } else if (!isEdit && location.pathname === "/uct/editar") {
+      navigate("/uct/nueva", { replace: true });
+    }
+  }, [isEdit, isLoadingUct, location.pathname, navigate]);
 
   const { data: cargos = [], isLoading: isLoadingCargos } = useCargos();
   const {

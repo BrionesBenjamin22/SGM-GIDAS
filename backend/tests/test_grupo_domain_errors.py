@@ -95,6 +95,20 @@ class GrupoDomainErrorsTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.get_json()["error"]["code"], "NOT_FOUND")
 
+    def test_historial_grupo_respeta_roles_y_contrato(self):
+        for rol, status in (("ADMIN", 200), ("GESTOR", 200), ("LECTURA", 200), ("LECTOR", 403)):
+            with self.subTest(rol=rol), self._auth(rol), patch(
+                "modules.grupo.controllers.grupo_controller.obtener_historial_grupo_utn",
+                return_value=[{"id": 1, "campo": "mail"}],
+            ):
+                response = self.client.get(
+                    "/api/v1/grupo/grupo-utn/3/historial",
+                    headers=self._headers(),
+                )
+            self.assertEqual(response.status_code, status)
+            if status == 200:
+                self.assertEqual(response.get_json(), [{"id": 1, "campo": "mail"}])
+
 
 if __name__ == "__main__":
     unittest.main()

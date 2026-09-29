@@ -48,6 +48,23 @@ detalles consumen auditoria e historial cuando existe endpoint.
 - la exportacion valida que la respuesta no este vacia y que su tipo sea compatible
   con Excel; los errores del servidor se normalizan antes de mostrarse
 
+## Historial y rutas de UCT (ISS-80)
+
+- La UCT existente se edita en `/uct/editar`, con breadcrumb `Inicio > Editar UCT`;
+  el alta usa `/uct/nueva` y `Inicio > Nueva UCT`. El formulario corrige
+  enlaces antiguos segun exista o no una UCT. Inicio y Administracion dirigen
+  cada accion a la ruta correspondiente.
+- `uctServices.ts` tipa y consulta
+  `GET /api/v1/grupo/grupo-utn/{id}/historial`; `useHistorialGrupo` habilita la
+  consulta solo al abrir la vista correspondiente.
+- El boton `Historial Grupo` del home institucional conserva el menu existente y
+  permite elegir `Cambios del grupo` o `Periodos directivos`. Los primeros
+  muestran campo, valor anterior y nuevo, autor y fecha; los segundos son
+  mandatos registrados, no cambios auditados. Cada vista pagina tres elementos
+  y ofrece carga, estado vacio, error y reintento.
+- Los cambios anteriores a la auditoria de campos no se reconstruyen. El
+  backend controla rol y UCT; la interfaz consulta solo el grupo cargado.
+
 ## Visitas
 
 - `tiposVisitaServices.ts` consulta el catálogo independiente

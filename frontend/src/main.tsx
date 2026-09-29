@@ -158,6 +158,7 @@ const router = createBrowserRouter([
 
       // UCT
       { path: "uct/nueva", element: editorOnly(<UctForm />) },
+      { path: "uct/editar", element: editorOnly(<UctForm />) },
 
       // Personal
       { path: "personal", element: <PersonalLanding /> },   // landing  

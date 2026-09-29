@@ -154,7 +154,7 @@ export default function Home() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => navigate("/uct/nueva")}
+                  onClick={() => navigate("/uct/editar")}
                 >
                   Editar
                 </Button>
@@ -188,7 +188,7 @@ export default function Home() {
                   </p>
                 </div>
 
-                <Button size="sm" onClick={() => navigate("/uct/nueva")}>
+                <Button size="sm" onClick={() => navigate("/uct/editar")}>
                   Cargar directivos
                 </Button>
               </div>

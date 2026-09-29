@@ -8,6 +8,18 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-80: historial de campos y rutas de UCT
+
+- La edición de la UCT registra diferencias reales de sus campos institucionales
+  con valor anterior, nuevo, autor y fecha. El historial exige permisos de
+  lectura y respeta el alcance de la UCT asignada.
+- El menú `Historial Grupo` permite consultar cambios del grupo o períodos
+  directivos, con tres elementos por página. La edición usa `/uct/editar` y
+  muestra `Editar UCT` en el breadcrumb; `/uct/nueva` queda para el alta.
+
+Validaciones: aceptación funcional del usuario, 28 pruebas backend focalizadas,
+188 pruebas frontend, `typecheck`, build de producción y `git diff --check`.
+
 ### ISS-84: respuesta inicial de los módulos
 
 - Se reutilizan los criterios de lectura por UCT para reducir el tiempo de

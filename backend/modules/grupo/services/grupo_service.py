@@ -3,6 +3,8 @@ from modules.shared.services.text_validation import has_letter
 from modules.shared.exceptions import ValidationError as ValueError
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.auth.models.usuario_grupo_utn import UsuarioGrupoUtn
+from modules.shared.exceptions import NotFoundError
+from modules.shared.services.auditoria_service import AuditoriaService
 
 
 ETIQUETAS_GRUPO = {
@@ -70,7 +72,17 @@ def listar_grupos_utn_activos():
     ]
 
 
-def actualizar_grupo_utn(data):
+def obtener_historial_grupo_utn(grupo_id):
+    grupo = GrupoInvestigacionUtn.query.filter(
+        GrupoInvestigacionUtn.id == grupo_id,
+        GrupoInvestigacionUtn.deleted_at.is_(None),
+    ).first()
+    if not grupo:
+        raise NotFoundError("Historial no encontrado")
+    return AuditoriaService.obtener_historial_entidad("grupo_utn", grupo.id)
+
+
+def actualizar_grupo_utn(data, user_id):
     grupo = obtener_grupo_utn()
     if not grupo:
         raise ValueError("No existe grupo activo.")
@@ -78,6 +90,7 @@ def actualizar_grupo_utn(data):
     if not data:
         raise ValueError("Los datos no pueden estar vacíos.")
 
+    cambios = {}
     for campo in [
         "mail",
         "nombre_unidad_academica",
@@ -90,8 +103,20 @@ def actualizar_grupo_utn(data):
                 raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"Ingrese {ETIQUETAS_GRUPO[campo]}."}})
             if campo in {"nombre_unidad_academica", "nombre_sigla_grupo"} and not has_letter(valor):
                 raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"{ETIQUETAS_GRUPO[campo].capitalize()} debe contener letras."}})
-            setattr(grupo, campo, valor.strip())
+            nuevo_valor = valor.strip()
+            cambio = AuditoriaService.construir_cambio(getattr(grupo, campo), nuevo_valor)
+            if cambio:
+                cambios[campo] = cambio
+                setattr(grupo, campo, nuevo_valor)
 
+    if cambios:
+        grupo.mark_updated(user_id)
+        AuditoriaService.registrar_cambios(
+            entidad="grupo_utn",
+            registro_id=grupo.id,
+            cambios=cambios,
+            user_id=user_id,
+        )
     db.session.commit()
     return grupo
 

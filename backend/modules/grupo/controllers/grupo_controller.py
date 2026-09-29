@@ -6,6 +6,7 @@ from modules.grupo.services.grupo_service import (
     eliminar_grupo_utn,
     restaurar_grupo_utn,
     listar_grupos_utn_activos,
+    obtener_historial_grupo_utn,
 )
 from modules.memorias.services.exportacion_service_impl import ExportService
 from modules.shared.controllers.responses import error_response, exception_response
@@ -55,12 +56,19 @@ class GrupoUtnController:
     def actualizar():
         try:
             data = request.get_json()
-            grupo = actualizar_grupo_utn(data)
+            grupo = actualizar_grupo_utn(data, g.current_user_id)
 
             return jsonify(grupo.serialize()), 200
 
         except Exception as error:
             return exception_response(error, operation="actualizar grupo UTN")
+
+    @staticmethod
+    def historial(grupo_id):
+        try:
+            return jsonify(obtener_historial_grupo_utn(grupo_id)), 200
+        except Exception as error:
+            return exception_response(error, operation="consultar historial de grupo UTN")
 
 
     @staticmethod

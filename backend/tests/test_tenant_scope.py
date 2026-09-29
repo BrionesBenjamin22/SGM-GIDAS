@@ -12,6 +12,7 @@ from modules.auth.services.auth_service import AuthService
 from modules.dashboard.services.dashboard_service import DashboardService
 from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.grupo.services.grupo_service import actualizar_grupo_utn, obtener_historial_grupo_utn
 from modules.memorias.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
 from modules.memorias.routes.memorias_rutas import memoria_bp
 from modules.memorias.services.exportacion_service_impl import ExportService
@@ -93,6 +94,46 @@ class TenantScopeTest(unittest.TestCase):
                     [item.id for item in Memoria.query.all()],
                     [group_id],
                 )
+
+    def test_historial_grupo_registra_diferencias_y_aisla_uct(self):
+        db.session.add(AuditoriaCampo(
+            entidad="grupo_utn", registro_id=2, campo="mail",
+            valor_anterior="anterior@example.test",
+            valor_nuevo="privado@example.test", usuario_id=3,
+        ))
+        db.session.commit()
+        db.session.remove()
+
+        with self.app.test_request_context("/api/v1/grupo/grupo-utn/1/historial"):
+            g.current_grupo_utn_id = 1
+            self.assertEqual(obtener_historial_grupo_utn(1), [])
+            grupo = actualizar_grupo_utn({
+                "mail": " nuevo@example.test ",
+                "nombre_sigla_grupo": "UCT 1 modificada",
+            }, user_id=2)
+            self.assertEqual(grupo.updated_by, 2)
+            self.assertEqual(grupo.mail, "nuevo@example.test")
+            updated_at = grupo.updated_at
+
+            actualizar_grupo_utn({"mail": " nuevo@example.test "}, user_id=2)
+            self.assertEqual(grupo.updated_at, updated_at)
+            historial = obtener_historial_grupo_utn(1)
+            self.assertEqual(len(historial), 2)
+            self.assertEqual({item["campo"] for item in historial}, {"mail", "nombre_sigla_grupo"})
+            self.assertTrue(all(item["usuario_nombre"] == "gestor" for item in historial))
+            self.assertEqual(historial[0]["valor_anterior"], "UCT 1")
+            self.assertEqual(historial[0]["valor_nuevo"], "UCT 1 modificada")
+            self.assertEqual(historial[1]["valor_anterior"], "uct1@example.test")
+            self.assertEqual(historial[1]["valor_nuevo"], "nuevo@example.test")
+            with self.assertRaises(NotFoundError):
+                obtener_historial_grupo_utn(2)
+
+        db.session.remove()
+        with self.app.test_request_context("/api/v1/grupo/grupo-utn/2/historial"):
+            g.current_grupo_utn_id = 2
+            historial = obtener_historial_grupo_utn(2)
+            self.assertEqual(len(historial), 1)
+            self.assertEqual(historial[0]["valor_nuevo"], "privado@example.test")
 
     def test_conteo_de_memoria_cerrada_respeta_uct_y_borrado_logico(self):
         version = MemoriaVersion(
