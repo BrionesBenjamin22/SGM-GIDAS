@@ -60,6 +60,7 @@ class DocumentacionBibliografica(db.Model, AuditMixin):
 class Autor(db.Model):
     __tablename__ = 'autor'
     id = db.Column(db.Integer, primary_key=True)
+    grupo_utn_id = db.Column(db.Integer, db.ForeignKey("grupo_utn.id"), nullable=True, index=True)
     nombre_apellido = db.Column(db.Text, nullable=False)  
     libros = db.relationship("DocumentacionBibliografica", secondary=autor_libro, back_populates="autores")
     

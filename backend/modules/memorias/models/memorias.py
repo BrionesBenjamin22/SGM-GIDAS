@@ -92,5 +92,13 @@ class MemoriaVersion(db.Model, AuditMixin):
 
     def serialize(self):
         data = self.to_dict()
+        data["contexto_institucional"] = self.contexto_institucional_seguro()
         data["estado"] = self.estado.value if self.estado else None
         return data
+
+    def contexto_institucional_seguro(self):
+        contexto = self.contexto_institucional
+        grupo = contexto.get("grupo") if isinstance(contexto, dict) else None
+        if not isinstance(grupo, dict) or self.memoria is None:
+            return None
+        return contexto if grupo.get("id") == self.memoria.grupo_utn_id else None

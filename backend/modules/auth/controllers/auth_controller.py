@@ -114,7 +114,9 @@ class AuthController:
 
     @staticmethod
     def _get_payload_from_request(req: Request = None) -> dict:
-        if hasattr(g, "current_user_payload"):
+        if (getattr(g, "tenant_request_marker", None)
+                == id(request._get_current_object())
+                and getattr(g, "current_user_payload", None) is not None):
             return g.current_user_payload
 
         token = AuthController._get_token_from_request(req)
@@ -122,7 +124,11 @@ class AuthController:
 
     @staticmethod
     def _require_admin(payload: dict):
-        if payload.get("rol") != "ADMIN":
+        rol = (g.current_user_rol
+               if getattr(g, "tenant_request_marker", None)
+               == id(request._get_current_object())
+               else payload.get("rol"))
+        if rol != "ADMIN":
             raise PermissionError(
                 "Acceso denegado. Se requiere rol de administrador."
             )
@@ -172,7 +178,8 @@ class AuthController:
                 rol_id=data.get("rol_id"),
                 nombre_apellido=data.get("nombre_apellido"),
                 dni=data.get("dni"),
-                es_primer_usuario=es_primer_usuario
+                es_primer_usuario=es_primer_usuario,
+                actor_id=int(payload["sub"]) if not es_primer_usuario else None,
             )
 
             tokens = AuthService.generate_tokens(
@@ -487,7 +494,8 @@ class AuthController:
                 rol_id=data["rol_id"],
                 nombre_apellido=data.get("nombre_apellido", data["nombre_usuario"]),
                 dni=data.get("dni", 0),
-                es_primer_usuario=False
+                es_primer_usuario=False,
+                actor_id=int(payload["sub"]),
             )
 
             return jsonify({

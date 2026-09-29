@@ -1,9 +1,21 @@
-from flask import Blueprint, current_app
+from flask import Blueprint, current_app, g, jsonify
 from modules.auth.controllers.auth_controller import AuthController
 from modules.shared.services.middleware import requiere_auth, requiere_rol
 from extension import limiter
+from modules.auth.services.uct_membership_service import allowed_ucts
+from modules.shared.controllers.responses import exception_response
+from modules.shared.exceptions import DomainError
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
+
+
+@auth_bp.route("/ucts-permitidas", methods=["GET"])
+@requiere_auth
+def listar_ucts_permitidas():
+    try:
+        return jsonify(allowed_ucts(g.current_user_id)), 200
+    except DomainError as error:
+        return exception_response(error, operation="pertenencias UCT")
 
 
 # -------------------------

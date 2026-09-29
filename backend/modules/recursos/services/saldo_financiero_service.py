@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
+from flask import g, has_request_context
 from sqlalchemy import case, func, select
 
 from extension import db
@@ -35,7 +36,17 @@ class ResumenFinanciero:
 
 class SaldoFinancieroService:
     @staticmethod
+    def _grupo_permitido(grupo_utn_id: int | None) -> int | None:
+        actual = getattr(g, "current_grupo_utn_id", None) if has_request_context() else None
+        if actual is not None:
+            if grupo_utn_id is not None and grupo_utn_id != actual:
+                raise NotFoundError("El grupo no está disponible. Recargue la página e intente nuevamente.")
+            return actual
+        return grupo_utn_id
+
+    @staticmethod
     def saldos_por_fuente(grupo_utn_id: int) -> list[dict]:
+        grupo_utn_id = SaldoFinancieroService._grupo_permitido(grupo_utn_id)
         # Reutiliza la validación de grupo y moneda del saldo consolidado.
         SaldoFinancieroService.calcular(grupo_utn_id)
         ingresos = func.coalesce(func.sum(case(
@@ -76,6 +87,7 @@ class SaldoFinancieroService:
 
     @staticmethod
     def saldo_de_fuente(grupo_utn_id: int, fuente_id: int) -> Decimal:
+        grupo_utn_id = SaldoFinancieroService._grupo_permitido(grupo_utn_id)
         total = db.session.scalar(select(func.coalesce(func.sum(case(
             (MovimientoFinanciero.tipo_movimiento == "INGRESO", MovimientoFinanciero.monto),
             else_=-MovimientoFinanciero.monto,
@@ -92,6 +104,7 @@ class SaldoFinancieroService:
         fecha_desde: date | None = None,
         fecha_hasta: date | None = None,
     ) -> ResumenFinanciero:
+        grupo_utn_id = SaldoFinancieroService._grupo_permitido(grupo_utn_id)
         activos = [MovimientoFinanciero.deleted_at.is_(None)]
         if grupo_utn_id is not None:
             grupo = db.session.get(GrupoInvestigacionUtn, grupo_utn_id)

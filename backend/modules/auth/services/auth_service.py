@@ -314,7 +314,8 @@ class AuthService:
         rol_id: int | None = None,
         nombre_apellido: str | None = None,
         dni: str | None = None,
-        es_primer_usuario: bool = False
+        es_primer_usuario: bool = False,
+        actor_id: int | None = None,
     ) -> Usuario:
         existe = Usuario.query.filter(
             (Usuario.nombre_usuario == nombre_usuario) |
@@ -363,6 +364,20 @@ class AuthService:
         nuevo_usuario.set_password(password)
 
         db.session.add(nuevo_usuario)
+
+        if not es_primer_usuario and actor_id is not None:
+            from modules.auth.models.usuario_grupo_utn import UsuarioGrupoUtn
+            from modules.auth.services.uct_membership_service import single_allowed_uct_id
+
+            group_id = single_allowed_uct_id(actor_id)
+            if group_id is None:
+                raise ValidationError("El administrador debe tener una UCT activa asignada.")
+            db.session.flush()
+            db.session.add(UsuarioGrupoUtn(
+                usuario_id=nuevo_usuario.id,
+                grupo_utn_id=group_id,
+                created_by=actor_id,
+            ))
 
         try:
             db.session.commit()

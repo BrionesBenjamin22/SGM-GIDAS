@@ -1,9 +1,20 @@
 from datetime import date, datetime
 from enum import Enum
+from flask import g, has_request_context
+from sqlalchemy import select
 
 from extension import db
 from modules.shared.models.auditoria_campo import AuditoriaCampo
 from modules.shared.services.date_time import serialize_temporal
+from modules.shared.exceptions import NotFoundError
+from modules.shared.services.tenant_scope import _classes_by_table, _predicate
+
+
+HISTORY_TABLE_ALIASES = {
+    "visita_academica": "visita_grupo",
+    "registro_propiedad": "registros_patente_grupo",
+    "trabajo_revista_referato": "trabajos_revista",
+}
 
 
 class AuditoriaService:
@@ -91,6 +102,17 @@ class AuditoriaService:
 
     @staticmethod
     def obtener_historial_entidad(entidad: str, registro_id: int):
+        group_id = getattr(g, "current_grupo_utn_id", None) if has_request_context() else None
+        if group_id is not None:
+            classes = _classes_by_table()
+            model = classes.get(HISTORY_TABLE_ALIASES.get(entidad, entidad))
+            if model is None:
+                raise NotFoundError("Historial no encontrado")
+            predicate = _predicate(model, group_id, classes)
+            if predicate is not None and db.session.execute(
+                select(model.id).where(model.id == registro_id, predicate)
+            ).scalar_one_or_none() is None:
+                raise NotFoundError("Historial no encontrado")
         historial = (
             AuditoriaCampo.query
             .filter(

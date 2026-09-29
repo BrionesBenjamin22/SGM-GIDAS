@@ -1058,7 +1058,11 @@ class ExportService:
 
         memoria = snapshot_sources["memoria"]
         version = snapshot_sources["version"]
-        contexto = version.contexto_institucional
+        contexto = (
+            version.contexto_institucional_seguro()
+            if hasattr(version, "contexto_institucional_seguro")
+            else version.contexto_institucional
+        )
         if not contexto:
             raise ConflictError("Esta version anterior no conserva los datos institucionales historicos. No puede exportarse reconstruyendolos desde datos actuales.")
         grupo = SimpleNamespace(**contexto["grupo"])

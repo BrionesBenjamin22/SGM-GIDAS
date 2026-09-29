@@ -105,6 +105,8 @@ def consultar_entidades_memoria(modelo, memoria_version, campo_grupo="grupo_utn_
     memoria = getattr(memoria_version, "memoria", None)
     grupo_id = getattr(memoria, "grupo_utn_id", None)
     filtros = []
+    if memoria is None or grupo_id is None:
+        raise ValidationError("Debe asociar la version de memoria a una UCT antes de generar su contenido")
     if grupo_id is not None:
         if relacion:
             # Relacion escalar: el grupo pertenece al investigador o proyecto.
@@ -113,8 +115,6 @@ def consultar_entidades_memoria(modelo, memoria_version, campo_grupo="grupo_utn_
             filtros.append(atributo.has(getattr(modelo_relacion, campo_grupo) == grupo_id))
         else:
             filtros.append(getattr(modelo, campo_grupo) == grupo_id)
-    elif memoria is not None:
-        raise ValidationError("Debe asociar la memoria a una UCT antes de generar su contenido")
     return modelo.query.filter(*filtros).all()
 
 

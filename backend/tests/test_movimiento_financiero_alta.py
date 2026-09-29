@@ -257,7 +257,10 @@ class MovimientoFinancieroAltaTestCase(unittest.TestCase):
         ), 1)
         self.assertEqual(egreso["monto"], "75.50")
         self.assertEqual(egreso["equipamiento"]["denominacion"], "Microscopio")
-        version = SimpleNamespace(id=82, memoria=None)
+        version = SimpleNamespace(id=82, memoria=SimpleNamespace(
+            grupo_utn_id=self.grupo.id,
+            periodo_inicio=date(2026, 1, 1), periodo_fin=date(2026, 12, 31),
+        ))
         MovimientoFinancieroService.snapshot_para_memoria_version(version, 1)
         db.session.commit()
         foto = MovimientoMemoriaVersion.query.filter_by(
@@ -310,7 +313,10 @@ class MovimientoFinancieroAltaTestCase(unittest.TestCase):
             self._payload("EGRESO", monto="25.00",
                           categoria_erogacion_id=self.categoria.id), 1,
         )
-        version = SimpleNamespace(id=51, memoria=None)
+        version = SimpleNamespace(id=51, memoria=SimpleNamespace(
+            grupo_utn_id=self.grupo.id,
+            periodo_inicio=date(2026, 1, 1), periodo_fin=date(2026, 12, 31),
+        ))
         snapshots = MovimientoFinancieroService.snapshot_para_memoria_version(version, 1)
         db.session.commit()
         self.assertEqual(len(snapshots), 2)

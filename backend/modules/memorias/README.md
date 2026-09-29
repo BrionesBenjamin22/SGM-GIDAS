@@ -1,5 +1,15 @@
 # Memorias
 
+## Aislamiento de snapshots por UCT (security-multitenancy-uct)
+
+Cada memoria y sus versiones pertenecen a la UCT de la sesion. La generacion
+de snapshots exige una memoria con UCT y filtra todos los origenes por ella.
+Una fila historica cuyo origen pertenece a otra UCT no se serializa. El
+contexto institucional congelado se entrega y exporta solo si su grupo
+coincide con la memoria; un contexto inconsistente no se reconstruye desde
+datos actuales. Detalles, historiales y exportaciones siguen la misma regla.
+Vease [Aislamiento de datos por UCT](../SECURITY_MULTITENANCY_UCT.md).
+
 Las versiones nuevas capturan `MovimientoMemoriaVersion` con tipo, importe,
 moneda, grupo y nombres de fuente o categoría. La exportación usa esas fotos
 inmutables y separa ingresos, egresos corrientes y egresos de capital. Los datos
@@ -54,4 +64,4 @@ la UCT y los registros anteriores que conservan un ID se resuelven al consultar.
 
 El cierre selecciona cada entidad por UCT y por fecha puntual o solapamiento del intervalo funcional completo, incluyendo la baja lógica. La transacción revierte estado y fotos si falla cualquier generador. Las horas de integrantes corresponden al historial vigente al fin del período y quedan nulas si no existe evidencia. Se congelan además fecha de alta, datos institucionales, autoridades y planificación. UI y Excel leen estas fotos; una versión anterior sin contexto congelado no se reconstruye desde datos actuales.
 
-La migración reversible `e16a0b2c4d60` conserva memorias existentes con UCT nullable. Una memoria previa abierta debe asociarse explícitamente antes de cerrar. El aislamiento de usuarios por pertenencia UCT continúa en `security-multitenancy-uct`.
+La migración reversible `e16a0b2c4d60` conserva memorias existentes con UCT nullable. Una memoria previa abierta debe asociarse explícitamente antes de cerrar. El aislamiento de usuarios por pertenencia UCT se aplica como se describe arriba.

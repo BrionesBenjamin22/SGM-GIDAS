@@ -43,6 +43,11 @@ class InvestigadorMemoriaHistorialTestCase(unittest.TestCase):
             estado=EstadoMemoria.CERRADA,
             created_by=1
         )
+        version.memoria = Memoria(
+            grupo_utn_id=6,
+            periodo_inicio=date(2026, 1, 1),
+            periodo_fin=date(2026, 12, 31),
+        )
         investigador = SimpleNamespace(
             id=5,
             nombre_apellido="Ana Perez",

@@ -8,7 +8,10 @@ from modules.shared.exceptions import ValidationError
 class MemoriaRoutesTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.app = create_app()
+        # Route/RBAC contract tests use fake tokens and mocked services.
+        # Tenant authorization with real memberships is covered separately.
+        with patch("app.register_tenant_request_scope"):
+            self.app = create_app()
         self.app.testing = True
         self.client = self.app.test_client()
 

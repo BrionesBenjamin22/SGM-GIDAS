@@ -1,5 +1,17 @@
 # Autenticación y usuarios en backend
 
+## Pertenencia a UCT (security-multitenancy-uct)
+
+El usuario activo debe tener exactamente una pertenencia activa a una UCT
+activa para usar los endpoints de datos. ADMIN, GESTOR y LECTURA se limitan a
+esa misma UCT; la eleccion de varias UCT queda pendiente. `GET
+/api/v1/auth/ucts-permitidas` consulta las UCT permitidas, sin cambiar el
+alcance. Las altas de usuarios efectuadas por un ADMIN heredan su UCT. La
+tabla `usuario_grupo_utn` conserva estado y auditoria de la pertenencia.
+
+El contrato completo, los errores, las migraciones y las reglas de despliegue
+se documentan en [Aislamiento de datos por UCT](../SECURITY_MULTITENANCY_UCT.md).
+
 ## Bloqueo de login (ISS-78)
 
 `POST /api/v1/auth/login` cuenta fallos consecutivos por nombre de usuario

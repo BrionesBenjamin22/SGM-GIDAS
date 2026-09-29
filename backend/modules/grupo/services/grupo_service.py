@@ -2,6 +2,7 @@ from extension import db
 from modules.shared.services.text_validation import has_letter
 from modules.shared.exceptions import ValidationError as ValueError
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.auth.models.usuario_grupo_utn import UsuarioGrupoUtn
 
 
 ETIQUETAS_GRUPO = {
@@ -43,6 +44,12 @@ def crear_grupo_utn(data, user_id):
     )
 
     db.session.add(nuevo_grupo)
+    db.session.flush()
+    db.session.add(UsuarioGrupoUtn(
+        usuario_id=user_id,
+        grupo_utn_id=nuevo_grupo.id,
+        created_by=user_id,
+    ))
     db.session.commit()
 
     return nuevo_grupo
