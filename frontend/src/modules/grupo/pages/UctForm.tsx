@@ -2,7 +2,7 @@ import { applyFieldErrors, focusFieldErrors, getApiFieldErrors } from "@/lib/htt
 import { hasLetter, hasOnlyLettersAndSpaces } from "../../../lib/textValidation";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, X } from "lucide-react";
 import Button from "@/components/Button";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -286,7 +286,9 @@ export default function UctForm() {
             )
           )
         : uctPayload;
-      if (!isEdit || Object.keys(changedUctPayload).length > 0) {
+      const hayCambiosUct = !isEdit || Object.keys(changedUctPayload).length > 0;
+      const hayCambiosEquipo = Object.keys(pendingUpdates).length > 0 || Object.keys(pendingFinalizations).length > 0;
+      if (hayCambiosUct) {
         await save(changedUctPayload);
       }
 
@@ -334,7 +336,11 @@ export default function UctForm() {
         replace: true,
         state: {
           successMessage: isEdit
-            ? "UCT actualizada correctamente."
+            ? hayCambiosEquipo
+              ? hayCambiosUct
+                ? "UCT y equipo directivo actualizados correctamente."
+                : "Equipo directivo actualizado correctamente."
+              : "UCT actualizada correctamente."
             : "UCT creada correctamente.",
         },
       });
@@ -375,10 +381,17 @@ export default function UctForm() {
       setSubmitError("Use solo letras y espacios en el nombre del directivo.");
       return;
     }
-    setPendingUpdates((current) => ({
-      ...current,
-      [editingId]: editingNombre.trim(),
-    }));
+    const nombreOriginal = directivosActuales.find((directivo) => directivo.id_directivo === editingId)?.nombre_apellido;
+    setPendingUpdates((current) => {
+      const next = { ...current };
+      if (editingNombre.trim() === nombreOriginal) {
+        delete next[editingId];
+      } else {
+        next[editingId] = editingNombre.trim();
+      }
+      return next;
+    });
+    setSubmitError("");
     setEditingId(null);
     setEditingNombre("");
   };
@@ -643,10 +656,11 @@ export default function UctForm() {
                           onClick={() => {
                             if (!directivoId) return;
                             setEditingId(directivoId);
-                            setEditingNombre(d.nombre_apellido);
+                            setEditingNombre(pendingUpdates[directivoId] ?? d.nombre_apellido);
                           }}
                           className="text-sky-600 hover:text-sky-700 transition"
                           title="Editar directivo"
+                          aria-label={`Editar nombre de ${d.nombre_apellido}`}
                         >
                           <Pencil size={16} />
                         </button>
@@ -659,8 +673,9 @@ export default function UctForm() {
                           }}
                           className="text-red-500 hover:text-red-600 transition"
                           title="Finalizar cargo"
+                          aria-label={`Finalizar cargo de ${d.nombre_apellido}`}
                         >
-                          <Trash2 size={16} />
+                          <X size={16} aria-hidden="true" />
                         </button>
                       </div>
                     </div>
@@ -687,15 +702,12 @@ export default function UctForm() {
                           </Button>
 
                           <Button
+                            type="button"
                             size="sm"
                             onClick={handleEditarDirectivo}
-                            disabled={actualizarDirectivo.isPending}
-                           loading={actualizarDirectivo.isPending}
-                           loadingText="Guardando..."
+                            disabled={isSubmitting}
                          >
-                            {actualizarDirectivo.isPending
-                              ? "Guardando..."
-                              : "Guardar"}
+                            Aplicar al formulario
                           </Button>
                         </div>
                       </div>
@@ -709,9 +721,14 @@ export default function UctForm() {
 
         {(Object.keys(pendingUpdates).length > 0 ||
           Object.keys(pendingFinalizations).length > 0) && (
-          <p className="text-sm text-amber-700">
-            Hay cambios del equipo directivo pendientes. Se aplicaran al guardar la UCT.
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3" role="status">
+            <p className="text-sm text-amber-900">
+              Hay cambios del equipo directivo pendientes. Para actualizar el nombre y registrar el cambio en el historial, guarde la UCT.
+            </p>
+            <Button type="submit" size="sm" disabled={isSubmitting} loading={isSubmitting} loadingText="Guardando...">
+              Guardar cambios de la UCT
+            </Button>
+          </div>
         )}
 
         {isEdit && isLoadingDirectivos && (

@@ -151,3 +151,16 @@ class DirectivoController:
 
         except Exception as error:
             return exception_response(error, operation="consultar directivos actuales")
+
+    @staticmethod
+    def get_cambios(grupo_id):
+        try:
+            try:
+                page = int(request.args.get("page", "1"))
+            except (TypeError, ValueError):
+                return error_response("VALIDATION_ERROR", status_code=400)
+            if page < 1:
+                return error_response("VALIDATION_ERROR", status_code=400)
+            return jsonify(DirectivoGrupoService.get_cambios_por_grupo(grupo_id, page)), 200
+        except Exception as error:
+            return exception_response(error, operation="consultar cambios de directivos")

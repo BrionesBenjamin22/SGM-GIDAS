@@ -106,6 +106,33 @@ Las relaciones entre directivo, cargo y grupo mantienen periodos de vigencia.
 El frontend acumula cambios hasta guardar la UCT; las operaciones backend
 continuan protegidas individualmente y registran historial relacional.
 
+`Directivo` contiene el nombre y la UCT propietaria; `DirectivoGrupo` contiene
+el cargo y las fechas de cada mandato. `POST /api/v1/grupo/directivos/crear-y-asignar`
+recibe `nombre_apellido`, `id_grupo_utn`, `id_cargo` y `fecha_inicio` (`YYYY-MM-DD`).
+`PUT /api/v1/grupo/directivos/{id}` recibe `nombre_apellido`; solo registra una
+diferencia si el valor cambia. `PUT /api/v1/grupo/directivos/finalizar` recibe
+`id_directivo`, `id_grupo_utn` y `fecha_fin`. Una asignacion de un directivo sin
+UCT fija su propietaria despues de descartar vinculos vigentes con otra UCT; una
+asignacion de un directivo propiedad de otra UCT se rechaza.
+
+`GET /api/v1/grupo/directivos/grupo/{id}` devuelve los periodos con nombre,
+cargo, fecha de inicio y fin. `GET /api/v1/grupo/directivos/grupo/{id}/actuales`
+devuelve solo los mandatos sin fecha de fin. Estas listas representan periodos,
+no eventos de auditoria.
+
+`GET /api/v1/grupo/directivos/grupo/{id}/cambios?page=1` responde
+`{ items, page, per_page: 3, total }`, con eventos del mas reciente al mas antiguo.
+Cada item contiene `entidad`, `campo`, `valor_anterior`, `valor_nuevo`,
+`fecha_cambio` y `usuario_nombre`. El cambio de nombre pertenece a `directivo`;
+la asignacion y finalizacion pertenecen a `directivo_grupo`, con `campo: mandato`
+y `valor_nuevo: { accion, detalle }`. `detalle` incluye nombre, cargo y fechas.
+La consulta exige que la UCT exista y no este eliminada; solo incluye mandatos
+de esa UCT y nombres de directivos cuya UCT propietaria coincide. No reconstruye
+eventos de mandatos anteriores a esta auditoria. Los tres endpoints de lectura
+requieren ADMIN, GESTOR o LECTURA; las mutaciones requieren ADMIN o GESTOR.
+Una pagina invalida responde `VALIDATION_ERROR`; una UCT inexistente o fuera
+del alcance responde `NOT_FOUND`.
+
 Cada UCT puede tener activos como maximo un `Director` y un `Vicedirector`. La
 asignacion rechaza cargos diferentes, cargos inactivos, un cargo institucional ya
 ocupado o un equipo que ya tenga cubiertos ambos cargos. Los periodos finalizados
@@ -130,6 +157,7 @@ de directivos actuales mantiene el mismo criterio para el formulario y la home.
 ## Pruebas relacionadas
 
 - `tests/test_planificacion_historial.py`
+- `tests/test_directivo_cargos.py`
 - `tests/test_pagination.py`
 - pruebas de auditoria de relaciones y visitas
 - `tests/test_grupo_domain_errors.py`

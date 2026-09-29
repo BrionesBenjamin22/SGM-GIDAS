@@ -96,6 +96,14 @@ formulario de UCT. Editar una fila no persiste inmediatamente: el usuario debe
 guardar la UCT para aplicar los cambios pendientes. La pantalla informa cuando
 existen operaciones sin guardar.
 
+El control de nombre dice `Aplicar al formulario`. Al prepararlo aparece un
+aviso con `Guardar cambios de la UCT`, que envia juntas las diferencias
+institucionales y las operaciones pendientes del equipo. Repetir el nombre
+original elimina la diferencia pendiente. El boton para finalizar un cargo
+usa una X y abre la confirmacion existente. Un guardado correcto distingue en
+su mensaje si cambio la UCT, el equipo o ambos; un error queda visible y permite
+corregir los datos y reintentar.
+
 El equipo activo admite un unico `Director` y un unico `Vicedirector`. La home y
 el formulario comparten la misma normalizacion de cargos; si uno ya existe, el
 formulario ofrece solamente el cargo faltante. El backend vuelve a validar el
@@ -105,6 +113,17 @@ El formulario consulta el equipo actual mediante `useDirectivos`, sin depender
 de relaciones historicas incluidas en la UCT. Al guardar correctamente vuelve a
 `/inicio` con `successMessage`, tanto para cambios institucionales como para
 operaciones consolidadas del equipo directivo.
+
+`directivosServices.ts` separa `DirectivoPeriodo` de `CambioDirectivo` y consulta
+`GET /api/v1/grupo/directivos/grupo/{id}/cambios?page={page}`. Los hooks
+`usePeriodosDirectivos` y `useCambiosDirectivos` consultan solo al abrir su vista
+del historial. El popover de Inicio ofrece `Cambios del grupo`, `Cambios
+directivos` y `Periodos directivos`. Los cambios muestran nombre anterior y
+nuevo o asignacion/finalizacion, ademas de fecha y autor; pagina tres eventos
+por pagina desde el backend, con estados de carga, vacio, error y reintento.
+Los periodos mantienen su lista separada con paginacion de tres elementos.
+La interfaz consulta el ID de la UCT cargada; el backend valida rol y alcance.
+No se presentan periodos antiguos como eventos retroactivos.
 
 ## Services, hooks y tipos
 

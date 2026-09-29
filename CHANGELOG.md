@@ -8,6 +8,18 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-81: cambios y periodos de directivos
+
+- El historial del grupo separa cambios de nombre y de mandatos de los periodos
+  directivos. Los nuevos eventos muestran autor y fecha, respetan la UCT y se
+  consultan de a tres; los periodos anteriores no reciben auditoria retroactiva.
+- El formulario aclara cuando un nombre esta pendiente y ofrece guardar la UCT
+  junto a las tarjetas. Finalizar cargo usa una X y el exito identifica el equipo
+  directivo cuando corresponde.
+
+Validaciones: aceptacion funcional del usuario, 16 pruebas backend del modulo,
+188 pruebas frontend, `typecheck` y build de produccion correctos.
+
 ### ISS-80: historial de campos y rutas de UCT
 
 - La edición de la UCT registra diferencias reales de sus campos institucionales

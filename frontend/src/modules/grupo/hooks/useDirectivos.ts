@@ -3,10 +3,12 @@ import {
   crearYAsignarDirectivo,
   finalizarDirectivo,
   getDirectivosActuales,
-  getHistorialDirectivos,
+  getPeriodosDirectivos,
+  getCambiosDirectivos,
   updateDirectivo,
   type DirectivoActual,
   type DirectivoPeriodo,
+  type CambiosDirectivosPage,
 } from "@/modules/grupo/services/directivosServices";
 
 export function useDirectivos(grupoId?: number, enabled = true) {
@@ -17,11 +19,20 @@ export function useDirectivos(grupoId?: number, enabled = true) {
   });
 }
 
-export function useHistorialDirectivos(grupoId?: number, enabled = false) {
+export function usePeriodosDirectivos(grupoId?: number, enabled = false) {
   return useQuery<DirectivoPeriodo[]>({
-    queryKey: ["directivos-historial", grupoId],
-    queryFn: () => getHistorialDirectivos(grupoId as number),
+    queryKey: ["directivos-periodos", grupoId],
+    queryFn: () => getPeriodosDirectivos(grupoId as number),
     enabled: !!grupoId && enabled,
+  });
+}
+
+export function useCambiosDirectivos(grupoId?: number, page = 1, enabled = false) {
+  return useQuery<CambiosDirectivosPage>({
+    queryKey: ["directivos-cambios", grupoId, page],
+    queryFn: () => getCambiosDirectivos(grupoId as number, page),
+    enabled: !!grupoId && enabled,
+    placeholderData: (previous) => previous,
   });
 }
 

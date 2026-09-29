@@ -11,6 +11,7 @@ from modules.grupo.models.directivos import Cargo, Directivo, DirectivoGrupo
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.grupo.services.directivo_service import DirectivoGrupoService
 from modules.shared.exceptions import ValidationError
+from modules.shared.models.auditoria_campo import AuditoriaCampo
 
 
 class DirectivoAtomicTestCase(unittest.TestCase):
@@ -41,6 +42,57 @@ class DirectivoAtomicTestCase(unittest.TestCase):
         self.assertEqual(Directivo.query.count(), 1)
         self.assertEqual(DirectivoGrupo.query.filter_by(id_directivo=result["id"]).count(), 1)
 
+    def test_cambios_directivos_separados_de_periodos_y_paginados(self):
+        directivo = DirectivoGrupoService.crear_y_asignar({
+            "nombre_apellido": "Ada Lovelace", "id_grupo_utn": 1,
+            "id_cargo": 1, "fecha_inicio": "2025-01-01",
+        }, 1)
+        DirectivoGrupoService.actualizar_directivo(directivo["id"], {"nombre_apellido": "Ada Byron"}, 1)
+        DirectivoGrupoService.actualizar_directivo(directivo["id"], {"nombre_apellido": "Ada Byron"}, 1)
+        DirectivoGrupoService.finalizar_cargo({
+            "id_directivo": directivo["id"], "id_grupo_utn": 1, "fecha_fin": "2025-12-31",
+        }, 1)
+        DirectivoGrupoService.actualizar_directivo(directivo["id"], {"nombre_apellido": "Ada Augusta"}, 1)
+
+        primera = DirectivoGrupoService.get_cambios_por_grupo(1)
+        segunda = DirectivoGrupoService.get_cambios_por_grupo(1, page=2)
+        self.assertEqual((primera["total"], len(primera["items"]), len(segunda["items"])), (4, 3, 1))
+        self.assertEqual({item["entidad"] for item in primera["items"] + segunda["items"]}, {"directivo", "directivo_grupo"})
+        self.assertEqual({item["valor_nuevo"]["accion"] for item in primera["items"] + segunda["items"] if item["campo"] == "mandato"}, {"asignado", "finalizado"})
+        self.assertEqual(len(DirectivoGrupoService.get_por_grupo(1)), 1)
+        self.assertEqual(AuditoriaCampo.query.count(), 4)
+        self.assertEqual(db.session.get(Directivo, directivo["id"]).grupo_utn_id, 1)
+
+    def test_periodos_anteriores_no_generan_eventos_retroactivos(self):
+        directivo = Directivo(nombre_apellido="Directora historica", created_by=1)
+        db.session.add(directivo)
+        db.session.flush()
+        db.session.add(DirectivoGrupo(id_directivo=directivo.id, id_grupo_utn=1, id_cargo=1, fecha_inicio=date(2022, 1, 1), fecha_fin=date(2023, 1, 1), created_by=1))
+        db.session.commit()
+        self.assertEqual(len(DirectivoGrupoService.get_por_grupo(1)), 1)
+        self.assertEqual(DirectivoGrupoService.get_cambios_por_grupo(1)["items"], [])
+
+    def test_cambios_de_otra_uct_no_aparecen(self):
+        db.session.add(GrupoInvestigacionUtn(id=2, nombre_sigla_grupo="Otra", mail="otra@test.invalid", nombre_unidad_academica="Regional", objetivo_desarrollo="Investigacion"))
+        db.session.commit()
+        DirectivoGrupoService.crear_y_asignar({"nombre_apellido": "Ana Otra", "id_grupo_utn": 2, "id_cargo": 1, "fecha_inicio": "2025-01-01"}, 1)
+        self.assertEqual(DirectivoGrupoService.get_cambios_por_grupo(1)["total"], 0)
+        self.assertEqual(DirectivoGrupoService.get_cambios_por_grupo(2)["total"], 1)
+
+    def test_nombre_de_directivo_heredado_compartido_no_filtra_hacia_otra_uct(self):
+        db.session.add(GrupoInvestigacionUtn(id=2, nombre_sigla_grupo="Otra", mail="otra@test.invalid", nombre_unidad_academica="Regional", objetivo_desarrollo="Investigacion"))
+        directivo = Directivo(nombre_apellido="Ada Original", grupo_utn_id=1, created_by=1)
+        db.session.add(directivo)
+        db.session.flush()
+        db.session.add_all([
+            DirectivoGrupo(id_directivo=directivo.id, id_grupo_utn=1, id_cargo=1, fecha_inicio=date(2022, 1, 1), created_by=1),
+            DirectivoGrupo(id_directivo=directivo.id, id_grupo_utn=2, id_cargo=1, fecha_inicio=date(2022, 1, 1), created_by=1),
+        ])
+        db.session.commit()
+        DirectivoGrupoService.actualizar_directivo(directivo.id, {"nombre_apellido": "Ada Nueva"}, 1)
+        self.assertEqual(DirectivoGrupoService.get_cambios_por_grupo(1)["total"], 1)
+        self.assertEqual(DirectivoGrupoService.get_cambios_por_grupo(2)["total"], 0)
+
 
 class DirectivoCargosTestCase(unittest.TestCase):
 
@@ -51,6 +103,16 @@ class DirectivoCargosTestCase(unittest.TestCase):
                 response = self.app.test_client().post("/api/v1/grupo/directivos/crear-y-asignar", json=payload, headers={"Authorization": "Bearer test"})
             self.assertEqual(response.status_code, expected)
             self.assertEqual(create.call_count, int(expected == 201))
+
+    def test_endpoint_cambios_permite_lectura_y_valida_pagina(self):
+        with patch("modules.shared.services.middleware.AuthService.verify_token", return_value={"sub": "1", "rol": "LECTURA"}), patch.object(DirectivoGrupoService, "get_cambios_por_grupo", return_value={"items": [], "page": 2, "per_page": 3, "total": 0}) as consultar:
+            response = self.app.test_client().get("/api/v1/grupo/directivos/grupo/1/cambios?page=2", headers={"Authorization": "Bearer test"})
+            self.assertEqual(response.status_code, 200)
+            consultar.assert_called_once_with(1, 2)
+            invalida = self.app.test_client().get("/api/v1/grupo/directivos/grupo/1/cambios?page=0", headers={"Authorization": "Bearer test"})
+            self.assertEqual(invalida.status_code, 400)
+            texto = self.app.test_client().get("/api/v1/grupo/directivos/grupo/1/cambios?page=abc", headers={"Authorization": "Bearer test"})
+            self.assertEqual(texto.status_code, 400)
 
     def test_nombre_y_fecha_identifican_campos_editables(self):
         with self.assertRaises(ValidationError) as caught:

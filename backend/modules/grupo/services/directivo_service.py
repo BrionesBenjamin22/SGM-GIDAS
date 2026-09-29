@@ -4,9 +4,13 @@ from extension import db
 from modules.shared.services.text_validation import has_only_letters_and_spaces
 from modules.shared.exceptions import ValidationError as ValueError
 from sqlalchemy.orm import joinedload
+from sqlalchemy import and_, or_
 from modules.grupo.models.directivos import Directivo, DirectivoGrupo, Cargo
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.shared.services.date_time import validate_institutional_date
+from modules.shared.services.auditoria_service import AuditoriaService
+from modules.shared.models.auditoria_campo import AuditoriaCampo
+from modules.shared.exceptions import NotFoundError
 
 
 class DirectivoGrupoService:
@@ -130,12 +134,21 @@ class DirectivoGrupoService:
             "Directivo no encontrado."
         )
 
+        cambios = {}
         if "nombre_apellido" in data:
             if not isinstance(data["nombre_apellido"], str) or not data["nombre_apellido"].strip():
                 raise ValueError("El nombre es obligatorio.", details={"fields": {"nombre_apellido": "Ingrese nombre y apellido"}})
             if not has_only_letters_and_spaces(data["nombre_apellido"]):
                 raise ValueError("Use solo letras y espacios en nombre y apellido.", details={"fields": {"nombre_apellido": "Use solo letras y espacios en nombre y apellido"}})
-            directivo.nombre_apellido = data["nombre_apellido"].strip()
+            nuevo_nombre = data["nombre_apellido"].strip()
+            cambio = AuditoriaService.construir_cambio(directivo.nombre_apellido, nuevo_nombre)
+            if cambio:
+                cambios["nombre_apellido"] = cambio
+                directivo.nombre_apellido = nuevo_nombre
+
+        if cambios:
+            directivo.mark_updated(user_id)
+            AuditoriaService.registrar_cambios("directivo", directivo.id, cambios, user_id)
 
         db.session.commit()
 
@@ -162,6 +175,18 @@ class DirectivoGrupoService:
         grupo = DirectivoGrupoService._get_activo_or_404(
             GrupoInvestigacionUtn, data["id_grupo_utn"], "Grupo no encontrado."
         )
+
+        if directivo.grupo_utn_id not in (None, grupo.id):
+            raise ValueError("Directivo no disponible para esta UCT.")
+        if directivo.grupo_utn_id is None:
+            otra_uct = DirectivoGrupo.query.filter(
+                DirectivoGrupo.id_directivo == directivo.id,
+                DirectivoGrupo.id_grupo_utn != grupo.id,
+                DirectivoGrupo.deleted_at.is_(None),
+            ).first()
+            if otra_uct:
+                raise ValueError("Directivo no disponible para esta UCT.")
+            directivo.grupo_utn_id = grupo.id
 
         cargo = db.session.get(Cargo, data["id_cargo"])
         if not cargo:
@@ -212,6 +237,12 @@ class DirectivoGrupoService:
         )
 
         db.session.add(participacion)
+        db.session.flush()
+        AuditoriaService.registrar_evento_relacion(
+            "directivo_grupo", participacion.id, "mandato", "asignado",
+            {"nombre_apellido": directivo.nombre_apellido, "cargo": cargo.nombre,
+             "fecha_inicio": fecha_inicio, "fecha_fin": fecha_fin}, user_id,
+        )
         if commit:
             db.session.commit()
         else:
@@ -232,7 +263,7 @@ class DirectivoGrupoService:
                 "fecha_inicio": data.get("fecha_inicio"),
             }, user_id, commit=False)
             db.session.commit()
-            return directivo
+            return db.session.get(Directivo, directivo["id"]).serialize()
         except Exception:
             db.session.rollback()
             raise
@@ -269,6 +300,13 @@ class DirectivoGrupoService:
             raise ValueError("La fecha_fin no puede ser anterior a fecha_inicio.")
 
         participacion.fecha_fin = fecha_fin
+        participacion.mark_updated(user_id)
+        AuditoriaService.registrar_evento_relacion(
+            "directivo_grupo", participacion.id, "mandato", "finalizado",
+            {"nombre_apellido": participacion.directivo.nombre_apellido,
+             "cargo": participacion.cargo.nombre, "fecha_inicio": participacion.fecha_inicio,
+             "fecha_fin": fecha_fin}, user_id,
+        )
 
         db.session.commit()
 
@@ -337,6 +375,43 @@ class DirectivoGrupoService:
             }
             for p in participaciones
         ]
+
+    @staticmethod
+    def get_cambios_por_grupo(grupo_id: int, page: int = 1, per_page: int = 3):
+        grupo = db.session.get(GrupoInvestigacionUtn, grupo_id)
+        if not grupo or grupo.deleted_at is not None:
+            raise NotFoundError("Historial no encontrado")
+
+        participaciones = DirectivoGrupo.query.filter(
+            DirectivoGrupo.id_grupo_utn == grupo_id,
+            DirectivoGrupo.deleted_at.is_(None),
+        ).with_entities(DirectivoGrupo.id, DirectivoGrupo.id_directivo).all()
+        mandato_ids = [item.id for item in participaciones]
+        posibles_directivos = {item.id_directivo for item in participaciones}
+        directivo_ids = [item.id for item in Directivo.query.filter(
+            Directivo.id.in_(posibles_directivos),
+            Directivo.grupo_utn_id == grupo_id,
+            Directivo.deleted_at.is_(None),
+        ).with_entities(Directivo.id).all()] if posibles_directivos else []
+        filtros = []
+        if mandato_ids:
+            filtros.append(and_(AuditoriaCampo.entidad == "directivo_grupo",
+                                AuditoriaCampo.registro_id.in_(mandato_ids),
+                                AuditoriaCampo.campo == "mandato"))
+        if directivo_ids:
+            filtros.append(and_(AuditoriaCampo.entidad == "directivo",
+                                AuditoriaCampo.registro_id.in_(directivo_ids),
+                                AuditoriaCampo.campo == "nombre_apellido"))
+        if not filtros:
+            return {"items": [], "page": page, "per_page": per_page, "total": 0}
+
+        query = AuditoriaCampo.query.filter(or_(*filtros))
+        total = query.count()
+        eventos = query.order_by(
+            AuditoriaCampo.fecha_cambio.desc(), AuditoriaCampo.id.desc()
+        ).offset((page - 1) * per_page).limit(per_page).all()
+        return {"items": [evento.serialize() for evento in eventos],
+                "page": page, "per_page": per_page, "total": total}
 
 
     # =========================================================

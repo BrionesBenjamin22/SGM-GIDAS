@@ -20,6 +20,26 @@ export type DirectivoPeriodo = DirectivoActual & {
   fecha_fin: string | null;
 };
 
+export type CambioDirectivo = {
+  id: number;
+  entidad: "directivo" | "directivo_grupo";
+  campo: "nombre_apellido" | "mandato";
+  valor_anterior: string | null;
+  valor_nuevo: string | {
+    accion: "asignado" | "finalizado";
+    detalle: { nombre_apellido: string; cargo: string; fecha_inicio: string; fecha_fin: string | null };
+  };
+  fecha_cambio: string;
+  usuario_nombre: string | null;
+};
+
+export type CambiosDirectivosPage = {
+  items: CambioDirectivo[];
+  page: number;
+  per_page: number;
+  total: number;
+};
+
 export type UpdateDirectivoPayload = {
   nombre_apellido: string;
 };
@@ -75,10 +95,14 @@ export function crearYAsignarDirectivo(payload: {
   });
 }
 
-export function getHistorialDirectivos(grupoId: number) {
+export function getPeriodosDirectivos(grupoId: number) {
   return http<DirectivoPeriodo[]>(`/directivos/grupo/${grupoId}`, {
     method: "GET",
   });
+}
+
+export function getCambiosDirectivos(grupoId: number, page: number) {
+  return http<CambiosDirectivosPage>(`/directivos/grupo/${grupoId}/cambios?page=${page}`);
 }
 
 export function updateDirectivo(
