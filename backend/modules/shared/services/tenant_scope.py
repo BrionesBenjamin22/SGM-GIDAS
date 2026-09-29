@@ -6,6 +6,7 @@ not supply it. Shared catalogs are intentionally left outside this policy.
 """
 
 from flask import g, has_request_context
+from functools import lru_cache
 from sqlalchemy import and_, event, exists, or_, select
 from sqlalchemy.orm import Session, aliased, with_loader_criteria
 
@@ -94,6 +95,33 @@ def _predicate(model, group_id, classes, seen=frozenset()):
     return and_(*predicates) if predicates else None
 
 
+@lru_cache(maxsize=64)
+def _read_scope_options(group_id):
+    """Build immutable ORM loader rules once per UCT instead of per query."""
+    classes = _classes_by_table()
+    options = []
+    for model in classes.values():
+        table = model.__table__.name
+        if table == "grupo_utn":
+            options.append(with_loader_criteria(model, model.id == group_id))
+            continue
+        for name in GROUP_COLUMNS:
+            if name in model.__table__.columns:
+                criterion = (_predicate(model, group_id, classes)
+                             if "memoria_version_id" in model.__table__.columns
+                             else getattr(model, name) == group_id)
+                options.append(with_loader_criteria(model, criterion))
+                break
+    model = classes["memoria_version"]
+    options.append(with_loader_criteria(model, _predicate(model, group_id, classes)))
+    return tuple(options), classes
+
+
+@lru_cache(maxsize=1024)
+def _read_entity_predicate(model, group_id):
+    return _predicate(model, group_id, _read_scope_options(group_id)[1])
+
+
 def register_tenant_orm_policy():
     """Install once per process; the group value is read anew per request."""
     if getattr(register_tenant_orm_policy, "installed", False):
@@ -108,33 +136,14 @@ def register_tenant_orm_policy():
         group_id = getattr(g, "current_grupo_utn_id", None)
         if group_id is None:
             return
-        classes = _classes_by_table()
         statement = state.statement
-        for model in classes.values():
-            table = model.__table__.name
-            if table == "grupo_utn":
-                statement = statement.options(with_loader_criteria(
-                    model, model.id == group_id,
-                ))
-                continue
-            for name in GROUP_COLUMNS:
-                if name in model.__table__.columns:
-                    criterion = (_predicate(model, group_id, classes)
-                                 if "memoria_version_id" in model.__table__.columns
-                                 else getattr(model, name) == group_id)
-                    statement = statement.options(with_loader_criteria(
-                        model, criterion,
-                    ))
-                    break
-        for table in ("memoria_version",):
-            model = classes[table]
-            predicate = _predicate(model, group_id, classes)
-            statement = statement.options(with_loader_criteria(model, predicate))
+        options, _ = _read_scope_options(group_id)
+        statement = statement.options(*options)
         for description in getattr(statement, "column_descriptions", ()):
             model = description.get("entity")
             if model is None or not hasattr(model, "__table__"):
                 continue
-            predicate = _predicate(model, group_id, classes)
+            predicate = _read_entity_predicate(model, group_id)
             if predicate is not None:
                 statement = statement.where(predicate)
         state.statement = statement

@@ -1,5 +1,14 @@
 # Borradores de formularios
 
+## Lecturas con alcance UCT (ISS-84)
+
+`services/tenant_scope.py` conserva por identificador de UCT las opciones y
+predicados ORM usados en las lecturas. La UCT se resuelve de nuevo para cada
+solicitud a partir de la pertenencia activa del usuario; la cache no almacena
+datos ni respuestas. Las escrituras siguen validando la UCT y sus relaciones
+antes de persistir. `test_tenant_scope.py` verifica la alternancia entre dos
+UCT y el aislamiento de consultas, memorias y becas.
+
 ## Ruta de retorno de proyectos (ISS-68)
 
 El servicio de borradores devuelve `/proyectos/:id/editar` para un proyecto
