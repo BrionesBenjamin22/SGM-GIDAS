@@ -8,6 +8,14 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-82: administracion de autores bibliograficos
+
+- Catalogos permite editar y dar de baja autores de documentacion bibliografica y consultar su historial propio, con tres eventos por pagina. Documentacion conserva el alta de autores.
+- Los cambios de nombre y estado se atribuyen al autor; las vinculaciones y desvinculaciones quedan en el historial de Documentacion. El nombre corregido se refleja en documentaciones activas y las versiones cerradas de Memorias conservan su captura.
+- La baja logica se bloquea solo cuando existen documentaciones activas vinculadas. Se incorporo la migracion de auditoria de autores y se corrigio el error 500 de listado y alta aplicandola en desarrollo.
+
+Validaciones: aceptacion funcional del usuario, 7 pruebas backend de autores, 1 de migracion, 5 de historial de Documentacion y Memorias, 21 de aislamiento UCT, 188 pruebas frontend, `typecheck` y build de produccion en contenedor correctos.
+
 ### ISS-81: cambios y periodos de directivos
 
 - El historial del grupo separa cambios de nombre y de mandatos de los periodos

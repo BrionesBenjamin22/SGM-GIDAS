@@ -1,5 +1,27 @@
 # Catalogos frontend
 
+## ISS-82: autores de documentación bibliográfica
+
+La opción `Autores de documentación bibliográfica` se integra en
+`CatalogosHome`, sin ruta nueva. Usa el service genérico `catalogoServices.ts`
+con `/autores/` y el campo `nombre_apellido`. El listado consulta
+`?activos=all`, muestra hasta nueve autores por página y distingue vigentes e
+inactivos. Cada autor tiene historial diferido con tres eventos por página,
+responsable, fecha y valores legibles, además de estados de carga, vacío y error.
+
+ADMIN y GESTOR pueden crear, editar y dar de baja desde Catálogos. La creación
+desde el formulario de Documentación sigue disponible. El nombre admite letras
+Unicode y espacios; se normalizan espacios repetidos y se envía `PUT` solo si
+hay una diferencia real. La edición invalida las consultas para reflejar la
+corrección en Documentación. El backend decide definitivamente los permisos y
+el alcance por UCT.
+
+La baja es lógica: se bloquea si el autor participa en una documentación
+activa y se permite si todas sus documentaciones vinculadas están inactivas.
+Catálogos muestra la confirmación y el error correspondiente. Los cambios de
+nombre y estado pertenecen al historial del autor; sus vínculos pertenecen al
+historial de Documentación.
+
 ## Paginacion de Gestion de Catalogos (ISS-75)
 
 El listado de valores, incluida la seccion Becas, usa el aspecto compacto de la

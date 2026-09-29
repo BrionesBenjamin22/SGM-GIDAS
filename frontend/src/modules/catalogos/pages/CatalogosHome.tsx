@@ -28,6 +28,7 @@ import { TableActionButton } from "@/components/Table";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage as getSafeErrorMessage } from "@/lib/httpError";
 import { hasDescriptiveCatalogName } from "@/modules/catalogos/utils/catalogNameValidation";
+import { hasOnlyLettersAndSpaces } from "@/lib/textValidation";
 
 type StatusFilter = "all" | "active" | "inactive";
 
@@ -137,6 +138,12 @@ const CATALOGS: CatalogDef[] = [
     description: "Clasifica el alcance nacional o internacional de las revistas.",
   },
   {
+    label: "Autores de documentación bibliográfica",
+    endpoint: "/autores/",
+    description: "Administra los autores de documentación bibliográfica. También puede añadir autores desde el formulario de Documentación.",
+    nameField: "nombre_apellido",
+  },
+  {
     label: "Fuente de Financiamiento",
     endpoint: "/fuente-financiamiento/",
     description: "Define el origen de fondos usado en becas, proyectos y erogaciones.",
@@ -227,6 +234,7 @@ function getAuditLabel(item: CatalogItem, history: CatalogHistoryItem[]) {
 
 function formatHistoryValue(value: unknown) {
   if (value === null || value === undefined || value === "") return "-";
+  if (typeof value === "boolean") return value ? "Vigente" : "Inactivo";
   if (typeof value === "object") {
     try {
       return JSON.stringify(value);
@@ -245,7 +253,8 @@ function formatHistoryItem(item: CatalogHistoryItem) {
     return `${date} - ${user} - ${payload?.accion ?? "acción registrada"}`;
   }
 
-  return `${date} - ${user} - ${item.campo ?? "campo"}: ${formatHistoryValue(
+  const field = item.campo === "nombre_apellido" ? "Nombre y apellido" : item.campo === "activo" ? "Estado" : item.campo ?? "campo";
+  return `${date} - ${user} - ${field}: ${formatHistoryValue(
     item.valor_anterior
   )} -> ${formatHistoryValue(item.valor_nuevo)}`;
 }
@@ -320,6 +329,11 @@ function CatalogPanel({
 }) {
   const queryClient = useQueryClient();
   const nameField = def.nameField ?? "nombre";
+  const isBibliographicAuthor = def.endpoint === "/autores/";
+  const nameLabel = isBibliographicAuthor ? "Nombre y apellido" : def.nameField === "nombre_beca" ? "Nombre de la beca" : "Nombre";
+  const validName = (value: string) => isBibliographicAuthor
+    ? hasOnlyLettersAndSpaces(value)
+    : hasDescriptiveCatalogName(value);
 
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -474,8 +488,8 @@ function CatalogPanel({
       setErrorMessage("Debe ingresar un nombre antes de crear el registro.");
       return;
     }
-    if (!hasDescriptiveCatalogName(newName)) {
-      setErrorMessage("El nombre debe contener al menos una letra.");
+    if (!validName(newName)) {
+      setErrorMessage(isBibliographicAuthor ? "Ingrese un nombre con letras y espacios." : "El nombre debe contener al menos una letra.");
       return;
     }
 
@@ -484,7 +498,7 @@ function CatalogPanel({
       return;
     }
 
-    const body: Record<string, unknown> = { [nameField]: newName.trim() };
+    const body: Record<string, unknown> = { [nameField]: isBibliographicAuthor ? newName.trim().replace(/\s+/g, " ") : newName.trim() };
     if (def.descField && newDesc.trim()) body[def.descField] = newDesc.trim();
     if (def.fkField && newFkId) body[def.fkField.idField] = Number(newFkId);
 
@@ -536,9 +550,9 @@ function CatalogPanel({
     }
 
     const body: Record<string, unknown> = {};
-    const normalizedName = editName.trim();
-    if (normalizedName !== getDisplayName(item) && !hasDescriptiveCatalogName(normalizedName)) {
-      setErrorMessage("El nombre debe contener al menos una letra.");
+    const normalizedName = isBibliographicAuthor ? editName.trim().replace(/\s+/g, " ") : editName.trim();
+    if (normalizedName !== getDisplayName(item) && !validName(normalizedName)) {
+      setErrorMessage(isBibliographicAuthor ? "Ingrese un nombre con letras y espacios." : "El nombre debe contener al menos una letra.");
       return;
     }
     if (normalizedName !== getDisplayName(item)) body[nameField] = normalizedName;
@@ -682,7 +696,7 @@ function CatalogPanel({
               {editId === item.id ? (
                 <div className="space-y-3">
                   <Field
-                    label={def.nameField === "nombre_beca" ? "Nombre de la beca" : "Nombre"}
+                    label={nameLabel}
                     required
                   >
                     <input
@@ -962,7 +976,7 @@ function CatalogPanel({
       {canCreate && (showAdd ? (
         <div className="space-y-3 rounded-lg border border-emerald-200 bg-emerald-50/30 px-4 py-4">
           <Field
-            label={def.nameField === "nombre_beca" ? "Nombre de la beca" : "Nombre"}
+            label={nameLabel}
             required
           >
             <input
@@ -1043,9 +1057,9 @@ function CatalogPanel({
       <ConfirmDialog
         open={!!deleteTarget}
         title="Eliminar registro"
-        message={`Antes de eliminar "${
-          deleteTarget ? getDisplayName(deleteTarget) : ""
-        }", verifique que no esté asociado a registros históricos o memorias. Si está en uso, el sistema puede bloquear la operación.`}
+        message={isBibliographicAuthor
+          ? `Antes de eliminar "${deleteTarget ? getDisplayName(deleteTarget) : ""}", verifique que no esté vinculado a una documentación activa. Si tiene vinculaciones activas, el sistema bloqueará la baja.`
+          : `Antes de eliminar "${deleteTarget ? getDisplayName(deleteTarget) : ""}", verifique que no esté asociado a registros históricos o memorias. Si está en uso, el sistema puede bloquear la operación.`}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         loading={pendingAction === "delete"}
