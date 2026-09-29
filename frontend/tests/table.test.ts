@@ -52,6 +52,17 @@ test("Table renderiza semantica, orden controlado, expansion y paginacion accesi
   assert.match(html, /hidden md:table-cell/);
 });
 
+test("Table permite expandir varias filas cuando la pantalla controla cada una", () => {
+  const html = render({
+    rows: [{ id: 1, name: "Ana" }, { id: 2, name: "Eva" }],
+    isRowExpanded: () => true,
+    renderExpanded: (row: { name: string }) => createElement("p", {}, `Detalle de ${row.name}`),
+  });
+  assert.match(html, /Detalle de Ana/);
+  assert.match(html, /Detalle de Eva/);
+  assert.equal((html.match(/aria-expanded="true"/g) ?? []).length, 2);
+});
+
 test("Table permite saltar encabezados y usa una sola parada de teclado para ordenar", () => {
   const html = render({ columns: [
     { id: "name", header: "Nombre", sortable: true, render: (row: { name: string }) => row.name },

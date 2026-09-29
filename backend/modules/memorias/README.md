@@ -1,5 +1,17 @@
 # Memorias
 
+## Contrato de listado y versiones (ISS-86)
+
+`GET /api/v1/memorias?activos=true|false|all` devuelve una entrada por Memoria
+con período, UCT, `version_actual`, `version_actual_id` y
+`cantidad_versiones`; no incluye la colección completa de versiones.
+`GET /api/v1/memorias/{id}` agrega `versiones` ordenadas por número y excluye
+versiones con baja lógica. El frontend consulta este detalle solo al expandir
+la fila correspondiente y pagina el listado por Memorias, no por versiones.
+La expansión no muta datos ni cambia los permisos de lectura. Las transiciones
+de estado, reapertura, snapshots y baja conservan sus endpoints y reglas
+vigentes.
+
 ## Conteo de versiones cerradas (ISS-84)
 
 El listado obtiene el total de elementos de cada version cerrada mediante una

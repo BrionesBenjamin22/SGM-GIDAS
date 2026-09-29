@@ -39,14 +39,35 @@ Los períodos informados por las memorias admiten fechas desde el 01/01/2010, co
 ## Funcionalidad
 
 El modulo administra memorias, sus versiones, cambios de estado, reaperturas,
-snapshots historicos y exportacion Excel. El home pagina hasta 9 elementos y el
+snapshots historicos y exportacion Excel. El home pagina hasta 9 memorias y el
 alta vuelve al home con `successMessage`.
+
+## Listado por período y versión (ISS-86)
+
+`MemoriasHome` muestra una fila por Memoria, con período, UCT, versión actual
+y estado. Usa la tabla compartida y la barra de búsqueda y filtros de los homes
+ABMC. La paginación cuenta Memorias principales; las versiones nunca se
+distribuyen entre páginas. Varias filas pueden permanecer expandidas a la vez.
+Cada panel carga las versiones de su Memoria al abrirse mediante la consulta de
+detalle `GET /api/v1/memorias/{id}`, con caché independiente por ID. La carga,
+el error con reintento y la ausencia de versiones se muestran dentro del panel.
+
+La fila y la acción Ver abren el detalle de la Memoria. En cada versión cerrada,
+Ver elementos abre su snapshot; en la versión actual abierta o en revisión,
+ADMIN y GESTOR pueden ir al detalle para gestionarla. La baja lógica es
+individual, requiere confirmación y solo se ofrece a ADMIN para Memorias
+activas. Los filtros de actividad consultan `GET /api/v1/memorias` con
+`activos=true|all|false`; el filtro de estado se aplica a la versión actual.
+El control de expansión indica su estado mediante `aria-expanded` y funciona
+con teclado. Al cambiar los filtros o la página se cierran los paneles visibles.
+La prop optativa `isRowExpanded` de la tabla compartida permite esta expansión
+independiente sin cambiar los listados que usan `expandedRowId`.
 
 ## Vistas y permisos
 
 - `MemoriasHome`: listado y filtros; ADMIN y GESTOR pueden crear memorias y la
-  baja lógica continúa reservada a ADMIN. El botón `Seleccionar` inicia la baja
-  múltiple, por eso solo se muestra a ADMIN; cada tarjeta abre el detalle.
+  baja lógica continúa reservada a ADMIN. Cada fila abre el detalle y sus
+  versiones se consultan al expandirla.
 - `MemoriaForm`: alta con validacion de periodos.
 - `MemoriaDetalle`: auditoria, versiones y cambios de estado. ADMIN y GESTOR
   pueden enviar a revisión y cerrar; el cierre se presenta como acción explícita.

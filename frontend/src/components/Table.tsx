@@ -33,6 +33,7 @@ export interface TableProps<T> {
   sortDirection?: TableSortDirection;
   onSortChange?: (key: string, direction: TableSortDirection) => void;
   expandedRowId?: string | number | null;
+  isRowExpanded?: (row: T) => boolean;
   renderExpanded?: (row: T) => ReactNode;
   onToggleRow?: (row: T) => void;
   getExpandLabel?: (row: T, expanded: boolean) => string;
@@ -126,7 +127,7 @@ export default function Table<T>({
   caption, columns, rows, getRowId, density = "comfortable", loading = false, refreshing = false,
   error = false, loadingMessage = "Cargando información…", emptyMessage = "No hay registros para mostrar.",
   errorMessage = "Lo sentimos, no pudimos recuperar la información. Intente nuevamente.", onRetry,
-  sortKey, sortDirection = "asc", onSortChange, expandedRowId, renderExpanded,
+  sortKey, sortDirection = "asc", onSortChange, expandedRowId, isRowExpanded, renderExpanded,
   onToggleRow, getExpandLabel, onRowClick, getRowTitle, toolbar,
   page, totalPages, totalRecords, onPageChange,
 }: TableProps<T>) {
@@ -193,7 +194,9 @@ export default function Table<T>({
               </td></tr>
             ) : rows.map((row, index) => {
               const id = getRowId(row);
-              const expanded = expandedRowId != null && String(expandedRowId) === String(id);
+              const expanded = isRowExpanded
+                ? isRowExpanded(row)
+                : expandedRowId != null && String(expandedRowId) === String(id);
               return [
                 <tr
                   key={String(id)}

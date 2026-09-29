@@ -8,6 +8,18 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-86: listado de Memorias por período y versión
+
+- El home muestra una fila por Memoria y agrupa sus versiones en paneles
+  independientes; se pueden mantener varios abiertos a la vez.
+- La tabla, los filtros, los estados de consulta, la baja individual y la
+  paginación de nueve Memorias siguen las convenciones visuales del sistema.
+- Las versiones se consultan al expandir; las acciones respetan su estado y
+  los permisos del usuario. El contrato backend no cambia.
+
+Validaciones: aceptación funcional del usuario, 191 pruebas frontend,
+`typecheck`, build de producción y `git diff --check` correctos.
+
 ### ISS-82: administracion de autores bibliograficos
 
 - Catalogos permite editar y dar de baja autores de documentacion bibliografica y consultar su historial propio, con tres eventos por pagina. Documentacion conserva el alta de autores.
