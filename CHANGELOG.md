@@ -20,6 +20,17 @@ semántico cuando se publica una entrega.
 Validaciones: 41 pruebas backend de Auth, 188 pruebas frontend, `typecheck`,
 build de producción y `git diff --check` correctos.
 
+### ISS-79: paleta institucional en KPI y graficos
+
+- Los cinco KPI y las cuatro tarjetas de graficos del dashboard usan la paleta
+  `#F86262`, `#EE63F8`, `#F962C2`, `#A162F9` y `#8E90FB` como acentos.
+- Los KPI dejan de usar gradientes; las barras y los sectores comparten la
+  paleta y conservan etiquetas, valores, filtros y navegacion.
+
+Validaciones: aprobacion visual del usuario, 188 pruebas frontend, 2 pruebas
+backend del dashboard, `typecheck`, build de produccion y `git diff --check`
+correctos.
+
 ### ISS-77: duracion y prorrogas de proyectos
 
 - Los proyectos nuevos o con fechas editadas requieren un periodo inicial

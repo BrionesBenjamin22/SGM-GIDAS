@@ -26,14 +26,8 @@ import {
   Legend,
 } from "recharts";
 
-const CHART_COLORS = [
-  "#2563eb",
-  "#10b981",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#06b6d4",
-];
+const DASHBOARD_COLORS = ["#F86262", "#EE63F8", "#F962C2", "#A162F9", "#8E90FB"] as const;
+type DashboardColor = (typeof DASHBOARD_COLORS)[number];
 
 function scrollToPageTop() {
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -248,31 +242,31 @@ export default function Home() {
                       title="Total proyectos"
                       value={dashboard.resumen.total_proyectos}
                       subtitle="Proyectos del período"
-                      accent="blue"
+                      accent={DASHBOARD_COLORS[0]}
                     />
                     <KpiCard
                       title="Proyectos activos"
                       value={dashboard.resumen.proyectos_activos}
                       subtitle="Activos en el período"
-                      accent="violet"
+                      accent={DASHBOARD_COLORS[1]}
                     />
                     <KpiCard
                       title="Investigadores"
                       value={dashboard.resumen.total_investigadores}
                       subtitle="Total registrados"
-                      accent="emerald"
+                      accent={DASHBOARD_COLORS[2]}
                     />
                     <KpiCard
                       title="Becarios"
                       value={dashboard.resumen.total_becarios}
                       subtitle="Total registrados"
-                      accent="amber"
+                      accent={DASHBOARD_COLORS[3]}
                     />
                     <KpiCard
                       title="Personal"
                       value={dashboard.resumen.total_personal}
                       subtitle="Total registrado"
-                      accent="rose"
+                      accent={DASHBOARD_COLORS[4]}
                     />
                   </div>
 
@@ -280,6 +274,7 @@ export default function Home() {
                     <ChartCard
                       title="Personal general"
                       subtitle="Investigadores, becarios y personal"
+                      accent={DASHBOARD_COLORS[0]}
                     >
                       <ResponsiveContainer width="100%" height={320}>
                         <BarChart
@@ -308,7 +303,7 @@ export default function Home() {
                             {personalGeneral.map((_, index) => (
                               <Cell
                                 key={index}
-                                fill={CHART_COLORS[index % CHART_COLORS.length]}
+                                fill={DASHBOARD_COLORS[index % DASHBOARD_COLORS.length]}
                               />
                             ))}
                           </Bar>
@@ -319,6 +314,7 @@ export default function Home() {
                     <ChartCard
                       title="Proyectos por estado"
                       subtitle="Activos y finalizados"
+                      accent={DASHBOARD_COLORS[1]}
                     >
                       <ResponsiveContainer width="100%" height={320}>
                         <PieChart>
@@ -337,7 +333,7 @@ export default function Home() {
                             {proyectosPorEstado.map((_, index) => (
                               <Cell
                                 key={index}
-                                fill={index === 0 ? "#10b981" : "#ef4444"}
+                                fill={index === 0 ? DASHBOARD_COLORS[3] : DASHBOARD_COLORS[0]}
                               />
                             ))}
                           </Pie>
@@ -358,6 +354,7 @@ export default function Home() {
                     <ChartCard
                       title="Proyectos por tipo"
                       subtitle="Distribución por clasificación"
+                      accent={DASHBOARD_COLORS[2]}
                     >
                       <ResponsiveContainer width="100%" height={320}>
                         <PieChart>
@@ -376,7 +373,7 @@ export default function Home() {
                             {proyectosPorTipo.map((_, index) => (
                               <Cell
                                 key={index}
-                                fill={CHART_COLORS[index % CHART_COLORS.length]}
+                                fill={DASHBOARD_COLORS[index % DASHBOARD_COLORS.length]}
                               />
                             ))}
                           </Pie>
@@ -397,6 +394,7 @@ export default function Home() {
                     <ChartCard
                       title="Becarios por tipo de formación"
                       subtitle="Distribución actual"
+                      accent={DASHBOARD_COLORS[3]}
                     >
                       <ResponsiveContainer width="100%" height={330}>
                         <BarChart
@@ -429,7 +427,7 @@ export default function Home() {
                             {becariosPorTipoFormacion.map((_, index) => (
                               <Cell
                                 key={index}
-                                fill={CHART_COLORS[index % CHART_COLORS.length]}
+                                fill={DASHBOARD_COLORS[index % DASHBOARD_COLORS.length]}
                               />
                             ))}
                           </Bar>
@@ -580,19 +578,12 @@ function KpiCard({
   title: string;
   value: number;
   subtitle?: string;
-  accent: "blue" | "violet" | "emerald" | "amber" | "rose";
+  accent: DashboardColor;
 }) {
-  const accentStyles = {
-    blue: "from-blue-500/15 to-blue-100/40 border-blue-200",
-    violet: "from-violet-500/15 to-violet-100/40 border-violet-200",
-    emerald: "from-emerald-500/15 to-emerald-100/40 border-emerald-200",
-    amber: "from-amber-500/15 to-amber-100/40 border-amber-200",
-    rose: "from-rose-500/15 to-rose-100/40 border-rose-200",
-  };
-
   return (
     <article
-      className={`rounded-3xl border bg-gradient-to-br ${accentStyles[accent]} p-5 shadow-sm`}
+      className="rounded-3xl border border-slate-200 border-t-4 bg-white p-5 shadow-sm"
+      style={{ borderTopColor: accent }}
     >
       <p className="text-sm text-slate-600">{title}</p>
       <p className="mt-3 text-4xl font-semibold text-slate-900">{value}</p>
@@ -605,16 +596,19 @@ function ChartCard({
   title,
   subtitle,
   children,
+  accent,
   className = "",
 }: {
   title: string;
   subtitle?: string;
   children: ReactNode;
+  accent: DashboardColor;
   className?: string;
 }) {
   return (
     <article
-      className={`rounded-3xl border border-slate-200 bg-white p-6 shadow-sm ${className}`}
+      className={`rounded-3xl border border-slate-200 border-t-4 bg-white p-6 shadow-sm ${className}`}
+      style={{ borderTopColor: accent }}
     >
       <div className="mb-5">
         <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
