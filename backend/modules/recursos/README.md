@@ -1,5 +1,13 @@
 # Recursos
 
+## Becas activas por año (ISS-84)
+
+`GET /api/v1/recursos/becas/activas?anio=YYYY` requiere un año valido y
+devuelve las becas activas con al menos una vinculacion vigente durante ese
+año. Excluye becas, becarios y vinculaciones con baja logica, respeta la UCT
+del usuario y devuelve cada beca una sola vez. Sin `anio` o con un valor
+invalido responde HTTP 400 mediante el contrato general de errores.
+
 El contrato vigente de ingresos, egresos, saldo, auditoría, permisos y API está en
 [MOVIMIENTOS.md](MOVIMIENTOS.md). El modelo y las rutas antiguas de erogaciones no
 forman parte del contrato público actual.

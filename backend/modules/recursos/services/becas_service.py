@@ -1,6 +1,6 @@
 from modules.shared.services.catalog_name_validation import validar_nombre_descriptivo
 import builtins
-from datetime import datetime
+from datetime import date, datetime
 from sqlalchemy import func
 from sqlalchemy import extract, or_
 from extension import db
@@ -94,6 +94,30 @@ def _validar_beca_unica(nombre_beca, fuente_financiamiento_id, beca_id=None):
 # =====================================================
 
 class BecaService:
+
+    @staticmethod
+    def get_becas_activas_en_anio(anio: int):
+        if anio is None or not 1 <= anio <= 9999:
+            raise ValueError("Debe proporcionar un año válido.")
+
+        inicio = date(anio, 1, 1)
+        fin = date(anio, 12, 31)
+        becas = (
+            Beca.query
+            .join(Beca_Becario, Beca_Becario.id_beca == Beca.id)
+            .join(Becario, Becario.id == Beca_Becario.id_becario)
+            .filter(
+                Beca.deleted_at.is_(None),
+                Becario.deleted_at.is_(None),
+                Beca_Becario.deleted_at.is_(None),
+                Beca_Becario.fecha_inicio <= fin,
+                or_(Beca_Becario.fecha_fin.is_(None), Beca_Becario.fecha_fin >= inicio),
+            )
+            .distinct()
+            .order_by(Beca.nombre_beca.asc())
+            .all()
+        )
+        return [beca.serialize() for beca in becas]
 
     @staticmethod
     def get_all(activos="true"):
