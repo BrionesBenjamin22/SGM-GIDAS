@@ -3,6 +3,7 @@ import { http } from "@/lib/http";
 
 export type Directivo = {
   id: number;
+  grupo_utn_id?: number | null;
   nombre_apellido: string;
 };
 

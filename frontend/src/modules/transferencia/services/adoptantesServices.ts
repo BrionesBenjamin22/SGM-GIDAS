@@ -9,10 +9,11 @@ const useMock = () => isMockMode();
 
 export interface Adoptante {
     id: number;
+    grupo_utn_id?: number | null;
     nombre: string;
 }
 
-export type AdoptantePayload = Omit<Adoptante, "id">;
+export type AdoptantePayload = Pick<Adoptante, "nombre">;
 
 // ─── Mock helpers ────────────────────────────────────────────
 

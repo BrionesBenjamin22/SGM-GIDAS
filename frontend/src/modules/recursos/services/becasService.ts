@@ -2,6 +2,7 @@ import { http } from "@/lib/http";
 
 export interface Beca {
     id: number;
+    grupo_utn_id?: number | null;
     nombre_beca: string;
     descripcion?: string;
 

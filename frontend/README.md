@@ -28,6 +28,9 @@ npm run dev
 
 ## Arquitectura frontend
 
+El alcance de datos por UCT de la sesion, los contratos y el comportamiento
+de cache se describen en [Aislamiento de UCT](UCT_ISOLATION.md).
+
 El frontend se organiza como monolito modular bajo `src/modules`.
 
 Cada modulo contiene, cuando aplica:

@@ -24,6 +24,7 @@ import SessionExpiryDialog from "@/modules/auth/components/SessionExpiryDialog";
 import { useSessionLifecycle } from "@/modules/auth/hooks/useSessionLifecycle";
 import { clearSessionNotice, markSessionActive, markSessionEnded, rememberSessionPath } from "@/modules/auth/utils/sessionNavigation";
 import type { SessionTiming } from "@/modules/auth/utils/sessionTiming";
+import { useQueryClient } from "@tanstack/react-query";
 
 type AuthContextValue = {
   user: User | null;
@@ -58,6 +59,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,10 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
     }
     clearAccessToken();
+    queryClient.clear();
     setUser(null);
     setToken(null);
     setSessionTiming(null);
-  }, []);
+  }, [queryClient]);
 
   const expireSession = useCallback(() => {
     markSessionEnded();
@@ -146,6 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(usuario: string, password: string): Promise<AuthResponse> {
     const auth = await loginService(usuario, password);
+    queryClient.clear();
     setUser(auth.user);
     setToken(auth.token);
     setSessionTiming(auth.sessionTiming);
@@ -177,6 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     clearSessionNotice();
+    queryClient.clear();
     setUser(null);
     setToken(null);
     setSessionTiming(null);
