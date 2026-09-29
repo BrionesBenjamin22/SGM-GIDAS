@@ -30,6 +30,7 @@ class ArticuloDivulgacionMemoriaHistorialTestCase(unittest.TestCase):
         self.addCleanup(self.rollback_patcher.stop)
         self.addCleanup(self.get_patcher.stop)
 
+    @patch("modules.produccion.services.articulo_divulgacion_service.consultar_entidades_memoria", new=lambda model, version, **kwargs: model.query.filter().all())
     def test_snapshot_articulo_divulgacion_para_memoria_version_persiste_foto(self):
         version = MemoriaVersion(
             id=111,

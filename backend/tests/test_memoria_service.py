@@ -1,6 +1,5 @@
 ﻿import unittest
 from datetime import date, datetime
-from contextlib import ExitStack
 from unittest.mock import patch
 
 from modules.memorias.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
@@ -284,36 +283,7 @@ class MemoriaServiceTestCase(unittest.TestCase):
         )
         version_dos.id = 102
 
-        def snapshots_por_version(version_id):
-            if version_id == 101:
-                return [{"id": 1}]
-            if version_id == 102:
-                return [{"id": 1}, {"id": 2}, {"id": 3}]
-            return []
-
-        patch_targets = [
-            "modules.memorias.services.memoria_service.obtener_snapshots_investigadores_por_memoria_version",
-            "modules.memorias.services.memoria_service.obtener_snapshots_becarios_por_memoria_version",
-            "modules.memorias.services.memoria_service.obtener_snapshots_personal_por_memoria_version",
-            "modules.memorias.services.memoria_service.ProyectoInvestigacionService.obtener_snapshots_por_memoria_version",
-            "modules.memorias.services.memoria_service.ActividadDocenciaService.obtener_snapshots_por_memoria_version",
-            "modules.memorias.services.memoria_service.ParticipacionRelevanteService.obtener_snapshots_por_memoria_version",
-            "modules.memorias.services.memoria_service.DocumentacionBibliograficaService.obtener_snapshots_por_memoria_version",
-            "modules.memorias.services.memoria_service.EquipamientoService.obtener_snapshots_por_memoria_version",
-            "modules.memorias.services.memoria_service.MovimientoFinancieroService.obtener_snapshots_por_memoria_version",
-            "modules.memorias.services.memoria_service.TransferenciaSocioProductivaService.obtener_snapshots_por_memoria_version",
-            "modules.memorias.services.memoria_service.TrabajoReunionCientificaService.obtener_snapshots_por_memoria_version",
-            "modules.memorias.services.memoria_service.TrabajosRevistasReferatoService.obtener_snapshots_por_memoria_version",
-            "modules.memorias.services.memoria_service.DistincionRecibidaService.obtener_snapshots_por_memoria_version",
-            "modules.memorias.services.memoria_service.RegistrosPropiedadService.obtener_snapshots_por_memoria_version",
-            "modules.memorias.services.memoria_service.ArticuloDivulgacionService.obtener_snapshots_por_memoria_version",
-            "modules.memorias.services.memoria_service.obtener_snapshots_visitas_por_memoria_version",
-        ]
-
-        with ExitStack() as stack:
-            for target in patch_targets:
-                stack.enter_context(patch(target, side_effect=snapshots_por_version))
-
+        with patch("modules.memorias.services.memoria_service.db.session.scalar", side_effect=[16, 48]) as scalar:
             self.assertEqual(
                 MemoriaService._contar_elementos_version(version_uno),
                 16
@@ -322,6 +292,9 @@ class MemoriaServiceTestCase(unittest.TestCase):
                 MemoriaService._contar_elementos_version(version_dos),
                 48
             )
+        queries = [str(call.args[0].compile(compile_kwargs={"literal_binds": True})) for call in scalar.call_args_list]
+        self.assertIn("= 101", queries[0])
+        self.assertIn("= 102", queries[1])
 
     def test_get_proyectos_snapshot_usa_la_version_solicitada(self):
         memoria = self._make_memoria()

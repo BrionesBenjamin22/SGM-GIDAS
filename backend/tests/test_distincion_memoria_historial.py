@@ -29,6 +29,7 @@ class DistincionMemoriaHistorialTestCase(unittest.TestCase):
         self.addCleanup(self.rollback_patcher.stop)
         self.addCleanup(self.get_patcher.stop)
 
+    @patch("modules.produccion.services.distincion_service.consultar_entidades_memoria", new=lambda model, version, **kwargs: model.query.filter().all())
     def test_snapshot_distincion_para_memoria_version_persiste_foto(self):
         version = MemoriaVersion(
             id=91,

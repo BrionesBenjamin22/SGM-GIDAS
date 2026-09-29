@@ -1,5 +1,13 @@
 # Memorias
 
+## Conteo de versiones cerradas (ISS-84)
+
+El listado obtiene el total de elementos de cada version cerrada mediante una
+consulta de agregacion sobre las tablas de snapshots. Se cuentan solo filas de
+la version solicitada que no tienen baja logica y, cuando la tabla almacena la
+UCT, solo las de la UCT activa. Las versiones abiertas siguen mostrando cero.
+El contrato de `GET /api/v1/memorias` y las fotos historicas no cambian.
+
 ## Aislamiento de snapshots por UCT (security-multitenancy-uct)
 
 Cada memoria y sus versiones pertenecen a la UCT de la sesion. La generacion

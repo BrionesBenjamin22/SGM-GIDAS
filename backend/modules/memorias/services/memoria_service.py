@@ -1,4 +1,6 @@
 from datetime import datetime
+from flask import g, has_request_context
+from sqlalchemy import func, select, union_all
 
 from extension import db
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
@@ -56,6 +58,18 @@ from modules.produccion.services.articulo_divulgacion_service import (
 from modules.grupo.services.visita_service import (
     obtener_snapshots_visitas_por_memoria_version,
     snapshot_visitas_para_memoria_version,
+)
+
+
+SNAPSHOT_TABLES = (
+    "investigador_memoria_version", "becario_memoria_version",
+    "personal_memoria_version", "proyecto_investigacion_memoria_version",
+    "actividad_docencia_memoria_version", "participacion_relevante_memoria_version",
+    "documentacion_bibliografica_memoria_version", "equipamiento_memoria_version",
+    "movimiento_memoria_version", "transferencia_socio_productiva_memoria_version",
+    "trabajo_reunion_cientifica_memoria_version", "trabajos_revista_memoria_version",
+    "distincion_recibida_memoria_version", "registros_propiedad_memoria_version",
+    "articulo_divulgacion_memoria_version", "visita_academica_memoria_version",
 )
 
 
@@ -331,26 +345,21 @@ class MemoriaService:
         if version.estado != EstadoMemoria.CERRADA:
             return 0
 
-        colecciones = [
-            obtener_snapshots_investigadores_por_memoria_version(version.id),
-            obtener_snapshots_becarios_por_memoria_version(version.id),
-            obtener_snapshots_personal_por_memoria_version(version.id),
-            ProyectoInvestigacionService.obtener_snapshots_por_memoria_version(version.id),
-            ActividadDocenciaService.obtener_snapshots_por_memoria_version(version.id),
-            ParticipacionRelevanteService.obtener_snapshots_por_memoria_version(version.id),
-            DocumentacionBibliograficaService.obtener_snapshots_por_memoria_version(version.id),
-            EquipamientoService.obtener_snapshots_por_memoria_version(version.id),
-            MovimientoFinancieroService.obtener_snapshots_por_memoria_version(version.id),
-            TransferenciaSocioProductivaService.obtener_snapshots_por_memoria_version(version.id),
-            TrabajoReunionCientificaService.obtener_snapshots_por_memoria_version(version.id),
-            TrabajosRevistasReferatoService.obtener_snapshots_por_memoria_version(version.id),
-            DistincionRecibidaService.obtener_snapshots_por_memoria_version(version.id),
-            RegistrosPropiedadService.obtener_snapshots_por_memoria_version(version.id),
-            ArticuloDivulgacionService.obtener_snapshots_por_memoria_version(version.id),
-            obtener_snapshots_visitas_por_memoria_version(version.id)
-        ]
-
-        return sum(len(coleccion) for coleccion in colecciones)
+        group_id = getattr(g, "current_grupo_utn_id", None) if has_request_context() else None
+        counts = []
+        for table_name in SNAPSHOT_TABLES:
+            table = db.metadata.tables[table_name]
+            query = select(func.count(table.c.id).label("total")).where(
+                table.c.memoria_version_id == version.id,
+                table.c.deleted_at.is_(None),
+            )
+            for column_name in ("grupo_utn_id", "grupo_id", "id_grupo_utn"):
+                if group_id is not None and column_name in table.c:
+                    query = query.where(table.c[column_name] == group_id)
+                    break
+            counts.append(query)
+        totals = union_all(*counts).subquery()
+        return db.session.scalar(select(func.coalesce(func.sum(totals.c.total), 0)))
 
     @staticmethod
     def _serializar_memoria(memoria: Memoria):
