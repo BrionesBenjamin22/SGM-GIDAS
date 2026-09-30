@@ -152,27 +152,27 @@ export default function TrabajoReunionDetalle() {
         <article className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
           <div className="space-y-2 break-words text-sm text-slate-500 md:text-base">
             <p>
-              <span className="font-medium text-slate-700">Reunión:</span>{" "}
+              <span className="font-semibold text-slate-800">Reunión:</span>{" "}
               {toTitleCase(data.nombre_reunion) || "-"}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Tipo de reunión:</span>{" "}
+              <span className="font-semibold text-slate-800">Tipo de reunión:</span>{" "}
               {toTitleCase(data.tipo_reunion?.nombre) || "-"}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Procedencia:</span>{" "}
+              <span className="font-semibold text-slate-800">Procedencia:</span>{" "}
               {toTitleCase(data.procedencia) || "-"}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha de presentación:</span>{" "}
+              <span className="font-semibold text-slate-800">Fecha de presentación:</span>{" "}
               {formatFecha(data.fecha_presentacion)}
             </p>
 
             {enlace && <p className="break-words">
-              <span className="font-medium text-slate-700">Enlace al trabajo o DOI:</span>{" "}
+              <span className="font-semibold text-slate-800">Enlace al trabajo o DOI:</span>{" "}
               <a href={enlace} target="_blank" rel="noopener noreferrer"
                 className="text-blue-700 underline focus-visible:outline focus-visible:outline-2">
                 {enlace}<span className="sr-only"> (abre en una pestaña nueva)</span>
@@ -180,7 +180,7 @@ export default function TrabajoReunionDetalle() {
             </p>}
 
             <p>
-              <span className="font-medium text-slate-700">Autores:</span>{" "}
+              <span className="font-semibold text-slate-800">Autores:</span>{" "}
               {autores}
             </p>
           </div>
@@ -188,28 +188,28 @@ export default function TrabajoReunionDetalle() {
 
         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-700">Auditoría</h3>
+            <h3 className="text-lg font-semibold text-slate-800">Auditoría</h3>
             <p className="mt-1 text-xs text-slate-500">{data.titulo_trabajo || "-"}</p>
           </div>
 
           <div className="space-y-2 text-sm text-slate-500 md:text-base">
             <p>
-              <span className="font-medium text-slate-700">Creado por:</span>{" "}
+              <span className="font-semibold text-slate-800">Creado por:</span>{" "}
               {auditoria.nombreCreador}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha de creación:</span>{" "}
+              <span className="font-semibold text-slate-800">Fecha de creación:</span>{" "}
               {formatFechaHora(data.created_at)}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Eliminado por:</span>{" "}
+              <span className="font-semibold text-slate-800">Eliminado por:</span>{" "}
               {auditoria.nombreEliminador}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha de eliminación:</span>{" "}
+              <span className="font-semibold text-slate-800">Fecha de eliminación:</span>{" "}
               {formatFechaHora(data.deleted_at)}
             </p>
           </div>

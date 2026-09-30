@@ -437,3 +437,9 @@ artículos con el mismo título.
 Validación: aceptación visual y funcional del usuario, prueba focalizada 5/5,
 150 pruebas frontend, `typecheck`, build de producción, 5 pruebas backend de
 Artículos de divulgación y `git diff --check` correctos.
+
+## Títulos de detalle (ISS-88)
+
+En los detalles de producción, las etiquetas de datos y los encabezados de tarjetas
+usan peso seminegrita y color pizarra oscuro para distinguirse del contenido.
+La disposición, los textos, las acciones y el contrato permanecen iguales.

@@ -161,34 +161,34 @@ export default function ActividadDocenciaDetalle() {
       <article className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
         <div className="space-y-2 text-sm text-slate-500 md:text-base">
           <p>
-            <span className="font-medium text-slate-700">Investigador:</span>{" "}
+            <span className="font-semibold text-slate-800">Investigador:</span>{" "}
             {toTitleCase(investigadorNombre) || "-"}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Fecha de inicio:</span>{" "}
+            <span className="font-semibold text-slate-800">Fecha de inicio:</span>{" "}
             {formatFecha(data.fecha_inicio)}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">
+            <span className="font-semibold text-slate-800">
               Fecha de finalizacion:
             </span>{" "}
             {formatFecha(data.fecha_fin)}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Grado academico:</span>{" "}
+            <span className="font-semibold text-slate-800">Grado academico:</span>{" "}
             {toTitleCase(gradoActualNombre) || "-"}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Institución:</span>{" "}
+            <span className="font-semibold text-slate-800">Institución:</span>{" "}
             {toTitleCase(data.institucion) || "-"}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">
+            <span className="font-semibold text-slate-800">
               Rol en la actividad:
             </span>{" "}
             {toTitleCase(rolActividadNombre) || "-"}
@@ -198,7 +198,7 @@ export default function ActividadDocenciaDetalle() {
 
       <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-slate-700">Auditoría</h3>
+          <h3 className="text-lg font-semibold text-slate-800">Auditoría</h3>
 
           <p className="mt-1 text-xs text-slate-500">
             {toTitleCase(data.curso) || "-"} - {toTitleCase(investigadorNombre) || "-"}
@@ -207,24 +207,24 @@ export default function ActividadDocenciaDetalle() {
 
         <div className="space-y-2 text-sm text-slate-500 md:text-base">
           <p>
-            <span className="font-medium text-slate-700">Creado por:</span>{" "}
+            <span className="font-semibold text-slate-800">Creado por:</span>{" "}
             {auditoria.nombreCreador}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">
+            <span className="font-semibold text-slate-800">
               Fecha de creación:
             </span>{" "}
             {formatFechaHora(data.created_at)}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Eliminado por:</span>{" "}
+            <span className="font-semibold text-slate-800">Eliminado por:</span>{" "}
             {auditoria.nombreEliminador}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">
+            <span className="font-semibold text-slate-800">
               Fecha de eliminación:
             </span>{" "}
             {formatFechaHora(data.deleted_at)}
