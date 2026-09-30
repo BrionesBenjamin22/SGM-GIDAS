@@ -192,3 +192,9 @@ borrador. El contenido no se almacena en localStorage ni sessionStorage.
 Los resultados paginados muestran controles centrados de anterior, números
 de página y siguiente, inmediatamente debajo de las tarjetas o resultados.
 El máximo de resultados por página conserva el contrato del módulo.
+
+## Títulos de detalle (ISS-88)
+
+En VisitantesDetalle, las etiquetas de datos y los encabezados de tarjetas
+usan peso seminegrita y color pizarra oscuro para distinguirse del contenido.
+La disposición, los textos, las acciones y el contrato permanecen iguales.
