@@ -8,6 +8,18 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-83: historial y administracion de adoptantes
+
+- Gestion de Catalogos permite crear, editar y dar de baja adoptantes, con
+  historial de nombre y estado, permisos y alcance por UCT.
+- El detalle de transferencia muestra el historial propio de cada adoptante
+  vinculado, separado de los eventos de vinculacion, con tres cambios por pagina.
+- La baja logica se bloquea mientras exista un vinculo vigente con una
+  transferencia activa; el alta inline en transferencias sigue disponible.
+
+Validaciones: aceptacion visual y funcional del usuario, 37 pruebas backend
+dirigidas, 191 pruebas frontend, `typecheck` y build de produccion correctos.
+
 ### ISS-88: títulos más visibles en las tarjetas de detalle
 
 - Las etiquetas de datos y los encabezados de tarjetas de los detalles usan mayor

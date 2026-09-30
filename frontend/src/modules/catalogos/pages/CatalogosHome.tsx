@@ -154,6 +154,11 @@ const CATALOGS: CatalogDef[] = [
     description: "Clasifica contratos usados en transferencias socio-productivas.",
   },
   {
+    label: "Adoptantes",
+    endpoint: "/adoptantes",
+    description: "Administra los adoptantes disponibles para transferencias. Puede añadir adoptantes nuevos desde el formulario de transferencia.",
+  },
+  {
     label: "Tipo de Registro Propiedad",
     endpoint: "/tipo-registro-propiedad/",
     description: "Clasifica registros de propiedad intelectual e industrial.",
@@ -330,8 +335,9 @@ function CatalogPanel({
   const queryClient = useQueryClient();
   const nameField = def.nameField ?? "nombre";
   const isBibliographicAuthor = def.endpoint === "/autores/";
+  const isAdoptante = def.endpoint === "/adoptantes";
   const nameLabel = isBibliographicAuthor ? "Nombre y apellido" : def.nameField === "nombre_beca" ? "Nombre de la beca" : "Nombre";
-  const validName = (value: string) => isBibliographicAuthor
+  const validName = (value: string) => isBibliographicAuthor || isAdoptante
     ? hasOnlyLettersAndSpaces(value)
     : hasDescriptiveCatalogName(value);
 
@@ -489,7 +495,7 @@ function CatalogPanel({
       return;
     }
     if (!validName(newName)) {
-      setErrorMessage(isBibliographicAuthor ? "Ingrese un nombre con letras y espacios." : "El nombre debe contener al menos una letra.");
+      setErrorMessage(isBibliographicAuthor || isAdoptante ? "Ingrese un nombre con letras y espacios." : "El nombre debe contener al menos una letra.");
       return;
     }
 
@@ -498,7 +504,7 @@ function CatalogPanel({
       return;
     }
 
-    const body: Record<string, unknown> = { [nameField]: isBibliographicAuthor ? newName.trim().replace(/\s+/g, " ") : newName.trim() };
+    const body: Record<string, unknown> = { [nameField]: isBibliographicAuthor || isAdoptante ? newName.trim().replace(/\s+/g, " ") : newName.trim() };
     if (def.descField && newDesc.trim()) body[def.descField] = newDesc.trim();
     if (def.fkField && newFkId) body[def.fkField.idField] = Number(newFkId);
 
@@ -550,9 +556,9 @@ function CatalogPanel({
     }
 
     const body: Record<string, unknown> = {};
-    const normalizedName = isBibliographicAuthor ? editName.trim().replace(/\s+/g, " ") : editName.trim();
+    const normalizedName = isBibliographicAuthor || isAdoptante ? editName.trim().replace(/\s+/g, " ") : editName.trim();
     if (normalizedName !== getDisplayName(item) && !validName(normalizedName)) {
-      setErrorMessage(isBibliographicAuthor ? "Ingrese un nombre con letras y espacios." : "El nombre debe contener al menos una letra.");
+      setErrorMessage(isBibliographicAuthor || isAdoptante ? "Ingrese un nombre con letras y espacios." : "El nombre debe contener al menos una letra.");
       return;
     }
     if (normalizedName !== getDisplayName(item)) body[nameField] = normalizedName;

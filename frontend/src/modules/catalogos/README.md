@@ -1,5 +1,21 @@
 # Catalogos frontend
 
+## ISS-83: administracion de adoptantes
+
+`CatalogosHome` incluye `Adoptantes` sin ruta nueva. El service generico consulta
+`GET /adoptantes?activos=all` para mostrar vigentes e inactivos, y ofrece alta,
+edicion, baja logica e historial por registro. La tabla muestra nueve valores por
+pagina y el historial diferido tres cambios por pagina, con carga, vacio, error
+y reintento. Solo ADMIN y GESTOR ven acciones de escritura; LECTURA conserva
+acceso de consulta al endpoint protegido.
+
+El nombre acepta letras Unicode y espacios; se normalizan espacios repetidos.
+En edicion se envia PUT solo si hay una diferencia real. Las mutaciones invalidan
+las consultas para reflejar correcciones en los formularios de transferencia.
+El backend bloquea la baja de un adoptante vinculado a una transferencia activa.
+El historial del adoptante muestra cambios de nombre y estado; los eventos de
+vinculo pertenecen al historial de la transferencia.
+
 ## ISS-82: autores de documentación bibliográfica
 
 La opción `Autores de documentación bibliográfica` se integra en
