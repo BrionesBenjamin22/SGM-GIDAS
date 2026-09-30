@@ -116,6 +116,22 @@ Validaciones: 120 pruebas backend focalizadas y 38 pruebas adicionales de
 autenticacion y aislamiento, migraciones upgrade/downgrade en SQLite,
 `typecheck`, build frontend y validacion manual aceptada por el usuario.
 
+### ISS-74: errores asociados a controles fuera de Field
+
+- La edición de usuarios asocia etiquetas y errores a nombre, correo y rol.
+- El programa de actividades de Memorias asocia el error de descripción al
+  campo, sin atribuirle los fallos generales de guardado.
+- La casilla de becas en Becario anuncia su error global y expone el estado
+  inválido cuando corresponde.
+- Mi Perfil asocia los errores de nombre y correo, enfoca el primer campo
+  inválido y presenta el rol como dato de solo lectura accesible con Tab.
+- Los avisos de éxito al crear o editar un becario se anuncian mediante una
+  región de estado accesible.
+
+Validaciones: 188 pruebas frontend, `typecheck`, build de producción y
+`git diff --check` correctos. Comprobación manual con NVDA aceptada por el
+usuario el 2026-09-30.
+
 ### ISS-78: bloqueo temporal de login
 
 - Tres fallos consecutivos por nombre de usuario bloquean nuevos intentos durante

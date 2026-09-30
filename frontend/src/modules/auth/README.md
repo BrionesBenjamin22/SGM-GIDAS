@@ -1,5 +1,21 @@
 # Autenticación y usuarios en frontend
 
+## Asociación de errores en edición de usuarios (ISS-74)
+
+El diálogo de edición vincula las etiquetas de nombre, correo y rol con sus
+controles. Los errores de campo tienen un identificador estable, se anuncian con
+`role="alert"` y se referencian desde `aria-describedby` solo mientras están
+visibles. `aria-invalid` refleja el estado del campo; la ayuda sobre el rol
+propio se conserva asociada al selector. Los errores generales se anuncian sin
+atribuirse a un control concreto.
+
+En `MiPerfil`, nombre de usuario y correo muestran errores junto a cada campo,
+con `role="alert"`, `aria-invalid` y `aria-describedby` mientras el mensaje está
+visible. Al guardar con datos inválidos, el foco vuelve al primer campo con
+error. Durante la edición, el rol se presenta como campo de solo lectura
+enfocable, con etiqueta y ayuda asociadas. El aviso de guardado correcto se
+anuncia con `role="status"`.
+
 ## Mensaje de bloqueo de login (ISS-78)
 
 `Login` envía credenciales por `authService` y presenta en su aviso accesible

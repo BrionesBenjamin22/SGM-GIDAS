@@ -154,6 +154,7 @@ export default function PersonalLanding() {
   const createUrl = classFilter ? `/personal/nuevo?tipo=${classFilter}` : "/personal/nuevo";
 
   return <section className="w-full min-h-[calc(100vh-120px)] px-4 py-4">
+    <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{successMessage}</p>
     <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div><h2 className="text-2xl font-semibold md:text-3xl">Personal</h2><p className="mt-1 text-sm text-slate-500">Gestione integrantes, permisos y su historial.</p></div>
       {canCreateRecords() && <Button size="sm" onClick={() => navigate(createUrl)}>Agregar nuevo</Button>}

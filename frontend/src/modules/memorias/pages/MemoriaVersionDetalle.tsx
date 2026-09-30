@@ -251,6 +251,7 @@ export default function MemoriaVersionDetalle() {
   const anioFinMemoria = getCivilYear(memoria?.periodo_fin);
   const anioPrograma = anioFinMemoria ? anioFinMemoria + 1 : undefined;
   const puedeEditarPrograma = versionCerrada && canEditRecords();
+  const descripcionProgramaInvalida = Boolean(programaError && !programaDescripcion.trim());
 
   const { data: planificacionesPage, isLoading: isLoadingPlanificaciones } = useQuery({
     queryKey: ["planificaciones", "true"],
@@ -596,13 +597,16 @@ export default function MemoriaVersionDetalle() {
               {anioPrograma ?? "-"}
             </div>
 
-            <label className="block text-sm font-medium text-slate-700">
+            <label htmlFor="programa-actividades-descripcion" className="block text-sm font-medium text-slate-700">
               Descripción
             </label>
             <textarea
+              id="programa-actividades-descripcion"
               rows={10}
+              aria-invalid={descripcionProgramaInvalida}
+              aria-describedby={descripcionProgramaInvalida ? "programa-actividades-descripcion-error" : undefined}
               className={`mt-2 w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-800 outline-none transition ${
-                programaError
+                descripcionProgramaInvalida
                   ? "border-red-400 ring-2 ring-red-200"
                   : "border-slate-200 focus:border-slate-400"
               }`}
@@ -614,7 +618,7 @@ export default function MemoriaVersionDetalle() {
               }}
             />
             {programaError && (
-              <p className="mt-2 text-sm text-red-500">{programaError}</p>
+              <p id="programa-actividades-descripcion-error" role="alert" className="mt-2 text-sm text-red-500">{programaError}</p>
             )}
 
             <div className="mt-6 flex justify-between gap-3">

@@ -98,24 +98,25 @@ export default function MiPerfil() {
 
     const normalizedName = nombreUsuario.trim();
     const normalizedEmail = email.trim();
-
+    const validationErrors: Record<string, string> = {};
     if (!normalizedName) {
-      setError("El nombre de usuario es obligatorio");
-      return;
+      validationErrors.nombreUsuario = "El nombre de usuario es obligatorio";
+    } else if (normalizedName.length < 3 || !isValidUsername(normalizedName)) {
+      validationErrors.nombreUsuario = "El nombre debe tener al menos 3 caracteres y usar solo letras, números, puntos o guiones.";
     }
-
-    if (normalizedName.length < 3 || !isValidUsername(normalizedName)) {
-      setError("El nombre debe tener al menos 3 caracteres y usar solo letras, números, puntos o guiones.");
-      return;
-    }
-
     if (!normalizedEmail) {
-      setError("El email es obligatorio");
-      return;
+      validationErrors.email = "El email es obligatorio";
+    } else if (!isValidEmail(normalizedEmail)) {
+      validationErrors.email = "Ingrese un email válido.";
     }
-
-    if (!isValidEmail(normalizedEmail)) {
-      setError("Ingrese un email válido.");
+    setFieldErrors(validationErrors);
+    const firstInvalidField = validationErrors.nombreUsuario
+      ? "perfil-nombre-usuario"
+      : validationErrors.email
+        ? "perfil-email"
+        : null;
+    if (firstInvalidField) {
+      window.setTimeout(() => document.getElementById(firstInvalidField)?.focus(), 0);
       return;
     }
 
@@ -156,7 +157,7 @@ export default function MiPerfil() {
         </div>
 
         {guardado && (
-          <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          <div role="status" className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
             Tus datos fueron actualizados correctamente.
           </div>
         )}
@@ -176,11 +177,15 @@ export default function MiPerfil() {
             {editando ? (
               <Field required label="Nombre de usuario" name="nombreUsuario" error={fieldErrors.nombreUsuario}>
               <input
+                id="perfil-nombre-usuario"
                 className="input"
                 value={nombreUsuario}
+                aria-invalid={Boolean(fieldErrors.nombreUsuario)}
+                aria-describedby={fieldErrors.nombreUsuario ? "perfil-nombre-error" : undefined}
                 onChange={(e) => { setNombreUsuario(e.target.value); setFieldErrors(previous => ({ ...previous, nombreUsuario: "" })); }}
                 placeholder="Nombre de usuario"
               />
+              {fieldErrors.nombreUsuario && <p id="perfil-nombre-error" role="alert" className="text-xs text-rose-600 mt-1.5">{fieldErrors.nombreUsuario}</p>}
               </Field>
             ) : (
               <p className="font-medium text-slate-900">{user.nombre_usuario}</p>
@@ -189,10 +194,18 @@ export default function MiPerfil() {
 
           {/* Rol */}
           <div className="rounded-xl border border-slate-200 p-4">
-            <p className="text-sm text-slate-500 mb-1">Rol</p>
-            <p className="font-medium text-slate-900">
-              {getRolLabel(user.rol)}
-            </p>
+            {editando ? (
+              <>
+                <label htmlFor="perfil-rol" className="block text-sm text-slate-500 mb-1">Rol</label>
+                <input id="perfil-rol" className="input" type="text" readOnly value={getRolLabel(user.rol)} aria-describedby="perfil-rol-ayuda" />
+                <p id="perfil-rol-ayuda" className="mt-1 text-xs text-slate-500">El rol de su cuenta no se puede modificar aquí.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-slate-500 mb-1">Rol</p>
+                <p className="font-medium text-slate-900">{getRolLabel(user.rol)}</p>
+              </>
+            )}
           </div>
 
           {/* Email ocupa todo el ancho */}
@@ -202,12 +215,16 @@ export default function MiPerfil() {
             {editando ? (
               <Field required label="Correo electrónico" name="email" error={fieldErrors.email}>
               <input
+                id="perfil-email"
                 className="input"
                 type="email"
                 value={email}
+                aria-invalid={Boolean(fieldErrors.email)}
+                aria-describedby={fieldErrors.email ? "perfil-email-error" : undefined}
                 onChange={(e) => { setEmail(e.target.value); setFieldErrors(previous => ({ ...previous, email: "" })); }}
                 placeholder="Email"
               />
+              {fieldErrors.email && <p id="perfil-email-error" role="alert" className="text-xs text-rose-600 mt-1.5">{fieldErrors.email}</p>}
               </Field>
             ) : (
               <p className="font-medium text-slate-900">{user.mail}</p>

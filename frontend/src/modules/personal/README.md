@@ -1,5 +1,16 @@
 # Modulo frontend de personal
 
+## Error de becas en Becario (ISS-74)
+
+La casilla «Agregar beca» referencia el error global de becas mientras está
+visible. El mensaje tiene un identificador estable y `role="alert"`; la casilla
+expone `aria-invalid` solo cuando corresponde. La validación y el guardado
+mantienen el contrato actual del formulario.
+
+Al crear o editar un becario, `PersonalHome` y `PersonalDetalle` anuncian el
+`successMessage` recibido tras la navegación mediante una región de estado
+oculta visualmente, además de conservar el aviso visible.
+
 ## Identidad documental (ISS-76)
 
 Las vistas `PersonalForm` (Personal/PTAA/Profesional, Becario e Investigador)

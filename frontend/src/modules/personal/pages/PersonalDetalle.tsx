@@ -78,13 +78,14 @@ export default function PersonalDetalle() {
   });
 
   const auditoria = useAuditoria(data);
+  const successAnnouncement = <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{successMessage}</p>;
 
   if (isLoading) {
-    return <LoadingSkeleton variant="detail" label="Cargando..." />;
+    return <>{successAnnouncement}<LoadingSkeleton variant="detail" label="Cargando..." /></>;
   }
 
   if (isError || !data) {
-    return <p className="text-slate-500">No se encontró el registro.</p>;
+    return <>{successAnnouncement}<p className="text-slate-500">No se encontró el registro.</p></>;
   }
 
   const relaciones = data.relaciones || {};
@@ -176,6 +177,7 @@ export default function PersonalDetalle() {
 
   return (
     <>
+      {successAnnouncement}
       <section className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-2">
@@ -484,7 +486,7 @@ export default function PersonalDetalle() {
       <SuccessToast
         open={showSuccess}
         message={successMessage}
-        onClose={() => setShowSuccess(false)}
+        onClose={() => { setShowSuccess(false); setSuccessMessage(""); }}
       />
     </>
   );

@@ -1,5 +1,13 @@
 # Memorias
 
+## Error del programa de actividades (ISS-74)
+
+La etiqueta de descripción se asocia al `textarea`. Cuando falta el texto, el
+control se marca con `aria-invalid` y referencia el mensaje mediante
+`aria-describedby`; el mensaje se anuncia con `role="alert"`. Los fallos
+generales de guardado también se anuncian, sin marcar la descripción como
+inválida.
+
 ## Programa de actividades modal (ISS-71)
 
 La edición del programa en el detalle de versión abre un diálogo modal con

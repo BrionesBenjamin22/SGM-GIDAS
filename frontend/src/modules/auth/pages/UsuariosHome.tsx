@@ -222,6 +222,18 @@ export default function UsuariosHome() {
     }
 
     setEditErrors(errors);
+    const firstInvalidField = errors.nombre_usuario
+      ? "editar-usuario-nombre"
+      : errors.mail
+        ? "editar-usuario-email"
+        : errors.rol
+          ? "editar-usuario-rol"
+          : null;
+    if (firstInvalidField) {
+      window.requestAnimationFrame(() => {
+        document.getElementById(firstInvalidField)?.focus();
+      });
+    }
     return Object.keys(errors).length === 0;
   }
 
@@ -480,11 +492,14 @@ export default function UsuariosHome() {
 
             <div className="space-y-4">
               <div>
-                <label className="mb-2 block text-sm font-medium">
+                <label htmlFor="editar-usuario-nombre" className="mb-2 block text-sm font-medium">
                   Nombre de usuario
                 </label>
                 <input
+                  id="editar-usuario-nombre"
                   type="text"
+                  aria-invalid={Boolean(editErrors.nombre_usuario)}
+                  aria-describedby={editErrors.nombre_usuario ? "editar-usuario-nombre-error" : undefined}
                   className={`input ${editErrors.nombre_usuario ? "border-rose-300" : ""}`}
                   value={editForm.nombre_usuario}
                   onChange={(event) => {
@@ -503,16 +518,19 @@ export default function UsuariosHome() {
                   disabled={editarMutation.isPending}
                 />
                 {editErrors.nombre_usuario && (
-                  <p className="mt-1 text-sm text-rose-600">
+                  <p id="editar-usuario-nombre-error" role="alert" className="mt-1 text-sm text-rose-600">
                     {editErrors.nombre_usuario}
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium">Email</label>
+                <label htmlFor="editar-usuario-email" className="mb-2 block text-sm font-medium">Email</label>
                 <input
+                  id="editar-usuario-email"
                   type="email"
+                  aria-invalid={Boolean(editErrors.mail)}
+                  aria-describedby={editErrors.mail ? "editar-usuario-email-error" : undefined}
                   className={`input ${editErrors.mail ? "border-rose-300" : ""}`}
                   value={editForm.mail}
                   onChange={(event) => {
@@ -531,46 +549,63 @@ export default function UsuariosHome() {
                   disabled={editarMutation.isPending}
                 />
                 {editErrors.mail && (
-                  <p className="mt-1 text-sm text-rose-600">{editErrors.mail}</p>
+                  <p id="editar-usuario-email-error" role="alert" className="mt-1 text-sm text-rose-600">{editErrors.mail}</p>
                 )}
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium">Rol</label>
-                <select
-                  className={`input ${editErrors.rol ? "border-rose-300" : ""}`}
-                  value={editForm.rol}
-                  onChange={(event) => {
-                    setEditForm((prev) => ({
-                      ...prev,
-                      rol: event.target.value as Rol,
-                    }));
-                    if (editErrors.rol) {
-                      setEditErrors((prev) => ({
+                <label htmlFor="editar-usuario-rol" className="mb-2 block text-sm font-medium">Rol</label>
+                {usuarioAEditar.id === user?.id ? (
+                  <input
+                    id="editar-usuario-rol"
+                    type="text"
+                    readOnly
+                    value={getRolConfig(editForm.rol).label}
+                    aria-invalid={Boolean(editErrors.rol)}
+                    aria-describedby={editErrors.rol
+                      ? "editar-usuario-rol-ayuda editar-usuario-rol-error"
+                      : "editar-usuario-rol-ayuda"}
+                    className={`input ${editErrors.rol ? "border-rose-300" : ""}`}
+                  />
+                ) : (
+                  <select
+                    id="editar-usuario-rol"
+                    aria-invalid={Boolean(editErrors.rol)}
+                    aria-describedby={editErrors.rol ? "editar-usuario-rol-error" : undefined}
+                    className={`input ${editErrors.rol ? "border-rose-300" : ""}`}
+                    value={editForm.rol}
+                    onChange={(event) => {
+                      setEditForm((prev) => ({
                         ...prev,
-                        rol: undefined,
-                        general: undefined,
+                        rol: event.target.value as Rol,
                       }));
-                    }
-                  }}
-                  disabled={editarMutation.isPending || usuarioAEditar.id === user?.id}
-                >
-                  <option value="ADMIN">Administrador</option>
-                  <option value="GESTOR">Gestor</option>
-                  <option value="LECTURA">Lector</option>
-                </select>
+                      if (editErrors.rol) {
+                        setEditErrors((prev) => ({
+                          ...prev,
+                          rol: undefined,
+                          general: undefined,
+                        }));
+                      }
+                    }}
+                    disabled={editarMutation.isPending}
+                  >
+                    <option value="ADMIN">Administrador</option>
+                    <option value="GESTOR">Gestor</option>
+                    <option value="LECTURA">Lector</option>
+                  </select>
+                )}
                 {usuarioAEditar.id === user?.id && (
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p id="editar-usuario-rol-ayuda" className="mt-1 text-xs text-slate-500">
                     No puede modificar el rol de su propia cuenta.
                   </p>
                 )}
                 {editErrors.rol && (
-                  <p className="mt-1 text-sm text-rose-600">{editErrors.rol}</p>
+                  <p id="editar-usuario-rol-error" role="alert" className="mt-1 text-sm text-rose-600">{editErrors.rol}</p>
                 )}
               </div>
 
               {editErrors.general && (
-                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                   {editErrors.general}
                 </div>
               )}

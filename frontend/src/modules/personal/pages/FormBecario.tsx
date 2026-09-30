@@ -490,6 +490,8 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
             <input
               type="checkbox"
               id="checkbox-agregar-beca"
+              aria-invalid={Boolean(errors.becaGlobal)}
+              aria-describedby={errors.becaGlobal ? "becario-beca-global-error" : undefined}
               checked={agregarBeca}
               onChange={(e) => {
                 const isChecked = e.target.checked;
@@ -516,7 +518,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
           </div>
 
           {errors.becaGlobal && (
-            <p className="mt-1 text-xs text-red-500">{errors.becaGlobal}</p>
+            <p id="becario-beca-global-error" role="alert" className="mt-1 text-xs text-red-500">{errors.becaGlobal}</p>
           )}
         </div>
 
