@@ -116,52 +116,52 @@ export default function TransferenciasDetalle() {
         <article className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
           <div className="space-y-2 text-sm text-slate-500 md:text-base">
             <p>
-              <span className="font-medium text-slate-700">Número de transferencia:</span>{" "}
+              <span className="font-semibold text-slate-800">Número de transferencia:</span>{" "}
               {data.numeroTransferencia || "-"}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Denominación:</span>{" "}
+              <span className="font-semibold text-slate-800">Denominación:</span>{" "}
               {data.denominacion || "-"}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Demandante:</span>{" "}
+              <span className="font-semibold text-slate-800">Demandante:</span>{" "}
               {data.demandante || "-"}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Descripción de la actividad:</span>{" "}
+              <span className="font-semibold text-slate-800">Descripción de la actividad:</span>{" "}
               {data.descripcionActividad || "-"}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Monto:</span>{" "}
+              <span className="font-semibold text-slate-800">Monto:</span>{" "}
               {formatMonto(data.monto)}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha de inicio:</span>{" "}
+              <span className="font-semibold text-slate-800">Fecha de inicio:</span>{" "}
               {formatFecha(data.fechaInicio)}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha de fin:</span>{" "}
+              <span className="font-semibold text-slate-800">Fecha de fin:</span>{" "}
               {formatFecha(data.fechaFin)}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Tipo de contrato:</span>{" "}
+              <span className="font-semibold text-slate-800">Tipo de contrato:</span>{" "}
               {data.tipoContrato || "-"}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Grupo UTN:</span>{" "}
+              <span className="font-semibold text-slate-800">Grupo UTN:</span>{" "}
               {data.grupo || "-"}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Adoptantes:</span>{" "}
+              <span className="font-semibold text-slate-800">Adoptantes:</span>{" "}
               {data.adoptantes.length > 0
                 ? data.adoptantes.map((adoptante) => adoptante.nombre).join(", ")
                 : "-"}
@@ -171,28 +171,28 @@ export default function TransferenciasDetalle() {
 
         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-700">Auditoría</h3>
+            <h3 className="text-lg font-semibold text-slate-800">Auditoría</h3>
             <p className="mt-1 text-xs text-slate-500">{titulo}</p>
           </div>
 
           <div className="space-y-2 text-sm text-slate-500 md:text-base">
             <p>
-              <span className="font-medium text-slate-700">Creado por:</span>{" "}
+              <span className="font-semibold text-slate-800">Creado por:</span>{" "}
               {data.created_by_nombre || auditoria.nombreCreador}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha de creación:</span>{" "}
+              <span className="font-semibold text-slate-800">Fecha de creación:</span>{" "}
               {formatFechaHora(data.created_at)}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Eliminado por:</span>{" "}
+              <span className="font-semibold text-slate-800">Eliminado por:</span>{" "}
               {data.deleted_by_nombre || auditoria.nombreEliminador}
             </p>
 
             <p>
-              <span className="font-medium text-slate-700">Fecha de eliminación:</span>{" "}
+              <span className="font-semibold text-slate-800">Fecha de eliminación:</span>{" "}
               {formatFechaHora(data.deletedAt)}
             </p>
           </div>

@@ -8,6 +8,16 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-88: títulos más visibles en las tarjetas de detalle
+
+- Las etiquetas de datos y los encabezados de tarjetas de los detalles usan mayor
+  peso y contraste en los módulos de grupo, informes, memorias, personal,
+  producción, proyectos, recursos y transferencia.
+- Se conservaron la disposición, los textos, las acciones y los contratos.
+
+Validaciones: aceptación visual y funcional del usuario, 191 pruebas frontend,
+`typecheck`, build de producción y `git diff --check` correctos.
+
 ### ISS-85: informes por período y cierre explícito de proyectos
 
 - Investigadores, Proyectos y UCT tienen informes manuales ligados a una Memoria,
