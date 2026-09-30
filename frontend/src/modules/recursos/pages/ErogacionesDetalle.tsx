@@ -65,26 +65,26 @@ export default function ErogacionesDetalle() {
 
         <article className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
           <dl className="grid gap-4 text-sm md:grid-cols-2 md:text-base">
-            <div><dt className="font-medium text-slate-700">Tipo de movimiento</dt><dd className="text-slate-600">{data.tipo_movimiento === "INGRESO" ? "Ingreso" : "Egreso"}</dd></div>
-            <div><dt className="font-medium text-slate-700">Fecha</dt><dd className="text-slate-600">{formatFecha(data.fecha)}</dd></div>
-            <div><dt className="font-medium text-slate-700">Monto</dt><dd className="text-slate-600">{formatMovimientoMoney(data.monto, data.moneda)}</dd></div>
-            <div><dt className="font-medium text-slate-700">Moneda</dt><dd className="text-slate-600">{data.moneda}</dd></div>
-            <div><dt className="font-medium text-slate-700">Fuente de financiamiento</dt><dd className="text-slate-600">{data.fuente?.nombre ?? "—"}</dd></div>
+            <div><dt className="font-semibold text-slate-800">Tipo de movimiento</dt><dd className="text-slate-600">{data.tipo_movimiento === "INGRESO" ? "Ingreso" : "Egreso"}</dd></div>
+            <div><dt className="font-semibold text-slate-800">Fecha</dt><dd className="text-slate-600">{formatFecha(data.fecha)}</dd></div>
+            <div><dt className="font-semibold text-slate-800">Monto</dt><dd className="text-slate-600">{formatMovimientoMoney(data.monto, data.moneda)}</dd></div>
+            <div><dt className="font-semibold text-slate-800">Moneda</dt><dd className="text-slate-600">{data.moneda}</dd></div>
+            <div><dt className="font-semibold text-slate-800">Fuente de financiamiento</dt><dd className="text-slate-600">{data.fuente?.nombre ?? "—"}</dd></div>
             {data.tipo_movimiento === "EGRESO" && <>
-              <div><dt className="font-medium text-slate-700">Categoría de erogación</dt><dd className="text-slate-600">{data.categoria_erogacion?.nombre ?? "—"}</dd></div>
-              <div><dt className="font-medium text-slate-700">Equipamiento relacionado</dt><dd className="text-slate-600">{data.equipamiento?.denominacion ?? "—"}</dd></div>
+              <div><dt className="font-semibold text-slate-800">Categoría de erogación</dt><dd className="text-slate-600">{data.categoria_erogacion?.nombre ?? "—"}</dd></div>
+              <div><dt className="font-semibold text-slate-800">Equipamiento relacionado</dt><dd className="text-slate-600">{data.equipamiento?.denominacion ?? "—"}</dd></div>
             </>}
           </dl>
         </article>
 
         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-700">Auditoría</h3>
+          <h3 className="text-lg font-semibold text-slate-800">Auditoría</h3>
           <p className="mt-1 text-xs text-slate-500">{titulo}</p>
           <dl className="mt-4 grid gap-3 text-sm md:grid-cols-2 md:text-base">
-            <div><dt className="font-medium text-slate-700">Creado por</dt><dd className="text-slate-500">{data.created_by_nombre || auditoria.nombreCreador}</dd></div>
-            <div><dt className="font-medium text-slate-700">Fecha de creación</dt><dd className="text-slate-500">{formatFechaHora(data.created_at)}</dd></div>
-            <div><dt className="font-medium text-slate-700">Eliminado por</dt><dd className="text-slate-500">{data.deleted_by_nombre || auditoria.nombreEliminador}</dd></div>
-            <div><dt className="font-medium text-slate-700">Fecha de eliminación</dt><dd className="text-slate-500">{formatFechaHora(data.deleted_at)}</dd></div>
+            <div><dt className="font-semibold text-slate-800">Creado por</dt><dd className="text-slate-500">{data.created_by_nombre || auditoria.nombreCreador}</dd></div>
+            <div><dt className="font-semibold text-slate-800">Fecha de creación</dt><dd className="text-slate-500">{formatFechaHora(data.created_at)}</dd></div>
+            <div><dt className="font-semibold text-slate-800">Eliminado por</dt><dd className="text-slate-500">{data.deleted_by_nombre || auditoria.nombreEliminador}</dd></div>
+            <div><dt className="font-semibold text-slate-800">Fecha de eliminación</dt><dd className="text-slate-500">{formatFechaHora(data.deleted_at)}</dd></div>
           </dl>
         </article>
 
