@@ -51,3 +51,9 @@ La implementación pasó 191 pruebas frontend, `npm run typecheck` y build de
 producción. El usuario validó el comportamiento y aprobó la presentación
 de los tres tipos de informe; los ajustes posteriores pasaron 12 pruebas
 dirigidas y una nueva comprobación de tipos.
+
+## Títulos de detalle (ISS-88)
+
+En InformeDetalle, las etiquetas de datos y los encabezados de tarjetas
+usan peso seminegrita y color pizarra oscuro para distinguirse del contenido.
+La disposición, los textos, las acciones y el contrato permanecen iguales.
