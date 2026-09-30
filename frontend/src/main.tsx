@@ -70,6 +70,9 @@ const MemoriasHome = lazy(() => import("@/modules/memorias/pages/MemoriasHome"))
 const MemoriaForm = lazy(() => import("@/modules/memorias/pages/MemoriaForm"));
 const MemoriaDetalle = lazy(() => import("@/modules/memorias/pages/MemoriaDetalle"));
 const MemoriaVersionDetalle = lazy(() => import("@/modules/memorias/pages/MemoriaVersionDetalle"));
+const InformesHome = lazy(() => import("@/modules/informes/pages/InformesHome"));
+const InformeForm = lazy(() => import("@/modules/informes/pages/InformeForm"));
+const InformeDetalle = lazy(() => import("@/modules/informes/pages/InformeDetalle"));
 
 // Gestión de usuarios
 const CambiarPassword = lazy(() => import("@/modules/auth/pages/CambiarPassword"));
@@ -155,6 +158,10 @@ const router = createBrowserRouter([
       },
 
       { path: "busqueda", element: <SearchPage /> },
+      { path: "informes/:tipo", element: <ProtectedRoute requiredRole="GESTOR"><InformesHome /></ProtectedRoute> },
+      { path: "informes/:tipo/nuevo", element: <ProtectedRoute requiredRole="GESTOR"><InformeForm /></ProtectedRoute> },
+      { path: "informes/:tipo/:id", element: <ProtectedRoute requiredRole="GESTOR"><InformeDetalle /></ProtectedRoute> },
+      { path: "informes/:tipo/:id/editar", element: <ProtectedRoute requiredRole="GESTOR"><InformeForm /></ProtectedRoute> },
 
       // UCT
       { path: "uct/nueva", element: editorOnly(<UctForm />) },

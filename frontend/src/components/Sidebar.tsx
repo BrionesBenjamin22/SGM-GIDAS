@@ -49,6 +49,14 @@ const adminItems: Item[] = [
 ];
 
 const catalogosItem: Item = { label: "Gestionar Catálogos", to: "/catalogos" };
+const informesItem: Item = {
+  label: "Informes",
+  children: [
+    { label: "Investigadores", to: "/informes/investigadores" },
+    { label: "Proyectos", to: "/informes/pid" },
+    { label: "UCT", to: "/informes/uct" },
+  ],
+};
 
 type MenuListProps = {
   nodes: Item[];
@@ -166,7 +174,7 @@ export default function Sidebar() {
   const resolvedNodes = isAdmin()
     ? adminItems
     : isGestor()
-      ? [...baseItems, catalogosItem]
+      ? [...baseItems, informesItem, catalogosItem]
       : baseItems;
 
   const roleLabel = isAdmin()

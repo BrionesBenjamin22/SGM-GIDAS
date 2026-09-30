@@ -29,7 +29,7 @@ export default function ProyectoDetalle() {
   const navigate = useNavigate();
   const location = useLocation();
   const qc = useQueryClient();
-  const { canEditRecords } = useAuth();
+  const { canEditRecords, isGestor } = useAuth();
   const { data: tiposProyecto = [] } = useTiposProyecto();
   const { fuentes = [] } = useFuentesFinanciamiento();
 
@@ -123,6 +123,7 @@ export default function ProyectoDetalle() {
     : "-";
 
   const estaCerrado = data.cerrado === true;
+  const estaInactivo = data.activo === false || !!data.deleted_at;
 
   const formatHistorialValue = (
     item: { campo?: string },
@@ -156,7 +157,7 @@ export default function ProyectoDetalle() {
 
   return (
     <section className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-2">
           <h2 className="text-2xl md:text-3xl font-semibold leading-none">
             {data.nombreProyecto}
@@ -166,15 +167,16 @@ export default function ProyectoDetalle() {
             className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider ${
               estaCerrado
                 ? "border-amber-200 bg-amber-50 text-amber-700"
-                : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : estaInactivo ? "border-slate-200 bg-slate-50 text-slate-600" : "border-emerald-200 bg-emerald-50 text-emerald-700"
             }`}
           >
-            {estaCerrado ? "Cerrado" : "Activo"}
+            {estaCerrado ? "Cerrado" : estaInactivo ? "Inactivo" : "Activo"}
           </span>
         </div>
 
-        <div className="flex gap-2">
-          {puedeEditar && estaCerrado && data.id && (!data.fechaFinProrrogada || data.fechaFinProrrogada > getLocalTodayIso()) ? (
+        <div className="flex flex-wrap gap-2">
+          {isGestor() && data.id && <Button size="sm" variant="secondary" onClick={() => navigate(`/informes/pid/nuevo?proyectoId=${data.id}`, { state: { projectName: data.nombreProyecto } })}>Crear informe PID</Button>}
+          {puedeEditar && (estaCerrado || estaInactivo) && data.id && (!data.fechaFinProrrogada || data.fechaFinProrrogada > getLocalTodayIso()) ? (
             <Button
               size="sm"
               onClick={() => reabrirMutation.mutate(String(data.id))}
@@ -186,7 +188,7 @@ export default function ProyectoDetalle() {
             </Button>
           ) : null}
 
-          {puedeEditar && !data.deleted_at && !estaCerrado ? (
+          {puedeEditar && !estaInactivo && !estaCerrado ? (
             <Button
               size="sm"
               onClick={() => navigate(`/proyectos/${data.id}/editar`)}
@@ -252,21 +254,19 @@ export default function ProyectoDetalle() {
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Fecha inicio:</span>{" "}
+            <span className="font-medium text-slate-700">Fecha de inicio:</span>{" "}
             {formatFecha(data.fechaInicio)}
           </p>
 
-          {data.fechaFinProrrogada && <>
-            <p><span className="font-medium text-slate-700">Fin original:</span>{" "}{formatFecha(data.fechaFinOriginal)}</p>
-            <p><span className="font-medium text-slate-700">Fin prorrogado:</span>{" "}{formatFecha(data.fechaFinProrrogada)}</p>
-          </>}
+          {data.fechaFinProrrogada && <p><span className="font-medium text-slate-700">Fecha final original:</span>{" "}{formatFecha(data.fechaFinOriginal)}</p>}
+          {data.fechaFinProrrogada && estaCerrado && <p><span className="font-medium text-slate-700">Fecha final aprobada por prórroga:</span>{" "}{formatFecha(data.fechaFinProrrogada)}</p>}
           <p>
-            <span className="font-medium text-slate-700">{estaCerrado ? "Fecha fin real:" : "Fecha fin prevista:"}</span>{" "}
+            <span className="font-medium text-slate-700">{estaCerrado ? "Fecha de cierre real:" : data.fechaFinProrrogada ? "Fecha final vigente (con prórroga):" : "Fecha final vigente:"}</span>{" "}
             {formatFecha(data.fechaFinalizacion)}
           </p>
           {data.fechaFinProrrogada && <>
-            <p><span className="font-medium text-slate-700">Justificación:</span>{" "}{data.prorrogaMotivo}</p>
-            <p><span className="font-medium text-slate-700">Decisión:</span>{" "}{data.prorrogaByNombre || "-"} · {formatFechaHora(data.prorrogaAt)}</p>
+            <p><span className="font-medium text-slate-700">Justificación de la prórroga:</span>{" "}{data.prorrogaMotivo}</p>
+            <p><span className="font-medium text-slate-700">Decisión de Prorrogación:</span>{" "}Aprobada por {data.prorrogaByNombre || "-"} el {formatFechaHora(data.prorrogaAt)}</p>
           </>}
         </div>
       </article>

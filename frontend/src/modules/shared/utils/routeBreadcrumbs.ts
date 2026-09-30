@@ -23,6 +23,7 @@ const sectionNames: Record<string, string> = {
   participaciones: "Participaciones Relevantes",
   visitantes: "Visitantes",
   memorias: "Memorias",
+  informes: "Informes",
   usuarios: "Usuarios",
   catalogos: "Catálogos",
   "mi-perfil": "Mi perfil",
@@ -75,6 +76,18 @@ export function getRouteBreadcrumbs(pathname: string): BreadcrumbItem[] {
 
   if (section === "memorias" && segments.length === 4 && third === "versiones") {
     return [...sectionTrail("memorias"), { label: "Detalle", to: `/memorias/${second}` }, { label: "Versión" }];
+  }
+
+  if (section === "informes" && second) {
+    const labels: Record<string, string> = { investigadores: "Investigadores", pid: "Proyectos", uct: "UCT" };
+    const typeLabel = labels[second];
+    if (typeLabel) {
+      const root = [start, { label: "Informes" }, { label: typeLabel, to: `/informes/${second}` }];
+      if (segments.length === 2) return [start, { label: "Informes" }, { label: typeLabel }];
+      if (third === "nuevo" && segments.length === 3) return [...root, { label: "Nuevo" }];
+      if (segments.length === 3) return [...root, { label: "Detalle" }];
+      if (fourth === "editar" && segments.length === 4) return [...root, { label: "Detalle", to: `/informes/${second}/${third}` }, { label: "Editar" }];
+    }
   }
 
   if (section === "proyectos" && segments.length === 3 && second === "editar") {

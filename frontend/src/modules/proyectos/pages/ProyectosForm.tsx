@@ -96,7 +96,7 @@ export default function ProyectosForm() {
   const [formInitialized, setFormInitialized] = useState(!isEdit);
   const [coordinatorPage, setCoordinatorPage] = useState(1);
 
-  const proyectoCerrado = initialData?.cerrado === true;
+  const proyectoCerrado = initialData?.cerrado === true || initialData?.activo === false || !!initialData?.deleted_at;
 
   useEffect(() => {
     if (!initialData) return;
@@ -437,7 +437,7 @@ export default function ProyectosForm() {
 
       {proyectoCerrado && (
         <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Este proyecto se encuentra cerrado. Para modificar investigadores,
+          Este proyecto se encuentra {initialData?.cerrado ? "cerrado" : "inactivo"}. Para modificar investigadores,
           becarios o volver a editarlo, primero debes reabrirlo desde el
           detalle.
         </div>

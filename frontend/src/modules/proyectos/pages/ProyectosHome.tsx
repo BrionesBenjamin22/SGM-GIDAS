@@ -29,7 +29,7 @@ export default function ProyectosLanding() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const { canCreateRecords, canEditRecords, canDeleteRecords } = useAuth();
+  const { canCreateRecords, canEditRecords, canDeleteRecords, isGestor } = useAuth();
   const tiposQuery = useTiposProyecto();
   const { fuentes } = useFuentesFinanciamiento();
 
@@ -46,6 +46,7 @@ export default function ProyectosLanding() {
   const [pendingClose, setPendingClose] = useState<Proyecto | null>(null);
   const [pendingReopen, setPendingReopen] = useState<Proyecto | null>(null);
   const [closeDate, setCloseDate] = useState<Date | null>(new Date());
+  const [closeError, setCloseError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -105,10 +106,10 @@ export default function ProyectosLanding() {
       await cerrarProyecto(pendingClose.id, date);
       await refreshProjects(pendingClose.id);
       setPendingClose(null);
+      setCloseError("");
       setSuccessMessage("Proyecto cerrado con éxito.");
     } catch (error) {
-      setPendingClose(null);
-      setErrorMessage(getErrorMessage(error, "Lo sentimos, no pudimos completar la operación. Intente nuevamente."));
+      setCloseError(getErrorMessage(error, "Lo sentimos, no pudimos completar la operación. Intente nuevamente."));
     }
   };
 
@@ -131,12 +132,12 @@ export default function ProyectosLanding() {
     { id: "tipo", header: "Tipo", sortable: true, priority: "secondary", render: (project) => project.tipoProyectoNombre || "—" },
     { id: "coordinador", header: "Coordinador", priority: "secondary", render: (project) => project.investigadores?.find((item) => item.es_coordinador)?.nombre_apellido || "—" },
     { id: "fecha_inicio", header: "Inicio", sortable: true, priority: "tertiary", render: (project) => formatFecha(project.fechaInicio) },
-    { id: "estado", header: "Estado", sortable: true, render: (project) => <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${project.cerrado ? "text-amber-700" : "text-emerald-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${project.cerrado ? "bg-amber-500" : "bg-emerald-500"}`} />{project.cerrado ? "Cerrado" : "Activo"}{project.fechaFinProrrogada ? " · Prorrogado" : ""}</span> },
+    { id: "estado", header: "Estado", sortable: true, render: (project) => <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${project.cerrado ? "text-amber-700" : project.activo === false || project.deleted_at ? "text-slate-600" : "text-emerald-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${project.cerrado ? "bg-amber-500" : project.activo === false || project.deleted_at ? "bg-slate-400" : "bg-emerald-500"}`} />{project.cerrado ? "Cerrado" : project.activo === false || project.deleted_at ? "Inactivo" : "Activo"}{project.fechaFinProrrogada ? " · Prorrogado" : ""}</span> },
     { id: "acciones", header: "Acciones", align: "right", render: (project) => <TableActions>
       <TableRowActionButton action="view" aria-label={`Ver detalle de ${project.nombreProyecto}`} onClick={() => navigate(`/proyectos/${project.id}`, { state: buildMemoriaDetailState(location) })} />
-      {!project.cerrado && canEditRecords() && <TableRowActionButton action="edit" aria-label={`Editar ${project.nombreProyecto}`} onClick={() => navigate(`/proyectos/${project.id}/editar`)} />}
-      {!project.cerrado && canDeleteRecords() && <TableRowActionButton action="delete" label="Cerrar" aria-label={`Cerrar ${project.nombreProyecto}`} onClick={() => { setCloseDate(new Date()); setPendingClose(project); }} />}
-      {project.cerrado && canEditRecords() && (!project.fechaFinProrrogada || project.fechaFinProrrogada > getLocalTodayIso()) && <TableRowActionButton action="restore" label="Reabrir" aria-label={`Reabrir ${project.nombreProyecto}`} onClick={() => setPendingReopen(project)} />}
+      {!project.cerrado && project.activo !== false && !project.deleted_at && canEditRecords() && <TableRowActionButton action="edit" aria-label={`Editar ${project.nombreProyecto}`} onClick={() => navigate(`/proyectos/${project.id}/editar`)} />}
+      {!project.cerrado && project.activo !== false && !project.deleted_at && canDeleteRecords() && <TableRowActionButton action="delete" label="Cerrar" aria-label={`Cerrar ${project.nombreProyecto}`} onClick={() => { setCloseDate(new Date()); setCloseError(""); setPendingClose(project); }} />}
+      {(project.cerrado || project.activo === false || project.deleted_at) && canEditRecords() && (!project.fechaFinProrrogada || project.fechaFinProrrogada > getLocalTodayIso()) && <TableRowActionButton action="restore" label="Reabrir" aria-label={`Reabrir ${project.nombreProyecto}`} onClick={() => setPendingReopen(project)} />}
     </TableActions> },
   ], [canDeleteRecords, canEditRecords, location, navigate]);
 
@@ -190,13 +191,13 @@ export default function ProyectosLanding() {
           <span className="shrink-0 text-xs font-medium text-slate-500">Estado</span>
           <TableFilterChip className="shrink-0" active={activeFilter === "true"} onClick={() => setActiveFilter("true")}>Activos</TableFilterChip>
           <TableFilterChip className="shrink-0" active={activeFilter === "all"} onClick={() => setActiveFilter("all")}>Todos</TableFilterChip>
-          <TableFilterChip className="shrink-0" active={activeFilter === "false"} onClick={() => setActiveFilter("false")}>Cerrados</TableFilterChip>
+          <TableFilterChip className="shrink-0" active={activeFilter === "false"} onClick={() => setActiveFilter("false")}>Cerrados e inactivos</TableFilterChip>
           <TableFilterSelect label="Filtrar por tipo de proyecto" placeholder="Todos los tipos" value={typeFilter === undefined ? undefined : String(typeFilter)} onValueChange={(value) => setTypeFilter(value === undefined ? undefined : Number(value))} options={(tiposQuery.data ?? []).map((type) => ({ value: String(type.id), label: type.nombre }))} />
           <TableFilterSelect label="Filtrar por fuente de financiamiento" placeholder="Todas las fuentes" value={sourceFilter === undefined ? undefined : String(sourceFilter)} onValueChange={(value) => setSourceFilter(value === undefined ? undefined : Number(value))} className="min-w-52" options={fuentes.map((source) => ({ value: String(source.id), label: source.nombre }))} />
         </div>
       </div></TableToolbar>}
     />
-    <ConfirmDialog open={Boolean(pendingClose)} title="Cerrar proyecto" onCancel={() => setPendingClose(null)} onConfirm={confirmClose} confirmText="Confirmar cierre" confirmDisabled={!closeDate} loadingText="Cerrando..."><Field label="Fecha de cierre" name="fechaCierre" required><Calendar value={closeDate} onChange={setCloseDate} maxDate={new Date()} className="input" helperText="DD/MM/AAAA" /></Field></ConfirmDialog>
+    <ConfirmDialog open={Boolean(pendingClose)} title="Cerrar proyecto" onCancel={() => { setPendingClose(null); setCloseError(""); }} onConfirm={confirmClose} confirmText="Confirmar cierre" confirmDisabled={!closeDate} loadingText="Cerrando..."><div className="space-y-3"><p className="text-sm text-slate-600">La fecha de cierre debe estar dentro del período de la Memoria de un informe PID que incluya este proyecto. Un informe de otro período no habilita el cierre.</p><Field label="Fecha de cierre" name="fechaCierre" required><Calendar value={closeDate} onChange={(value) => { setCloseDate(value); setCloseError(""); }} maxDate={new Date()} className="input" helperText="DD/MM/AAAA" /></Field>{closeError && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{closeError}</p>}{isGestor() && pendingClose?.id && <Button variant="secondary" size="sm" onClick={() => { const projectId = pendingClose.id; const projectName = pendingClose.nombreProyecto; setPendingClose(null); setCloseError(""); navigate(`/informes/pid/nuevo?proyectoId=${projectId}`, { state: { projectName } }); }}>Generar Informe</Button>}</div></ConfirmDialog>
     <ConfirmDialog open={Boolean(pendingReopen)} title="Reabrir proyecto" message={`¿Está seguro de reabrir ${pendingReopen?.nombreProyecto ?? "este proyecto"}?`} confirmText="Reabrir" loadingText="Reabriendo..." onCancel={() => setPendingReopen(null)} onConfirm={confirmReopen} />
     <SuccessToast open={Boolean(successMessage)} message={successMessage} onClose={() => setSuccessMessage("")} />
     <SuccessToast open={Boolean(errorMessage)} message={errorMessage} variant="error" onClose={() => setErrorMessage("")} />

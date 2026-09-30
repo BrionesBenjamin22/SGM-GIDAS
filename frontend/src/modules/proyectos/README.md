@@ -97,8 +97,8 @@ conserva su estado actual. La edición sin cambios no realiza peticiones.
 El borrador se limpia y se navega con éxito solo después del guardado completo.
 
 Seguimiento de prueba manual ISS-10: el alta con fecha de fin pasada, de hoy o
-futura admite el guardado consolidado; una fecha pasada/de hoy se muestra como
-proyecto cerrado después del alta. Los proyectos ya cerrados requieren
+futura admite el guardado consolidado; la fecha prevista no cierra por sí sola
+el proyecto. Los proyectos cerrados mediante la acción explícita requieren
 reapertura antes de editar. Se valida localmente que fin no preceda a inicio.
 Guardar muestra un icono animado mientras espera al servidor. Una validación
 local o un error de API siempre muestra aviso general, además de los mensajes
@@ -165,13 +165,17 @@ Tras el exito se invalidan lista, detalle e historial y aparece un mensaje de
 confirmacion. El evento de historial muestra fin nuevo y justificacion, con
 paginacion de tres items.
 
-El detalle ordena inicio, fin original y fin prorrogado cuando existe prorroga,
-y fecha fin vigente al final. Esta ultima se etiqueta `Fecha fin prevista`
-mientras el proyecto sigue abierto y `Fecha fin real` al cerrarse. Muestra
-ademas motivo, autor y fecha de decision. El home identifica proyectos
-prorrogados y toma su estado del fin vigente. El cierre con fecha usa
+El detalle muestra fecha de inicio, fecha final original y fecha final vigente
+con prórroga; después del cierre distingue la fecha aprobada por prórroga de
+la fecha de cierre real. Presenta el motivo y `Decisión de Prorrogación` con
+quién la aprobó y cuándo. El home identifica los proyectos prorrogados y usa
+el estado de cierre explícito, sin cerrarlos por vencimiento de la fecha
+prevista. El cierre con fecha usa
 `POST /proyectos/{id}/cerrar`; PUT de solo `fecha_fin` queda reservado para
-editar el periodo inicial. La reapertura no se ofrece si la prorroga vencio.
+editar el periodo inicial. El modal exige una fecha cubierta por la Memoria de
+un informe PID vinculado, muestra el error sin cerrar el diálogo y ofrece a
+GESTOR un botón pequeño `Generar Informe`. La reapertura no se ofrece si la
+prórroga venció.
 
 Las consultas y mutaciones siguen React Query mediante los hooks y servicios
 del modulo; los errores HTTP se muestran con los helpers compartidos. Las
