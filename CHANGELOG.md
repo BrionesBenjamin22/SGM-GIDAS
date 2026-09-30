@@ -8,6 +8,22 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-85: informes por período y cierre explícito de proyectos
+
+- Investigadores, Proyectos y UCT tienen informes manuales ligados a una Memoria,
+  con copias históricas de los registros vinculados, auditoría e historial. El
+  acceso a las vistas y los endpoints queda limitado a GESTOR.
+- Los listados de informes muestran el período y permiten desplegar las copias
+  vinculadas de investigadores y proyectos. El detalle conserva el estilo del
+  sistema y el selector de vínculos permite navegar con teclado.
+- Un informe PID habilita el cierre explícito del proyecto solo cuando la
+  Memoria contiene la fecha elegida. Registrar un informe o vencer la fecha
+  prevista no cierra el proyecto. El detalle de la prórroga distingue el fin
+  vigente y muestra la Decisión de Prorrogación con autor y fecha.
+
+Validaciones: 48 pruebas backend dirigidas, 12 frontend dirigidas, typecheck,
+build de producción y healthcheck local correctos; aceptación del usuario.
+
 ### ISS-86: listado de Memorias por período y versión
 
 - El home muestra una fila por Memoria y agrupa sus versiones en paneles
