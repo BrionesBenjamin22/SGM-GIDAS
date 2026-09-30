@@ -212,35 +212,35 @@ export default function MemoriaDetalle() {
         </article>}
         <article className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-700">
+            <h3 className="text-lg font-semibold text-slate-800">
               Datos de la memoria
             </h3>
           </div>
 
           <div className="space-y-2 text-sm text-slate-500 md:text-base">
-            <p><span className="font-medium text-slate-700">UCT:</span> {memoria.grupo_utn_nombre || "Pendiente de asociar"}</p>
+            <p><span className="font-semibold text-slate-800">UCT:</span> {memoria.grupo_utn_nombre || "Pendiente de asociar"}</p>
             <p>
               El período define qué información integra la memoria. Su estado
               permanece abierto hasta que un gestor o administrador la cierre.
             </p>
             <p>
-              <span className="font-medium text-slate-700">Período de inicio:</span>{" "}
+              <span className="font-semibold text-slate-800">Período de inicio:</span>{" "}
               {formatFecha(memoria.periodo_inicio)}
             </p>
             <p>
-              <span className="font-medium text-slate-700">Período de fin:</span>{" "}
+              <span className="font-semibold text-slate-800">Período de fin:</span>{" "}
               {formatFecha(memoria.periodo_fin)}
             </p>
             <p>
-              <span className="font-medium text-slate-700">Cantidad de versiones:</span>{" "}
+              <span className="font-semibold text-slate-800">Cantidad de versiones:</span>{" "}
               {memoria.cantidad_versiones}
             </p>
             <p>
-              <span className="font-medium text-slate-700">Creada por:</span>{" "}
+              <span className="font-semibold text-slate-800">Creada por:</span>{" "}
               {memoria.created_by_nombre || "-"}
             </p>
             <p>
-              <span className="font-medium text-slate-700">Fecha de creación:</span>{" "}
+              <span className="font-semibold text-slate-800">Fecha de creación:</span>{" "}
               {formatFechaHora(memoria.created_at)}
             </p>
           </div>
@@ -248,32 +248,32 @@ export default function MemoriaDetalle() {
 
         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-700">Versión actual</h3>
+            <h3 className="text-lg font-semibold text-slate-800">Versión actual</h3>
           </div>
 
           <div className="space-y-2 text-sm text-slate-500 md:text-base">
             <p>
-              <span className="font-medium text-slate-700">Número de versión:</span>{" "}
+              <span className="font-semibold text-slate-800">Número de versión:</span>{" "}
               {versionActual.numero_version}
             </p>
             <p>
-              <span className="font-medium text-slate-700">Estado:</span>{" "}
+              <span className="font-semibold text-slate-800">Estado:</span>{" "}
               {versionActual.estado}
             </p>
             <p>
-              <span className="font-medium text-slate-700">Fecha de apertura:</span>{" "}
+              <span className="font-semibold text-slate-800">Fecha de apertura:</span>{" "}
               {formatFechaHora(versionActual.fecha_apertura)}
             </p>
             <p>
-              <span className="font-medium text-slate-700">Fecha de cierre:</span>{" "}
+              <span className="font-semibold text-slate-800">Fecha de cierre:</span>{" "}
               {formatFechaHora(versionActual.fecha_cierre)}
             </p>
             <p>
-              <span className="font-medium text-slate-700">Última actualización:</span>{" "}
+              <span className="font-semibold text-slate-800">Última actualización:</span>{" "}
               {formatFechaHora(versionActual.updated_at)}
             </p>
             <p>
-              <span className="font-medium text-slate-700">Actualizada por:</span>{" "}
+              <span className="font-semibold text-slate-800">Actualizada por:</span>{" "}
               {versionActual.updated_by_nombre || "-"}
             </p>
           </div>
@@ -281,7 +281,7 @@ export default function MemoriaDetalle() {
 
         <article className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-700">
+            <h3 className="text-lg font-semibold text-slate-800">
               Historial de versiones
             </h3>
           </div>
@@ -294,19 +294,19 @@ export default function MemoriaDetalle() {
               >
                 <div className="space-y-1 text-sm text-slate-500">
                   <p>
-                    <span className="font-medium text-slate-700">Versión:</span>{" "}
+                    <span className="font-semibold text-slate-800">Versión:</span>{" "}
                     {version.numero_version}
                   </p>
                   <p>
-                    <span className="font-medium text-slate-700">Estado:</span>{" "}
+                    <span className="font-semibold text-slate-800">Estado:</span>{" "}
                     {version.estado}
                   </p>
                   <p>
-                    <span className="font-medium text-slate-700">Apertura:</span>{" "}
+                    <span className="font-semibold text-slate-800">Apertura:</span>{" "}
                     {formatFechaHora(version.fecha_apertura)}
                   </p>
                   <p>
-                    <span className="font-medium text-slate-700">Cierre:</span>{" "}
+                    <span className="font-semibold text-slate-800">Cierre:</span>{" "}
                     {formatFechaHora(version.fecha_cierre)}
                   </p>
                 </div>
