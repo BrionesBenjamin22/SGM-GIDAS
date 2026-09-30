@@ -59,9 +59,24 @@ fechas. Los snapshots ya guardados de Memorias permanecen intactos; los
 posteriores capturan la fecha vigente. Las participaciones continuan usando el
 fin vigente del proyecto para sus reglas de cierre.
 
+## Cierre con informe por período (ISS-85)
+
+La fecha `fecha_fin` de un proyecto activo indica su fin vigente o previsto,
+incluso cuando ya pasó. El vencimiento y el registro de un informe PID no
+cambian el estado del proyecto. `POST /api/v1/proyectos/{id}/cerrar` y la ruta
+DELETE exigen un informe PID activo que incluya el proyecto y pertenezca a una
+Memoria activa cuyo período contenga la fecha efectiva de cierre. Sin él,
+responden `409 CONFLICT`. El cierre explícito registra la baja lógica; el
+detalle y los listados solo presentan `cerrado` cuando hay baja, fecha de
+cierre válida e informe que la justifica. Los filtros de activos usan el
+estado persistido y los listados verifican informes en una consulta por lote.
+La reapertura conserva el contrato existente. El último informe requerido
+por un proyecto cerrado no puede darse de baja ni perder ese vínculo.
+
 Pruebas: `tests/test_proyecto_prorroga.py`,
 `tests/test_proyecto_coordinador.py` y
-`tests/test_proyecto_codigo_alfanumerico.py`.
+`tests/test_proyecto_codigo_alfanumerico.py`; `tests/test_informes.py` cubre
+el requisito de informe y el cierre explícito.
 
 ## Responsabilidad
 

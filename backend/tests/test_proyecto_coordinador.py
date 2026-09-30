@@ -123,8 +123,8 @@ class ProyectoCoordinadorTest(unittest.TestCase):
             "/api/v1/proyectos?page=1&per_page=9&activos=false",
             headers=self.headers,
         ).get_json()
-        self.assertEqual([item["codigo_proyecto"] for item in active_page["data"]], ["ABIERTO"])
-        self.assertEqual([item["codigo_proyecto"] for item in closed_page["data"]], ["CERRADO"])
+        self.assertEqual([item["codigo_proyecto"] for item in active_page["data"]], ["ABIERTO", "CERRADO"])
+        self.assertEqual([item["codigo_proyecto"] for item in closed_page["data"]], [])
 
     def test_listado_paginado_rechaza_limite_superior_a_nueve(self):
         response = self.client.get(
@@ -227,10 +227,10 @@ class ProyectoCoordinadorTest(unittest.TestCase):
                 expected = fecha_fin if fecha_fin <= date.today().isoformat() else None
                 self.assertEqual(detail["investigadores"][0]["fecha_fin"], expected)
 
-    def test_proyecto_previamente_cerrado_no_admite_cambio(self):
+    def test_proyecto_con_fecha_vencida_sin_informe_admite_cambio(self):
         response = self.create(fecha_inicio="2024-01-01", fecha_fin="2024-12-31")
         self.assertEqual(response.status_code, 201, response.get_json())
-        self.assertEqual(self.update(response.get_json()["id"], {"coordinador_id": 2}).status_code, 409)
+        self.assertEqual(self.update(response.get_json()["id"], {"coordinador_id": 2}).status_code, 200)
 
     def test_fecha_fin_anterior_al_inicio_no_deja_alta_parcial(self):
         response = self.create(fecha_fin="2025-12-31")
@@ -264,7 +264,8 @@ class ProyectoCoordinadorTest(unittest.TestCase):
             headers=self.headers,
             json={"fecha_fin": date.today().isoformat()},
         )
-        self.assertEqual(closed.status_code, 200, closed.get_json())
+        self.assertEqual(closed.status_code, 409, closed.get_json())
+        self.assertIn("informe PID", closed.get_json()["error"]["message"])
         detail = self.client.get(f"/api/v1/proyectos/{created['id']}", headers=self.headers).get_json()
         self.assertEqual(detail["fecha_fin_original"], "2026-12-31")
         self.assertEqual(detail["fecha_fin_prorrogada"], "2027-12-31")

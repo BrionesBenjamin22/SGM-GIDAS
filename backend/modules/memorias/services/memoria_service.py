@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import g, has_request_context
+from flask import g, has_app_context, has_request_context
 from sqlalchemy import func, select, union_all
 
 from extension import db
@@ -666,6 +666,9 @@ class MemoriaService:
             MemoriaService._validar_unica_memoria_activa(grupo_id, memoria.id)
         if not cambios:
             return memoria.serialize()
+        from modules.informes.models.informe import Informe
+        if has_app_context() and Informe.query.filter_by(memoria_id=memoria.id).filter(Informe.deleted_at.is_(None)).first():
+            raise ConflictError("El período de la Memoria no puede modificarse mientras tiene informes activos.")
         MemoriaService._validar_solapamiento(inicio, fin, grupo_id, memoria.id)
         try:
             for campo, anterior, nuevo in cambios:
@@ -715,6 +718,9 @@ class MemoriaService:
     def delete(memoria_id: int, user_id: int):
         MemoriaService._validar_id(user_id, "user_id")
         memoria = MemoriaService._get_memoria_or_404(memoria_id, bloquear=True)
+        from modules.informes.models.informe import Informe
+        if has_app_context() and Informe.query.filter_by(memoria_id=memoria.id).filter(Informe.deleted_at.is_(None)).first():
+            raise ConflictError("La Memoria tiene informes activos y no puede eliminarse.")
 
         # El borrado sigue la estrategia general del sistema: se marca como
         # inactiva para preservar trazabilidad y no perder referencias.

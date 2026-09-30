@@ -72,6 +72,7 @@ from modules.produccion.models.trabajo_revista import (  # noqa: F401
     TrabajosRevistasReferato,
     TrabajosRevistasReferatoMemoriaVersion,
 )
+from modules.informes.models.informe import Informe, InformeInvestigador, InformeProyecto  # noqa: F401
 from modules.proyectos.models.participacion_relevante import (  # noqa: F401
     ParticipacionRelevante,
     ParticipacionRelevanteMemoriaVersion,

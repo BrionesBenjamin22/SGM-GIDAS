@@ -131,11 +131,13 @@ class ProyectoInvestigacion(db.Model, AuditMixin):
     )
 
 
-    def serialize(self):
+    def serialize(self, cerrado_override=None):
         data = self.to_dict()
         data["fecha_fin_original"] = (self.fecha_fin_original or self.fecha_fin).isoformat() if (self.fecha_fin_original or self.fecha_fin) else None
         data["prorroga_by_nombre"] = self._get_audit_user_name(self.prorroga_usuario)
-        data["cerrado"] = bool(self.fecha_fin and self.fecha_fin <= date.today())
+        from modules.informes.services.cierre_proyecto import tiene_informe_de_cierre
+        data["cerrado"] = (bool(self.deleted_at and self.fecha_fin and self.fecha_fin <= date.today() and tiene_informe_de_cierre(self.id, self.fecha_fin, grupo_utn_id=self.grupo_utn_id))
+                           if cerrado_override is None else cerrado_override)
 
         # Grupo
         if self.grupo_utn:

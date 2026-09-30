@@ -20,6 +20,7 @@ def get_blueprints():
     from modules.grupo.routes.visita_rutas import visita_academica_bp
     from modules.grupo.routes.tipo_visita_rutas import tipo_visita_bp
     from modules.memorias.routes.memorias_rutas import memoria_bp
+    from modules.informes.routes.informe_rutas import informe_bp
     from modules.personal.routes.becario_rutas import becario_bp
     from modules.personal.routes.investigador_rutas import investigador_bp
     from modules.personal.routes.personal_completo_ruta import personal_completo_bp
@@ -118,6 +119,7 @@ def get_blueprints():
         tipo_reunion_bp,
         tipo_revista_bp,
         memoria_bp,
+        informe_bp,
     ]
 
 

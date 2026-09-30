@@ -23,6 +23,7 @@ VERSIONED_PREFIXES = {
     "grupo_utn": "/api/v1/grupo/grupo-utn",
     "health": "/api/v1",
     "investigador": "/api/v1/personal/investigadores",
+    "informe": "/api/v1/informes",
     "memoria": "/api/v1/memorias",
     "movimiento_financiero": "/api/v1/recursos/movimientos",
     "participacion_relevante": "/api/v1/proyectos/participaciones-relevantes",

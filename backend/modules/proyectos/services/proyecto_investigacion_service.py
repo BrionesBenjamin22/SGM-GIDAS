@@ -26,9 +26,23 @@ from modules.personal.models.personal import Becario, Investigador
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.shared.services.date_time import validate_institutional_date
 from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
+from modules.informes.services.cierre_proyecto import informe_de_cierre_predicate, tiene_informe_de_cierre
 
 
 class ProyectoInvestigacionService:
+    @staticmethod
+    def _serializar_lista(items):
+        if not items:
+            return []
+        ids = [item.id for item in items]
+        closed_ids = {project_id for (project_id,) in db.session.query(ProyectoInvestigacion.id).filter(
+            ProyectoInvestigacion.id.in_(ids),
+            ProyectoInvestigacion.deleted_at.isnot(None),
+            ProyectoInvestigacion.fecha_fin <= date.today(),
+            informe_de_cierre_predicate(ProyectoInvestigacion.id, ProyectoInvestigacion.fecha_fin, ProyectoInvestigacion.grupo_utn_id),
+        ).all()}
+        return [item.serialize(cerrado_override=item.id in closed_ids) for item in items]
+
 
     @staticmethod
     def _sumar_meses(fecha: date, meses: int) -> date:
@@ -68,7 +82,6 @@ class ProyectoInvestigacionService:
                 or_(
                     ProyectoInvestigacion.deleted_at.isnot(None),
                     ProyectoInvestigacion.activo.is_(False),
-                    ProyectoInvestigacion.fecha_fin <= func.current_date(),
                 ),
                 1,
             ),
@@ -189,7 +202,7 @@ class ProyectoInvestigacionService:
 
     @staticmethod
     def _proyecto_esta_cerrado(proyecto: ProyectoInvestigacion):
-        return bool(proyecto.fecha_fin and proyecto.fecha_fin <= date.today())
+        return bool(proyecto.deleted_at and proyecto.fecha_fin and proyecto.fecha_fin <= date.today() and tiene_informe_de_cierre(proyecto.id, proyecto.fecha_fin, grupo_utn_id=proyecto.grupo_utn_id))
 
     @staticmethod
     def _validar_proyecto_abierto(proyecto: ProyectoInvestigacion):
@@ -256,13 +269,13 @@ class ProyectoInvestigacionService:
         if activos == "true":
             query = query.filter(
                 ProyectoInvestigacion.deleted_at.is_(None),
-                ProyectoInvestigacion.activo.is_(True)
+                ProyectoInvestigacion.activo.is_(True),
             )
         elif activos == "false":
             query = query.filter(
                 or_(
                     ProyectoInvestigacion.deleted_at.isnot(None),
-                    ProyectoInvestigacion.activo.is_(False)
+                    ProyectoInvestigacion.activo.is_(False),
                 )
             )
         elif activos != "all":
@@ -299,7 +312,7 @@ class ProyectoInvestigacionService:
         else:
             query = query.order_by(ProyectoInvestigacion.fecha_inicio.desc())
 
-        return [p.serialize() for p in query.all()]
+        return ProyectoInvestigacionService._serializar_lista(query.all())
 
     @staticmethod
     def get_page(
@@ -359,16 +372,11 @@ class ProyectoInvestigacionService:
             query = query.filter(
                 ProyectoInvestigacion.deleted_at.is_(None),
                 ProyectoInvestigacion.activo.is_(True),
-                or_(
-                    ProyectoInvestigacion.fecha_fin.is_(None),
-                    ProyectoInvestigacion.fecha_fin > func.current_date(),
-                ),
             )
         elif activos == "false":
             query = query.filter(or_(
                 ProyectoInvestigacion.deleted_at.isnot(None),
                 ProyectoInvestigacion.activo.is_(False),
-                ProyectoInvestigacion.fecha_fin <= func.current_date(),
             ))
 
         term = str(search or "").strip().lower()
@@ -440,7 +448,7 @@ class ProyectoInvestigacionService:
             .all()
         )
         return {
-            "data": [item.serialize() for item in items],
+            "data": ProyectoInvestigacionService._serializar_lista(items),
             "meta": {
                 "page": page,
                 "per_page": per_page,
@@ -727,6 +735,8 @@ class ProyectoInvestigacionService:
             raise ConflictError("El proyecto ya se encuentra cerrado")
 
         cierre = ProyectoInvestigacionService._validar_fecha_proyecto(fecha_fin, "fecha_fin") if fecha_fin else date.today()
+        if not tiene_informe_de_cierre(proyecto.id, cierre, grupo_utn_id=proyecto.grupo_utn_id):
+            raise ConflictError("Debe registrar un informe PID del período de la Memoria que contiene la fecha de cierre.")
         if cierre > date.today() or cierre < proyecto.fecha_inicio:
             raise ValueError("Ingrese una fecha de cierre válida.", details={"fields": {"fecha_fin": "Elija una fecha entre el inicio y hoy."}})
         cambio = AuditoriaService.construir_cambio(proyecto.fecha_fin, cierre)
