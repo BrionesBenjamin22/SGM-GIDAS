@@ -252,3 +252,9 @@ La clase de registro y los campos obligatorios de investigadores y becarios mues
 Los resultados paginados muestran controles centrados de anterior, números
 de página y siguiente, inmediatamente debajo de las tarjetas o resultados.
 El máximo de resultados por página conserva el contrato del módulo.
+
+## Títulos de detalle (ISS-88)
+
+En PersonalDetalle, las etiquetas de datos y los encabezados de tarjetas
+usan peso seminegrita y color pizarra oscuro para distinguirse del contenido.
+La disposición, los textos, las acciones y el contrato permanecen iguales.
