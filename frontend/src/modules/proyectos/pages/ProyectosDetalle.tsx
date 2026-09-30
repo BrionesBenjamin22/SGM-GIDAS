@@ -202,71 +202,71 @@ export default function ProyectoDetalle() {
       <article className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
         <div className="space-y-3 text-sm text-slate-500 md:text-base">
           <p>
-            <span className="font-medium text-slate-700">Código del proyecto:</span>{" "}
+            <span className="font-semibold text-slate-800">Código del proyecto:</span>{" "}
             {data.codigoProyecto}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Coordinador:</span>{" "}
+            <span className="font-semibold text-slate-800">Coordinador:</span>{" "}
             {coordinador}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Investigadores:</span>{" "}
+            <span className="font-semibold text-slate-800">Investigadores:</span>{" "}
             {investigadores}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Becarios:</span>{" "}
+            <span className="font-semibold text-slate-800">Becarios:</span>{" "}
             {becarios}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Descripción:</span>{" "}
+            <span className="font-semibold text-slate-800">Descripción:</span>{" "}
             {data.descripcionProyecto || "-"}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Dificultades del proyecto:</span>{" "}
+            <span className="font-semibold text-slate-800">Dificultades del proyecto:</span>{" "}
             {data.dificultadesProyecto || "-"}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Tipo de proyecto:</span>{" "}
+            <span className="font-semibold text-slate-800">Tipo de proyecto:</span>{" "}
             {data.tipoProyectoNombre || "-"}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Fuente de financiamiento:</span>{" "}
+            <span className="font-semibold text-slate-800">Fuente de financiamiento:</span>{" "}
             {data.fuenteFinanciamientoNombre || "-"}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Grupo UTN:</span>{" "}
+            <span className="font-semibold text-slate-800">Grupo UTN:</span>{" "}
             {data.grupoUtnNombre || "-"}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Monto destinado:</span>{" "}
+            <span className="font-semibold text-slate-800">Monto destinado:</span>{" "}
             {data.montoDestinado !== undefined && data.montoDestinado !== null
               ? data.montoDestinado
               : "-"}
           </p>
 
           <p>
-            <span className="font-medium text-slate-700">Fecha de inicio:</span>{" "}
+            <span className="font-semibold text-slate-800">Fecha de inicio:</span>{" "}
             {formatFecha(data.fechaInicio)}
           </p>
 
-          {data.fechaFinProrrogada && <p><span className="font-medium text-slate-700">Fecha final original:</span>{" "}{formatFecha(data.fechaFinOriginal)}</p>}
-          {data.fechaFinProrrogada && estaCerrado && <p><span className="font-medium text-slate-700">Fecha final aprobada por prórroga:</span>{" "}{formatFecha(data.fechaFinProrrogada)}</p>}
+          {data.fechaFinProrrogada && <p><span className="font-semibold text-slate-800">Fecha final original:</span>{" "}{formatFecha(data.fechaFinOriginal)}</p>}
+          {data.fechaFinProrrogada && estaCerrado && <p><span className="font-semibold text-slate-800">Fecha final aprobada por prórroga:</span>{" "}{formatFecha(data.fechaFinProrrogada)}</p>}
           <p>
-            <span className="font-medium text-slate-700">{estaCerrado ? "Fecha de cierre real:" : data.fechaFinProrrogada ? "Fecha final vigente (con prórroga):" : "Fecha final vigente:"}</span>{" "}
+            <span className="font-semibold text-slate-800">{estaCerrado ? "Fecha de cierre real:" : data.fechaFinProrrogada ? "Fecha final vigente (con prórroga):" : "Fecha final vigente:"}</span>{" "}
             {formatFecha(data.fechaFinalizacion)}
           </p>
           {data.fechaFinProrrogada && <>
-            <p><span className="font-medium text-slate-700">Justificación de la prórroga:</span>{" "}{data.prorrogaMotivo}</p>
-            <p><span className="font-medium text-slate-700">Decisión de Prorrogación:</span>{" "}Aprobada por {data.prorrogaByNombre || "-"} el {formatFechaHora(data.prorrogaAt)}</p>
+            <p><span className="font-semibold text-slate-800">Justificación de la prórroga:</span>{" "}{data.prorrogaMotivo}</p>
+            <p><span className="font-semibold text-slate-800">Decisión de Prorrogación:</span>{" "}Aprobada por {data.prorrogaByNombre || "-"} el {formatFechaHora(data.prorrogaAt)}</p>
           </>}
         </div>
       </article>
@@ -282,7 +282,7 @@ export default function ProyectoDetalle() {
           prorrogaSubmitting.current = true;
           prorrogaMutation.mutate(motivoProrroga.trim());
         }}>
-          <h3 className="text-lg font-semibold text-slate-700">Prórroga de 12 meses</h3>
+          <h3 className="text-lg font-semibold text-slate-800">Prórroga de 12 meses</h3>
           <p className="mt-1 text-sm text-slate-500">Se agregará una única prórroga al período original. Puede registrarse después del vencimiento.</p>
           <label htmlFor="motivo-prorroga" className="mt-4 block text-sm font-medium text-slate-700">Justificación</label>
           <textarea id="motivo-prorroga" className="input mt-2 w-full" value={motivoProrroga} maxLength={2000} aria-invalid={Boolean(prorrogaError)} aria-describedby={prorrogaError ? "motivo-prorroga-error" : undefined} onChange={(event) => {setMotivoProrroga(event.target.value); setProrrogaError("");}} />
@@ -293,25 +293,25 @@ export default function ProyectoDetalle() {
 
       <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-slate-700">Auditoría</h3>
+          <h3 className="text-lg font-semibold text-slate-800">Auditoría</h3>
           <p className="mt-1 text-xs text-slate-500">{data.nombreProyecto}</p>
         </div>
 
         <div className="space-y-2 text-sm text-slate-500 md:text-base">
           <p>
-            <span className="font-medium text-slate-700">Creado por:</span>{" "}
+            <span className="font-semibold text-slate-800">Creado por:</span>{" "}
             {auditoria.nombreCreador}
           </p>
           <p>
-            <span className="font-medium text-slate-700">Fecha de creación:</span>{" "}
+            <span className="font-semibold text-slate-800">Fecha de creación:</span>{" "}
             {formatFechaHora(data.created_at)}
           </p>
           <p>
-            <span className="font-medium text-slate-700">Eliminado por:</span>{" "}
+            <span className="font-semibold text-slate-800">Eliminado por:</span>{" "}
             {auditoria.nombreEliminador}
           </p>
           <p>
-            <span className="font-medium text-slate-700">Fecha de eliminación:</span>{" "}
+            <span className="font-semibold text-slate-800">Fecha de eliminación:</span>{" "}
             {formatFechaHora(data.deleted_at)}
           </p>
         </div>
