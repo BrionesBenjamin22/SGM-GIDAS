@@ -3,7 +3,7 @@ from datetime import date
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from modules.shared.exceptions import ValidationError
+from modules.shared.exceptions import ConflictError, ValidationError
 from app import create_app
 from config import Config
 from extension import db
@@ -36,9 +36,19 @@ class TransferenciaAutonumeroTestCase(unittest.TestCase):
             self.assertEqual(Adoptante.query.count(), 1)
             self.assertEqual([item["nombre"] for item in AdoptanteService.get_all()], ["Municipalidad de Resistencia"])
             self.assertEqual([item["nombre"] for item in TransferenciaSocioProductivaService.get_by_id(creado["id"])["adoptantes"]], ["Municipalidad de Resistencia"])
+            primer_adoptante = Adoptante.query.filter_by(nombre="Municipalidad de Resistencia").one()
+            with self.assertRaises(ConflictError):
+                AdoptanteService.delete(primer_adoptante.id, 1)
             actualizado = TransferenciaSocioProductivaService.update(creado["id"], {"adoptantes_ids": [], "adoptantes_nuevos": ["Instituto Regional"]}, 1)
             self.assertEqual([item["nombre"] for item in actualizado["adoptantes"]], ["Instituto Regional"])
             self.assertEqual(Adoptante.query.count(), 2)
+            with self.assertRaises(ConflictError):
+                AdoptanteService.update(primer_adoptante.id, {"nombre": "Instituto Regional"}, 1)
+            AdoptanteService.delete(primer_adoptante.id, 1)
+            self.assertEqual([item["nombre"] for item in AdoptanteService.get_all("false")], ["Municipalidad de Resistencia"])
+            self.assertEqual(len(AdoptanteService.get_all("all")), 2)
+            self.assertEqual([item["nombre"] for item in AdoptanteService.get_all()], ["Instituto Regional"])
+            self.assertEqual([item["campo"] for item in AdoptanteService.get_historial(primer_adoptante.id)], ["activo"])
             db.session.remove()
             db.drop_all()
 

@@ -15,6 +15,15 @@ export interface Adoptante {
 
 export type AdoptantePayload = Pick<Adoptante, "nombre">;
 
+export type HistorialAdoptanteItem = {
+    id: number;
+    campo: string;
+    fecha_cambio: string | null;
+    usuario_nombre: string | null;
+    valor_anterior: unknown;
+    valor_nuevo: unknown;
+};
+
 // ─── Mock helpers ────────────────────────────────────────────
 
 let mockItems: Adoptante[] | null = null;
@@ -67,6 +76,13 @@ export async function getAdoptanteById(
         return readMock().find((a) => a.id === id) ?? null;
     }
     return http<Adoptante>(`/adoptantes/${id}`);
+}
+
+/** Historial de campos propios del adoptante, separado de los vínculos de transferencia. */
+export async function getHistorialAdoptanteById(id: number): Promise<HistorialAdoptanteItem[]> {
+    if (useMock()) return [];
+    const response = await http<HistorialAdoptanteItem[] | { data?: HistorialAdoptanteItem[] }>(`/adoptantes/${id}/historial`);
+    return Array.isArray(response) ? response : response.data ?? [];
 }
 
 /** Crear un adoptante. */

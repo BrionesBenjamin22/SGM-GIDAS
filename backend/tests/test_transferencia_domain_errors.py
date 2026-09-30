@@ -48,6 +48,18 @@ class TransferenciaDomainErrorsTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json()["error"]["code"], "VALIDATION_ERROR")
 
+    def test_historial_adoptante_exige_rol_y_expone_lista(self):
+        path = "/api/v1/transferencia/adoptantes/12/historial"
+        with self._auth("LECTURA"), patch("modules.transferencia.controllers.adoptante_controller.AdoptanteService.get_historial", return_value=[{"campo": "nombre"}]) as history:
+            response = self.client.get(path, headers=self._headers())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), [{"campo": "nombre"}])
+        history.assert_called_once_with(12)
+        with self._auth("INVITADO"), patch("modules.transferencia.controllers.adoptante_controller.AdoptanteService.get_historial") as history:
+            response = self.client.get(path, headers=self._headers())
+        self.assertEqual(response.status_code, 403)
+        history.assert_not_called()
+
     def test_transferencia_expone_recurso_inexistente(self):
         with self._auth("LECTURA"), patch("modules.transferencia.controllers.transferencia_socio_controller.TransferenciaSocioProductivaService.get_by_id", side_effect=NotFoundError("Transferencia no encontrada")):
             response = self.client.get("/api/v1/transferencia/transferencias/1", headers=self._headers())

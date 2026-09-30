@@ -9,7 +9,7 @@ class AdoptanteController:
     @staticmethod
     def get_all():
         try:
-            return jsonify(AdoptanteService.get_all()), 200
+            return jsonify(AdoptanteService.get_all(request.args.get("activos", "true"))), 200
         except Exception as error:
             return exception_response(error, operation="listar adoptantes")
 
@@ -19,6 +19,13 @@ class AdoptanteController:
             return jsonify(AdoptanteService.get_by_id(adoptante_id)), 200
         except Exception as error:
             return exception_response(error, operation="consultar adoptante")
+
+    @staticmethod
+    def get_historial(adoptante_id):
+        try:
+            return jsonify(AdoptanteService.get_historial(adoptante_id)), 200
+        except Exception as error:
+            return exception_response(error, operation="consultar historial de adoptante")
 
     @staticmethod
     def create():
@@ -36,7 +43,7 @@ class AdoptanteController:
             data = request.get_json()
             if not data:
                 raise ValidationError("Body requerido")
-            return jsonify(AdoptanteService.update(adoptante_id, data)), 200
+            return jsonify(AdoptanteService.update(adoptante_id, data, g.current_user_id)), 200
         except Exception as error:
             return exception_response(error, operation="actualizar adoptante")
 

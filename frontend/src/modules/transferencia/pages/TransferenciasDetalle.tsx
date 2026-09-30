@@ -14,6 +14,7 @@ import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
 import { formatFecha, formatFechaHora } from "@/utils/dateTime";
 import { presentTransferenciaHistory, transferenciaHistoryEvent } from "@/modules/transferencia/utils/transferenciaHistory";
+import { useAdoptanteHistorial } from "@/modules/transferencia/hooks/useAdoptantes";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,
@@ -56,7 +57,12 @@ export default function TransferenciasDetalle() {
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [selectedAdoptanteId, setSelectedAdoptanteId] = useState<number | null>(null);
   const auditoria = useAuditoria(data);
+  const adoptanteId = data?.adoptantes.some((item) => item.id === selectedAdoptanteId)
+    ? selectedAdoptanteId ?? undefined
+    : data?.adoptantes[0]?.id;
+  const adoptanteHistorial = useAdoptanteHistorial(adoptanteId);
 
   useEffect(() => {
     if (location.state?.successMessage) {
@@ -278,6 +284,38 @@ export default function TransferenciasDetalle() {
             Lo sentimos, no pudimos recuperar el historial. <button type="button" className="underline" onClick={() => refetchHistorial()}>Reintentar</button>
           </p>
         )}
+
+        <section aria-labelledby="adoptantes-historial-titulo" className="space-y-3">
+          <h3 id="adoptantes-historial-titulo" className="text-lg font-semibold text-slate-700">Historial de cambios de adoptantes</h3>
+          {data.adoptantes.length > 0 ? (
+            <>
+              <div className="max-w-md">
+                <label htmlFor="adoptante-historial" className="mb-1 block text-sm font-medium text-slate-700">Adoptante</label>
+                <select
+                  id="adoptante-historial"
+                  value={adoptanteId}
+                  onChange={(event) => setSelectedAdoptanteId(Number(event.target.value))}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                >
+                  {data.adoptantes.map((item) => <option key={item.id} value={item.id}>{item.nombre}</option>)}
+                </select>
+              </div>
+              <HistorialCambiosCard
+                key={adoptanteId}
+                title="Cambios de campos del adoptante"
+                subtitle={data.adoptantes.find((item) => item.id === adoptanteId)?.nombre}
+                items={adoptanteHistorial.data ?? []}
+                isLoading={adoptanteHistorial.isLoading}
+                pageSize={3}
+              />
+              {adoptanteHistorial.isError && (
+                <p role="alert" className="text-sm text-red-600">
+                  Lo sentimos, no pudimos recuperar el historial del adoptante. <button type="button" className="underline" onClick={() => void adoptanteHistorial.refetch()}>Reintentar</button>
+                </p>
+              )}
+            </>
+          ) : <p className="text-sm text-slate-500">No hay adoptantes vinculados a esta transferencia.</p>}
+        </section>
 
         <div className="flex justify-start pt-4">
           <Button

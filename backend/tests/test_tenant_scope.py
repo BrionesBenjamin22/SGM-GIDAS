@@ -31,6 +31,8 @@ from modules.shared.models.auditoria_campo import AuditoriaCampo
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.shared.services.tenant_scope import register_tenant_orm_policy
 from modules.shared.services.tenant_request import register_tenant_request_scope
+from modules.transferencia.models.transferencia_socio import Adoptante
+from modules.transferencia.services.adoptante_service import AdoptanteService
 
 
 class TenantScopeTest(unittest.TestCase):
@@ -134,6 +136,42 @@ class TenantScopeTest(unittest.TestCase):
             historial = obtener_historial_grupo_utn(2)
             self.assertEqual(len(historial), 1)
             self.assertEqual(historial[0]["valor_nuevo"], "privado@example.test")
+
+    def test_historial_adoptante_registra_solo_campos_y_aisla_uct(self):
+        db.session.add_all([
+            Adoptante(id=101, grupo_utn_id=1, nombre="Empresa Uno"),
+            Adoptante(id=102, grupo_utn_id=2, nombre="Empresa Dos"),
+        ])
+        db.session.add(AuditoriaCampo(
+            entidad="transferencia_socio_productiva", registro_id=9,
+            campo="adoptantes", valor_nuevo={"accion": "vincular", "detalle": {"adoptante_id": 101}},
+            usuario_id=2,
+        ))
+        db.session.commit()
+        db.session.remove()
+
+        with self.app.test_request_context("/api/v1/transferencia/adoptantes/101/historial"):
+            g.current_grupo_utn_id = 1
+            AdoptanteService.update(101, {"nombre": "Empresa Nueva"}, 2)
+            actualizado = db.session.get(Adoptante, 101)
+            updated_at = actualizado.updated_at
+            AdoptanteService.update(101, {"nombre": " Empresa Nueva "}, 2)
+            historial = AdoptanteService.get_historial(101)
+            self.assertEqual(len(historial), 1)
+            self.assertEqual(historial[0]["campo"], "nombre")
+            self.assertEqual(historial[0]["valor_anterior"], "Empresa Uno")
+            self.assertEqual(historial[0]["valor_nuevo"], "Empresa Nueva")
+            self.assertEqual(historial[0]["usuario_nombre"], "gestor")
+            self.assertEqual(actualizado.updated_at, updated_at)
+            with self.assertRaises(NotFoundError):
+                AdoptanteService.get_historial(102)
+
+        db.session.remove()
+        with self.app.test_request_context("/api/v1/transferencia/adoptantes/102/historial"):
+            g.current_grupo_utn_id = 2
+            self.assertEqual(AdoptanteService.get_historial(102), [])
+            with self.assertRaises(NotFoundError):
+                AdoptanteService.get_historial(101)
 
     def test_conteo_de_memoria_cerrada_respeta_uct_y_borrado_logico(self):
         version = MemoriaVersion(

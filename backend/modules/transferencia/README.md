@@ -14,6 +14,30 @@ ser anterior al inicio, tanto en alta como en edición.
 Gestiona transferencias socio-productivas, tipos de contrato, adoptantes y sus
 relaciones, incluyendo auditoria, baja logica e historial.
 
+## Adoptantes e historial propio (ISS-83)
+
+`/adoptantes` permite consultar, crear, editar y dar de baja adoptantes. `GET`
+acepta `activos=true|false|all`; el valor predeterminado es `true`, para que los
+selectores de transferencias reciban solo registros vigentes. `GET /:id/historial`
+devuelve cambios del adoptante ordenados por fecha e ID descendentes, incluso si
+el adoptante fue dado de baja. Los GET admiten `ADMIN`, `GESTOR` y `LECTURA`;
+POST, PUT y DELETE exigen `ADMIN` o `GESTOR`. Todas las consultas y escrituras
+respetan el alcance de la UCT asignada al usuario.
+
+El modelo `Adoptante` conserva `nombre`, `grupo_utn_id`, estado y metadatos de
+auditoria. POST recibe `{ "nombre": string }`; PUT acepta la diferencia de
+`nombre`. El nombre exige letras Unicode y espacios, se recorta y no puede
+duplicar otro adoptante activo. PUT sin cambio real no genera historial ni
+actualiza la fecha. Al cambiarlo, se registra una fila `auditoria_campo` para
+`nombre`, con valor anterior, nuevo, autor y fecha. DELETE realiza baja logica y
+registra `activo: true -> false`; responde `CONFLICT` si existe un vinculo
+vigente con una transferencia activa. Los errores de nombre incluyen
+`error.details.fields.nombre` cuando corresponde.
+
+`AdoptanteTransferencia` conserva las altas y bajas de relaciones. Sus eventos
+`vincular` y `desvincular` permanecen exclusivamente en el historial de la
+transferencia; no se duplican en el historial de campos del adoptante.
+
 ## API y permisos
 
 El blueprint `/transferencias` expone GET `/`, GET `/:id`, GET `/:id/historial`,

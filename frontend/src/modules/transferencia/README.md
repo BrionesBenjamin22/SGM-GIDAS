@@ -1,5 +1,21 @@
 # Transferencia frontend
 
+## Historial de adoptantes (ISS-83)
+
+`TransferenciasDetalle` conserva el historial de la transferencia para cambios
+de campos y eventos de vinculacion. Ademas muestra un selector de adoptantes
+actualmente vinculados y consulta el historial propio del seleccionado mediante
+`GET /adoptantes/:id/historial`. La consulta usa `useAdoptanteHistorial` y la
+tarjeta muestra tres eventos por pagina, con carga, vacio y reintento ante error.
+No mezcla cambios de nombre del adoptante con eventos de relacion.
+
+`adoptantesServices.ts` define el tipo `HistorialAdoptanteItem` y adapta el
+arreglo del backend; `useAdoptantes.ts` encapsula la consulta y las mutaciones
+del catalogo. Las mutaciones invalidan las consultas de adoptantes. El selector
+de transferencias lista solo adoptantes activos. El formulario permite crear
+uno nuevo al guardar la transferencia; editarlo o darlo de baja corresponde a
+Gestion de Catalogos, sujeto a permisos y validaciones del backend.
+
 ## Error accesible en adoptantes (ISS-73)
 
 El alta inline de adoptantes vincula el error de nombre al input con
