@@ -454,14 +454,18 @@ export default function Home() {
                 </div>
 
                 <p className="text-base leading-8 text-slate-700">
-                  El GIDAS es el grupo de I&amp;D aplicado a sistemas
-                  informáticos, de la UTN FRLP. Con el objetivo de realizar
-                  aportes al mejoramiento de la informática para sus
-                  aplicaciones en el medio socio productivo actual y futuro,
-                  manteniendo una participación activa en actividades
-                  científicas-tecnológicas, compartiendo conocimientos de
-                  actualidad y aportando innovaciones metodológicas y soluciones
-                  digitales.
+                  Somos GIDAS, el Grupo de I&amp;D Aplicado a Sistemas Informáticos
+                  y Computacionales de la Universidad Tecnológica Nacional,
+                  Facultad Regional La Plata. Junto con nuestros becarios,
+                  desarrollamos proyectos científico-tecnológicos que aplican
+                  conocimientos de informática y computación a desafíos reales.
+                </p>
+
+                <p className="text-base leading-8 text-slate-700">
+                  Promovemos la investigación, la innovación y la transferencia
+                  tecnológica para contribuir a la transformación digital y
+                  fortalecer el vínculo entre la universidad, las organizaciones
+                  y la sociedad.
                 </p>
 
                 <div className="grid gap-4 sm:grid-cols-3 pt-2">
