@@ -6,6 +6,7 @@ import math
 from datetime import datetime
 from extension import db
 from sqlalchemy import func, text
+from sqlalchemy.orm import selectinload
 from modules.shared.services.text_validation import has_letter, has_only_letters_and_spaces
 
 from modules.transferencia.models.transferencia_socio import (
@@ -137,7 +138,7 @@ class TransferenciaSocioProductivaService:
     # =================================================
 
     @staticmethod
-    def get_all(filters: dict = None):
+    def _list_query(filters: dict = None):
         query = db.session.query(TransferenciaSocioProductiva)
         filters = filters or {}
 
@@ -164,7 +165,26 @@ class TransferenciaSocioProductivaService:
                 TransferenciaSocioProductiva.tipo_contrato_id == filters["tipo_contrato_id"]
             )
 
-        return [t.serialize() for t in query.all()]
+        return query.order_by(TransferenciaSocioProductiva.id.asc())
+
+    @staticmethod
+    def get_all(filters: dict = None):
+        return [t.serialize() for t in TransferenciaSocioProductivaService._list_query(filters).all()]
+
+    @staticmethod
+    def get_page(filters: dict, page: int, per_page: int, orden: str = "asc"):
+        query = TransferenciaSocioProductivaService._list_query(filters)
+        if orden == "desc":
+            query = query.order_by(None).order_by(TransferenciaSocioProductiva.id.desc())
+        query = query.options(
+            selectinload(TransferenciaSocioProductiva.participaciones)
+            .selectinload(AdoptanteTransferencia.adoptante),
+            selectinload(TransferenciaSocioProductiva.tipo_contrato_transferencia),
+            selectinload(TransferenciaSocioProductiva.grupo_utn),
+        )
+        total = query.count()
+        rows = query.offset((page - 1) * per_page).limit(per_page).all()
+        return [row.serialize() for row in rows], total
 
 
     # =================================================

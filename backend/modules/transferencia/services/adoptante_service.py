@@ -27,7 +27,7 @@ class AdoptanteService:
     # -------------------------------------------------
 
     @staticmethod
-    def get_all(activos: str = "true"):
+    def _list_query(activos: str = "true", orden: str = "asc"):
         if activos not in {"true", "false", "all"}:
             raise ValueError("El filtro de estado no es válido.")
         query = Adoptante.query
@@ -35,9 +35,20 @@ class AdoptanteService:
             query = query.filter(Adoptante.deleted_at.is_(None))
         elif activos == "false":
             query = query.filter(Adoptante.deleted_at.is_not(None))
-        adoptantes = query.order_by(Adoptante.nombre.asc()).all()
+        nombre = Adoptante.nombre.desc() if orden == "desc" else Adoptante.nombre.asc()
+        id_ = Adoptante.id.desc() if orden == "desc" else Adoptante.id.asc()
+        return query.order_by(nombre, id_)
 
-        return [a.serialize() for a in adoptantes]
+    @staticmethod
+    def get_all(activos: str = "true"):
+        return [a.serialize() for a in AdoptanteService._list_query(activos).all()]
+
+    @staticmethod
+    def get_page(page: int, per_page: int, activos: str = "true", orden: str = "asc"):
+        query = AdoptanteService._list_query(activos, orden)
+        total = query.count()
+        rows = query.offset((page - 1) * per_page).limit(per_page).all()
+        return [a.serialize() for a in rows], total
 
     @staticmethod
     def get_by_id(adoptante_id: int):

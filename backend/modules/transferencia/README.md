@@ -101,3 +101,9 @@ El alta y la edición de un adoptante indican `nombre` si falta o está duplicad
 ## Snapshots de memorias (ISS-16)
 
 Las transferencias se filtran por UCT y por solapamiento entre inicio, finalización, baja y período. Los adoptantes y vínculos vigentes quedan congelados con el snapshot padre; una baja posterior al inicio del período no borra la relación histórica.
+# Paginacion SQL (ISS-89)
+
+Adoptantes, tipos de contrato y transferencias consultan el total filtrado y
+limitan las filas en SQL antes de serializar. Se mantienen el array sin
+`page`/`per_page`, el contrato paginado `data`/`meta`/`error`, los filtros,
+permisos y el alcance UCT. Los historiales conservan tres eventos por pagina.
