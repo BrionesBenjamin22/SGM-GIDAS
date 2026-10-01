@@ -4,7 +4,7 @@ from extension import db
 from modules.shared.services.text_validation import has_only_letters_and_spaces
 from modules.shared.exceptions import ValidationError as ValueError
 from sqlalchemy.orm import joinedload
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, select
 from modules.grupo.models.directivos import Directivo, DirectivoGrupo, Cargo
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.shared.services.date_time import validate_institutional_date
@@ -93,6 +93,14 @@ class DirectivoGrupoService:
         )
 
         return [d.serialize() for d in directivos]
+
+    @staticmethod
+    def get_all_page(page: int, per_page: int, orden: str = "asc"):
+        query = Directivo.query.filter(Directivo.deleted_at.is_(None))
+        total = query.count()
+        direction = Directivo.id.desc() if orden == "desc" else Directivo.id.asc()
+        rows = query.order_by(direction).offset((page - 1) * per_page).limit(per_page).all()
+        return [d.serialize() for d in rows], total
 
 
     # =========================================================
@@ -318,14 +326,14 @@ class DirectivoGrupoService:
     # =========================================================
 
     @staticmethod
-    def get_por_grupo(grupo_id: int):
+    def get_por_grupo(grupo_id: int, page: int | None = None, per_page: int | None = None):
 
         grupo = db.session.get(GrupoInvestigacionUtn, grupo_id)
 
         if not grupo or grupo.deleted_at is not None:
             raise ValueError("Grupo no encontrado.")
 
-        participaciones = (
+        query = (
             DirectivoGrupo.query.options(
                 joinedload(DirectivoGrupo.directivo),
                 joinedload(DirectivoGrupo.cargo)
@@ -338,10 +346,13 @@ class DirectivoGrupoService:
                 DirectivoGrupo.fecha_inicio.desc(),
                 DirectivoGrupo.id.desc()
             )
-            .all()
         )
 
-        return [
+        total = query.count() if page is not None else None
+        participaciones = (query.offset((page - 1) * per_page).limit(per_page).all()
+                           if page is not None else query.all())
+
+        data = [
             {
                 "id": p.id,
                 "id_directivo": p.directivo.id,
@@ -352,21 +363,26 @@ class DirectivoGrupoService:
             }
             for p in participaciones
         ]
+        return (data, total) if page is not None else data
 
 
     @staticmethod
-    def get_actuales_por_grupo(grupo_id: int):
+    def get_actuales_por_grupo(grupo_id: int, page: int | None = None, per_page: int | None = None):
 
-        participaciones = DirectivoGrupo.query.options(
+        query = DirectivoGrupo.query.options(
             joinedload(DirectivoGrupo.directivo),
             joinedload(DirectivoGrupo.cargo)
         ).filter(
             DirectivoGrupo.id_grupo_utn == grupo_id,
             DirectivoGrupo.fecha_fin.is_(None),
             DirectivoGrupo.deleted_at.is_(None)
-        ).all()
+        ).order_by(DirectivoGrupo.fecha_inicio.desc(), DirectivoGrupo.id.desc())
 
-        return [
+        total = query.count() if page is not None else None
+        participaciones = (query.offset((page - 1) * per_page).limit(per_page).all()
+                           if page is not None else query.all())
+
+        data = [
             {
                 "id_directivo": p.directivo.id,
                 "nombre_apellido": p.directivo.nombre_apellido,
@@ -375,6 +391,7 @@ class DirectivoGrupoService:
             }
             for p in participaciones
         ]
+        return (data, total) if page is not None else data
 
     @staticmethod
     def get_cambios_por_grupo(grupo_id: int, page: int = 1, per_page: int = 3):
@@ -382,28 +399,23 @@ class DirectivoGrupoService:
         if not grupo or grupo.deleted_at is not None:
             raise NotFoundError("Historial no encontrado")
 
-        participaciones = DirectivoGrupo.query.filter(
+        mandatos = select(DirectivoGrupo.id, DirectivoGrupo.id_directivo).where(
             DirectivoGrupo.id_grupo_utn == grupo_id,
             DirectivoGrupo.deleted_at.is_(None),
-        ).with_entities(DirectivoGrupo.id, DirectivoGrupo.id_directivo).all()
-        mandato_ids = [item.id for item in participaciones]
-        posibles_directivos = {item.id_directivo for item in participaciones}
-        directivo_ids = [item.id for item in Directivo.query.filter(
-            Directivo.id.in_(posibles_directivos),
+        ).subquery()
+        directivo_ids = select(Directivo.id).where(
+            Directivo.id.in_(select(mandatos.c.id_directivo)),
             Directivo.grupo_utn_id == grupo_id,
             Directivo.deleted_at.is_(None),
-        ).with_entities(Directivo.id).all()] if posibles_directivos else []
-        filtros = []
-        if mandato_ids:
-            filtros.append(and_(AuditoriaCampo.entidad == "directivo_grupo",
-                                AuditoriaCampo.registro_id.in_(mandato_ids),
-                                AuditoriaCampo.campo == "mandato"))
-        if directivo_ids:
-            filtros.append(and_(AuditoriaCampo.entidad == "directivo",
-                                AuditoriaCampo.registro_id.in_(directivo_ids),
-                                AuditoriaCampo.campo == "nombre_apellido"))
-        if not filtros:
-            return {"items": [], "page": page, "per_page": per_page, "total": 0}
+        )
+        filtros = (
+            and_(AuditoriaCampo.entidad == "directivo_grupo",
+                 AuditoriaCampo.registro_id.in_(select(mandatos.c.id)),
+                 AuditoriaCampo.campo == "mandato"),
+            and_(AuditoriaCampo.entidad == "directivo",
+                 AuditoriaCampo.registro_id.in_(directivo_ids),
+                 AuditoriaCampo.campo == "nombre_apellido"),
+        )
 
         query = AuditoriaCampo.query.filter(or_(*filtros))
         total = query.count()

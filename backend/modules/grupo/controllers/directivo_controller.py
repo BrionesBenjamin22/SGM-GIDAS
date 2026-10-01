@@ -1,6 +1,20 @@
 from flask import jsonify, request, g
 from modules.grupo.services.directivo_service import DirectivoGrupoService
 from modules.shared.controllers.responses import error_response, exception_response
+from modules.shared.controllers.responses import paginated_response
+from modules.shared.controllers.pagination import pagination_requested, parse_pagination_params
+
+
+def _page_params(args):
+    try:
+        return parse_pagination_params(args), None
+    except ValueError as exc:
+        return None, error_response("VALIDATION_ERROR", message=str(exc), status_code=400)
+
+
+def _page_response(data, total, params):
+    return paginated_response(data, params["page"], params["per_page"], total,
+                              meta={"activos": params["activos"], "orden": params["orden"], "source": "legacy-list"})
 
 
 class DirectivoController:
@@ -47,6 +61,12 @@ class DirectivoController:
     @staticmethod
     def get_all():
         try:
+            if pagination_requested(request.args):
+                params, error = _page_params(request.args)
+                if error:
+                    return error
+                data, total = DirectivoGrupoService.get_all_page(params["page"], params["per_page"], params["orden"])
+                return _page_response(data, total, params)
             result = DirectivoGrupoService.get_all_srv()
             return jsonify(result), 200
 
@@ -136,6 +156,12 @@ class DirectivoController:
     @staticmethod
     def get_por_grupo(grupo_id):
         try:
+            if pagination_requested(request.args):
+                params, error = _page_params(request.args)
+                if error:
+                    return error
+                data, total = DirectivoGrupoService.get_por_grupo(grupo_id, params["page"], params["per_page"])
+                return _page_response(data, total, params)
             result = DirectivoGrupoService.get_por_grupo(grupo_id)
             return jsonify(result), 200
 
@@ -146,6 +172,12 @@ class DirectivoController:
     @staticmethod
     def get_actuales(grupo_id):
         try:
+            if pagination_requested(request.args):
+                params, error = _page_params(request.args)
+                if error:
+                    return error
+                data, total = DirectivoGrupoService.get_actuales_por_grupo(grupo_id, params["page"], params["per_page"])
+                return _page_response(data, total, params)
             result = DirectivoGrupoService.get_actuales_por_grupo(grupo_id)
             return jsonify(result), 200
 

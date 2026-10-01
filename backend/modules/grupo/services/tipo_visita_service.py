@@ -31,12 +31,25 @@ class TipoVisitaService:
 
     @staticmethod
     def get_all(activos="true"):
+        return [item.serialize() for item in TipoVisitaService._query(activos).all()]
+
+    @staticmethod
+    def _query(activos="true", orden="asc"):
         query = TipoVisita.query
         if activos == "true":
             query = query.filter(TipoVisita.deleted_at.is_(None))
         elif activos == "false":
             query = query.filter(TipoVisita.deleted_at.isnot(None))
-        return [item.serialize() for item in query.order_by(TipoVisita.nombre.asc()).all()]
+        nombre = TipoVisita.nombre.desc() if orden == "desc" else TipoVisita.nombre.asc()
+        id_ = TipoVisita.id.desc() if orden == "desc" else TipoVisita.id.asc()
+        return query.order_by(nombre, id_)
+
+    @staticmethod
+    def get_page(page, per_page, activos="true", orden="asc"):
+        query = TipoVisitaService._query(activos, orden)
+        total = query.count()
+        rows = query.offset((page - 1) * per_page).limit(per_page).all()
+        return [item.serialize() for item in rows], total
 
     @staticmethod
     def create(data, user_id=None):

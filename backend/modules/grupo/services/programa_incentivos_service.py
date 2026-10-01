@@ -114,13 +114,25 @@ def eliminar_programa_incentivos(id, user_id=None):
         raise
 
 
-def listar_programas_incentivos(activos="true"):
+def _consulta_programas_incentivos(activos="true", orden="asc"):
     query = ProgramaIncentivos.query
     if activos == "true":
         query = query.filter(ProgramaIncentivos.deleted_at.is_(None))
     elif activos == "false":
         query = query.filter(ProgramaIncentivos.deleted_at.isnot(None))
-    return query.order_by(ProgramaIncentivos.nombre.asc()).all()
+    nombre = ProgramaIncentivos.nombre.desc() if orden == "desc" else ProgramaIncentivos.nombre.asc()
+    id_ = ProgramaIncentivos.id.desc() if orden == "desc" else ProgramaIncentivos.id.asc()
+    return query.order_by(nombre, id_)
+
+
+def listar_programas_incentivos(activos="true"):
+    return _consulta_programas_incentivos(activos).all()
+
+
+def listar_programas_incentivos_paginado(page, per_page, activos="true", orden="asc"):
+    query = _consulta_programas_incentivos(activos, orden)
+    total = query.count()
+    return query.offset((page - 1) * per_page).limit(per_page).all(), total
 
 
 def obtener_programa_incentivos_por_id(id):

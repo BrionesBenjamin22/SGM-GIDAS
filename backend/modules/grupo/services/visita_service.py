@@ -3,6 +3,7 @@ from modules.memorias.services.memoria_periodo_service import (
 )
 from datetime import datetime, date
 import builtins
+from sqlalchemy.orm import selectinload
 
 from extension import db
 from modules.shared.exceptions import ValidationError as ValueError
@@ -203,7 +204,7 @@ def eliminar_visita_academica(id, user_id=None):
         raise
 
 
-def listar_visitas(activos="true"):
+def _consulta_visitas(activos="true", orden="asc"):
     query = VisitaAcademica.query
 
     if activos == "true":
@@ -215,7 +216,21 @@ def listar_visitas(activos="true"):
     else:
         query = query.filter(VisitaAcademica.deleted_at.is_(None))
 
-    return query.all()
+    id_ = VisitaAcademica.id.desc() if orden == "desc" else VisitaAcademica.id.asc()
+    return query.order_by(id_)
+
+
+def listar_visitas(activos="true"):
+    return _consulta_visitas(activos).all()
+
+
+def listar_visitas_paginado(page, per_page, activos="true", orden="asc"):
+    query = _consulta_visitas(activos, orden).options(
+        selectinload(VisitaAcademica.tipo_visita),
+        selectinload(VisitaAcademica.grupo_utn),
+    )
+    total = query.count()
+    return query.offset((page - 1) * per_page).limit(per_page).all(), total
 
 
 def obtener_visita_por_id(id):

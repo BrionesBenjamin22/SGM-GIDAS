@@ -180,3 +180,10 @@ GET `/api/v1/grupo/grupo-utn/opciones` devuelve `{id, nombre}` de las UCT activa
 El service de visitas responde VALIDATION_ERROR con error.details.fields para razon, procedencia, fecha, tipo_visita_id y grupo_utn_id cuando identifica el dato inválido. Las validaciones ocurren antes de persistir y conservan el rollback existente.
 
 UCT identifica los campos obligatorios `nombre_unidad_academica`, `nombre_sigla_grupo`, `mail` y `objetivo_desarrollo`. Planificaciones identifica `descripcion` y `anio`, incluido un año ya planificado; los errores sin un control inequívoco mantienen un mensaje general.
+# Paginacion SQL (ISS-89)
+
+Programas, planificaciones, tipos de visita, visitas y directivos limitan las
+filas en SQL antes de serializar. Directivos actuales y por grupo conservan
+sus filtros de vigencia y grupo. El selector de UCT y los historiales mantienen
+el alcance autorizado; las respuestas planas sin `page`/`per_page` y los
+metadatos paginados existentes siguen disponibles.

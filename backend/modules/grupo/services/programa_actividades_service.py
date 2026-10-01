@@ -158,7 +158,7 @@ def eliminar_planificacion_grupo(id, user_id=None):
         raise
 
 
-def listar_planificaciones(activos="true"):
+def _consulta_planificaciones(activos="true", orden="asc"):
     query = PlanificacionGrupo.query
 
     if activos is None:
@@ -175,7 +175,18 @@ def listar_planificaciones(activos="true"):
     else:
         query = query.filter(PlanificacionGrupo.deleted_at.is_(None))
 
-    return query.all()
+    id_ = PlanificacionGrupo.id.desc() if orden == "desc" else PlanificacionGrupo.id.asc()
+    return query.order_by(id_)
+
+
+def listar_planificaciones(activos="true"):
+    return _consulta_planificaciones(activos).all()
+
+
+def listar_planificaciones_paginado(page, per_page, activos="true", orden="asc"):
+    query = _consulta_planificaciones(activos, orden)
+    total = query.count()
+    return query.offset((page - 1) * per_page).limit(per_page).all(), total
 
 
 def obtener_planificacion_por_id(id):

@@ -63,13 +63,21 @@ def obtener_grupo_utn():
     ).first()
 
 
-def listar_grupos_utn_activos():
-    return [
+def listar_grupos_utn_activos(page=None, per_page=None, orden="asc"):
+    query = GrupoInvestigacionUtn.query.filter(
+        GrupoInvestigacionUtn.deleted_at.is_(None)
+    )
+    total = query.count() if page is not None else None
+    name_order = (GrupoInvestigacionUtn.nombre_sigla_grupo.desc() if orden == "desc"
+                  else GrupoInvestigacionUtn.nombre_sigla_grupo.asc())
+    query = query.order_by(name_order, GrupoInvestigacionUtn.id.asc())
+    if page is not None:
+        query = query.offset((page - 1) * per_page).limit(per_page)
+    data = [
         {"id": grupo.id, "nombre": grupo.nombre_sigla_grupo}
-        for grupo in GrupoInvestigacionUtn.query.filter(
-            GrupoInvestigacionUtn.deleted_at.is_(None)
-        ).order_by(GrupoInvestigacionUtn.nombre_sigla_grupo.asc()).all()
+        for grupo in query.all()
     ]
+    return (data, total) if page is not None else data
 
 
 def obtener_historial_grupo_utn(grupo_id):
