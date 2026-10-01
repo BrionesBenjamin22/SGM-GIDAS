@@ -1,5 +1,14 @@
 # Frontend modular
 
+## Navegación autenticada (ISS-90)
+
+`AppLayout` reserva 280 px para el menú lateral fijo desde 1024 px. En pantallas
+más pequeñas, `Sidebar` abre el mismo árbol de navegación en un diálogo modal.
+Ambas variantes usan la paleta blanca y gris de la barra superior y conservan
+los enlaces filtrados por rol. La sección de perfil permanece al pie del menú,
+con usuario, correo, rol y accesos a perfil, cambio de contraseña y cierre de
+sesión. El contenido principal y el footer ocupan el ancho restante en escritorio.
+
 ## Contrato de paginacion consumido (ISS-89)
 
 Los homes siguen solicitando hasta nueve registros por pagina y los detalles

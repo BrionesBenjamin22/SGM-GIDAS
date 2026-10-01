@@ -86,7 +86,7 @@ export default function AppLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F6FB] text-slate-800 flex flex-col">
+    <div className="min-h-screen bg-[#F6F6FB] text-slate-800 flex flex-col lg:pl-[280px]">
       <a
         href="#main-content"
         onClick={() => document.getElementById("main-content")?.focus()}
