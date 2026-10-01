@@ -122,8 +122,8 @@ class SearchControllerTestCase(unittest.TestCase):
 
         with self.app.test_request_context("/search/?q=al&page=2&per_page=2"):
             with patch(
-                "modules.search.controllers.search_controller.SearchService.search",
-                return_value=resultados,
+                "modules.search.controllers.search_controller.SearchService.search_page",
+                return_value=(resultados[2:4], 4),
             ) as mock_search:
                 response, status_code = SearchController.buscar()
 
@@ -139,6 +139,8 @@ class SearchControllerTestCase(unittest.TestCase):
             query_text="al",
             orden="alf_asc",
             eliminados="false",
+            page=2,
+            per_page=2,
             max_scan_per_model=30,
         )
 
@@ -147,8 +149,8 @@ class SearchControllerTestCase(unittest.TestCase):
 
         with self.app.test_request_context("/search/?q=al&per_page=99"):
             with patch(
-                "modules.search.controllers.search_controller.SearchService.search",
-                return_value=resultados,
+                "modules.search.controllers.search_controller.SearchService.search_page",
+                return_value=(resultados[:3], 5),
             ):
                 response, status_code = SearchController.buscar()
 
@@ -175,7 +177,7 @@ class SearchControllerTestCase(unittest.TestCase):
         marker = "ruta interna password=secreto"
         with self.app.test_request_context("/search/?q=al"):
             with patch(
-                "modules.search.controllers.search_controller.SearchService.search",
+                "modules.search.controllers.search_controller.SearchService.search_page",
                 side_effect=RuntimeError(marker),
             ):
                 response, status_code = SearchController.buscar()

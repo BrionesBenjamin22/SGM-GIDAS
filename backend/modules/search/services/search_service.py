@@ -1,4 +1,5 @@
 from sqlalchemy import or_
+from contextvars import ContextVar
 from sqlalchemy.orm import joinedload, selectinload
 from datetime import datetime
 from extension import db
@@ -21,6 +22,9 @@ from modules.recursos.models.becas import Beca, Beca_Becario
 from modules.grupo.models.visita_grupo import VisitaAcademica
 from modules.shared.exceptions import ValidationError
 import unicodedata
+
+
+_page_ids = ContextVar("search_page_ids", default=None)
 
 
 class SearchService:
@@ -73,10 +77,38 @@ class SearchService:
     def bounded_results(query, model, eliminados: str, max_scan_per_model: int):
         query = SearchService.apply_deleted_filter(query, model, eliminados)
 
+        page_ids = _page_ids.get()
+        if page_ids is not None:
+            ids = page_ids.get(model, ())
+            if not ids:
+                return []
+            return query.filter(model.id.in_(ids)).all()
+
         if hasattr(model, "id"):
             query = query.order_by(model.id.asc())
 
         return query.limit(max_scan_per_model).all()
+
+    @staticmethod
+    def search_page(query_text: str, *, orden="alf_asc", eliminados="false",
+                    page=1, per_page=9, max_scan_per_model=300):
+        from modules.search.services.search_pagination import _specs, page_hits
+
+        term = SearchService.normalize_text(query_text.strip())
+        hits, total = page_hits(term, orden, eliminados, page, per_page)
+        if not hits:
+            return [], total
+        labels = {kind: model for model, kind, *_ in _specs(term)}
+        ids = {}
+        for kind, record_id in hits:
+            ids.setdefault(labels[kind], []).append(record_id)
+        token = _page_ids.set(ids)
+        try:
+            results = SearchService.search(query_text, orden, eliminados, max_scan_per_model)
+        finally:
+            _page_ids.reset(token)
+        by_key = {(item["tipo"], item["id"]): item for item in results}
+        return [by_key[(kind, record_id)] for kind, record_id in hits if (kind, record_id) in by_key], total
 
     # ==================================================
     # SEARCH PRINCIPAL

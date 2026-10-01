@@ -8,6 +8,20 @@ figuren en el historial financiero visible.
 Realiza busqueda global paginada sobre entidades habilitadas, con filtros de
 estado, ordenamiento y limites configurables de consulta.
 
+## Paginacion SQL (ISS-89)
+
+`GET /api/v1/search` mantiene `query`, `orden`, `eliminados`,
+`total_resultados`, `resultados` y `meta`. `search_pagination.py` arma una
+union de candidatos de los modulos buscables, aplica texto, estado y alcance
+UCT en SQL, cuenta todos los resultados y ordena antes de `LIMIT/OFFSET`.
+`SearchService` carga las entidades y relaciones solo de la pagina solicitada.
+Se conservan los ordenes `alf_asc`, `alf_desc`, `fecha_asc` y `fecha_desc`, los
+permisos por entidad y los errores de validacion existentes.
+
+Las pruebas de regresion incluyen mas de 300 coincidencias, orden entre
+entidades, coincidencias con tildes y aislamiento UCT en
+`tests/test_search_sql_pagination.py`.
+
 ## Contrato de errores
 
 Los parametros invalidos responden `VALIDATION_ERROR`. Las fallas inesperadas
