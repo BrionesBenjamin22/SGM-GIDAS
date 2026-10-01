@@ -27,3 +27,9 @@ fallas inesperadas se ocultan mediante `INTERNAL_ERROR` con `request_id`.
 
 - `tests/test_catalogos_domain_errors.py`
 - `tests/test_catalogo_auditoria_service.py`
+# Paginacion SQL (ISS-89)
+
+Categoria UTN y fuente de financiamiento conservan el array sin parametros.
+Con `page` o `per_page`, sus services cuentan la consulta filtrada y aplican
+`LIMIT/OFFSET` antes de serializar. El payload `data`/`meta`/`error`, los
+filtros `activos` y `orden`, y el historial de tres cambios se conservan.

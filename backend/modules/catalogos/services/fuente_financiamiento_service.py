@@ -3,6 +3,7 @@ from extension import db
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
 from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.shared.controllers.pagination import paginate_query
 
 
 def crear_fuente_financiamiento(data, user_id=None):
@@ -105,13 +106,23 @@ def eliminar_fuente_financiamiento(id, user_id=None):
         raise
 
 
-def listar_fuentes_financiamiento(activos="true"):
+def _consulta_fuentes_financiamiento(activos="true", orden="asc"):
     query = FuenteFinanciamiento.query
     if activos == "true":
         query = query.filter(FuenteFinanciamiento.deleted_at.is_(None))
     elif activos == "false":
         query = query.filter(FuenteFinanciamiento.deleted_at.isnot(None))
-    return query.order_by(FuenteFinanciamiento.nombre.asc()).all()
+    sentido = FuenteFinanciamiento.nombre.desc if orden == "desc" else FuenteFinanciamiento.nombre.asc
+    desempate = FuenteFinanciamiento.id.desc if orden == "desc" else FuenteFinanciamiento.id.asc
+    return query.order_by(sentido(), desempate())
+
+
+def listar_fuentes_financiamiento(activos="true"):
+    return _consulta_fuentes_financiamiento(activos).all()
+
+
+def listar_fuentes_financiamiento_paginado(page, per_page, activos="true", orden="asc"):
+    return paginate_query(_consulta_fuentes_financiamiento(activos, orden), page, per_page)
 
 
 def obtener_fuente_financiamiento_por_id(id):
