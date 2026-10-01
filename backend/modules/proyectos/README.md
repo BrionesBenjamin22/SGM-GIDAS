@@ -191,3 +191,9 @@ de ambos tipos de persona.
 La revision `c35e8a1b7d42` agrega las columnas de becario, flexibiliza las columnas
 anteriores de investigador, incorpora claves foraneas y restricciones de
 integridad, y mantiene los registros existentes asociados a investigadores.
+# Paginacion SQL (ISS-89)
+
+Participaciones relevantes y tipos de proyecto aplican conteo y
+`LIMIT/OFFSET` en SQL con los filtros y el orden vigentes. El service
+serializa solo la pagina. Sin `page` ni `per_page` sigue el array previo;
+con alguno se mantienen `data`, `meta`, `error`, permisos y alcance UCT.

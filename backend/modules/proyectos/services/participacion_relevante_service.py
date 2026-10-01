@@ -193,7 +193,7 @@ class ParticipacionRelevanteService:
             )
 
     @staticmethod
-    def get_all(filters: dict = None):
+    def _list_query(filters: dict = None):
         filters = filters or {}
         query = ParticipacionRelevante.query.options(
             joinedload(ParticipacionRelevante.investigador),
@@ -229,7 +229,17 @@ class ParticipacionRelevanteService:
 
         orden = ParticipacionRelevanteService._normalizar_orden(filters.get("orden"))
         columna_orden = ParticipacionRelevante.fecha.asc() if orden == "asc" else ParticipacionRelevante.fecha.desc()
-        return [p.serialize() for p in query.order_by(columna_orden, ParticipacionRelevante.id.desc()).all()]
+        return query.order_by(columna_orden, ParticipacionRelevante.id.desc())
+
+    @staticmethod
+    def get_all(filters: dict = None):
+        return [p.serialize() for p in ParticipacionRelevanteService._list_query(filters).all()]
+
+    @staticmethod
+    def get_page(filters: dict, page: int, per_page: int):
+        query = ParticipacionRelevanteService._list_query(filters)
+        total = query.count()
+        return [p.serialize() for p in query.offset((page - 1) * per_page).limit(per_page).all()], total
 
     @staticmethod
     def get_by_id(participacion_id: int):

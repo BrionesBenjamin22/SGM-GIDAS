@@ -5,9 +5,14 @@ from modules.proyectos.models.proyecto_investigacion import TipoProyecto
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 from extension import db
+from modules.shared.services.catalog_pagination import catalog_page
 
 
 class TipoProyectoService:
+
+    @staticmethod
+    def get_page(page, per_page, activos="true", orden="asc"):
+        return catalog_page(TipoProyecto, TipoProyecto.nombre, activos=activos, orden=orden, page=page, per_page=per_page)
 
     @staticmethod
     def _validar_id_positivo(tipo_id):
