@@ -579,7 +579,18 @@ class AuthService:
         return Usuario.query.filter(
             Usuario.activo == True,
             Usuario.deleted_at.is_(None)
-        ).all()
+        ).order_by(Usuario.id.asc()).all()
+
+    @staticmethod
+    def get_users_page(page: int, per_page: int, orden: str = "asc"):
+        query = Usuario.query.filter(
+            Usuario.activo.is_(True),
+            Usuario.deleted_at.is_(None),
+        )
+        total = query.count()
+        direction = Usuario.id.desc() if orden == "desc" else Usuario.id.asc()
+        users = query.order_by(direction).offset((page - 1) * per_page).limit(per_page).all()
+        return users, total
     
     @staticmethod
     def get_user_by_id(user_id: int, solo_activos: bool = False):

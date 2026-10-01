@@ -1,5 +1,15 @@
 # Autenticación y usuarios en backend
 
+## Listados paginados (ISS-89)
+
+`GET /api/v1/auth/usuarios` (ADMIN) y `GET /api/v1/auth/ucts-permitidas`
+(usuario autenticado) conservan el array anterior sin `page` ni `per_page`.
+Con alguno de esos parametros obtienen total y filas de la pagina en SQL y
+responden con `data`, `meta` y `error`. `meta.source = "legacy-list"` se conserva
+por compatibilidad. El listado de usuarios mantiene sus filtros y orden;
+las UCT permitidas siguen limitadas por la pertenencia activa. La paginacion
+no cambia permisos ni expone datos de otras UCT.
+
 ## Pertenencia a UCT (security-multitenancy-uct)
 
 El usuario activo debe tener exactamente una pertenencia activa a una UCT

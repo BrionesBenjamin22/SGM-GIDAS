@@ -12,7 +12,7 @@ def _active_user(user_id: int) -> Usuario:
     return user
 
 
-def allowed_ucts(user_id: int) -> list[dict]:
+def allowed_ucts(user_id: int, page=None, per_page=None, orden="asc"):
     """Resolve permissions from current database state, never from JWT claims."""
     user = _active_user(user_id)
     query = GrupoInvestigacionUtn.query.filter(
@@ -27,10 +27,18 @@ def allowed_ucts(user_id: int) -> list[dict]:
         UsuarioGrupoUtn.activo.is_(True),
         UsuarioGrupoUtn.deleted_at.is_(None),
     )
-    return [
+    query = query.distinct()
+    total = query.count() if page is not None else None
+    name_order = (GrupoInvestigacionUtn.nombre_sigla_grupo.desc() if orden == "desc"
+                  else GrupoInvestigacionUtn.nombre_sigla_grupo.asc())
+    query = query.order_by(name_order, GrupoInvestigacionUtn.id.asc())
+    if page is not None:
+        query = query.offset((page - 1) * per_page).limit(per_page)
+    data = [
         {"id": group.id, "nombre": group.nombre_sigla_grupo}
-        for group in query.order_by(GrupoInvestigacionUtn.nombre_sigla_grupo.asc()).all()
+        for group in query.all()
     ]
+    return (data, total) if page is not None else data
 
 
 def single_allowed_uct_id(user_id: int) -> int | None:

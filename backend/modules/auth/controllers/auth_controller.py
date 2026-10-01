@@ -6,6 +6,8 @@ from flask import current_app
 
 from modules.auth.services.auth_service import AuthService
 from modules.shared.controllers.responses import error_response, exception_response
+from modules.shared.controllers.responses import paginated_response
+from modules.shared.controllers.pagination import pagination_requested, parse_pagination_params
 from modules.shared.exceptions import DomainError, LoginLockedError, ValidationError
 from modules.shared.services.logging_config import get_logger
 
@@ -400,6 +402,19 @@ class AuthController:
         try:
             payload = AuthController._get_payload_from_request(req)
             AuthController._require_admin(payload)
+
+            if pagination_requested(req.args):
+                try:
+                    params = parse_pagination_params(req.args)
+                except ValueError as exc:
+                    return error_response("VALIDATION_ERROR", message=str(exc), status_code=400)
+                users, total = AuthService.get_users_page(
+                    params["page"], params["per_page"], params["orden"]
+                )
+                return paginated_response(
+                    [user.serialize() for user in users], params["page"], params["per_page"], total,
+                    meta={"activos": params["activos"], "orden": params["orden"], "source": "legacy-list"},
+                )
 
             users = AuthService.get_all_users()
             return jsonify([user.serialize() for user in users]), 200
