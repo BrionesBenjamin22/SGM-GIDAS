@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Ban,
   CheckCircle2,
   KeyRound,
   Pencil,
@@ -310,40 +309,21 @@ export default function MiPerfil() {
           </div>
         </div>
 
-        <div className="mt-6 grid gap-5 md:grid-cols-2">
-          <div>
-            <h4 className="text-sm font-semibold text-slate-800">
-              Acciones disponibles
-            </h4>
-            <ul className="mt-3 space-y-2 text-sm text-slate-600">
-              {roleCapabilities.allowed.map((item) => (
-                <li key={item} className="flex items-start gap-2">
-                  <CheckCircle2
-                    className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
-                    aria-hidden="true"
-                  />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-semibold text-slate-800">
-              Acciones restringidas
-            </h4>
-            <ul className="mt-3 space-y-2 text-sm text-slate-600">
-              {roleCapabilities.restricted.map((item) => (
-                <li key={item} className="flex items-start gap-2">
-                  <Ban
-                    className="mt-0.5 h-4 w-4 shrink-0 text-amber-600"
-                    aria-hidden="true"
-                  />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <div className="mx-auto mt-6 max-w-lg">
+          <h4 className="text-center text-sm font-semibold text-slate-800">
+            Acciones disponibles
+          </h4>
+          <ul className="mt-3 space-y-2 text-sm text-slate-600">
+            {roleCapabilities.allowed.map((item) => (
+              <li key={item} className="flex items-start gap-2">
+                <CheckCircle2
+                  className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
+                  aria-hidden="true"
+                />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
         </div>
 
         <p className="mt-5 border-t border-slate-100 pt-4 text-xs text-slate-500">

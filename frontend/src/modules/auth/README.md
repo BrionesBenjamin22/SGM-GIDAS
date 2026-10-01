@@ -1,5 +1,14 @@
 # Autenticación y usuarios en frontend
 
+## Capacidades visibles en Mi perfil (ISS-91)
+
+La tarjeta de permisos de `MiPerfil` toma las capacidades del rol activo desde
+`utils/roleCapabilities.ts` y muestra solo `allowed`, en una columna centrada.
+No presenta la lista de restricciones. La autorización de rutas y operaciones
+continúa dependiendo del contexto de autenticación y del backend. La prueba
+`tests/roleCapabilities.test.ts` cubre los tres roles y la presentación de la
+lista disponible.
+
 ## Asociación de errores en edición de usuarios (ISS-74)
 
 El diálogo de edición vincula las etiquetas de nombre, correo y rol con sus
@@ -80,7 +89,7 @@ las restricciones de acceso. Véase `../shared/README.md` (ISS-41).
 - `ADMIN` y `GESTOR`: acceden a altas y ediciones de entidades mediante rutas protegidas.
 - `LECTURA`: accede a homes y detalles, pero no a rutas mutables.
 - `MiPerfil` muestra una tarjeta de permisos de la sesión con las acciones
-  disponibles y restringidas del rol activo.
+  disponibles del rol activo.
 - Todo usuario con `primer_login` debe cambiar su contraseña antes de ingresar al resto del sistema.
 - Durante el refresh inicial se muestra un estado de verificación y no se redirige prematuramente al login.
 - La landing dirige a `/registro` cuando falta el administrador inicial, a `/inicio` cuando existe sesión y a `/login` cuando el sistema ya está configurado.

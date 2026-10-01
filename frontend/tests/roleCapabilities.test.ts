@@ -42,9 +42,10 @@ test("el administrador conoce sus capacidades generales", () => {
   assert.ok(capabilities.allowed.some((item) => item.includes("Administrar usuarios")));
 });
 
-test("el perfil presenta las capacidades del rol de la sesion activa", () => {
+test("el perfil presenta solo las capacidades disponibles del rol activo", () => {
   assert.match(profileSource, /getRoleCapabilities\(user\.rol\)/);
   assert.match(profileSource, /Permisos de la sesión/);
   assert.match(profileSource, /Acciones disponibles/);
-  assert.match(profileSource, /Acciones restringidas/);
+  assert.match(profileSource, /roleCapabilities\.allowed\.map/);
+  assert.doesNotMatch(profileSource, /roleCapabilities\.restricted\.map/);
 });
