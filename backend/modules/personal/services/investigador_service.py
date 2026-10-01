@@ -5,6 +5,7 @@ from datetime import date
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_
+from sqlalchemy.orm import selectinload
 
 from extension import db
 from modules.personal.services.identidad_service import asignar_identidad, conflicto_identidad_por_integridad
@@ -19,6 +20,8 @@ from modules.personal.models.personal import Investigador, TipoDedicacion, Inves
 from modules.catalogos.models.categoria_utn import CategoriaUtn
 from modules.grupo.models.programa_incentivos import ProgramaIncentivos
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
+from modules.proyectos.models.proyecto_investigacion import InvestigadorProyecto
+from modules.produccion.models.trabajo_autor import TrabajoReunionAutor
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import (
     validar_fecha_alta_grupo,
@@ -399,7 +402,7 @@ def restaurar_investigador(id):
 # LISTAR
 # =====================================================
 
-def listar_investigadores(activos=None):
+def _consulta_investigadores(activos=None):
     query = Investigador.query
 
     if activos is None:
@@ -416,7 +419,29 @@ def listar_investigadores(activos=None):
     else:
         query = query.filter(Investigador.deleted_at.is_(None), Investigador.activo.is_(True))
 
-    return query.all()
+    return query.order_by(Investigador.id.asc())
+
+
+def listar_investigadores(activos=None):
+    return _consulta_investigadores(activos).all()
+
+
+def listar_investigadores_paginado(page, per_page, activos="true", orden="asc"):
+    query = _consulta_investigadores(activos)
+    if orden == "desc":
+        query = query.order_by(None).order_by(Investigador.id.desc())
+    query = query.options(
+        selectinload(Investigador.historial_horas),
+        selectinload(Investigador.categoria_utn),
+        selectinload(Investigador.programa_incentivos),
+        selectinload(Investigador.tipo_dedicacion),
+        selectinload(Investigador.grupo_utn),
+        selectinload(Investigador.participaciones_proyecto).selectinload(InvestigadorProyecto.proyecto),
+        selectinload(Investigador.participaciones_relevantes),
+        selectinload(Investigador.autorias_reunion).selectinload(TrabajoReunionAutor.trabajo),
+    )
+    total = query.count()
+    return query.offset((page - 1) * per_page).limit(per_page).all(), total
 
 
 # =====================================================

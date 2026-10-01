@@ -121,13 +121,24 @@ def eliminar_tipo_dedicacion(id, user_id=None):
         raise
 
 
-def listar_tipos_dedicacion(activos="true"):
+def _consulta_tipos_dedicacion(activos="true", orden="asc"):
     query = TipoDedicacion.query
     if activos == "true":
         query = query.filter(TipoDedicacion.deleted_at.is_(None))
     elif activos == "false":
         query = query.filter(TipoDedicacion.deleted_at.isnot(None))
-    return query.order_by(TipoDedicacion.nombre.asc()).all()
+    nombre = TipoDedicacion.nombre.desc() if orden == "desc" else TipoDedicacion.nombre.asc()
+    id_ = TipoDedicacion.id.desc() if orden == "desc" else TipoDedicacion.id.asc()
+    return query.order_by(nombre, id_)
+
+
+def listar_tipos_dedicacion(activos="true"):
+    return _consulta_tipos_dedicacion(activos).all()
+
+
+def listar_tipos_dedicacion_paginado(page, per_page, activos="true", orden="asc"):
+    query = _consulta_tipos_dedicacion(activos, orden)
+    return query.offset((page - 1) * per_page).limit(per_page).all(), query.count()
 
 
 

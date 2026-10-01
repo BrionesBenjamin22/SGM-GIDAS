@@ -93,13 +93,24 @@ def eliminar_tipo_personal(id, user_id=None):
         raise
 
 
-def listar_tipos(activos="true"):
+def _consulta_tipos(activos="true", orden="asc"):
     query = TipoPersonal.query
     if activos == "true":
         query = query.filter(TipoPersonal.deleted_at.is_(None), TipoPersonal.activo.is_(True))
     elif activos == "false":
         query = query.filter(TipoPersonal.deleted_at.isnot(None))
-    return query.order_by(TipoPersonal.nombre.asc()).all()
+    nombre = TipoPersonal.nombre.desc() if orden == "desc" else TipoPersonal.nombre.asc()
+    id_ = TipoPersonal.id.desc() if orden == "desc" else TipoPersonal.id.asc()
+    return query.order_by(nombre, id_)
+
+
+def listar_tipos(activos="true"):
+    return _consulta_tipos(activos).all()
+
+
+def listar_tipos_paginado(page, per_page, activos="true", orden="asc"):
+    query = _consulta_tipos(activos, orden)
+    return query.offset((page - 1) * per_page).limit(per_page).all(), query.count()
 
 
 def obtener_tipo_por_id(id):

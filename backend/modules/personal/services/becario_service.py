@@ -6,6 +6,7 @@ from datetime import date, datetime
 
 from extension import db
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 from modules.personal.services.identidad_service import asignar_identidad, conflicto_identidad_por_integridad
 from modules.shared.services.text_validation import has_only_letters_and_spaces
 from modules.personal.services.horas_validation import validar_horas_semanales as _validar_horas
@@ -518,7 +519,7 @@ def eliminar_becario(id: int, user_id: int):
 # LISTAR
 # =====================================================
 
-def listar_becarios(activos=None):
+def _consulta_becarios(activos=None):
     query = Becario.query
 
     if activos is None:
@@ -535,7 +536,24 @@ def listar_becarios(activos=None):
     else:
         query = query.filter(Becario.deleted_at.is_(None))
 
-    return query.all()
+    return query.order_by(Becario.id.asc())
+
+
+def listar_becarios(activos=None):
+    return _consulta_becarios(activos).all()
+
+
+def listar_becarios_paginado(page, per_page, activos="true", orden="asc"):
+    query = _consulta_becarios(activos)
+    if orden == "desc":
+        query = query.order_by(None).order_by(Becario.id.desc())
+    query = query.options(
+        selectinload(Becario.historial_horas),
+        selectinload(Becario.tipo_formacion),
+        selectinload(Becario.grupo_utn),
+    )
+    total = query.count()
+    return query.offset((page - 1) * per_page).limit(per_page).all(), total
 
 
 # =====================================================

@@ -235,3 +235,11 @@ Corrección de alcance ISS-12: los autores de trabajos son únicamente investiga
 ## Snapshots de memorias (ISS-16)
 
 Personal, investigadores y becarios se seleccionan por UCT y solapamiento entre alta, baja y período. La foto conserva `fecha_alta_grupo`. `horas_semanales` representa el historial vigente al final del período y queda null cuando no hay evidencia, sin copiar horas actuales. Las becas usan sus intervalos completos.
+# Paginacion SQL (ISS-89)
+
+Personal, investigadores, becarios y sus catalogos de tipos obtienen `total`
+de la consulta filtrada y cargan solo la pagina con `LIMIT/OFFSET`. Las
+relaciones necesarias se precargan para esas filas. Sin `page`/`per_page` se
+conserva el array anterior; con ellos se mantiene `data`/`meta`/`error`, el
+orden, los filtros y el aislamiento UCT. Los historiales conservan tres
+eventos por pagina.

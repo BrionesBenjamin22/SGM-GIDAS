@@ -121,13 +121,24 @@ def eliminar_tipo_formacion(id, user_id=None):
         raise
 
 
-def listar_tipos_formacion(activos="true"):
+def _consulta_tipos_formacion(activos="true", orden="asc"):
     query = TipoFormacion.query
     if activos == "true":
         query = query.filter(TipoFormacion.deleted_at.is_(None))
     elif activos == "false":
         query = query.filter(TipoFormacion.deleted_at.isnot(None))
-    return query.order_by(TipoFormacion.nombre.asc()).all()
+    nombre = TipoFormacion.nombre.desc() if orden == "desc" else TipoFormacion.nombre.asc()
+    id_ = TipoFormacion.id.desc() if orden == "desc" else TipoFormacion.id.asc()
+    return query.order_by(nombre, id_)
+
+
+def listar_tipos_formacion(activos="true"):
+    return _consulta_tipos_formacion(activos).all()
+
+
+def listar_tipos_formacion_paginado(page, per_page, activos="true", orden="asc"):
+    query = _consulta_tipos_formacion(activos, orden)
+    return query.offset((page - 1) * per_page).limit(per_page).all(), query.count()
 
 
 def obtener_tipo_formacion_por_id(id):
