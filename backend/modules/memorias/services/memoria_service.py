@@ -1,6 +1,7 @@
 from datetime import datetime
-from flask import g, has_app_context, has_request_context
+from flask import g, has_app_context, has_request_context, request
 from sqlalchemy import func, select, union_all
+from sqlalchemy.orm import selectinload
 
 from extension import db
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
@@ -9,6 +10,9 @@ from modules.memorias.services.memoria_contexto_service import snapshot_contexto
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.shared.services.date_time import validate_institutional_date
+from modules.shared.controllers.pagination import paginate_query
+from modules.shared.controllers.pagination import pagination_requested, parse_pagination_params
+from modules.shared.services.tenant_scope import _classes_by_table
 from modules.personal.services.investigador_service import (
     obtener_snapshots_investigadores_por_memoria_version,
     snapshot_investigadores_para_memoria_version,
@@ -72,8 +76,62 @@ SNAPSHOT_TABLES = (
     "articulo_divulgacion_memoria_version", "visita_academica_memoria_version",
 )
 
+SNAPSHOT_ORDERS = {
+    "investigador_memoria_version": (("nombre_apellido", "asc"),),
+    "becario_memoria_version": (("nombre_apellido", "asc"),),
+    "personal_memoria_version": (("nombre_apellido", "asc"),),
+    "proyecto_investigacion_memoria_version": (("nombre_proyecto", "asc"),),
+    "actividad_docencia_memoria_version": (("curso", "asc"),),
+    "participacion_relevante_memoria_version": (("fecha", "desc"),),
+    "documentacion_bibliografica_memoria_version": (("titulo", "asc"),),
+    "equipamiento_memoria_version": (("denominacion", "asc"),),
+    "movimiento_memoria_version": (("fecha", "desc"), ("numero_movimiento", "desc")),
+    "transferencia_socio_productiva_memoria_version": (("fecha_inicio", "desc"),),
+    "trabajo_reunion_cientifica_memoria_version": (("fecha_presentacion", "desc"),),
+    "trabajos_revista_memoria_version": (("fecha_publicacion", "desc"),),
+    "distincion_recibida_memoria_version": (("fecha", "desc"),),
+    "registros_propiedad_memoria_version": (("fecha_registro", "desc"),),
+    "articulo_divulgacion_memoria_version": (("fecha_publicacion", "desc"),),
+    "visita_academica_memoria_version": (("fecha", "desc"),),
+}
+
 
 class MemoriaService:
+
+    @staticmethod
+    def _snapshot_page_or_none(version_id: int, table_name: str):
+        if not has_request_context() or not pagination_requested(request.args):
+            return None
+        try:
+            params = parse_pagination_params(request.args)
+        except ValueError as error:
+            raise ValidationError(str(error)) from error
+
+        model = _classes_by_table()[table_name]
+        query = model.query.filter(
+            model.memoria_version_id == version_id,
+            model.deleted_at.is_(None),
+        )
+        total = query.count()
+        order = []
+        for column_name, direction in SNAPSHOT_ORDERS[table_name]:
+            column = getattr(model, column_name)
+            order.append(column.desc() if direction == "desc" else column.asc())
+        order.append(model.id.desc() if SNAPSHOT_ORDERS[table_name][0][1] == "desc" else model.id.asc())
+        rows = query.order_by(*order).offset(
+            (params["page"] - 1) * params["per_page"]
+        ).limit(params["per_page"]).all()
+        return {
+            "data": [row.serialize() for row in rows],
+            "meta": {
+                "page": params["page"], "per_page": params["per_page"],
+                "total": total,
+                "total_pages": max(1, (total + params["per_page"] - 1) // params["per_page"]),
+                "activos": params["activos"], "orden": params["orden"],
+                "source": "legacy-list",
+            },
+            "error": None,
+        }
 
     # ==========================================
     # HELPERS
@@ -375,7 +433,7 @@ class MemoriaService:
     # ==========================================
 
     @staticmethod
-    def get_all(activos: str = "true"):
+    def _consulta_memorias(activos: str = "true"):
         query = Memoria.query
 
         if activos == "true":
@@ -387,8 +445,22 @@ class MemoriaService:
         else:
             query = query.filter(Memoria.deleted_at.is_(None))
 
-        memorias = query.order_by(Memoria.id.desc()).all()
+        return query.order_by(Memoria.id.desc())
+
+    @staticmethod
+    def get_all(activos: str = "true"):
+        memorias = MemoriaService._consulta_memorias(activos).all()
         return [MemoriaService._serializar_memoria(memoria) for memoria in memorias]
+
+    @staticmethod
+    def get_page(page: int, per_page: int, activos: str = "true", orden: str = "asc"):
+        memorias, total = paginate_query(
+            MemoriaService._consulta_memorias(activos).options(
+                selectinload(Memoria.versiones),
+                selectinload(Memoria.version_actual),
+            ), page, per_page
+        )
+        return [MemoriaService._serializar_memoria(memoria) for memoria in memorias], total
 
     # ==========================================
     # GET BY ID
@@ -418,7 +490,8 @@ class MemoriaService:
         if version.memoria_id != memoria.id:
             raise NotFoundError("La version no pertenece a la memoria indicada")
 
-        return obtener_snapshots_investigadores_por_memoria_version(version.id)
+        return (MemoriaService._snapshot_page_or_none(version.id, "investigador_memoria_version")
+                or obtener_snapshots_investigadores_por_memoria_version(version.id))
 
     @staticmethod
     def get_becarios_snapshot(memoria_id: int, memoria_version_id: int):
@@ -428,7 +501,8 @@ class MemoriaService:
         if version.memoria_id != memoria.id:
             raise NotFoundError("La version no pertenece a la memoria indicada")
 
-        return obtener_snapshots_becarios_por_memoria_version(version.id)
+        return (MemoriaService._snapshot_page_or_none(version.id, "becario_memoria_version")
+                or obtener_snapshots_becarios_por_memoria_version(version.id))
 
     @staticmethod
     def get_personal_snapshot(memoria_id: int, memoria_version_id: int):
@@ -438,7 +512,8 @@ class MemoriaService:
         if version.memoria_id != memoria.id:
             raise NotFoundError("La version no pertenece a la memoria indicada")
 
-        return obtener_snapshots_personal_por_memoria_version(version.id)
+        return (MemoriaService._snapshot_page_or_none(version.id, "personal_memoria_version")
+                or obtener_snapshots_personal_por_memoria_version(version.id))
 
     @staticmethod
     def get_proyectos_snapshot(memoria_id: int, memoria_version_id: int):
@@ -448,9 +523,8 @@ class MemoriaService:
         if version.memoria_id != memoria.id:
             raise NotFoundError("La version no pertenece a la memoria indicada")
 
-        return ProyectoInvestigacionService.obtener_snapshots_por_memoria_version(
-            version.id
-        )
+        return (MemoriaService._snapshot_page_or_none(version.id, "proyecto_investigacion_memoria_version")
+                or ProyectoInvestigacionService.obtener_snapshots_por_memoria_version(version.id))
 
     @staticmethod
     def get_actividades_docencia_snapshot(memoria_id: int, memoria_version_id: int):
@@ -460,9 +534,8 @@ class MemoriaService:
         if version.memoria_id != memoria.id:
             raise NotFoundError("La version no pertenece a la memoria indicada")
 
-        return ActividadDocenciaService.obtener_snapshots_por_memoria_version(
-            version.id
-        )
+        return (MemoriaService._snapshot_page_or_none(version.id, "actividad_docencia_memoria_version")
+                or ActividadDocenciaService.obtener_snapshots_por_memoria_version(version.id))
 
     @staticmethod
     def get_participaciones_relevantes_snapshot(memoria_id: int, memoria_version_id: int):
@@ -472,9 +545,8 @@ class MemoriaService:
         if version.memoria_id != memoria.id:
             raise NotFoundError("La version no pertenece a la memoria indicada")
 
-        return ParticipacionRelevanteService.obtener_snapshots_por_memoria_version(
-            version.id
-        )
+        return (MemoriaService._snapshot_page_or_none(version.id, "participacion_relevante_memoria_version")
+                or ParticipacionRelevanteService.obtener_snapshots_por_memoria_version(version.id))
 
     @staticmethod
     def get_documentacion_snapshot(memoria_id: int, memoria_version_id: int):
@@ -484,9 +556,8 @@ class MemoriaService:
         if version.memoria_id != memoria.id:
             raise NotFoundError("La version no pertenece a la memoria indicada")
 
-        return DocumentacionBibliograficaService.obtener_snapshots_por_memoria_version(
-            version.id
-        )
+        return (MemoriaService._snapshot_page_or_none(version.id, "documentacion_bibliografica_memoria_version")
+                or DocumentacionBibliograficaService.obtener_snapshots_por_memoria_version(version.id))
 
     @staticmethod
     def get_equipamiento_snapshot(memoria_id: int, memoria_version_id: int):
@@ -496,9 +567,8 @@ class MemoriaService:
         if version.memoria_id != memoria.id:
             raise NotFoundError("La version no pertenece a la memoria indicada")
 
-        return EquipamientoService.obtener_snapshots_por_memoria_version(
-            version.id
-        )
+        return (MemoriaService._snapshot_page_or_none(version.id, "equipamiento_memoria_version")
+                or EquipamientoService.obtener_snapshots_por_memoria_version(version.id))
 
     @staticmethod
     def get_erogaciones_snapshot(memoria_id: int, memoria_version_id: int):
@@ -508,7 +578,8 @@ class MemoriaService:
         if version.memoria_id != memoria.id:
             raise NotFoundError("La version no pertenece a la memoria indicada")
 
-        return MovimientoFinancieroService.obtener_snapshots_por_memoria_version(version.id)
+        return (MemoriaService._snapshot_page_or_none(version.id, "movimiento_memoria_version")
+                or MovimientoFinancieroService.obtener_snapshots_por_memoria_version(version.id))
 
     @staticmethod
     def get_transferencias_snapshot(memoria_id: int, memoria_version_id: int):
@@ -518,9 +589,8 @@ class MemoriaService:
         if version.memoria_id != memoria.id:
             raise NotFoundError("La version no pertenece a la memoria indicada")
 
-        return TransferenciaSocioProductivaService.obtener_snapshots_por_memoria_version(
-            version.id
-        )
+        return (MemoriaService._snapshot_page_or_none(version.id, "transferencia_socio_productiva_memoria_version")
+                or TransferenciaSocioProductivaService.obtener_snapshots_por_memoria_version(version.id))
 
     @staticmethod
     def get_trabajos_reunion_snapshot(memoria_id: int, memoria_version_id: int):
@@ -530,9 +600,8 @@ class MemoriaService:
         if version.memoria_id != memoria.id:
             raise NotFoundError("La version no pertenece a la memoria indicada")
 
-        return TrabajoReunionCientificaService.obtener_snapshots_por_memoria_version(
-            version.id
-        )
+        return (MemoriaService._snapshot_page_or_none(version.id, "trabajo_reunion_cientifica_memoria_version")
+                or TrabajoReunionCientificaService.obtener_snapshots_por_memoria_version(version.id))
 
     @staticmethod
     def get_trabajos_revista_snapshot(memoria_id: int, memoria_version_id: int):
@@ -542,9 +611,8 @@ class MemoriaService:
         if version.memoria_id != memoria.id:
             raise NotFoundError("La version no pertenece a la memoria indicada")
 
-        return TrabajosRevistasReferatoService.obtener_snapshots_por_memoria_version(
-            version.id
-        )
+        return (MemoriaService._snapshot_page_or_none(version.id, "trabajos_revista_memoria_version")
+                or TrabajosRevistasReferatoService.obtener_snapshots_por_memoria_version(version.id))
 
     @staticmethod
     def get_distinciones_snapshot(memoria_id: int, memoria_version_id: int):
@@ -554,9 +622,8 @@ class MemoriaService:
         if version.memoria_id != memoria.id:
             raise NotFoundError("La version no pertenece a la memoria indicada")
 
-        return DistincionRecibidaService.obtener_snapshots_por_memoria_version(
-            version.id
-        )
+        return (MemoriaService._snapshot_page_or_none(version.id, "distincion_recibida_memoria_version")
+                or DistincionRecibidaService.obtener_snapshots_por_memoria_version(version.id))
 
     @staticmethod
     def get_registros_propiedad_snapshot(memoria_id: int, memoria_version_id: int):
@@ -566,9 +633,8 @@ class MemoriaService:
         if version.memoria_id != memoria.id:
             raise NotFoundError("La version no pertenece a la memoria indicada")
 
-        return RegistrosPropiedadService.obtener_snapshots_por_memoria_version(
-            version.id
-        )
+        return (MemoriaService._snapshot_page_or_none(version.id, "registros_propiedad_memoria_version")
+                or RegistrosPropiedadService.obtener_snapshots_por_memoria_version(version.id))
 
     @staticmethod
     def get_articulos_divulgacion_snapshot(memoria_id: int, memoria_version_id: int):
@@ -578,9 +644,8 @@ class MemoriaService:
         if version.memoria_id != memoria.id:
             raise NotFoundError("La version no pertenece a la memoria indicada")
 
-        return ArticuloDivulgacionService.obtener_snapshots_por_memoria_version(
-            version.id
-        )
+        return (MemoriaService._snapshot_page_or_none(version.id, "articulo_divulgacion_memoria_version")
+                or ArticuloDivulgacionService.obtener_snapshots_por_memoria_version(version.id))
 
     @staticmethod
     def get_visitas_snapshot(memoria_id: int, memoria_version_id: int):
@@ -590,7 +655,8 @@ class MemoriaService:
         if version.memoria_id != memoria.id:
             raise NotFoundError("La version no pertenece a la memoria indicada")
 
-        return obtener_snapshots_visitas_por_memoria_version(version.id)
+        return (MemoriaService._snapshot_page_or_none(version.id, "visita_academica_memoria_version")
+                or obtener_snapshots_visitas_por_memoria_version(version.id))
 
     # ==========================================
     # CREATE
@@ -699,7 +765,8 @@ class MemoriaService:
     def get_historial(memoria_id: int):
         MemoriaService._get_memoria_or_404(memoria_id)
         historial = AuditoriaService.obtener_historial_entidad("memoria", memoria_id)
-        for item in historial:
+        eventos = historial["data"] if isinstance(historial, dict) else historial
+        for item in eventos:
             if item.get("campo") != "grupo_utn_id":
                 continue
             item["valor_anterior"] = MemoriaService._nombre_grupo_historial(

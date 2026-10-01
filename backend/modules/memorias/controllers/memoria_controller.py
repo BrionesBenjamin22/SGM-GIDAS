@@ -2,7 +2,8 @@ from flask import jsonify, request, g, send_file
 
 from modules.memorias.services.memoria_service import MemoriaService
 from modules.memorias.services.exportacion_service_impl import ExportService
-from modules.shared.controllers.responses import exception_response
+from modules.shared.controllers.pagination import pagination_requested, parse_pagination_params
+from modules.shared.controllers.responses import error_response, exception_response, paginated_response
 
 
 class MemoriaController:
@@ -10,8 +11,17 @@ class MemoriaController:
     @staticmethod
     def get_all():
         try:
+            if pagination_requested(request.args):
+                params = parse_pagination_params(request.args)
+                memorias, total = MemoriaService.get_page(**params)
+                return paginated_response(
+                    memorias, params["page"], params["per_page"], total,
+                    meta={"activos": params["activos"], "orden": params["orden"], "source": "legacy-list"},
+                )
             activos = request.args.get("activos", "true")
             return jsonify(MemoriaService.get_all(activos)), 200
+        except ValueError as error:
+            return error_response("VALIDATION_ERROR", message=str(error), status_code=400)
         except Exception as error:
             return exception_response(error, operation="listar memorias")
 

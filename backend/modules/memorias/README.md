@@ -1,5 +1,15 @@
 # Memorias
 
+## Listado y snapshots paginados (ISS-89)
+
+`GET /api/v1/memorias` cuenta las Memorias filtradas y limita la consulta
+antes de precargar versiones de la pagina. Las 16 colecciones de snapshots de
+`/memorias/{id}/versiones/{version_id}/<coleccion>` consultan el total y
+aplican `LIMIT/OFFSET` por version antes de serializar. Se conserva el array
+anterior sin `page` ni `per_page`; con esos parametros se devuelve
+`data`/`meta`/`error`, sin alterar las fotos historicas, su orden ni el
+aislamiento UCT. El historial mantiene tres cambios por pagina.
+
 ## Contrato de listado y versiones (ISS-86)
 
 `GET /api/v1/memorias?activos=true|false|all` devuelve una entrada por Memoria

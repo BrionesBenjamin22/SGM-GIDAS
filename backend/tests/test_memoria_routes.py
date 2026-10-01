@@ -35,6 +35,26 @@ class MemoriaRoutesTestCase(unittest.TestCase):
         self.assertEqual(response.get_json(), [])
         mock_get_all.assert_called_once_with("true")
 
+    def test_get_all_paginado_usa_service_limitado(self):
+        with patch(
+            "modules.shared.services.middleware.AuthService.verify_token",
+            return_value={"sub": "1", "rol": "LECTURA"}
+        ), patch(
+            "modules.memorias.controllers.memoria_controller.MemoriaService.get_page",
+            return_value=([{"id": 2}], 12)
+        ) as mock_page, patch(
+            "modules.memorias.controllers.memoria_controller.MemoriaService.get_all"
+        ) as mock_all:
+            response = self.client.get(
+                "/api/v1/memorias?page=2&per_page=3", headers=self._headers()
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["data"], [{"id": 2}])
+        self.assertEqual(response.get_json()["meta"]["total_pages"], 4)
+        mock_page.assert_called_once_with(page=2, per_page=3, activos="true", orden="asc")
+        mock_all.assert_not_called()
+
     def test_get_by_id_sin_token_devuelve_401(self):
         response = self.client.get("/api/v1/memorias/1")
 
