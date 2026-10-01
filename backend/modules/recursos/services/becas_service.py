@@ -96,13 +96,13 @@ def _validar_beca_unica(nombre_beca, fuente_financiamiento_id, beca_id=None):
 class BecaService:
 
     @staticmethod
-    def get_becas_activas_en_anio(anio: int):
+    def _becas_activas_query(anio: int):
         if anio is None or not 1 <= anio <= 9999:
             raise ValueError("Debe proporcionar un año válido.")
 
         inicio = date(anio, 1, 1)
         fin = date(anio, 12, 31)
-        becas = (
+        return (
             Beca.query
             .join(Beca_Becario, Beca_Becario.id_beca == Beca.id)
             .join(Becario, Becario.id == Beca_Becario.id_becario)
@@ -114,20 +114,43 @@ class BecaService:
                 or_(Beca_Becario.fecha_fin.is_(None), Beca_Becario.fecha_fin >= inicio),
             )
             .distinct()
-            .order_by(Beca.nombre_beca.asc())
-            .all()
+            .order_by(Beca.nombre_beca.asc(), Beca.id.asc())
         )
-        return [beca.serialize() for beca in becas]
 
     @staticmethod
-    def get_all(activos="true"):
+    def get_becas_activas_en_anio(anio: int, page: int | None = None, per_page: int | None = None):
+        query = BecaService._becas_activas_query(anio)
+        total = query.count() if page is not None else None
+        becas = (query.offset((page - 1) * per_page).limit(per_page).all()
+                 if page is not None else query.all())
+        data = [beca.serialize() for beca in becas]
+        return (data, total) if page is not None else data
+
+    @staticmethod
+    def _list_query(activos="true", orden="asc"):
         query = Beca.query
         if activos == "true":
             query = query.filter(Beca.deleted_at.is_(None))
         elif activos == "false":
             query = query.filter(Beca.deleted_at.isnot(None))
-        becas = query.order_by(Beca.nombre_beca.asc()).all()
-        return [b.serialize() for b in becas]
+        nombre = Beca.nombre_beca.desc() if orden == "desc" else Beca.nombre_beca.asc()
+        id_ = Beca.id.desc() if orden == "desc" else Beca.id.asc()
+        return query.order_by(nombre, id_)
+
+    @staticmethod
+    def get_all(activos="true"):
+        return [b.serialize() for b in BecaService._list_query(activos).all()]
+
+    @staticmethod
+    def get_page(page, per_page, activos="true", orden="asc"):
+        from sqlalchemy.orm import selectinload
+        query = BecaService._list_query(activos, orden).options(
+            selectinload(Beca.fuente_financiamiento),
+            selectinload(Beca.becarios).selectinload(Beca_Becario.becario),
+        )
+        total = query.count()
+        rows = query.offset((page - 1) * per_page).limit(per_page).all()
+        return [b.serialize() for b in rows], total
 
     @staticmethod
     def get_by_id(beca_id):
@@ -351,12 +374,18 @@ class BecaService:
 # =====================================================
 
     @staticmethod
-    def get_becarios_de_beca(beca_id):
+    def get_becarios_de_beca(beca_id, page: int | None = None, per_page: int | None = None):
 
         beca = _get_beca_activa_or_404(beca_id)
 
+        query = Beca_Becario.query.filter(
+            Beca_Becario.id_beca == beca.id, Beca_Becario.deleted_at.is_(None)
+        ).order_by(Beca_Becario.id.asc())
+        total = query.count() if page is not None else None
+        relaciones = (query.offset((page - 1) * per_page).limit(per_page).all()
+                      if page is not None else query.all())
         resultado = []
-        for r in beca.becarios:
+        for r in relaciones:
             if r.deleted_at is None:
                 resultado.append({
                     "id_becario": r.becario.id,
@@ -366,7 +395,7 @@ class BecaService:
                     "monto_percibido": r.monto_percibido
                 })
 
-        return resultado
+        return (resultado, total) if page is not None else resultado
     
     
     # =========================

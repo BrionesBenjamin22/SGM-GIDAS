@@ -74,3 +74,10 @@ ISS-19: equipamiento identifica `denominacion`, `descripcion_breve`, `monto_inve
 ## Snapshots de memorias (ISS-16)
 
 Equipamiento y movimientos se filtran por UCT. Equipamiento usa solapamiento entre incorporación, baja y período; movimientos usan su fecha puntual inclusiva. Una baja posterior no elimina un hecho histórico que correspondía al período.
+# Paginacion SQL (ISS-89)
+
+Becas activas, becarios de una beca, equipamientos disponibles, movimientos
+financieros y categorias de erogacion cuentan y limitan en SQL las filas que
+cumplen sus filtros. Se preservan ano, vigencia, disponibilidad, pertenencia
+al grupo y UCT. Los historiales siguen ordenados y paginados de a tres; las
+rutas sin `page`/`per_page` conservan su respuesta previa.

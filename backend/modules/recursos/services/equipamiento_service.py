@@ -97,7 +97,7 @@ class EquipamientoService:
     # ==========================================
 
     @staticmethod
-    def get_all(activos: str = "true"):
+    def _list_query(activos: str = "true", orden: str = "asc"):
         query = Equipamiento.query
 
         if activos == "true":
@@ -109,8 +109,22 @@ class EquipamientoService:
         else:
             query = query.filter(Equipamiento.deleted_at.is_(None))
 
-        equipamientos = query.all()
-        return [e.serialize() for e in equipamientos]
+        id_ = Equipamiento.id.desc() if orden == "desc" else Equipamiento.id.asc()
+        return query.order_by(id_)
+
+    @staticmethod
+    def get_all(activos: str = "true"):
+        return [e.serialize() for e in EquipamientoService._list_query(activos).all()]
+
+    @staticmethod
+    def get_page(page: int, per_page: int, activos="true", orden="asc"):
+        from sqlalchemy.orm import selectinload
+        query = EquipamientoService._list_query(activos, orden).options(
+            selectinload(Equipamiento.grupo_utn)
+        )
+        total = query.count()
+        rows = query.offset((page - 1) * per_page).limit(per_page).all()
+        return [e.serialize() for e in rows], total
 
     # ==========================================
     # GET BY ID

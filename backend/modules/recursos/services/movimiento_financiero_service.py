@@ -95,7 +95,7 @@ class MovimientoFinancieroService:
         )
 
     @staticmethod
-    def get_all(filters: dict | None = None):
+    def _list_query(filters: dict | None = None):
         filters = filters or {}
         query = select(MovimientoFinanciero).options(
             joinedload(MovimientoFinanciero.grupo_utn),
@@ -123,7 +123,23 @@ class MovimientoFinancieroService:
             MovimientoFinanciero.fecha.desc(),
             MovimientoFinanciero.numero_movimiento.desc(),
         )
+        return query
+
+    @staticmethod
+    def get_all(filters: dict | None = None):
+        query = MovimientoFinancieroService._list_query(filters)
         return [item.serialize() for item in db.session.scalars(query).unique().all()]
+
+    @staticmethod
+    def get_page(filters: dict, page: int, per_page: int):
+        query = MovimientoFinancieroService._list_query(filters)
+        total = db.session.scalar(
+            select(func.count()).select_from(query.order_by(None).subquery())
+        )
+        rows = db.session.scalars(
+            query.offset((page - 1) * per_page).limit(per_page)
+        ).unique().all()
+        return [item.serialize() for item in rows], total
 
     @staticmethod
     def get_by_id(movimiento_id: int):
@@ -141,7 +157,8 @@ class MovimientoFinancieroService:
         )
 
     @staticmethod
-    def equipamientos_disponibles(grupo_id: int, movimiento_id: int | None = None):
+    def equipamientos_disponibles(grupo_id: int, movimiento_id: int | None = None,
+                                  page: int | None = None, per_page: int | None = None):
         MovimientoFinancieroService._id_positivo(grupo_id, "grupo_utn_id")
         if movimiento_id is not None:
             MovimientoFinancieroService._id_positivo(movimiento_id, "movimiento_id")
@@ -152,16 +169,21 @@ class MovimientoFinancieroService:
             MovimientoFinanciero.equipamiento_id == Equipamiento.id,
             MovimientoFinanciero.id != movimiento_id if movimiento_id is not None else True,
         ).exists()
-        equipos = db.session.scalars(select(Equipamiento).where(
+        query = select(Equipamiento).where(
             Equipamiento.grupo_utn_id == grupo_id,
             Equipamiento.deleted_at.is_(None),
             ~usado,
-        ).order_by(Equipamiento.denominacion.asc())).unique().all()
-        return [{
+        ).order_by(Equipamiento.denominacion.asc(), Equipamiento.id.asc())
+        total = db.session.scalar(select(func.count()).select_from(query.order_by(None).subquery())) if page is not None else None
+        if page is not None:
+            query = query.offset((page - 1) * per_page).limit(per_page)
+        equipos = db.session.scalars(query).unique().all()
+        data = [{
             "id": equipo.id,
             "denominacion": equipo.denominacion,
             "monto_invertido": str(MovimientoFinancieroService._monto_equipo(equipo)),
         } for equipo in equipos]
+        return (data, total) if page is not None else data
 
     @staticmethod
     def create(data: dict, user_id: int):
