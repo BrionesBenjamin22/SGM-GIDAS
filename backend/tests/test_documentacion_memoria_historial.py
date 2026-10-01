@@ -3,6 +3,7 @@ from datetime import date, datetime
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from modules import models_registry  # noqa: F401
 from modules.shared.models.auditoria_campo import AuditoriaCampo
 from modules.memorias.models.memorias import EstadoMemoria, Memoria, MemoriaVersion
 from modules.produccion.services.documentacion_service import DocumentacionBibliograficaService
@@ -160,7 +161,9 @@ class DocumentacionMemoriaHistorialTestCase(unittest.TestCase):
 
         fake_query = SimpleNamespace(
             filter=lambda *args, **kwargs: SimpleNamespace(
-                order_by=lambda *a, **k: SimpleNamespace(all=lambda: [auditoria])
+                order_by=lambda *a, **k: SimpleNamespace(
+                    filter=lambda *args, **kwargs: SimpleNamespace(all=lambda: [auditoria])
+                )
             )
         )
 

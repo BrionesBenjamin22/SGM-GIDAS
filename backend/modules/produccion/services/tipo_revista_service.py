@@ -5,9 +5,14 @@ from modules.produccion.models.trabajo_revista import TipoRevista
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 from modules.shared.services.catalog_name_validation import validar_nombre_descriptivo
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
+from modules.shared.services.catalog_pagination import catalog_page
 
 
 class TipoRevistaService:
+
+    @staticmethod
+    def get_page(page, per_page, activos="true", orden="asc"):
+        return catalog_page(TipoRevista, TipoRevista.nombre, activos=activos, orden=orden, page=page, per_page=per_page)
     @staticmethod
     def _get_or_404(tipo_id: int):
         tipo = db.session.get(TipoRevista, tipo_id)

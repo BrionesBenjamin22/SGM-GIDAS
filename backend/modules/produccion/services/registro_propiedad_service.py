@@ -100,7 +100,7 @@ class RegistrosPropiedadService:
     # LISTAR
     # =========================
     @staticmethod
-    def get_all(activos: str = "true"):
+    def _list_query(activos: str = "true"):
         query = RegistrosPropiedad.query
 
         activos = RegistrosPropiedadService._normalizar_activos(activos)
@@ -125,7 +125,18 @@ class RegistrosPropiedadService:
                 RegistrosPropiedad.activo.is_(True)
             )
 
-        return [r.serialize() for r in query.all()]
+        return query.order_by(RegistrosPropiedad.id.asc())
+
+    @staticmethod
+    def get_all(activos: str = "true"):
+        return [r.serialize() for r in RegistrosPropiedadService._list_query(activos).all()]
+
+    @staticmethod
+    def get_page(activos: str, page: int, per_page: int, orden: str = "asc"):
+        query = RegistrosPropiedadService._list_query(activos).order_by(None)
+        total = query.count()
+        direction = RegistrosPropiedad.id.desc() if orden == "desc" else RegistrosPropiedad.id.asc()
+        return [r.serialize() for r in query.order_by(direction).offset((page - 1) * per_page).limit(per_page).all()], total
 
     # =========================
     # OBTENER POR ID

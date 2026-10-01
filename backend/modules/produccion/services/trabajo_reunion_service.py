@@ -176,7 +176,7 @@ class TrabajoReunionCientificaService:
             )
 
     @staticmethod
-    def get_all(filters: dict = None):
+    def _list_query(filters: dict = None):
         filters = filters or {}
         query = filtrar_por_autor(TrabajoReunionCientifica.query, TrabajoReunionCientifica, TrabajoReunionAutor, filters)
 
@@ -215,7 +215,17 @@ class TrabajoReunionCientificaService:
         else:
             query = query.order_by(TrabajoReunionCientifica.fecha_presentacion.desc())
 
-        return [t.serialize() for t in query.all()]
+        return query.order_by(TrabajoReunionCientifica.id.desc())
+
+    @staticmethod
+    def get_all(filters: dict = None):
+        return [t.serialize() for t in TrabajoReunionCientificaService._list_query(filters).all()]
+
+    @staticmethod
+    def get_page(filters: dict, page: int, per_page: int):
+        query = TrabajoReunionCientificaService._list_query(filters)
+        total = query.count()
+        return [t.serialize() for t in query.offset((page - 1) * per_page).limit(per_page).all()], total
 
     @staticmethod
     def get_by_id(trabajo_id: int):

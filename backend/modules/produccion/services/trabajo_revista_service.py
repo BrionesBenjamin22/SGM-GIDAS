@@ -182,7 +182,7 @@ class TrabajosRevistasReferatoService:
             raise ConflictError("Ya existe un trabajo de revista con los mismos datos. Revise el título, la revista y la fecha antes de reintentar.")
 
     @staticmethod
-    def get_all(filters: dict = None):
+    def _list_query(filters: dict = None):
         filters = filters or {}
         query = filtrar_por_autor(TrabajosRevistasReferato.query, TrabajosRevistasReferato, TrabajoRevistaAutor, filters)
 
@@ -237,7 +237,17 @@ class TrabajosRevistasReferatoService:
         else:
             query = query.order_by(TrabajosRevistasReferato.fecha_publicacion.desc())
 
-        return [t.serialize() for t in query.all()]
+        return query.order_by(TrabajosRevistasReferato.id.desc())
+
+    @staticmethod
+    def get_all(filters: dict = None):
+        return [t.serialize() for t in TrabajosRevistasReferatoService._list_query(filters).all()]
+
+    @staticmethod
+    def get_page(filters: dict, page: int, per_page: int):
+        query = TrabajosRevistasReferatoService._list_query(filters)
+        total = query.count()
+        return [t.serialize() for t in query.offset((page - 1) * per_page).limit(per_page).all()], total
 
     @staticmethod
     def get_by_id(trabajo_id: int):

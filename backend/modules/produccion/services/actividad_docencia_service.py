@@ -2,6 +2,8 @@ from modules.memorias.services.memoria_periodo_service import (
     consultar_entidades_memoria, fin_vigencia,
 )
 from datetime import date, datetime
+from flask import has_request_context, request
+from sqlalchemy import String, cast, func, literal, select, union_all
 
 from modules.produccion.models.actividad_docencia import (
     ActividadDocencia,
@@ -13,6 +15,8 @@ from modules.produccion.models.actividad_docencia import (
 )
 from modules.personal.models.personal import Investigador
 from modules.shared.services.auditoria_service import AuditoriaService
+from modules.shared.models.auditoria_campo import AuditoriaCampo
+from modules.shared.controllers.pagination import pagination_requested, parse_pagination_params
 from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
@@ -186,7 +190,7 @@ class ActividadDocenciaService:
             )
 
     @staticmethod
-    def get_all(filters: dict = None):
+    def _list_query(filters: dict = None):
         filters = filters or {}
         query = ActividadDocencia.query
 
@@ -211,7 +215,17 @@ class ActividadDocenciaService:
         else:
             query = query.order_by(ActividadDocencia.fecha_inicio.desc())
 
-        return [a.serialize() for a in query.all()]
+        return query.order_by(ActividadDocencia.id.desc())
+
+    @staticmethod
+    def get_all(filters: dict = None):
+        return [a.serialize() for a in ActividadDocenciaService._list_query(filters).all()]
+
+    @staticmethod
+    def get_page(filters: dict, page: int, per_page: int):
+        query = ActividadDocenciaService._list_query(filters)
+        total = query.count()
+        return [a.serialize() for a in query.offset((page - 1) * per_page).limit(per_page).all()], total
 
     @staticmethod
     def get_by_id(actividad_id: int):
@@ -226,9 +240,12 @@ class ActividadDocenciaService:
             actividad_id,
             permitir_eliminado=True
         )
+        if has_request_context() and pagination_requested(request.args):
+            return ActividadDocenciaService._historial_page(actividad.id)
         historial = AuditoriaService.obtener_historial_entidad(
             entidad="actividad_y_catedra_posgrado",
-            registro_id=actividad.id
+            registro_id=actividad.id,
+            paginate=False,
         )
         historial_filtrado = [
             item for item in historial
@@ -249,6 +266,72 @@ class ActividadDocenciaService:
             item.pop("orden_historial", None)
 
         return historial_filtrado
+
+    @staticmethod
+    def _historial_page(actividad_id: int):
+        args = request.args.to_dict()
+        args.setdefault("per_page", "3")
+        try:
+            params = parse_pagination_params(args)
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+
+        grades = select(
+            InvestigadorActividadGrado.id.label("id"),
+            InvestigadorActividadGrado.fecha_inicio.label("fecha_inicio"),
+            func.lag(InvestigadorActividadGrado.grado_academico_id).over(
+                order_by=(InvestigadorActividadGrado.fecha_inicio.asc(), InvestigadorActividadGrado.id.asc())
+            ).label("previous_grade_id"),
+        ).where(InvestigadorActividadGrado.actividad_docencia_id == actividad_id).subquery()
+        audit = select(
+            literal("audit").label("source"), AuditoriaCampo.id.label("id"),
+            cast(AuditoriaCampo.fecha_cambio, String).label("sort_key"),
+            AuditoriaCampo.id.label("tie"), literal(None).label("previous_grade_id"),
+        ).where(
+            AuditoriaCampo.entidad == "actividad_y_catedra_posgrado",
+            AuditoriaCampo.registro_id == actividad_id,
+            AuditoriaCampo.campo != "grado_academico_id",
+        )
+        grade_events = select(
+            literal("grade").label("source"), grades.c.id,
+            cast(grades.c.fecha_inicio, String).label("sort_key"),
+            grades.c.id.label("tie"), grades.c.previous_grade_id,
+        ).where(grades.c.previous_grade_id.isnot(None))
+        events = union_all(audit, grade_events).subquery()
+        total = db.session.scalar(select(func.count()).select_from(events))
+        rows = db.session.execute(
+            select(events).order_by(events.c.sort_key.desc(), events.c.tie.desc())
+            .offset((params["page"] - 1) * params["per_page"]).limit(params["per_page"])
+        ).all()
+        data = []
+        for row in rows:
+            if row.source == "audit":
+                data.append(db.session.get(AuditoriaCampo, row.id).serialize())
+                continue
+            item = db.session.get(InvestigadorActividadGrado, row.id)
+            previous_grade = db.session.get(GradoAcademico, row.previous_grade_id)
+            data.append({
+                "id": f"historial-grado-{item.id}", "tipo": "historial_grado",
+                "entidad": "actividad_y_catedra_posgrado", "registro_id": actividad_id,
+                "campo": "grado_academico_id",
+                "valor_anterior": ActividadDocenciaService._serializar_grado(previous_grade),
+                "valor_nuevo": ActividadDocenciaService._serializar_grado(item.grado_academico),
+                "fecha_cambio": item.fecha_inicio.isoformat(),
+                "usuario_id": item.created_by,
+                "usuario_nombre": item.created_by_user.nombre_usuario if item.created_by_user else None,
+                "activo": item.fecha_fin is None,
+                "fecha_fin": item.fecha_fin.isoformat() if item.fecha_fin else None,
+                "detalle": item.serialize(),
+            })
+        return {
+            "data": data,
+            "meta": {
+                "page": params["page"], "per_page": params["per_page"], "total": total,
+                "total_pages": max(1, (total + params["per_page"] - 1) // params["per_page"]),
+                "activos": params["activos"], "orden": params["orden"], "source": "legacy-list",
+            },
+            "error": None,
+        }
 
     @staticmethod
     def _serializar_grado(grado):

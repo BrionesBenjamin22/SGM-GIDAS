@@ -130,7 +130,7 @@ class DistincionRecibidaService:
             )
 
     @staticmethod
-    def get_all(filters: dict = None):
+    def _list_query(filters: dict = None):
         filters = filters or {}
         query = DistincionRecibida.query
 
@@ -169,7 +169,17 @@ class DistincionRecibidaService:
         else:
             query = query.order_by(DistincionRecibida.fecha.desc())
 
-        return [d.serialize() for d in query.all()]
+        return query.order_by(DistincionRecibida.id.desc())
+
+    @staticmethod
+    def get_all(filters: dict = None):
+        return [d.serialize() for d in DistincionRecibidaService._list_query(filters).all()]
+
+    @staticmethod
+    def get_page(filters: dict, page: int, per_page: int):
+        query = DistincionRecibidaService._list_query(filters)
+        total = query.count()
+        return [d.serialize() for d in query.offset((page - 1) * per_page).limit(per_page).all()], total
 
     @staticmethod
     def get_by_id(distincion_id: int):

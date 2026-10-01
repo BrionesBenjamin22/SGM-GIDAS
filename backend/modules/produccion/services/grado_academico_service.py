@@ -4,9 +4,14 @@ from sqlalchemy import func
 from modules.produccion.models.actividad_docencia import GradoAcademico
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
+from modules.shared.services.catalog_pagination import catalog_page
 
 
 class GradoAcademicoService:
+
+    @staticmethod
+    def get_page(page, per_page, activos="true", orden="asc"):
+        return catalog_page(GradoAcademico, GradoAcademico.nombre, activos=activos, orden=orden, page=page, per_page=per_page)
 
     @staticmethod
     def _validar_id(grado_id: int):

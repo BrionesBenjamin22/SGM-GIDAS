@@ -293,3 +293,11 @@ regresión de servicio cubre expresamente dos altas con el mismo valor de
 El endpoint `GET /articulos-divulgacion/<id>/historial` entrega los cambios de
 campo del artículo. El frontend consume este contrato en el home de forma
 diferida y en el detalle, con paginación visual de 3 eventos.
+# Paginacion SQL (ISS-89)
+
+Los listados de docencia, documentacion, publicaciones, trabajos, distinciones,
+registros, autores y tipos cuentan y limitan la consulta filtrada antes de
+serializar. Los historiales de Documentacion y Docencia aplican sus filtros
+de eventos antes del limite SQL; el de Docencia combina auditoria y grados en
+una consulta paginada. Se conservan filtros, orden, permisos, UCT y el
+contrato plano o `data`/`meta`/`error` segun se envien parametros.

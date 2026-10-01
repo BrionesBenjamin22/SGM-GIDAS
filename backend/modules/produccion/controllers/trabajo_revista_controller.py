@@ -4,6 +4,7 @@ from modules.produccion.services.trabajo_revista_service import (
     TrabajosRevistasReferatoService,
 )
 from modules.shared.controllers.responses import exception_response
+from modules.shared.controllers.pagination import pagination_requested, filtered_page_response
 from modules.shared.exceptions import ValidationError
 
 
@@ -21,6 +22,8 @@ class TrabajosRevistasReferatoController:
                     filters[field] = args.get(field)
             if args.get("orden") in ("asc", "desc"):
                 filters["orden"] = args.get("orden")
+            if pagination_requested(request.args):
+                return filtered_page_response(TrabajosRevistasReferatoService, filters, request.args)
             return jsonify(TrabajosRevistasReferatoService.get_all(filters)), 200
         except Exception as error:
             return exception_response(error, operation="listar trabajos en revistas")

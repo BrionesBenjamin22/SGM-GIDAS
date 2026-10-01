@@ -2,6 +2,7 @@ from modules.memorias.services.memoria_periodo_service import (
     consultar_entidades_memoria, registro_puntual_en_memoria,
 )
 from datetime import datetime
+from sqlalchemy import or_
 
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.produccion.models.documentacion_autores import (
@@ -11,6 +12,7 @@ from modules.produccion.models.documentacion_autores import (
     DocumentacionBibliograficaAutorMemoriaVersion,
 )
 from modules.shared.services.auditoria_service import AuditoriaService
+from modules.shared.models.auditoria_campo import AuditoriaCampo
 from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from extension import db
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
@@ -55,7 +57,7 @@ class DocumentacionBibliograficaService:
     # GET ALL
     # =========================
     @staticmethod
-    def get_all(filters: dict = None):
+    def _list_query(filters: dict = None):
         query = DocumentacionBibliografica.query
 
         if not filters:
@@ -83,7 +85,17 @@ class DocumentacionBibliograficaService:
             elif orden == "desc":
                 query = query.order_by(DocumentacionBibliografica.titulo.desc())
 
-        return [d.serialize() for d in query.all()]
+        return query.order_by(DocumentacionBibliografica.id.asc())
+
+    @staticmethod
+    def get_all(filters: dict = None):
+        return [d.serialize() for d in DocumentacionBibliograficaService._list_query(filters).all()]
+
+    @staticmethod
+    def get_page(filters: dict, page: int, per_page: int):
+        query = DocumentacionBibliograficaService._list_query(filters)
+        total = query.count()
+        return [d.serialize() for d in query.offset((page - 1) * per_page).limit(per_page).all()], total
 
     # =========================
     # GET BY ID
@@ -100,18 +112,15 @@ class DocumentacionBibliograficaService:
         doc = db.session.get(DocumentacionBibliografica, doc_id)
         if not doc:
             raise NotFoundError("Documentacion bibliografica no encontrada")
-        historial = AuditoriaService.obtener_historial_entidad(
+        return AuditoriaService.obtener_historial_entidad(
             entidad="documentacion_bibliografica",
-            registro_id=doc.id
+            registro_id=doc.id,
+            extra_filter=or_(
+                AuditoriaCampo.campo.in_(DOCUMENTACION_HISTORY_FIELDS),
+                (AuditoriaCampo.campo == "autores") &
+                (AuditoriaCampo.valor_nuevo["accion"].as_string().in_(("vincular", "desvincular"))),
+            ),
         )
-        return [evento for evento in historial if (
-            evento.get("campo") in DOCUMENTACION_HISTORY_FIELDS
-            or (
-                evento.get("campo") == "autores"
-                and isinstance(evento.get("valor_nuevo"), dict)
-                and evento["valor_nuevo"].get("accion") in {"vincular", "desvincular"}
-            )
-        )]
 
     # =========================
     # CREATE

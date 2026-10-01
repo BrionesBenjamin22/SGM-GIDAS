@@ -76,7 +76,7 @@ class ArticuloDivulgacionService:
         return articulo
 
     @staticmethod
-    def get_all(filters: dict = None):
+    def _list_query(filters: dict = None):
         query = ArticuloDivulgacion.query
         filters = filters or {"activos": "true"}
 
@@ -100,7 +100,17 @@ class ArticuloDivulgacionService:
         else:
             query = query.order_by(ArticuloDivulgacion.fecha_publicacion.desc())
 
-        return [a.serialize() for a in query.all()]
+        return query.order_by(ArticuloDivulgacion.id.desc())
+
+    @staticmethod
+    def get_all(filters: dict = None):
+        return [a.serialize() for a in ArticuloDivulgacionService._list_query(filters).all()]
+
+    @staticmethod
+    def get_page(filters: dict, page: int, per_page: int):
+        query = ArticuloDivulgacionService._list_query(filters)
+        total = query.count()
+        return [a.serialize() for a in query.offset((page - 1) * per_page).limit(per_page).all()], total
 
     @staticmethod
     def get_by_id(articulo_id: int):

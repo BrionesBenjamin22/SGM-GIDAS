@@ -3,6 +3,7 @@ from modules.produccion.services.documentacion_service import (
     DocumentacionBibliograficaService
 )
 from modules.shared.controllers.responses import exception_response
+from modules.shared.controllers.pagination import pagination_requested, filtered_page_response
 
 class DocumentacionBibliograficaController:
 
@@ -13,6 +14,8 @@ class DocumentacionBibliograficaController:
                 "activos": request.args.get("activos", "true"),
                 "orden": request.args.get("orden")
             }
+            if pagination_requested(request.args):
+                return filtered_page_response(DocumentacionBibliograficaService, filters, request.args)
             return jsonify(
                 DocumentacionBibliograficaService.get_all(filters)
             ), 200

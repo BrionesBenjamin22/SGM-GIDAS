@@ -1,12 +1,15 @@
 from flask import jsonify, request, g
 from modules.produccion.services.autores_service import AutorService
 from modules.shared.controllers.responses import exception_response
+from modules.shared.controllers.pagination import pagination_requested, catalog_page_response
 
 class AutorController:
 
     @staticmethod
     def get_all():
         try:
+            if pagination_requested(request.args):
+                return catalog_page_response(AutorService, request.args)
             return jsonify(AutorService.get_all(request.args.get("activos", "true"))), 200
         except Exception as error:
             return exception_response(error, operation="listar autores")

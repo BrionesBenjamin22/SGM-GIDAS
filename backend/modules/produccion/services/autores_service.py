@@ -3,9 +3,14 @@ from extension import db
 from modules.shared.services.text_validation import has_only_letters_and_spaces
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 from modules.shared.services.auditoria_service import AuditoriaService
+from modules.shared.services.catalog_pagination import catalog_page
 
 
 class AutorService:
+
+    @staticmethod
+    def get_page(page, per_page, activos="true", orden="asc"):
+        return catalog_page(Autor, Autor.nombre_apellido, activos=activos, orden=orden, page=page, per_page=per_page)
 
     # =========================
     # Helpers

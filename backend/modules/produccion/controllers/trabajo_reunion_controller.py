@@ -4,6 +4,7 @@ from modules.produccion.services.trabajo_reunion_service import (
     TrabajoReunionCientificaService,
 )
 from modules.shared.controllers.responses import exception_response
+from modules.shared.controllers.pagination import pagination_requested, filtered_page_response
 from modules.shared.exceptions import ValidationError
 
 
@@ -19,6 +20,8 @@ class TrabajoReunionCientificaController:
                 "orden": request.args.get("orden"),
                 "activos": request.args.get("activos", "true"),
             }
+            if pagination_requested(request.args):
+                return filtered_page_response(TrabajoReunionCientificaService, filtros, request.args)
             return jsonify(TrabajoReunionCientificaService.get_all(filtros)), 200
         except Exception as error:
             return exception_response(error, operation="listar trabajos en reuniones")

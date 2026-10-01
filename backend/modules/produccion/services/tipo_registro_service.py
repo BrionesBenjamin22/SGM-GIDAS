@@ -4,9 +4,14 @@ from modules.produccion.models.registro_patente import TipoRegistroPropiedad
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from extension import db
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
+from modules.shared.services.catalog_pagination import catalog_page
 
 
 class TipoRegistroPropiedadService:
+
+    @staticmethod
+    def get_page(page, per_page, activos="true", orden="asc"):
+        return catalog_page(TipoRegistroPropiedad, TipoRegistroPropiedad.nombre, activos=activos, orden=orden, page=page, per_page=per_page)
 
     @staticmethod
     def _validar_nombre(nombre, tipo_id=None):

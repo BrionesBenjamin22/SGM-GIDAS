@@ -4,9 +4,14 @@ from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoria
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 from extension import db
 from sqlalchemy import func
+from modules.shared.services.catalog_pagination import catalog_page
 
 
 class RolActividadService:
+
+    @staticmethod
+    def get_page(page, per_page, activos="true", orden="asc"):
+        return catalog_page(RolActividad, RolActividad.nombre, activos=activos, orden=orden, page=page, per_page=per_page)
 
     @staticmethod
     def _validar_id(rol_id: int):
