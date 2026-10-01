@@ -1,5 +1,17 @@
 # Frontend modular
 
+## Contrato de paginacion consumido (ISS-89)
+
+Los homes siguen solicitando hasta nueve registros por pagina y los detalles
+muestran tres cambios por pagina de historial. Al enviar `page` o `per_page`,
+los listados backend entregan `data` y `meta` con `page`, `per_page`, `total` y
+`total_pages`; sin esos parametros las rutas heredadas conservan su array.
+El servidor ahora cuenta y limita filas antes de serializar, sin cambios en
+los services, tipos, hooks, permisos ni vistas del frontend. El valor
+`meta.source = "legacy-list"` de algunas rutas es una clave de compatibilidad
+y no describe el mecanismo actual. La busqueda conserva su respuesta propia
+con `resultados`, `total_resultados` y `meta`.
+
 ## Errores accionables (ISS-09)
 
 `src/lib/httpError.ts` interpreta el contrato vigente `error.code`, `error.message`

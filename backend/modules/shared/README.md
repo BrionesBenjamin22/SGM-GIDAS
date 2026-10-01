@@ -1,5 +1,21 @@
 # Borradores de formularios
 
+## Paginacion compartida (ISS-89)
+
+`controllers/pagination.py` valida `page`, `per_page`, `activos` y `orden`, y
+arma respuestas paginadas; ya no registra un hook global. Los services usan
+`count` y `LIMIT/OFFSET` sobre la consulta filtrada antes de serializar. El
+marcador `meta.source = "legacy-list"` permanece en las rutas que ya lo
+exponian para conservar el contrato HTTP. `services/catalog_pagination.py`
+centraliza la paginacion de catalogos y `services/auditoria_service.py` pagina
+los cambios por entidad y UCT, con orden estable. Los historiales de detalle
+siguen mostrando tres eventos por pagina.
+
+`GET /api/v1/borradores` conserva su respuesta anterior sin parametros. Con
+`page` o `per_page` devuelve `data`, `meta` y `error`; el total y la pagina se
+calculan solo sobre borradores vigentes del usuario autenticado. Una pagina
+invalida responde `VALIDATION_ERROR` (400).
+
 ## Lecturas con alcance UCT (ISS-84)
 
 `services/tenant_scope.py` conserva por identificador de UCT las opciones y

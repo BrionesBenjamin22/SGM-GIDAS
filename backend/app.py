@@ -5,7 +5,6 @@ from config import get_config_class
 from modules import blueprints
 from modules import models_registry  # noqa: F401
 from werkzeug.middleware.proxy_fix import ProxyFix
-from modules.shared.controllers.pagination import register_legacy_list_pagination
 from modules.shared.routes.versioning import (
     register_api_version_header,
     register_blueprints,
@@ -81,7 +80,6 @@ def create_app():
             )
         return response
 
-    register_legacy_list_pagination(app)
     register_refresh_session_commands(app)
 
     logger.info("Aplicación inicializada. Usa 'flask db upgrade' para crear/migrar tablas.")

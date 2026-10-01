@@ -8,6 +8,22 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-89: paginacion de listados desde SQL
+
+- Los listados de catalogos, grupo, memorias, personal, produccion, proyectos,
+  recursos, transferencia, usuarios, UCT y borradores cuentan y limitan filas
+  en la base de datos antes de serializar; los snapshots e historiales siguen
+  el mismo criterio.
+- La busqueda global cuenta y ordena candidatos entre entidades en SQL y carga
+  solo los registros de la pagina. Se conserva el alcance UCT y los permisos.
+- Se retiro el hook global de paginacion en memoria. Los GET sin parametros
+  conservan sus respuestas anteriores; las rutas paginadas mantienen los
+  metadatos y el marcador `legacy-list` donde ya formaba parte del contrato.
+
+Validaciones: aceptacion visual y funcional del usuario, 597 pruebas backend,
+pruebas dirigidas de busqueda, auditoria, historial y recursos correctas; `git
+diff --check` sin errores de contenido.
+
 ### ISS-83: historial y administracion de adoptantes
 
 - Gestion de Catalogos permite crear, editar y dar de baja adoptantes, con

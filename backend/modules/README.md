@@ -202,12 +202,18 @@ El limite general se configura con:
 - `PAGINATION_DEFAULT_PER_PAGE`: por defecto `9`, alineado a homes.
 - `PAGINATION_MAX_PER_PAGE`: por defecto `100`.
 
-Durante la migracion incremental, un endpoint existente puede mantener su lista
-plana si el cliente no envia `page` ni `per_page`. Cuando el cliente envia alguno
-de esos parametros, el endpoint debe responder con `data`, `meta` y `error`.
+Los listados existentes conservan su lista plana si el cliente no envia `page`
+ni `per_page`. Cuando envia alguno de esos parametros, cada controlador obtiene
+el total con `count` y limita las filas en SQL antes de serializar. Responde con
+`data`, `meta` (`page`, `per_page`, `total`, `total_pages`) y `error`. Las rutas
+que ya tenian `meta.activos`, `meta.orden` y `meta.source = "legacy-list"`
+conservan esas claves por compatibilidad; `source` ya no indica que la pagina
+se calcule en memoria. El hook global `after_request` fue retirado. Nuevos
+listados deben implementar la paginacion en su propio service.
 
-Los listados que todavia devuelven una lista JSON plana quedan cubiertos
-por `register_legacy_list_pagination(app)`: si reciben `page` o `per_page`, la
-respuesta se adapta al contrato paginado. Este mecanismo da compatibilidad
-transversal para todos los endpoints GET de listado mientras cada modulo se
-optimiza progresivamente a paginacion a nivel de query.
+Esta regla cubre catalogos, grupo, memorias y sus snapshots, personal,
+produccion, proyectos, recursos, transferencia, usuarios, selectores UCT,
+borradores e historiales. Los permisos y el alcance UCT se aplican antes del
+conteo y del limite; el orden estable evita duplicados entre paginas. Los
+historiales mantienen tres eventos por pagina donde corresponde. La busqueda
+global conserva su payload propio y pagina candidatos mediante una union SQL.

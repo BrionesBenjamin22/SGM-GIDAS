@@ -125,11 +125,16 @@ class FormDraftService:
             db.session.commit()
 
     @staticmethod
-    def list_for_user(user_id):
+    def list_for_user(user_id, page=None, per_page=None):
         now = datetime.utcnow()
         FormDraftService._purge_expired(user_id, now)
-        rows = FormDraft.query.filter_by(user_id=user_id).filter(FormDraft.expires_at > now).order_by(FormDraft.saved_at.desc()).all()
-        return [_serialize(row) for row in rows]
+        query = FormDraft.query.filter_by(user_id=user_id).filter(FormDraft.expires_at > now)
+        total = query.count() if page is not None else None
+        query = query.order_by(FormDraft.saved_at.desc(), FormDraft.id.desc())
+        if page is not None:
+            query = query.offset((page - 1) * per_page).limit(per_page)
+        data = [_serialize(row) for row in query.all()]
+        return (data, total) if page is not None else data
 
     @staticmethod
     def get(user_id, module, record_key):
