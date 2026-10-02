@@ -13,7 +13,7 @@ test("formulario real guarda coordinador en una petición, conserva edición y m
       { id: 2, nombre_apellido: "Persona B", es_coordinador: false }],
   };
   const h = {
-    values: ["Proyecto", "ABC1", "Descripción", "", "", new Date(2026, 0, 1), new Date(2026, 11, 31),
+    values: ["Proyecto", "ABC1", "Descripción", "", "", "", new Date(2026, 0, 1), new Date(2026, 11, 31),
       1, null, [1, 2], 1, [], {}, false, "", true, 1] as any[],
     cursor: 0, id: undefined as string | undefined, initial,
     candidates: [{id: 1, nombre_apellido: "Persona A"}, {id: 2, nombre_apellido: "Persona B"}],
@@ -86,10 +86,16 @@ test("formulario real guarda coordinador en una petición, conserva edición y m
     assert.equal(h.navigations[0][0], "/proyectos");
 
     h.id = "1"; h.calls = []; h.navigations = [];
-    h.values[12] = {};
+    h.values[13] = {};
     await submit();
     assert.equal(h.calls.length, 0);
     assert.equal(h.navigations[0][0], "/proyectos/1");
+
+    const logros = walk(render()).find(n => n.type === "textarea" && n.props.maxLength === 20000)!;
+    logros.props.onChange({target: {value: "Modelo de simulación validado."}});
+    await submit();
+    assert.deepEqual(JSON.parse(h.calls[0].options.body), {logros_obtenidos: "Modelo de simulación validado."});
+    h.values[3] = ""; h.calls = [];
 
     const radioB = walk(render()).filter(n => n.type === "input" && n.props.type === "radio")[1];
     radioB.props.onChange();
@@ -97,15 +103,15 @@ test("formulario real guarda coordinador en una petición, conserva edición y m
     assert.equal(h.calls.length, 1);
     assert.deepEqual(JSON.parse(h.calls[0].options.body), {coordinador_id: 2});
 
-    h.calls = []; h.values[9] = [1, 2, 0];
+    h.calls = []; h.values[10] = [1, 2, 0];
     await submit();
     assert.equal(h.calls.length, 0);
-    assert.match(h.values[12].investigadoresIds, /vacías/);
-    assert.equal(h.values[13], true);
-    assert.match(h.values[14], /Complete o corrija/);
+    assert.match(h.values[13].investigadoresIds, /vacías/);
+    assert.equal(h.values[14], true);
+    assert.match(h.values[15], /Complete o corrija/);
     assert.equal(h.focused, 1);
 
-    h.values[9] = []; h.values[10] = null; h.id = undefined; h.candidates = [];
+    h.values[10] = []; h.values[11] = null; h.id = undefined; h.candidates = [];
     assert.match(text(render()), /No hay investigadores activos disponibles/);
     h.loading = true;
     assert.ok(walk(render()).some(node => node.props.label === "Cargando investigadores..."));
@@ -114,25 +120,25 @@ test("formulario real guarda coordinador en una petición, conserva edición y m
     await submit();
     assert.equal(h.calls.length, 0);
 
-    h.error = false; h.id = "1"; h.values[9] = [1, 2]; h.values[10] = 1;
+    h.error = false; h.id = "1"; h.values[10] = [1, 2]; h.values[11] = 1;
     assert.match(text(render()), /inactivo, asignación conservada/);
     const radios = walk(render()).filter(n => n.type === "input" && n.props.type === "radio");
     assert.equal(radios[0].props.checked, true);
     assert.equal(radios[1].props.disabled, true);
 
     h.candidates = [{id: 1, nombre_apellido: "Persona A"}, {id: 2, nombre_apellido: "Persona B"}];
-    h.values[10] = 2;
-    h.values[13] = false; h.values[14] = "";
+    h.values[11] = 2;
+    h.values[14] = false; h.values[15] = "";
     h.serverError = {body: {error: {message: "Seleccione un investigador disponible.", details: {fields: {coordinador_id: "Coordinador no disponible."}}}}};
     await submit();
-    assert.equal(h.values[12].coordinadorId, "Coordinador no disponible.");
-    assert.equal(h.values[13], false);
-    assert.equal(h.values[14], "");
+    assert.equal(h.values[13].coordinadorId, "Coordinador no disponible.");
+    assert.equal(h.values[14], false);
+    assert.equal(h.values[15], "");
 
-    h.calls = []; h.serverError = undefined; h.values[6] = new Date(2025, 11, 31);
+    h.calls = []; h.serverError = undefined; h.values[7] = new Date(2025, 11, 31);
     await submit();
     assert.equal(h.calls.length, 0);
-    assert.match(h.values[12].fechaFin, /12 a 36/);
+    assert.match(h.values[13].fechaFin, /12 a 36/);
   } finally {
     globalThis.document = previousDocument;
     globalThis.requestAnimationFrame = previousFrame;

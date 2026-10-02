@@ -69,6 +69,33 @@ class MemoriaPeriodosUctTest(unittest.TestCase):
     def cerrar(self, memoria):
         return MemoriaService.change_status(memoria["id"], {"estado": "cerrada"}, 1)
 
+    def test_logros_pid_se_congelan_y_exportan_sin_consultar_proyecto_vivo(self):
+        from modules.proyectos.services.proyecto_investigacion_service import ProyectoInvestigacionService
+        from modules.proyectos.models.proyecto_investigacion import ProyectoInvestigacionMemoriaVersion
+        tipo = TipoProyecto(nombre="Investigación aplicada", created_by=1)
+        db.session.add(tipo)
+        db.session.commit()
+        proyecto = ProyectoInvestigacionService.create({
+            "codigo_proyecto": "PID202501", "nombre_proyecto": "Análisis de sistemas industriales",
+            "descripcion_proyecto": "Desarrollo de modelos de simulación", "tipo_proyecto_id": tipo.id,
+            "grupo_utn_id": 1, "fecha_inicio": "2025-01-01", "fecha_fin": "2026-12-31",
+            "logros_obtenidos": "Modelo validado con mediciones experimentales.",
+        }, 1)
+        memoria = self.cerrar(self.crear())
+        snapshot = ProyectoInvestigacionMemoriaVersion.query.one()
+        self.assertEqual(snapshot.logros_obtenidos, proyecto["logros_obtenidos"])
+        ProyectoInvestigacionService.update(proyecto["id"], {"logros_obtenidos": "Nuevos avances posteriores."}, 1)
+        self.assertEqual(snapshot.logros_obtenidos, "Modelo validado con mediciones experimentales.")
+        excel = ExportService.generar_excel_memoria(memoria["id"], memoria["version_actual_id"])
+        workbook = load_workbook(excel)
+        contents = [cell.value for sheet in workbook for row in sheet for cell in row]
+        self.assertIn("Modelo validado con mediciones experimentales.", contents)
+        self.assertNotIn("Nuevos avances posteriores.", contents)
+        history = AuditoriaCampo.query.filter_by(entidad="proyecto_investigacion", registro_id=proyecto["id"], campo="logros_obtenidos").first()
+        self.assertIsNotNone(history)
+        with self.assertRaises(ValidationError):
+            ProyectoInvestigacionService.update(proyecto["id"], {"logros_obtenidos": ["inválido"]}, 1)
+
     def test_matriz_permisos_alta_y_correccion(self):
         for rol, status in (("LECTURA", 403), ("LECTOR", 403), ("GESTOR", 201), ("ADMIN", 201)):
             with self.subTest(rol=rol), patch("modules.shared.services.middleware.AuthService.verify_token",

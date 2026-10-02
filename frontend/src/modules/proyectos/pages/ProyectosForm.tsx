@@ -38,6 +38,7 @@ type ProyectoDraft = {
   nombreProyecto: string;
   codigoProyecto: string;
   descripcionProyecto: string;
+  logrosObtenidos: string;
   dificultadesProyecto: string;
   montoDestinado: string;
   fechaInicio: string | null;
@@ -78,6 +79,7 @@ export default function ProyectosForm() {
   const [nombreProyecto, setNombreProyecto] = useState("");
   const [codigoProyecto, setCodigoProyecto] = useState("");
   const [descripcionProyecto, setDescripcionProyecto] = useState("");
+  const [logrosObtenidos, setLogrosObtenidos] = useState("");
   const [dificultadesProyecto, setDificultadesProyecto] = useState("");
   const [montoDestinado, setMontoDestinado] = useState("");
 
@@ -104,6 +106,7 @@ export default function ProyectosForm() {
     setNombreProyecto(initialData.nombreProyecto ?? "");
     setCodigoProyecto(initialData.codigoProyecto ?? "");
     setDescripcionProyecto(initialData.descripcionProyecto ?? "");
+    setLogrosObtenidos(initialData.logrosObtenidos ?? "");
     setDificultadesProyecto(initialData.dificultadesProyecto ?? "");
     setMontoDestinado(
       initialData.montoDestinado !== undefined &&
@@ -146,6 +149,7 @@ export default function ProyectosForm() {
     nombreProyecto,
     codigoProyecto,
     descripcionProyecto,
+    logrosObtenidos,
     dificultadesProyecto,
     montoDestinado,
     fechaInicio: toCivilDateString(fechaInicio),
@@ -157,6 +161,7 @@ export default function ProyectosForm() {
     becariosIds,
   }), [
     becariosIds, codigoProyecto, coordinadorId, descripcionProyecto,
+    logrosObtenidos,
     dificultadesProyecto, fechaFin, fechaInicio, fuenteId, investigadoresIds,
     montoDestinado, nombreProyecto, tipoProyectoId,
   ]);
@@ -170,7 +175,7 @@ export default function ProyectosForm() {
     autosave: false,
     hasContent: (draft) => Boolean(
       draft.nombreProyecto || draft.codigoProyecto || draft.descripcionProyecto ||
-      draft.dificultadesProyecto || draft.montoDestinado || draft.fechaInicio ||
+      draft.logrosObtenidos || draft.dificultadesProyecto || draft.montoDestinado || draft.fechaInicio ||
       draft.fechaFin || draft.tipoProyectoId || draft.fuenteId ||
       draft.investigadoresIds.length || draft.becariosIds.length
     ),
@@ -178,6 +183,7 @@ export default function ProyectosForm() {
       setNombreProyecto(draft.nombreProyecto);
       setCodigoProyecto(draft.codigoProyecto);
       setDescripcionProyecto(draft.descripcionProyecto);
+      setLogrosObtenidos(draft.logrosObtenidos ?? "");
       setDificultadesProyecto(draft.dificultadesProyecto);
       setMontoDestinado(draft.montoDestinado);
       setFechaInicio(parseCivilDate(draft.fechaInicio));
@@ -242,7 +248,7 @@ export default function ProyectosForm() {
       });
     },
     onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["codigoProyecto","nombreProyecto","tipoProyectoId","fechaInicio","montoDestinado","coordinadorId","investigadoresIds","descripcionProyecto","dificultadesProyecto","fuenteId","becariosIds","fechaFin"])) return;
+      if (applyFieldErrors(error, setErrors, ["codigoProyecto","nombreProyecto","tipoProyectoId","fechaInicio","montoDestinado","coordinadorId","investigadoresIds","descripcionProyecto","dificultadesProyecto","logrosObtenidos","fuenteId","becariosIds","fechaFin"])) return;
       const defaultMessage = isEdit
         ? "Lo sentimos, no pudimos actualizar el proyecto. Revise los datos e intente nuevamente."
         : "Lo sentimos, no pudimos crear el proyecto. Revise los datos e intente nuevamente.";
@@ -267,6 +273,10 @@ export default function ProyectosForm() {
     const codigoProyectoError = validateCodigoProyecto(codigoProyecto);
     if (codigoProyectoError) {
       newErrors.codigoProyecto = codigoProyectoError;
+    }
+
+    if (logrosObtenidos.length > 20000) {
+      newErrors.logrosObtenidos = "Ingrese un texto de hasta 20000 caracteres.";
     }
 
     if (!nombreProyecto.trim()) {
@@ -337,6 +347,7 @@ export default function ProyectosForm() {
       nombreProyecto,
       codigoProyecto: codigoProyecto.trim(),
       descripcionProyecto,
+      logrosObtenidos,
       dificultadesProyecto,
       montoDestinado:
         montoDestinado.trim() !== ""
@@ -360,6 +371,7 @@ export default function ProyectosForm() {
       nombreProyecto: initialData?.nombreProyecto ?? "",
       codigoProyecto: initialData?.codigoProyecto ?? "",
       descripcionProyecto: initialData?.descripcionProyecto ?? "",
+      logrosObtenidos: initialData?.logrosObtenidos ?? "",
       dificultadesProyecto: initialData?.dificultadesProyecto ?? "",
       montoDestinado:
         initialData?.montoDestinado !== undefined &&
@@ -518,6 +530,18 @@ export default function ProyectosForm() {
             required
             disabled={proyectoCerrado}
           />
+        </Field>
+
+        <Field label="Logros obtenidos" name="logrosObtenidos" error={errors.logrosObtenidos}>
+          <textarea
+            className="input min-h-[100px]"
+            value={logrosObtenidos}
+            onChange={(e) => setLogrosObtenidos(e.target.value)}
+            maxLength={20000}
+            placeholder="Describa los resultados y avances obtenidos por el proyecto."
+            disabled={proyectoCerrado}
+          />
+          <p className="mt-1 text-xs text-slate-500">Este contenido se incorpora a la memoria al cerrar su versión.</p>
         </Field>
 
         <Field label="Dificultades del proyecto" name="dificultadesProyecto" error={errors.dificultadesProyecto}>

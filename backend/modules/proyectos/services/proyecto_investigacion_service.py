@@ -475,6 +475,14 @@ class ProyectoInvestigacionService:
     # CREATE
     # =========================
     @staticmethod
+    def _validar_logros(value):
+        if value is not None and (not isinstance(value, str) or len(value) > 20000):
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {
+                "logros_obtenidos": "Ingrese un texto de hasta 20000 caracteres."
+            }})
+        return value.strip() or None if isinstance(value, str) else None
+
+    @staticmethod
     def create(data: dict, user_id: int, *, commit=True):
         codigo_proyecto = ProyectoInvestigacionService._validar_codigo_proyecto(
             data.get("codigo_proyecto")
@@ -512,6 +520,7 @@ class ProyectoInvestigacionService:
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
             fecha_fin_original=fecha_fin,
+            logros_obtenidos=ProyectoInvestigacionService._validar_logros(data.get("logros_obtenidos")),
             dificultades_proyecto=data.get("dificultades_proyecto"),
             monto_destinado=data.get("monto_destinado"),
             tipo_proyecto_id=data["tipo_proyecto_id"],
@@ -547,6 +556,8 @@ class ProyectoInvestigacionService:
         if getattr(proyecto, "fecha_fin_prorrogada", None) and ({"fecha_inicio", "fecha_fin"} & data.keys()):
             raise ConflictError("No se pueden modificar las fechas de un proyecto prorrogado.")
         cambios = {}
+        if "logros_obtenidos" in data:
+            data = {**data, "logros_obtenidos": ProyectoInvestigacionService._validar_logros(data["logros_obtenidos"])}
 
         if "codigo_proyecto" in data:
             codigo_proyecto = ProyectoInvestigacionService._validar_codigo_proyecto(
@@ -563,6 +574,7 @@ class ProyectoInvestigacionService:
         for field in [
             "nombre_proyecto",
             "descripcion_proyecto",
+            "logros_obtenidos",
             "dificultades_proyecto",
             "monto_destinado"
         ]:
@@ -971,6 +983,7 @@ class ProyectoInvestigacionService:
                 descripcion_proyecto=proyecto.descripcion_proyecto,
                 fecha_inicio=proyecto.fecha_inicio,
                 fecha_fin=proyecto.fecha_fin,
+                logros_obtenidos=proyecto.logros_obtenidos,
                 dificultades_proyecto=proyecto.dificultades_proyecto,
                 monto_destinado=proyecto.monto_destinado,
                 tipo_proyecto_id=proyecto.tipo_proyecto_id,

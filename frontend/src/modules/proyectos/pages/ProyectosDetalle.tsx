@@ -174,8 +174,8 @@ export default function ProyectoDetalle() {
           </span>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {isGestor() && data.id && <Button size="sm" variant="secondary" onClick={() => navigate(`/informes/pid/nuevo?proyectoId=${data.id}`, { state: { projectName: data.nombreProyecto } })}>Crear informe PID</Button>}
+        <div className="ml-auto flex flex-wrap justify-end gap-2">
+          {isGestor() && data.id && <Button size="sm" variant="secondary" onClick={() => navigate(`/informes/pid/nuevo?proyectoId=${data.id}`, { state: { projectName: data.nombreProyecto } })}>Registrar Informe</Button>}
           {puedeEditar && (estaCerrado || estaInactivo) && data.id && (!data.fechaFinProrrogada || data.fechaFinProrrogada > getLocalTodayIso()) ? (
             <Button
               size="sm"
@@ -224,6 +224,11 @@ export default function ProyectoDetalle() {
           <p>
             <span className="font-semibold text-slate-800">Descripción:</span>{" "}
             {data.descripcionProyecto || "-"}
+          </p>
+
+          <p className="whitespace-pre-wrap">
+            <span className="font-semibold text-slate-800">Logros obtenidos:</span>{" "}
+            {data.logrosObtenidos || "-"}
           </p>
 
           <p>

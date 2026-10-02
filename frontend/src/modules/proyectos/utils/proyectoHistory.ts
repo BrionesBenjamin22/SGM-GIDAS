@@ -11,6 +11,7 @@ const FIELD_LABELS: Record<string, string> = {
   codigo_proyecto: "Código del proyecto",
   nombre_proyecto: "Nombre del proyecto",
   descripcion_proyecto: "Descripción",
+  logros_obtenidos: "Logros obtenidos",
   dificultades_proyecto: "Dificultades",
   monto_destinado: "Monto destinado",
   fecha_inicio: "Fecha de inicio",

@@ -84,6 +84,7 @@ export type Proyecto = {
   fuenteFinanciamientoId?: number | null;
   fuenteFinanciamientoNombre?: string;
   descripcionProyecto?: string;
+  logrosObtenidos?: string;
   dificultadesProyecto?: string;
   montoDestinado?: number;
   grupoUtnId?: number | null;
@@ -104,6 +105,7 @@ export type ProyectoPayload = {
   tipoProyectoId?: number | null;
   fuenteFinanciamientoId?: number | null;
   descripcionProyecto?: string;
+  logrosObtenidos?: string;
   dificultadesProyecto?: string;
   montoDestinado?: number | null;
   grupoUtnId?: number | null;
@@ -125,6 +127,7 @@ type ProyectoApiResponse = {
   codigo_proyecto: string;
   nombre_proyecto: string;
   descripcion_proyecto?: string | null;
+  logros_obtenidos?: string | null;
   dificultades_proyecto?: string | null;
   monto_destinado?: string | number | null;
   fecha_inicio: string;
@@ -167,6 +170,7 @@ function mapProyecto(p: ProyectoApiResponse): Proyecto {
     codigoProyecto: String(p.codigo_proyecto),
     nombreProyecto: p.nombre_proyecto,
     descripcionProyecto: p.descripcion_proyecto || "",
+    logrosObtenidos: p.logros_obtenidos || "",
     dificultadesProyecto: p.dificultades_proyecto || "",
     montoDestinado:
       p.monto_destinado !== null && p.monto_destinado !== undefined
@@ -267,6 +271,9 @@ export async function upsertProyectos(payload: ProyectoPayload): Promise<Proyect
     body.fecha_fin = payload.fechaFinalizacion || null;
   }
 
+  if ("logrosObtenidos" in payload) {
+    body.logros_obtenidos = payload.logrosObtenidos?.trim() || null;
+  }
   if ("dificultadesProyecto" in payload) {
     body.dificultades_proyecto = payload.dificultadesProyecto || null;
   }

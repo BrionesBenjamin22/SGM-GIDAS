@@ -103,6 +103,7 @@ class ProyectoInvestigacion(db.Model, AuditMixin):
     prorroga_by = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=True)
     prorroga_at = db.Column(db.DateTime, nullable=True)
     prorroga_usuario = db.relationship('Usuario', foreign_keys=[prorroga_by], lazy='joined')
+    logros_obtenidos = db.Column(db.Text, nullable=True)
     dificultades_proyecto = db.Column(db.Text, nullable=True)
     monto_destinado = db.Column(db.Float, nullable=True)
 
@@ -222,6 +223,7 @@ class ProyectoInvestigacionMemoriaVersion(db.Model, AuditMixin):
     descripcion_proyecto = db.Column(db.Text, nullable=False)
     fecha_inicio = db.Column(db.Date, nullable=False)
     fecha_fin = db.Column(db.Date, nullable=True)
+    logros_obtenidos = db.Column(db.Text, nullable=True)
     dificultades_proyecto = db.Column(db.Text, nullable=True)
     monto_destinado = db.Column(db.Float, nullable=True)
 

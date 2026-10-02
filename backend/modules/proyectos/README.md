@@ -1,5 +1,22 @@
 # Modulo backend de proyectos
 
+## Logros obtenidos para memorias (ISS-94)
+
+POST `/api/v1/proyectos` y PUT `/api/v1/proyectos/{id}` admiten
+`logros_obtenidos`, texto opcional de hasta 20000 caracteres. Se recortan espacios
+exteriores y un texto vacío se guarda como null. Un tipo diferente de string/null
+o un texto demasiado largo devuelve `400 VALIDATION_ERROR` con
+`error.details.fields.logros_obtenidos`. La respuesta serializa el campo y el
+historial registra sus cambios como el resto de los atributos del proyecto.
+Los permisos ADMIN/GESTOR y las restricciones de estado del guardado no cambian.
+
+La migración aditiva reversible `a7c9e2f4b6d8`, posterior a `d8e1f4a6b2c9`, añade
+columnas nullable al PID y a `proyecto_investigacion_memoria_version`; no rellena
+versiones anteriores desde datos vivos. Al cerrar la memoria se copia el texto y
+el Excel lo consume desde el snapshot. Una edición posterior no altera el
+documento cerrado. Los resultados de informes PID ya congelados se mantienen
+como compatibilidad para memorias anteriores.
+
 Nombre del proyecto y nombre del evento requieren alguna letra. Código, fechas,
 IDs y montos conservan reglas propias. El error indica `details.fields`.
 

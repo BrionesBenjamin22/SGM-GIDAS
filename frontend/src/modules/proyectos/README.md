@@ -1,5 +1,20 @@
 # Modulo frontend de proyectos
 
+## Logros y acciones del detalle (ISS-94)
+
+`ProyectosForm` permite cargar `Logros obtenidos` mediante un textarea opcional
+de hasta 20000 caracteres. El campo integra validación, errores de backend,
+borradores y comparación de diferencias reales en edición. El service mapea
+`logrosObtenidos` a `logros_obtenidos` y permite limpiar su contenido enviando null.
+`ProyectosDetalle` muestra el texto conservando sus saltos de línea y el historial
+lo identifica como `Logros obtenidos`. Los permisos y bloqueos por estado siguen
+el contrato del módulo; el dato se incorpora al Excel al cerrar la memoria.
+
+Las acciones superiores del detalle se alinean a la derecha, también si se
+distribuyen en varias filas. El botón del gestor se llama `Registrar Informe` y
+conserva la navegación a `/informes/pid/nuevo?proyectoId={id}` y el nombre del PID
+en el estado de navegación.
+
 ## Rutas de edición (ISS-68)
 
 La edición de un proyecto usa `/proyectos/:id/editar` desde el listado, el

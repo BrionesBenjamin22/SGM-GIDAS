@@ -43,6 +43,7 @@ class ProyectoMemoriaHistorialTestCase(unittest.TestCase):
             codigo_proyecto="LPSIEC1347",
             nombre_proyecto="Proyecto A",
             descripcion_proyecto="Descripcion",
+            logros_obtenidos="Modelo experimental validado",
             fecha_inicio=date(2026, 1, 1),
             fecha_fin=None,
             dificultades_proyecto="Ninguna",

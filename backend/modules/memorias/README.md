@@ -136,3 +136,11 @@ la UCT y los registros anteriores que conservan un ID se resuelven al consultar.
 El cierre selecciona cada entidad por UCT y por fecha puntual o solapamiento del intervalo funcional completo, incluyendo la baja lógica. La transacción revierte estado y fotos si falla cualquier generador. Las horas de integrantes corresponden al historial vigente al fin del período y quedan nulas si no existe evidencia. Se congelan además fecha de alta, datos institucionales, autoridades y planificación. UI y Excel leen estas fotos; una versión anterior sin contexto congelado no se reconstruye desde datos actuales.
 
 La migración reversible `e16a0b2c4d60` conserva memorias existentes con UCT nullable. Una memoria previa abierta debe asociarse explícitamente antes de cerrar. El aislamiento de usuarios por pertenencia UCT se aplica como se describe arriba.
+
+## Logros PID en la memoria (ISS-94)
+
+El cierre copia `ProyectoInvestigacion.logros_obtenidos` al snapshot del PID,
+incluido en las respuestas de proyectos de la versión. El renderer utiliza ese
+valor para la columna de logros; mantiene `contexto_institucional.logros_proyectos`
+como compatibilidad con resultados de informes congelados en versiones anteriores.
+Las correcciones del proyecto o sus informes no reescriben una versión cerrada.
