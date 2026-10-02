@@ -8,6 +8,21 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### Preparación de PR y verificación de CI
+
+- El control de mensajes admite scopes separados por coma y conserva los tipos,
+  el scope opcional y la descripción obligatoria; evita rechazar commits
+  históricos como `docs(readme, changelog)` sin reescribir el historial.
+- El validador productivo exige publicar el proxy en loopback. Las pruebas
+  cubren esa restricción, la alternativa TLS y la precompresión gzip.
+- Tareas y artefactos locales quedan fuera del seguimiento de Git. Se retiró
+  el informe pre-merge obsoleto y se actualizó su referencia documental.
+
+Verificación local del 02/10/2026: 637 pruebas backend con Python 3.11 y las
+25 dependencias declaradas, 193 frontend con Node 22, TypeScript, build,
+Compose, topología y escaneo de secretos correctos. El control Bash de
+mensajes pasó sobre el rango `origin/main..HEAD` y nueve casos de formato.
+
 ### ISS-94: reapertura y acciones por versión de memoria
 
 - ADMIN y GESTOR pueden reabrir una memoria cerrada, creando una versión abierta
@@ -78,6 +93,26 @@ Validaciones: 36 pruebas backend focalizadas y 192 frontend correctas,
 `typecheck` y build correctos; job BCRA ejecutado dos veces con cinco
 observaciones insertadas y luego cero duplicados. El usuario aprobó el flujo
 financiero. La validación final del Excel institucional se completó en ISS-94.
+
+### ISS-91: capacidades disponibles en Mi perfil
+
+- La tarjeta de permisos muestra solamente las acciones disponibles para el rol
+  de la sesión, centradas en la tarjeta.
+- Las reglas de autorización y el contrato backend permanecen iguales.
+
+Validaciones: aceptación visual y funcional del usuario, 4 pruebas frontend
+dirigidas, `typecheck` y `git diff --check` correctos.
+
+### ISS-90: menú lateral fijo en escritorio
+
+- El menú autenticado permanece fijo a la izquierda desde 1024 px y conserva el
+  diálogo desplegable en móvil.
+- La paleta coincide con la barra superior y la sección de perfil permanece en
+  el pie del menú en ambos tamaños.
+
+Validaciones: aceptación visual y funcional del usuario, 191 pruebas frontend,
+6 pruebas de navegación dirigidas, `typecheck`, build de producción y
+`git diff --check` correctos.
 
 ### ISS-89: paginacion de listados desde SQL
 
