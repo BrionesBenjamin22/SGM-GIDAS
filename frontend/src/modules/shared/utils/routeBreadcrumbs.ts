@@ -7,6 +7,7 @@ const sectionNames: Record<string, string> = {
   administracion: "Administración",
   busqueda: "Búsqueda",
   personal: "Personal",
+  becas: "Becas",
   proyectos: "Proyectos",
   docenciaInvestigador: "Actividades en Docencia",
   trabajosCientInv: "Trabajos en Reunión Científica",
@@ -36,7 +37,7 @@ const detailSections = new Set([
   "proyectos", "docenciaInvestigador", "registros-propiedad", "trabajos-reunion",
   "trabajos-revistas", "articulos-divulgacion", "movimientos", "equipamiento",
   "documentacion", "transferencias", "distinciones", "participaciones",
-  "visitantes", "memorias",
+  "visitantes", "memorias", "becas",
 ]);
 const start: BreadcrumbItem = { label: "Inicio", to: "/inicio" };
 

@@ -96,18 +96,6 @@ const CATALOGS: CatalogDef[] = [
     description: "Define programas asociados a investigadores.",
   },
   {
-    label: "Becas",
-    endpoint: "/becas/",
-    description: "Define becas y su fuente de financiamiento asociada.",
-    nameField: "nombre_beca",
-    descField: "descripcion",
-    fkField: {
-      idField: "fuente_financiamiento_id",
-      label: "Fuente de Financiamiento",
-      endpoint: "/fuente-financiamiento/",
-    },
-  },
-  {
     label: "Cargos",
     endpoint: "/cargos/",
     description: "Define cargos usados en autoridades y directivos del grupo.",
@@ -336,7 +324,7 @@ function CatalogPanel({
   const nameField = def.nameField ?? "nombre";
   const isBibliographicAuthor = def.endpoint === "/autores/";
   const isAdoptante = def.endpoint === "/adoptantes";
-  const nameLabel = isBibliographicAuthor ? "Nombre y apellido" : def.nameField === "nombre_beca" ? "Nombre de la beca" : "Nombre";
+  const nameLabel = isBibliographicAuthor ? "Nombre y apellido" : "Nombre";
   const validName = (value: string) => isBibliographicAuthor || isAdoptante
     ? hasOnlyLettersAndSpaces(value)
     : hasDescriptiveCatalogName(value);

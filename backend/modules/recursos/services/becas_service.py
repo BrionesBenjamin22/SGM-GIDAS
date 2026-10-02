@@ -1,6 +1,6 @@
 from modules.shared.services.catalog_name_validation import validar_nombre_descriptivo
 import builtins
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from sqlalchemy import func
 from sqlalchemy import extract, or_
 from extension import db
@@ -27,6 +27,13 @@ def _get_beca_activa_or_404(beca_id: int):
     return beca
 
 
+def _get_beca_or_404(beca_id: int):
+    beca = db.session.get(Beca, beca_id)
+    if not beca:
+        raise NotFoundError("Beca no encontrada.")
+    return beca
+
+
 def _get_relacion_activa(beca_id: int, becario_id: int):
     return Beca_Becario.query.filter(
         Beca_Becario.id_beca == beca_id,
@@ -45,6 +52,17 @@ def _validar_nombre_beca(nombre):
         raise ValueError("El nombre de la beca es obligatorio.")
 
     return nombre
+
+
+def _validar_descripcion_beca(descripcion):
+    if descripcion in (None, ""):
+        return None
+    if not isinstance(descripcion, str):
+        raise ValueError("La descripción de la beca debe ser texto.")
+    descripcion = descripcion.strip()
+    if len(descripcion) > 2000:
+        raise ValueError("La descripción de la beca no puede superar 2000 caracteres.")
+    return descripcion or None
 
 
 def _validar_fuente_financiamiento(fuente_financiamiento_id):
@@ -96,6 +114,38 @@ def _validar_beca_unica(nombre_beca, fuente_financiamiento_id, beca_id=None):
 class BecaService:
 
     @staticmethod
+    def proximas_a_vencer(hoy: date | None = None):
+        """Vínculos vigentes que finalizan en los próximos 29 días civiles."""
+        hoy = hoy or date.today()
+        filas = (
+            db.session.query(Beca_Becario, Beca, Becario)
+            .join(Beca, Beca.id == Beca_Becario.id_beca)
+            .join(Becario, Becario.id == Beca_Becario.id_becario)
+            .filter(
+                Beca.deleted_at.is_(None),
+                Becario.deleted_at.is_(None),
+                Beca_Becario.deleted_at.is_(None),
+                Beca_Becario.fecha_inicio <= hoy,
+                Beca_Becario.fecha_fin >= hoy,
+                Beca_Becario.fecha_fin < hoy + timedelta(days=30),
+            )
+            .order_by(Beca_Becario.fecha_fin.asc(), Becario.id.asc(), Beca.id.asc())
+            .all()
+        )
+        return [
+            {
+                "vinculacion_id": relacion.id,
+                "becario_id": becario.id,
+                "becario": becario.nombre_apellido,
+                "beca_id": beca.id,
+                "beca": beca.nombre_beca,
+                "fecha_fin": relacion.fecha_fin.isoformat(),
+                "dias_restantes": (relacion.fecha_fin - hoy).days,
+            }
+            for relacion, beca, becario in filas
+        ]
+
+    @staticmethod
     def _becas_activas_query(anio: int):
         if anio is None or not 1 <= anio <= 9999:
             raise ValueError("Debe proporcionar un año válido.")
@@ -142,9 +192,17 @@ class BecaService:
         return [b.serialize() for b in BecaService._list_query(activos).all()]
 
     @staticmethod
-    def get_page(page, per_page, activos="true", orden="asc"):
+    def get_page(page, per_page, activos="true", orden="asc", q=""):
         from sqlalchemy.orm import selectinload
-        query = BecaService._list_query(activos, orden).options(
+        query = BecaService._list_query(activos, orden)
+        term = q.strip()[:100]
+        if term:
+            escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            query = query.filter(or_(
+                Beca.nombre_beca.ilike(f"%{escaped}%", escape="\\"),
+                Beca.descripcion.ilike(f"%{escaped}%", escape="\\"),
+            ))
+        query = query.options(
             selectinload(Beca.fuente_financiamiento),
             selectinload(Beca.becarios).selectinload(Beca_Becario.becario),
         )
@@ -154,11 +212,11 @@ class BecaService:
 
     @staticmethod
     def get_by_id(beca_id):
-        return _get_beca_activa_or_404(beca_id).serialize()
+        return _get_beca_or_404(beca_id).serialize()
 
     @staticmethod
     def get_historial(beca_id):
-        beca = _get_beca_activa_or_404(beca_id)
+        beca = _get_beca_or_404(beca_id)
         return AuditoriaService.obtener_historial_entidad(
             entidad="beca",
             registro_id=beca.id
@@ -177,7 +235,7 @@ class BecaService:
 
         nueva_beca = Beca(
             nombre_beca=nombre_beca,
-            descripcion=data.get("descripcion"),
+            descripcion=_validar_descripcion_beca(data.get("descripcion")),
             fecha_alta_grupo=validar_fecha_alta_grupo(
                 data.get("fecha_alta_grupo")
             ),
@@ -204,7 +262,7 @@ class BecaService:
 
         descripcion = beca.descripcion
         if "descripcion" in data:
-            descripcion = data["descripcion"]
+            descripcion = _validar_descripcion_beca(data["descripcion"])
 
         fuente_financiamiento_id = beca.fuente_financiamiento_id
         if "fuente_financiamiento_id" in data:
@@ -292,6 +350,8 @@ class BecaService:
                 raise ValueError(
                     "La fecha_fin no puede ser anterior a la fecha_inicio."
                 )
+        else:
+            raise ValueError("La fecha_fin es obligatoria para registrar el plazo de la beca.")
 
         monto_percibido = data.get("monto_percibido")
         if monto_percibido is not None:

@@ -216,6 +216,8 @@ def _sincronizar_becas(becario, becas_data, user_id):
             raise ValueError("Una beca ya no está disponible.", details={"fields": {"becas": "Quite la beca no disponible y vuelva a intentar"}})
         fecha_inicio = _parsear_fecha_relacion(item.get("fecha_inicio"), "fecha_inicio")
         fecha_fin = _parsear_fecha_relacion(item.get("fecha_fin"), "fecha_fin", True)
+        if fecha_fin is None:
+            raise ValueError("La fecha de fin es obligatoria para registrar el plazo de la beca.", details={"fields": {"becas": "Ingrese la fecha de fin de la beca"}})
         if fecha_fin and fecha_fin < fecha_inicio:
             raise ValueError("La fecha de fin no puede ser anterior al inicio.", details={"fields": {"becas": "Elija una fecha de fin posterior o igual al inicio"}})
         monto = item.get("monto_percibido")

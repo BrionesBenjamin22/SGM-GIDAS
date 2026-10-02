@@ -12,6 +12,7 @@ const baseItems: Item[] = [
     label: "Personal",
     children: [
       { label: "Ver todo el personal", to: "/personal" },
+      { label: "Becas", to: "/becas" },
       {
         label: "Investigador/a",
         children: [{ label: "Actividades en Docencia", to: "/docenciaInvestigador" }],

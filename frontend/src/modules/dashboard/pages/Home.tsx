@@ -9,6 +9,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import SuccessToast from "@/components/SuccessToast";
 import { useAuth } from "@/context/AuthContext";
 import DirectivosHistoryPopover from "@/modules/grupo/components/DirectivosHistoryPopover";
+import BecasVencimientoModal from "@/modules/recursos/components/BecasVencimientoModal";
 import { buscarDirectivoPorCargo } from "@/modules/grupo/utils/directivoCargo";
 import { ArrowUp } from "lucide-react";
 import { getErrorMessage } from "@/lib/httpError";
@@ -135,6 +136,7 @@ export default function Home() {
 
   return (
     <>
+      <BecasVencimientoModal />
       <section className="space-y-8">
         <div className="flex items-center justify-between border-b border-slate-200 pb-4">
           <div>

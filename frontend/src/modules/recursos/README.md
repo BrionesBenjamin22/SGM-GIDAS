@@ -1,5 +1,31 @@
 # Recursos
 
+## Becas (ISS-93)
+
+La gestión de Becas está en Personal > Becas, fuera de Catálogos. `BecasHome`
+usa la tabla común con búsqueda por nombre o descripción en el servidor, filtros
+de estado y hasta nueve filas por página. Muestra nombre, descripción, fuente,
+cantidad de becarios, fecha de alta y estado. Las acciones de alta, edición y
+baja lógica aparecen para `ADMIN` y `GESTOR`; `LECTURA` conserva la consulta.
+
+`BecasForm` crea o edita nombre, descripción, fecha de alta en el grupo y fuente
+de financiamiento. Nombre y fecha de alta son obligatorios; la descripción
+tiene un máximo de 2000 caracteres y la fuente es opcional. En edición envía
+solo diferencias reales; el alta vuelve al listado y la edición al detalle con
+`successMessage`. Los errores del servidor se muestran junto al campo cuando
+hay datos de validación y con un aviso accionable en los demás casos.
+
+`BecasDetalle` presenta los datos, becarios vinculados en tarjetas sin enlace,
+Auditoría e Historial de cambios de a tres. Muestra los plazos que pertenecen
+al vínculo becario-beca, sin editarlos desde la ficha de la beca. El service
+`services/becasService.ts` tipa contratos y HTTP; `hooks/useBecasPage.ts` pagina
+la tabla y `hooks/useBecas.ts` carga las opciones del formulario de Becarios.
+
+En Inicio, `components/BecasVencimientoModal.tsx` consulta vencimientos solo
+cuando el usuario tiene rol `GESTOR`. Muestra becario, beca, fecha final y días
+restantes destacados. El modal es informativo y se descarta por sesión para
+el día y conjunto de vencimientos observado; no modifica el plazo.
+
 El contrato vigente de pantallas, rutas, services, hooks, permisos y validaciones
 del historial financiero está en [MOVIMIENTOS.md](MOVIMIENTOS.md).
 

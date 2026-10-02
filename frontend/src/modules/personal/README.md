@@ -2,7 +2,7 @@
 
 ## Error de becas en Becario (ISS-74)
 
-La casilla «Agregar beca» referencia el error global de becas mientras está
+La casilla «Vincular beca existente» referencia el error global de becas mientras está
 visible. El mensaje tiene un identificador estable y `role="alert"`; la casilla
 expone `aria-invalid` solo cuando corresponde. La validación y el guardado
 mantienen el contrato actual del formulario.
@@ -154,9 +154,12 @@ hay cambios no ejecutan el `PUT`, pero conservan la navegacion al detalle.
 
 Las becas de un becario se editan localmente y se envian juntas en `becas` al
 guardar. El frontend no desvincula ni vincula cada fila individualmente. El
-formulario permite buscar por tipo de beca y muestra hasta cinco vínculos por
+formulario permite seleccionar becas existentes, buscar por beca y muestra hasta cinco vínculos por
 página, con navegación Anterior/Siguiente. Los índices reales de los campos se
 conservan al filtrar para editar, quitar y validar la beca correcta.
+El plazo se registra en el becario: inicio y fin son obligatorios, fin no puede
+ser anterior al inicio y el monto sigue siendo opcional. La beca se crea y
+administra por separado en Personal > Becas.
 
 La selección inicial define la clase de registro: Personal, Becario o Investigador.
 Las dos últimas requieren campos y relaciones especializados. Personal selecciona
@@ -214,7 +217,7 @@ errores y invariantes condicionales). No reemplazan la prueba manual del navegad
 
 - campos obligatorios y horas enteras entre 1 y 168
 - fechas y tipos seleccionados
-- becas sin duplicados, con fecha de inicio y monto valido
+- becas existentes sin duplicados, con fechas de inicio y fin y monto válido cuando se informa
 - no realizar peticiones al modificar filas hasta guardar
 
 ### Seguimiento ISS-08: horas y catálogo
@@ -256,7 +259,7 @@ mutateAsync para que el diálogo cubra toda la operación.
 
 ## Indicadores de campos obligatorios (ISS-21)
 
-La clase de registro y los campos obligatorios de investigadores y becarios muestran el indicador. Al agregar una beca, tipo y fecha de inicio son obligatorios; monto y fecha de fin son opcionales.
+La clase de registro y los campos obligatorios de investigadores y becarios muestran el indicador. Al vincular una beca, la selección, fecha de inicio y fecha de fin son obligatorias; el monto es opcional.
 
 ## Paginación de listados (ISS-23)
 

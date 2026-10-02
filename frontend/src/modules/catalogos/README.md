@@ -40,7 +40,7 @@ historial de Documentación.
 
 ## Paginacion de Gestion de Catalogos (ISS-75)
 
-El listado de valores, incluida la seccion Becas, usa el aspecto compacto de la
+El listado de valores usa el aspecto compacto de la
 paginacion de `Table`: botones `Anterior` y `Siguiente`, numeros de pagina y
 resaltado de la pagina actual. Los extremos se deshabilitan segun la pagina
 seleccionada. Se mantienen nueve valores por pagina y tres eventos por pagina
@@ -89,7 +89,6 @@ es logica cuando lo implementa el catalogo correspondiente.
 - Los nombres se recortan y deben contener al menos una letra Unicode. Pueden
   incluir numeros y signos junto a texto descriptivo. La validacion se aplica en
   altas y al cambiar el nombre en edicion; los registros existentes no se migran.
-- Las becas exigen seleccionar su fuente de financiamiento.
 - Las descripciones se recortan antes de persistirse.
 - En edicion se comparan nombre, descripcion y relacion; si no existen diferencias,
   no se llama al backend.
@@ -116,9 +115,8 @@ fuera de este issue por indicacion del usuario.
 - Edicion: `PUT <endpoint>/:id` solo con diferencias reales.
 - Baja: `DELETE <endpoint>/:id`.
 
-Las respuestas incluyen como minimo `id` y el campo de nombre. Pueden incorporar
-`activo`, marcas de auditoria y relaciones tipadas, como `fuente_financiamiento` en
-becas.
+Las respuestas incluyen como mínimo `id` y el campo de nombre. Pueden incorporar
+`activo`, marcas de auditoría y relaciones tipadas.
 
 ## Feedback de acciones (seguimiento ISS-09)
 
@@ -135,7 +133,8 @@ Muestra Creando, Guardando o Eliminando según la acción.
 
 ## Indicadores de campos obligatorios (ISS-21)
 
-En altas y ediciones, el nombre muestra el indicador obligatorio. La fuente de financiamiento se indica como obligatoria al crear una beca, conforme a la validacion del formulario.
+En altas y ediciones, el nombre muestra el indicador obligatorio. Becas se
+administra desde Personal > Becas y ya no forma parte de `CatalogosHome`.
 
 ## Paginación de listados (ISS-23)
 

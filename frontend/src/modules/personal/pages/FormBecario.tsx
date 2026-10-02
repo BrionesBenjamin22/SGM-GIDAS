@@ -258,6 +258,11 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
             newErrors[`beca_${index}_fechaInicio`] =
               "Debe ingresar una fecha de inicio";
           }
+          if (!beca.fechaFin) {
+            newErrors[`beca_${index}_fechaFin`] = "Debe ingresar una fecha de fin";
+          } else if (beca.fechaInicio && beca.fechaFin < beca.fechaInicio) {
+            newErrors[`beca_${index}_fechaFin`] = "La fecha de fin debe ser igual o posterior al inicio";
+          }
         });
       }
     }
@@ -483,7 +488,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
 
           <p className="text-sm text-slate-600">
             Si el becario no percibe una beca, deja esta sección sin seleccionar.
-            Actívala solo cuando quieras registrar una o más becas.
+            Seleccione una beca existente y registre el plazo de la vinculación.
           </p>
 
           <div className="flex items-center gap-2">
@@ -513,7 +518,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
               htmlFor="checkbox-agregar-beca"
               className="cursor-pointer text-sm font-medium text-slate-700"
             >
-              Agregar beca
+              Vincular beca existente
             </label>
           </div>
 
@@ -524,6 +529,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
 
         {agregarBeca && (
           <div className="space-y-6">
+            {becasLista.length === 0 && <p role="status" className="text-sm text-slate-600">No hay becas disponibles. Puede registrarlas desde Personal &gt; Becas.</p>}
             <div>
               <label htmlFor="becas-search" className="mb-1 block text-sm">Buscar becas vinculadas</label>
               <input id="becas-search" type="search" className="input w-full" value={becasSearch} placeholder="Tipo de beca" onChange={(event) => { setBecasSearch(event.target.value); setBecasPage(1); }} onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }} />
@@ -584,7 +590,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
                         }}
                       >
                         <option value="" disabled>
-                          Seleccionar tipo de beca
+                          Seleccionar beca existente
                         </option>
                         {becasLista.map((b) => (
                           <option key={b.id} value={b.id}>
@@ -639,7 +645,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
                     />
                   </Field>
 
-                  <Field label="Fecha fin (Opcional)">
+                  <Field required label="Fecha fin" name={`beca_${index}_fechaFin`} error={errors[`beca_${index}_fechaFin`]}>
                     <Calendar
                       value={beca.fechaFin}
                       onChange={(date) => {
@@ -648,9 +654,10 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
                           next[index].fechaFin = date;
                           return next;
                         });
+                        if (date) clearError(`beca_${index}_fechaFin`);
                       }}
                       minDate={beca.fechaInicio ?? undefined}
-                      className="input py-2 text-sm"
+                      className={`input py-2 text-sm ${errors[`beca_${index}_fechaFin`] ? "!border-red-500 !ring-2 !ring-red-500" : ""}`}
                       helperText="DD/MM/AAAA"
                     />
                   </Field>
@@ -677,7 +684,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
                 }}
                 className="px-3 py-1 text-xs"
               >
-                + Agregar beca
+                + Vincular otra beca
               </Button>
             </div>
           </div>

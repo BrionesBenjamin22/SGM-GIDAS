@@ -1,5 +1,41 @@
 # Recursos
 
+## Becas y vencimientos (ISS-93)
+
+Las rutas de Becas se publican bajo `/api/v1/recursos/becas` mediante
+`routes/becas_rutas.py`, `controllers/becas_controller.py`,
+`services/becas_service.py` y `models/becas.py`. `Beca` guarda nombre,
+descripción, fecha de alta, fuente opcional y auditoría. `Beca_Becario` guarda
+el becario, inicio, fin y monto percibido de cada vínculo. Las bajas son
+lógicas; detalle e historial siguen disponibles para una beca inactiva.
+
+- `GET /`: lista becas. Con `page` y `per_page` devuelve `data` y `meta`; acepta
+  `activos=true|false|all`, `orden=asc|desc` y `q` para buscar por nombre o
+  descripción. El home solicita nueve filas por página.
+- `GET /<id>`: detalle con becarios vinculados activos.
+- `GET /<id>/historial`: cambios de campos y eventos relacionales.
+- `POST /`: crea una beca. Requiere `nombre_beca` y `fecha_alta_grupo`; acepta
+  `descripcion` (máximo 2000 caracteres) y `fuente_financiamiento_id` opcionales.
+- `PUT /<id>`: acepta únicamente los campos enviados, registra diferencias en
+  auditoría y valida nombre, descripción, fecha y fuente cuando corresponden.
+- `DELETE /<id>`: baja lógica.
+- `POST /<id>/vincular-becario`: exige `id_becario`, `fecha_inicio` y
+  `fecha_fin`; acepta `monto_percibido` no negativo. La baja del vínculo usa
+  `DELETE /<id>/becarios/<becario_id>`.
+- `GET /proximas-a-vencer`: exclusivo para `GESTOR`. Devuelve vínculos activos
+  cuyo fin es hoy o cae en los siguientes 29 días civiles, ordenados por fecha.
+  Cada elemento contiene `vinculacion_id`, `becario_id`, `becario`, `beca_id`,
+  `beca`, `fecha_fin` y `dias_restantes`. Excluye becas, becarios y vínculos
+  con baja lógica y no ofrece una acción para extender el plazo.
+
+La lectura y el historial permiten `ADMIN`, `GESTOR` y `LECTURA`; las
+mutaciones permiten `ADMIN` y `GESTOR`. El service rechaza nombres duplicados
+para la misma fuente, fechas inválidas, fin anterior al inicio, montos
+negativos y relaciones inexistentes. Los controladores usan el contrato de
+errores compartido. Las pruebas del módulo están en
+`tests/test_beca_vencimientos.py`, `tests/test_beca_historial.py` y
+`tests/test_auditoria_relaciones_services.py`.
+
 ## Becas activas por año (ISS-84)
 
 `GET /api/v1/recursos/becas/activas?anio=YYYY` requiere un año valido y

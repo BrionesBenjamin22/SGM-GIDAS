@@ -45,7 +45,8 @@ class Beca(db.Model, AuditMixin):
                     "monto_percibido": b.monto_percibido
                 }
                 for b in self.becarios
-                if not hasattr(b, "deleted_at") or b.deleted_at is None
+                if (not hasattr(b, "deleted_at") or b.deleted_at is None)
+                and b.becario.deleted_at is None
             ]
         })
 

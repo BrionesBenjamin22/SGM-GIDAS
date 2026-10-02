@@ -36,6 +36,17 @@ y build correctos; aprobación visual/funcional del usuario el 02/10/2026.
 Validaciones: creación, auditoría, validación, exportación e inmutabilidad
 histórica cubiertas por pruebas; aceptación del usuario el 02/10/2026.
 
+### ISS-93: gestión de becas y alertas de vencimiento
+
+- Becas se administra desde Personal mediante tabla paginada, búsqueda, alta,
+  edición, detalle, auditoría e historial. Se retiró de Catálogos.
+- El formulario de Becarios selecciona becas existentes y exige el plazo del
+  vínculo. Un modal informativo muestra a GESTOR los vencimientos con menos de
+  30 días, destacando el tiempo restante sin permitir una extensión.
+
+Validaciones: aceptación visual y funcional del usuario, 191 pruebas frontend,
+10 pruebas backend focalizadas, `typecheck` y build de producción correctos.
+
 ### ISS-94: Excel institucional y escenario formal de memorias
 
 - La generación completa la referencia `Memorias 2025 - GIDAS.xlsx` conservando

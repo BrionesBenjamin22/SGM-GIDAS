@@ -148,7 +148,7 @@ deseado de relaciones activas:
     {
       "beca_id": 3,
       "fecha_inicio": "2026-04-01",
-      "fecha_fin": null,
+      "fecha_fin": "2027-03-31",
       "monto_percibido": 150000
     }
   ]
@@ -158,6 +158,9 @@ deseado de relaciones activas:
 El service valida todas las relaciones y aplica altas, bajas y cambios en la
 misma transaccion que los campos del becario. No realiza commits intermedios.
 Una lista vacia desvincula todas las relaciones activas.
+Cada vínculo nuevo o actualizado exige fecha de inicio y fecha de fin. El
+service rechaza la ausencia de fin con `error.details.fields.becas`; los
+vínculos históricos sin fin permanecen legibles hasta su próxima edición.
 
 ## Reglas y validaciones
 

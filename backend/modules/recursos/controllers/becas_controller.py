@@ -7,6 +7,13 @@ from modules.shared.exceptions import ValidationError
 
 class BecaController:
 
+    @staticmethod
+    def proximas_a_vencer():
+        try:
+            return jsonify(BecaService.proximas_a_vencer()), 200
+        except Exception as error:
+            return exception_response(error, operation="consultar vencimientos de becas")
+
     # =========================
     # GET ALL
     # =========================
@@ -18,7 +25,7 @@ class BecaController:
                     params = parse_pagination_params(request.args)
                 except ValueError as error:
                     raise ValidationError(str(error)) from error
-                data, total = BecaService.get_page(**params)
+                data, total = BecaService.get_page(**params, q=request.args.get("q", ""))
                 return paginated_response(
                     data, params["page"], params["per_page"], total,
                     meta={"activos": params["activos"], "orden": params["orden"], "source": "legacy-list"},

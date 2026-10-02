@@ -24,6 +24,9 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 // nuevas páginas
 const PersonalLanding = lazy(() => import("@/modules/personal/pages/PersonalHome"));
 const PersonalDetalle = lazy(() => import("@/modules/personal/pages/PersonalDetalle"));
+const BecasHome = lazy(() => import("@/modules/recursos/pages/BecasHome"));
+const BecasForm = lazy(() => import("@/modules/recursos/pages/BecasForm"));
+const BecasDetalle = lazy(() => import("@/modules/recursos/pages/BecasDetalle"));
 const ProyectosLanding = lazy(() => import("@/modules/proyectos/pages/ProyectosHome"));
 const ProyectosForm = lazy(() => import("@/modules/proyectos/pages/ProyectosForm"));
 const DocenciaLanding = lazy(() => import("@/modules/produccion/pages/DocenciaHome"));
@@ -169,6 +172,10 @@ const router = createBrowserRouter([
 
       // Personal
       { path: "personal", element: <PersonalLanding /> },   // landing  
+      { path: "becas", element: <BecasHome /> },
+      { path: "becas/nueva", element: editorOnly(<BecasForm />) },
+      { path: "becas/:id", element: <BecasDetalle /> },
+      { path: "becas/:id/editar", element: editorOnly(<BecasForm />) },
       { path: "personal/nuevo", element: editorOnly(<PersonalForm />) },    // formulario
       { path: "personal/:rol/:id", element: <PersonalDetalle /> }, // detalle de personal
       { path: "personal/:rol/:id/editar", element: editorOnly(<PersonalForm />) }, // editar personal
