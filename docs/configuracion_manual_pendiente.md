@@ -7,9 +7,9 @@ de acciones manuales requeridas antes del despliegue.
 
 ## Handoff pre-merge del 2026-08-27
 
-La evidencia de la calificacion local, el bloqueo del workflow de commits y el
-checklist de datos requeridos de la VM se encuentran en
-`docs/validacion_pre_merge_2026-08-27.md`.
+El informe puntual de calificacion del 2026-08-27 fue retirado durante la limpieza
+del repositorio. Los requisitos vigentes se mantienen en este documento y en
+[la guia de despliegue](./despliegue_produccion.md).
 
 El gate historico se resolvio mediante una rama limpia basada en `origin/main`, sin
 reescribir `dev`. La PR fue fusionada y `main` quedo actualizado. La configuracion

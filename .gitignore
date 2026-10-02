@@ -13,5 +13,9 @@ skills-lock.json
 .gemini/
 .codex/
 
-# Respaldos locales de bases de desarrollo
-/artifacts/backups/
+# Artefactos locales de validacion y respaldos
+/artifacts/
+
+# Documento original de referencia; la plantilla de runtime vive en backend/assets
+/Memorias 2025 - GIDAS.docx
+/docs/devolucion_tecnica_sistema (1).md
