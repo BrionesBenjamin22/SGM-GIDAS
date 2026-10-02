@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Eye, RotateCcw, LockKeyhole, Send } from "lucide-react";
 
 import Button from "@/components/Button";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -20,6 +21,8 @@ import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/lib/httpError";
 import {
   deleteMemoria,
+  cambiarEstadoMemoria,
+  reabrirMemoria,
   getMemoriaById,
   getMemorias,
   type Memoria,
@@ -52,8 +55,34 @@ function EstadoVersion({ estado }: { estado: MemoriaEstado }) {
   );
 }
 
-function MemoriaVersions({ memoria, puedeCrear }: { memoria: Memoria; puedeCrear: boolean }) {
+function MemoriaVersions({ memoria, puedeCrear, onFeedback }: {
+  memoria: Memoria;
+  puedeCrear: boolean;
+  onFeedback: (mensaje: string, error: boolean) => void;
+}) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [accion, setAccion] = useState<"reabrir" | "cerrada" | "en revision" | null>(null);
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (!accion || !puedeCrear || memoria.deleted_at || memoria.activo === false) return;
+      if (accion === "reabrir") await reabrirMemoria(memoria.id);
+      else await cambiarEstadoMemoria(memoria.id, { estado: accion });
+    },
+    onSuccess: async () => {
+      setAccion(null);
+      onFeedback("Memoria actualizada con éxito.", false);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["memorias"] }),
+        queryClient.invalidateQueries({ queryKey: ["memoria"] }),
+        queryClient.invalidateQueries({ queryKey: ["memoria-historial"] }),
+      ]);
+    },
+    onError: (error) => {
+      setAccion(null);
+      onFeedback(getErrorMessage(error, "Lo sentimos, no pudimos completar la operación. Intente nuevamente."), true);
+    },
+  });
   const detail = useQuery({
     queryKey: ["memoria", memoria.id],
     queryFn: () => getMemoriaById(memoria.id),
@@ -67,14 +96,16 @@ function MemoriaVersions({ memoria, puedeCrear }: { memoria: Memoria; puedeCrear
       </div>
     );
   }
-  const versiones = detail.data.versiones ?? [];
+  const memoriaActualizada = detail.data;
+  const versiones = memoriaActualizada.versiones ?? [];
   if (!versiones.length) return <p className="text-sm text-slate-500">No hay versiones registradas.</p>;
   return (
     <div>
       <h3 className="mb-3 text-sm font-semibold text-slate-900">Versiones de la memoria</h3>
       <ul className="space-y-2">
         {versiones.map((version) => {
-          const actual = version.id === memoria.version_actual_id;
+          const actual = version.id === memoriaActualizada.version_actual_id;
+          const editable = actual && !memoriaActualizada.deleted_at && memoriaActualizada.activo !== false && puedeCrear;
           return (
             <li key={version.id} className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
@@ -87,24 +118,33 @@ function MemoriaVersions({ memoria, puedeCrear }: { memoria: Memoria; puedeCrear
                 </span>
               </div>
               <div className="flex shrink-0 flex-wrap gap-2">
-                {version.estado === "cerrada" && (
-                  <TableRowActionButton
-                    action="view"
-                    label="Ver elementos"
-                    aria-label={`Ver elementos de la versión ${version.numero_version} de ${memoriaTitle(memoria)}`}
-                    onClick={() => navigate(`/memorias/${memoria.id}/versiones/${version.id}`)}
-                  />
-                )}
-                {actual && version.estado !== "cerrada" && !memoria.deleted_at && puedeCrear && (
-                  <TableActionButton onClick={() => navigate(`/memorias/${memoria.id}`)}>
-                    Gestionar memoria
+                <TableActionButton title="Ver detalle" aria-label={`Ver detalle de la versión ${version.numero_version}`} onClick={() => navigate(version.estado === "cerrada" ? `/memorias/${memoria.id}/versiones/${version.id}` : `/memorias/${memoria.id}`)}>
+                  <Eye aria-hidden="true" className="h-4 w-4" />
+                </TableActionButton>
+                {puedeCrear && <>
+                  <TableActionButton title="Reabrir: crear nueva versión" aria-label={`Reabrir la versión ${version.numero_version}`} disabled={!editable || version.estado !== "cerrada" || mutation.isPending} onClick={() => setAccion("reabrir")}>
+                    <RotateCcw aria-hidden="true" className="h-4 w-4" />
                   </TableActionButton>
-                )}
+                  <TableActionButton title="Cerrar memoria" aria-label={`Cerrar la versión ${version.numero_version}`} disabled={!editable || version.estado === "cerrada" || mutation.isPending} onClick={() => setAccion("cerrada")}>
+                    <LockKeyhole aria-hidden="true" className="h-4 w-4" />
+                  </TableActionButton>
+                  <TableActionButton title="Enviar a revisión" aria-label={`Enviar a revisión la versión ${version.numero_version}`} disabled={!editable || version.estado !== "abierta" || mutation.isPending} onClick={() => setAccion("en revision")}>
+                    <Send aria-hidden="true" className="h-4 w-4" />
+                  </TableActionButton>
+                </>}
               </div>
             </li>
           );
         })}
       </ul>
+      <ConfirmDialog
+        open={accion !== null}
+        title={accion === "reabrir" ? "Reabrir memoria" : accion === "cerrada" ? "Cerrar memoria" : "Enviar a revisión"}
+        message={accion === "reabrir" ? "Se creará una nueva versión abierta. La versión cerrada conservará sus datos. ¿Desea continuar?" : accion === "cerrada" ? "Se congelarán los datos del período en esta versión. ¿Desea cerrar la memoria?" : "¿Desea enviar la versión actual a revisión?"}
+        onCancel={() => { if (!mutation.isPending) setAccion(null); }}
+        onConfirm={() => mutation.mutateAsync()}
+        loadingText="Guardando..."
+      />
     </div>
   );
 }
@@ -267,7 +307,10 @@ export default function MemoriasHome() {
           onRowClick={(memoria) => navigate(`/memorias/${memoria.id}`)}
           getRowTitle={(memoria) => `Ver detalle de ${memoriaTitle(memoria)}`}
           isRowExpanded={(memoria) => expandedRows.has(memoria.id)}
-          renderExpanded={(memoria) => <MemoriaVersions memoria={memoria} puedeCrear={puedeCrear} />}
+          renderExpanded={(memoria) => <MemoriaVersions memoria={memoria} puedeCrear={puedeCrear} onFeedback={(mensaje, error) => {
+            if (error) { setErrorMessage(mensaje); setShowError(true); }
+            else { setSuccessMessage(mensaje); setShowSuccess(true); }
+          }} />}
           onToggleRow={(memoria) => setExpandedRows((current) => {
             const next = new Set(current);
             if (next.has(memoria.id)) next.delete(memoria.id);

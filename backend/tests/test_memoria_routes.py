@@ -490,12 +490,13 @@ class MemoriaRoutesTestCase(unittest.TestCase):
         )
         mock_delete.assert_called_once_with(1, 6)
 
-    def test_reopen_con_rol_gestor_devuelve_403(self):
+    def test_reopen_con_rol_gestor_devuelve_200(self):
         with patch(
             "modules.shared.services.middleware.AuthService.verify_token",
             return_value={"sub": "7", "rol": "GESTOR"}
         ), patch(
-            "modules.memorias.controllers.memoria_controller.MemoriaService.reopen"
+            "modules.memorias.controllers.memoria_controller.MemoriaService.reopen",
+            return_value={"id": 1, "version_actual": {"numero_version": 2}}
         ) as mock_reopen:
             response = self.client.put(
                 "/api/v1/memorias/1/reabrir",
@@ -503,9 +504,8 @@ class MemoriaRoutesTestCase(unittest.TestCase):
                 headers=self._headers()
             )
 
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.get_json()["error"]["code"], "FORBIDDEN")
-        mock_reopen.assert_not_called()
+        self.assertEqual(response.status_code, 200)
+        mock_reopen.assert_called_once_with(1, 7, {"fecha_apertura": "2026-03-05"})
 
     def test_reopen_con_rol_admin_devuelve_200(self):
         with patch(

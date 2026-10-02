@@ -27,7 +27,7 @@ export default function MemoriaDetalle() {
   const { isAdmin, isGestor } = useAuth();
 
   const puedeEditar = isAdmin() || isGestor();
-  const puedeReabrir = isAdmin();
+  const puedeReabrir = isAdmin() || isGestor();
 
   const [editandoPeriodo, setEditandoPeriodo] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -97,6 +97,7 @@ export default function MemoriaDetalle() {
       await queryClient.invalidateQueries({ queryKey: ["memorias"] });
       await queryClient.invalidateQueries({ queryKey: ["memoria", id] });
 
+      await queryClient.invalidateQueries({ queryKey: ["memoria-historial", id] });
       setSuccessMessage("Memoria reabierta con éxito.");
       setShowSuccess(true);
       setShowReopenConfirm(false);

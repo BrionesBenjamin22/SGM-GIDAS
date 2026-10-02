@@ -205,7 +205,7 @@ def change_status(memoria_id):
 
 
 @memoria_bp.route("/<int:memoria_id>/reabrir", methods=["PUT"])
-@requiere_rol("ADMIN")
+@requiere_rol("ADMIN", "GESTOR")
 def reopen(memoria_id):
     return MemoriaController.reopen(memoria_id)
 

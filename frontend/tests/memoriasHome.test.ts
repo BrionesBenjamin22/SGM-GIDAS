@@ -41,7 +41,7 @@ function renderHome(list: ReturnType<typeof memoria>[], detail: object | null = 
       };
       if (name === "@tanstack/react-query") return {
         useQueryClient: () => ({ invalidateQueries: async () => {} }),
-        useMutation: () => ({ mutateAsync: async () => {} }),
+        useMutation: () => ({ mutateAsync: async () => {}, isPending: false }),
         useQuery: (options: { queryKey: unknown[]; enabled?: boolean }) => {
           queries.push(options);
           return { data: options.queryKey[0] === "memorias" ? list : detail, isLoading: false, isFetching: false, isError: false };
@@ -112,8 +112,29 @@ test("Las acciones de versión respetan su estado y el permiso de gestión", () 
   const expanded = table.props.renderExpanded(item);
   const versions = expanded.type(expanded.props).props.children[1].props.children;
   const closedAction = versions[0].props.children[1].props.children[0];
-  assert.equal(closedAction.props.label, "Ver elementos");
+  assert.equal(closedAction.props.title, "Ver detalle");
   closedAction.props.onClick();
   assert.deepEqual(view.destinations, ["/memorias/1/versiones/9"]);
   assert.equal(versions[1].props.children[1].props.children[1], false);
+});
+
+test("Las cuatro acciones bloquean cambios históricos y respetan las transiciones", () => {
+  for (const estado of ["abierta", "en revision", "cerrada"]) {
+    const item = memoria(1);
+    const detail = { ...item, versiones: [
+      { id: 9, numero_version: 1, estado: "cerrada" },
+      { id: 10, numero_version: 2, estado },
+    ] };
+    const view = renderHome([item], detail);
+    const expanded = view.table(view.render()).props.renderExpanded(item);
+    const versions = expanded.type(expanded.props).props.children[1].props.children;
+    const historical = versions[0].props.children[1].props.children[1].props.children;
+    assert.ok(historical.every((button: any) => button.props.disabled));
+    const actions = versions[1].props.children[1].props.children;
+    assert.equal(actions[0].props.title, "Ver detalle");
+    const [reabrir, cerrar, revision] = actions[1].props.children;
+    assert.equal(reabrir.props.disabled, estado !== "cerrada");
+    assert.equal(cerrar.props.disabled, estado === "cerrada");
+    assert.equal(revision.props.disabled, estado !== "abierta");
+  }
 });

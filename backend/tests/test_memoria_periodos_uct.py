@@ -69,6 +69,23 @@ class MemoriaPeriodosUctTest(unittest.TestCase):
     def cerrar(self, memoria):
         return MemoriaService.change_status(memoria["id"], {"estado": "cerrada"}, 1)
 
+    def test_reapertura_permite_gestor_y_preserva_version_cerrada(self):
+        memoria = self.crear()
+        cerrada = self.cerrar(memoria)
+        for rol in ("LECTURA", "LECTOR"):
+            with patch("modules.shared.services.middleware.AuthService.verify_token", return_value={"sub": "1", "rol": rol}):
+                response = self.client.put(f"/api/v1/memorias/{memoria['id']}/reabrir", headers=self.headers, json={})
+                self.assertEqual(response.status_code, 403)
+        with patch("modules.shared.services.middleware.AuthService.verify_token", return_value={"sub": "1", "rol": "GESTOR"}):
+            response = self.client.put(f"/api/v1/memorias/{memoria['id']}/reabrir", headers=self.headers, json={})
+        self.assertEqual(response.status_code, 200)
+        nueva = response.get_json()
+        self.assertEqual(nueva["version_actual"]["numero_version"], 2)
+        self.assertEqual(nueva["version_actual"]["estado"], "abierta")
+        versiones = MemoriaService.get_by_id(memoria["id"])["versiones"]
+        self.assertEqual(next(v for v in versiones if v["id"] == cerrada["version_actual_id"])["estado"], "cerrada")
+        self.assertNotEqual(cerrada["version_actual_id"], nueva["version_actual_id"])
+
     def test_logros_pid_se_congelan_y_exportan_sin_consultar_proyecto_vivo(self):
         from modules.proyectos.services.proyecto_investigacion_service import ProyectoInvestigacionService
         from modules.proyectos.models.proyecto_investigacion import ProyectoInvestigacionMemoriaVersion

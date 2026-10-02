@@ -129,8 +129,8 @@ POST `/api/v1/memorias` requiere `grupo_utn_id`, `periodo_inicio` y `periodo_fin
 
 ADMIN y GESTOR pueden cambiar una memoria entre abierta, en revisión y cerrada;
 la finalización del período no produce un cierre automático porque el cierre es
-la operación que congela los snapshots. La reapertura y la baja permanecen
-reservadas a ADMIN. En el historial, `grupo_utn_id` se presenta con la sigla de
+la operación que congela los snapshots. La reapertura admite ADMIN y GESTOR;
+la baja permanece reservada a ADMIN. En el historial, `grupo_utn_id` se presenta con la sigla de
 la UCT y los registros anteriores que conservan un ID se resuelven al consultar.
 
 El cierre selecciona cada entidad por UCT y por fecha puntual o solapamiento del intervalo funcional completo, incluyendo la baja lógica. La transacción revierte estado y fotos si falla cualquier generador. Las horas de integrantes corresponden al historial vigente al fin del período y quedan nulas si no existe evidencia. Se congelan además fecha de alta, datos institucionales, autoridades y planificación. UI y Excel leen estas fotos; una versión anterior sin contexto congelado no se reconstruye desde datos actuales.
@@ -144,3 +144,20 @@ incluido en las respuestas de proyectos de la versión. El renderer utiliza ese
 valor para la columna de logros; mantiene `contexto_institucional.logros_proyectos`
 como compatibilidad con resultados de informes congelados en versiones anteriores.
 Las correcciones del proyecto o sus informes no reescriben una versión cerrada.
+
+## Reapertura y diagnóstico de rendimiento (ISS-94)
+
+PUT `/{id}/reabrir` requiere ADMIN o GESTOR, memoria activa, versión actual cerrada
+y ausencia de otra memoria abierta/en revisión en su UCT. Crea una versión abierta
+con número consecutivo y cambia `version_actual_id`; la anterior permanece cerrada.
+No cambia período ni UCT y los nuevos snapshots se crean al cerrar la nueva versión.
+PUT `/{id}/estado` conserva transiciones abierta a revisión/cerrada y revisión a
+abierta/cerrada. Una versión histórica no admite cambios de estado. LECTURA consulta
+datos e historial y no puede ejecutar estas acciones; DELETE sigue reservado a ADMIN.
+
+El diagnóstico del 02/10/2026 encontró cierres reales de 23,6 a 24,6 s. La captura
+de relaciones genera consultas repetidas y autoflush; el control de escritura por
+UCT valida pertenencias por registro y constituye el costo principal observado.
+La primera consulta del listado PID tardó 1,65 s y la siguiente 0,60 s. La medición
+con cProfile añade sobrecosto y no representa una garantía de tiempos. Esta etapa
+documenta el diagnóstico: no aplica optimización ni modifica controles de seguridad.

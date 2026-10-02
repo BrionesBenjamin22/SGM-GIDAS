@@ -8,6 +8,34 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-94: reapertura y acciones por versión de memoria
+
+- ADMIN y GESTOR pueden reabrir una memoria cerrada, creando una versión abierta
+  y conservando la versión histórica. La baja sigue reservada a ADMIN.
+- El listado expandible presenta iconos de detalle, reapertura, cierre y revisión,
+  condicionados por estado, versión vigente y permisos, con confirmación y feedback.
+- El historial se refresca al reabrir; los mensajes del listado siguen visibles
+  aunque el cambio de estado retire la memoria del filtro actual.
+- Diagnóstico de rendimiento: navegación con costo de consultas/relaciones y
+  cierres reales de aproximadamente 24 s; predominan validaciones de pertenencia
+  UCT por registro y consultas repetidas. No se aplicó una optimización ni se
+  desactivaron controles de seguridad.
+
+Validaciones: 23 casos backend de flujo/período, 193 pruebas frontend, TypeScript
+y build correctos; aprobación visual/funcional del usuario el 02/10/2026.
+
+### ISS-94: logros obtenidos de proyectos PID
+
+- Proyectos incorporan `logros_obtenidos`, opcional y de hasta 20000 caracteres,
+  con carga, edición por diferencias, borradores, detalle e historial.
+- La migración aditiva `a7c9e2f4b6d8` añade el campo al proyecto y su snapshot.
+  El Excel consume el texto congelado; los informes históricos se conservan como
+  compatibilidad para versiones anteriores.
+- Acciones del detalle alineadas a la derecha y botón `Registrar Informe`.
+
+Validaciones: creación, auditoría, validación, exportación e inmutabilidad
+histórica cubiertas por pruebas; aceptación del usuario el 02/10/2026.
+
 ### ISS-94: Excel institucional y escenario formal de memorias
 
 - La generación completa la referencia `Memorias 2025 - GIDAS.xlsx` conservando
@@ -38,7 +66,7 @@ de 637 casos, 193 pruebas frontend, TypeScript y build de producción correctos.
 Validaciones: 36 pruebas backend focalizadas y 192 frontend correctas,
 `typecheck` y build correctos; job BCRA ejecutado dos veces con cinco
 observaciones insertadas y luego cero duplicados. El usuario aprobó el flujo
-financiero; el ajuste y validación final del Excel de Memorias siguen pendientes.
+financiero. La validación final del Excel institucional se completó en ISS-94.
 
 ### ISS-89: paginacion de listados desde SQL
 

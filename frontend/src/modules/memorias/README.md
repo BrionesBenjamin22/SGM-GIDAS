@@ -73,9 +73,16 @@ Cada panel carga las versiones de su Memoria al abrirse mediante la consulta de
 detalle `GET /api/v1/memorias/{id}`, con caché independiente por ID. La carga,
 el error con reintento y la ausencia de versiones se muestran dentro del panel.
 
-La fila y la acción Ver abren el detalle de la Memoria. En cada versión cerrada,
-Ver elementos abre su snapshot; en la versión actual abierta o en revisión,
-ADMIN y GESTOR pueden ir al detalle para gestionarla. La baja lógica es
+La fila y la acción Ver abren el detalle de la Memoria. El panel de versiones
+presenta cuatro iconos: ver detalle (`Eye`), reabrir (`RotateCcw`), cerrar
+(`LockKeyhole`) y enviar a revisión (`Send`). El detalle abre los snapshots de
+una versión cerrada o la gestión de la versión vigente abierta/en revisión.
+ADMIN y GESTOR pueden reabrir solo la versión vigente cerrada, cerrar una versión
+abierta/en revisión y enviar a revisión una versión abierta. Las acciones de
+estado se deshabilitan para versiones históricas y roles sin permiso.
+Reapertura, cierre y revisión requieren confirmación; el diálogo queda bloqueado
+durante la operación. El resultado permanece visible aunque el nuevo estado
+retire la memoria del filtro actual. La baja lógica es
 individual, requiere confirmación y solo se ofrece a ADMIN para Memorias
 activas. Los filtros de actividad consultan `GET /api/v1/memorias` con
 `activos=true|all|false`; el filtro de estado se aplica a la versión actual.
@@ -156,8 +163,8 @@ ISS-16, sin implementación dentro de ISS-14.
 ADMIN y GESTOR crean memorias seleccionando UCT, inicio y fin, incluso entre años, con un atajo para año calendario. El detalle permite corregir solo diferencias reales antes del primer cierre, vuelve con `successMessage` y muestra cambios de período, estado y reapertura paginados de 3 ítems. Home, detalle y Excel identifican la memoria por rango y UCT.
 
 El período delimita el contenido pero no cierra automáticamente la memoria.
-ADMIN y GESTOR pueden pasarla a revisión o cerrarla desde el detalle; reabrir y
-eliminar continúan reservados a ADMIN. El historial rotula la relación como UCT
+ADMIN y GESTOR pueden pasarla a revisión, cerrarla y reabrirla desde el detalle;
+eliminar continúa reservado a ADMIN. El historial rotula la relación como UCT
 y muestra su sigla en lugar del identificador técnico.
 
 La ruta de alta usa la misma protección `ADMIN/GESTOR` que el botón `Nueva`, para
