@@ -1,4 +1,4 @@
-from flask import current_app, request
+from flask import current_app
 
 from modules.shared.controllers.responses import error_response, paginated_response
 
@@ -65,54 +65,31 @@ def paginate_query(query, page: int, per_page: int):
     return items, total
 
 
-def paginate_list(items: list, page: int, per_page: int):
-    total = len(items)
-    start = (page - 1) * per_page
-    end = start + per_page
-    return items[start:end], total
+def catalog_page_response(service, args):
+    try:
+        params = parse_pagination_params(args)
+    except ValueError as exc:
+        return error_response("VALIDATION_ERROR", message=str(exc), status_code=400)
+    data, total = service.get_page(**params)
+    return paginated_response(
+        data,
+        page=params["page"],
+        per_page=params["per_page"],
+        total=total,
+        meta={"activos": params["activos"], "orden": params["orden"], "source": "legacy-list"},
+    )
 
 
-def register_legacy_list_pagination(app):
-    @app.after_request
-    def paginate_legacy_list_response(response):
-        if request.method != "GET":
-            return response
-
-        if not pagination_requested(request.args):
-            return response
-
-        if response.status_code != 200 or not response.is_json:
-            return response
-
-        payload = response.get_json(silent=True)
-        if not isinstance(payload, list):
-            return response
-
-        try:
-            params = parse_pagination_params(request.args)
-        except ValueError as exc:
-            error, status_code = error_response(
-                "VALIDATION_ERROR",
-                message=str(exc),
-                status_code=400,
-            )
-            error.status_code = status_code
-            return error
-
-        data, total = paginate_list(
-            payload,
-            page=params["page"],
-            per_page=params["per_page"],
-        )
-        paginated, _status_code = paginated_response(
-            data,
-            page=params["page"],
-            per_page=params["per_page"],
-            total=total,
-            meta={
-                "activos": params["activos"],
-                "orden": params["orden"],
-                "source": "legacy-list",
-            },
-        )
-        return paginated
+def filtered_page_response(service, filters, args):
+    try:
+        params = parse_pagination_params(args)
+    except ValueError as exc:
+        return error_response("VALIDATION_ERROR", message=str(exc), status_code=400)
+    data, total = service.get_page(filters, params["page"], params["per_page"])
+    return paginated_response(
+        data,
+        page=params["page"],
+        per_page=params["per_page"],
+        total=total,
+        meta={"activos": params["activos"], "orden": params["orden"], "source": "legacy-list"},
+    )

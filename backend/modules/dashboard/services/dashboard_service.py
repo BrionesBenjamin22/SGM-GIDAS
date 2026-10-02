@@ -1,8 +1,12 @@
 from collections import Counter, defaultdict
 from datetime import date, datetime
+from decimal import Decimal
+
+from sqlalchemy.orm import joinedload
 
 from modules.recursos.models.becas import Beca, Beca_Becario
-from modules.recursos.models.erogacion import Erogacion
+from modules.recursos.models.movimiento_financiero import MovimientoFinanciero
+from modules.recursos.services.saldo_financiero_service import SaldoFinancieroService
 from modules.catalogos.models.fuente_financiamiento import FuenteFinanciamiento
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.personal.models.personal import Becario, Investigador, Personal
@@ -33,7 +37,9 @@ class DashboardService:
         asignaciones_beca = Beca_Becario.query.all()
         participaciones_investigador = InvestigadorProyecto.query.all()
         participaciones_becario = BecarioProyecto.query.all()
-        todas_las_erogaciones = Erogacion.query.all()
+        todas_las_erogaciones = MovimientoFinanciero.query.options(
+            joinedload(MovimientoFinanciero.categoria_erogacion)
+        ).filter(MovimientoFinanciero.deleted_at.is_(None)).all()
         todas_las_transferencias = TransferenciaSocioProductiva.query.all()
 
         proyectos = DashboardService._filtrar_intervalo(
@@ -48,6 +54,9 @@ class DashboardService:
             fecha_desde,
             fecha_hasta,
             lambda erogacion: erogacion.fecha
+        )
+        saldo_financiero = SaldoFinancieroService.calcular(
+            None, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta,
         )
         transferencias = DashboardService._filtrar_intervalo(
             todas_las_transferencias,
@@ -122,6 +131,23 @@ class DashboardService:
             "total_grupos": len(grupos),
             "total_becas": len(becas),
             "total_erogaciones": len(erogaciones),
+            "total_ingresos": str(saldo_financiero.total_ingresos),
+            "total_egresos": str(saldo_financiero.total_egresos),
+            "saldo_financiero": str(saldo_financiero.saldo_disponible),
+            "egresos_corrientes": str(sum(
+                (item.monto_equivalente_ars or item.monto for item in erogaciones
+                 if item.tipo_movimiento == "EGRESO"
+                 and item.categoria_erogacion
+                 and item.categoria_erogacion.codigo == "CORRIENTE"),
+                start=Decimal("0"),
+            )),
+            "egresos_capital": str(sum(
+                (item.monto_equivalente_ars or item.monto for item in erogaciones
+                 if item.tipo_movimiento == "EGRESO"
+                 and item.categoria_erogacion
+                 and item.categoria_erogacion.codigo == "CAPITAL"),
+                start=Decimal("0"),
+            )),
             "total_transferencias": len(transferencias),
             "total_fuentes_financiamiento": len(fuentes),
             "monto_total_proyectos": round(monto_total_proyectos, 2),
@@ -428,31 +454,34 @@ class DashboardService:
         agrupado = defaultdict(lambda: {
             "tipo": "Sin tipo",
             "total_registros": 0,
-            "total_egresos": 0.0,
-            "total_ingresos": 0.0,
-            "balance": 0.0,
+            "total_egresos": Decimal("0"),
+            "total_ingresos": Decimal("0"),
+            "balance": Decimal("0"),
         })
 
         for erogacion in erogaciones:
             tipo = (
-                erogacion.tipo_erogacion.nombre
-                if erogacion.tipo_erogacion else "Sin tipo"
+                "Ingresos" if erogacion.tipo_movimiento == "INGRESO" else
+                erogacion.categoria_erogacion.nombre
+                if erogacion.categoria_erogacion else "Sin categoría"
             )
 
             agrupado[tipo]["tipo"] = tipo
             agrupado[tipo]["total_registros"] += 1
-            agrupado[tipo]["total_egresos"] += float(erogacion.egresos or 0)
-            agrupado[tipo]["total_ingresos"] += float(erogacion.ingresos or 0)
-            agrupado[tipo]["balance"] = round(
+            if erogacion.tipo_movimiento == "EGRESO":
+                agrupado[tipo]["total_egresos"] += Decimal(str(erogacion.monto_equivalente_ars or erogacion.monto))
+            else:
+                agrupado[tipo]["total_ingresos"] += Decimal(str(erogacion.monto_equivalente_ars or erogacion.monto))
+            agrupado[tipo]["balance"] = (
                 agrupado[tipo]["total_ingresos"]
-                - agrupado[tipo]["total_egresos"],
-                2
+                - agrupado[tipo]["total_egresos"]
             )
 
         data = list(agrupado.values())
         for item in data:
-            item["total_egresos"] = round(item["total_egresos"], 2)
-            item["total_ingresos"] = round(item["total_ingresos"], 2)
+            item["total_egresos"] = float(item["total_egresos"])
+            item["total_ingresos"] = float(item["total_ingresos"])
+            item["balance"] = float(item["balance"])
 
         data.sort(key=lambda item: item["total_egresos"], reverse=True)
         return data

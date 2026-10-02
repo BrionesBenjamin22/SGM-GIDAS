@@ -1,5 +1,11 @@
 # Modulo backend de dashboard
 
+El resumen financiero consulta `MovimientoFinanciero` y
+`SaldoFinancieroService`: ingresos, egresos y saldo ARS derivan de movimientos
+activos; los egresos se agrupan por categoría `CORRIENTE` o `CAPITAL`. No utiliza
+las columnas separadas del modelo anterior. El contrato de la API conserva las
+claves públicas del resumen.
+
 Genera el resumen institucional, distribuciones, series y alertas a partir de
 datos agregados de los modulos de negocio.
 

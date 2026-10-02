@@ -74,7 +74,6 @@ type HistorialTransferenciaResponse =
   | { data?: HistorialTransferenciaItem[] };
 
 export interface TransferenciaPayload {
-  numeroTransferencia: number;
   denominacion: string;
   demandante: string;
   descripcionActividad: string;
@@ -84,6 +83,7 @@ export interface TransferenciaPayload {
   tipoContratoId: number;
   grupoUtnId: number;
   adoptantesIds?: number[];
+  adoptantesNuevos?: string[];
 }
 
 function fromBackend(raw: TransferenciaBackend): Transferencia {
@@ -122,9 +122,6 @@ function fromBackend(raw: TransferenciaBackend): Transferencia {
 function toBackend(data: Partial<TransferenciaPayload>): Record<string, unknown> {
   const body: Record<string, unknown> = {};
 
-  if ("numeroTransferencia" in data) {
-    body.numero_transferencia = data.numeroTransferencia;
-  }
   if ("denominacion" in data) {
     body.denominacion = data.denominacion;
   }
@@ -149,6 +146,12 @@ function toBackend(data: Partial<TransferenciaPayload>): Record<string, unknown>
   if ("grupoUtnId" in data) {
     body.grupo_utn_id = data.grupoUtnId;
   }
+  if ("adoptantesIds" in data) {
+    body.adoptantes_ids = data.adoptantesIds;
+  }
+  if ("adoptantesNuevos" in data) {
+    body.adoptantes_nuevos = data.adoptantesNuevos;
+  }
 
   return body;
 }
@@ -161,7 +164,7 @@ export async function getTransferencias(
   }
 
   const response = await http<TransferenciasResponse>(
-    `/transferencias?activos=${activos}`
+    `/transferencias/?activos=${activos}`
   );
   const items = Array.isArray(response)
     ? response
@@ -206,13 +209,7 @@ export async function createTransferencia(
     body: JSON.stringify(toBackend(data)),
   });
 
-  const created = fromBackend(raw);
-
-  if (data.adoptantesIds && data.adoptantesIds.length > 0) {
-    await addAdoptantesToTransferencia(created.id, data.adoptantesIds);
-  }
-
-  return created;
+  return fromBackend(raw);
 }
 
 export async function updateTransferencia(

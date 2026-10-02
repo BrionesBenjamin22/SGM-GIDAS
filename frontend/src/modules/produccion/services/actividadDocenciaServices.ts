@@ -29,6 +29,30 @@ export interface ActividadDocencia {
   investigador?: string | { id: number; nombre_apellido: string };
 }
 
+type ActividadDocenciaApiResponse = Omit<
+  ActividadDocencia,
+  "grado_academico" | "rol_actividad"
+> & {
+  grado_academico?: string | { id: number; nombre: string } | null;
+  rol_actividad?: string | { id: number; nombre: string } | null;
+};
+
+function getNombreCatalogo(
+  value?: string | { id: number; nombre: string } | null
+) {
+  return typeof value === "string" ? value : value?.nombre ?? "";
+}
+
+function mapActividadDocencia(
+  item: ActividadDocenciaApiResponse
+): ActividadDocencia {
+  return {
+    ...item,
+    grado_academico: getNombreCatalogo(item.grado_academico),
+    rol_actividad: getNombreCatalogo(item.rol_actividad),
+  };
+}
+
 export interface HistorialActividadDocenciaItem {
   id: number | string;
   campo?: string;
@@ -63,39 +87,44 @@ export const getActividadesDocencia = async (
 
   const query = params.toString();
 
-  return http<ActividadDocencia[]>(
+  const data = await http<ActividadDocenciaApiResponse[]>(
     `/actividades-docencia${query ? `?${query}` : ""}`,
     {
       method: "GET",
     }
   );
+
+  return data.map(mapActividadDocencia);
 };
 
 export const getActividadDocenciaById = async (
   id: number
 ): Promise<ActividadDocencia> => {
-  return http<ActividadDocencia>(`/actividades-docencia/${id}`, {
+  const data = await http<ActividadDocenciaApiResponse>(`/actividades-docencia/${id}`, {
     method: "GET",
   });
+  return mapActividadDocencia(data);
 };
 
 export const crearActividadDocencia = async (
   payload: ActividadDocenciaPayload
 ): Promise<ActividadDocencia> => {
-  return http<ActividadDocencia>(`/actividades-docencia/`, {
+  const data = await http<ActividadDocenciaApiResponse>(`/actividades-docencia/`, {
     method: "POST",
     body: JSON.stringify(payload),
   });
+  return mapActividadDocencia(data);
 };
 
 export const actualizarActividadDocencia = async (
   id: number,
   payload: Partial<ActividadDocenciaPayload>
 ): Promise<ActividadDocencia> => {
-  return http<ActividadDocencia>(`/actividades-docencia/${id}`, {
+  const data = await http<ActividadDocenciaApiResponse>(`/actividades-docencia/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });
+  return mapActividadDocencia(data);
 };
 
 export const eliminarActividadDocencia = async (
