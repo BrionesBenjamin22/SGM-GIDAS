@@ -49,6 +49,24 @@ class MovimientoFinancieroApiTestCase(unittest.TestCase):
         self.assertEqual(respuesta.get_json(), resultado)
         consulta.assert_called_once_with(7)
 
+    def test_lector_consulta_cotizacion_vigente_y_no_puede_escribir(self):
+        class Cotizacion:
+            def serialize(self):
+                return {"fecha_cotizacion": "2026-09-25", "valor": "1538.390000"}
+
+        with self._auth("LECTURA"), patch(
+            "modules.recursos.controllers.movimiento_financiero_controller."
+            "TipoCambioService.obtener_vigente_para_fecha", return_value=Cotizacion(),
+        ) as buscar:
+            respuesta = self.client.get(
+                f"{self.base}/cotizacion?fecha=2026-09-26", headers=self._headers(),
+            )
+            alta = self.client.post(f"{self.base}/", json={}, headers=self._headers())
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.get_json()["fecha_cotizacion"], "2026-09-25")
+        self.assertEqual(alta.status_code, 403)
+        self.assertEqual(buscar.call_args.args[0].isoformat(), "2026-09-26")
+
     def test_lector_puede_consultar_equipamiento_disponible(self):
         resultado = [{"id": 4, "denominacion": "Microscopio", "monto_invertido": "75.50"}]
         with self._auth("LECTURA"), patch(

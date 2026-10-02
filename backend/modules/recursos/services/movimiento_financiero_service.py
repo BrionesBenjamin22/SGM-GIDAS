@@ -18,6 +18,7 @@ from modules.recursos.models.movimiento_financiero import (
     validar_monto_financiero,
 )
 from modules.recursos.services.saldo_financiero_service import SaldoFinancieroService
+from modules.recursos.services.tipo_cambio_service import TipoCambioService
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.shared.services.date_time import validate_institutional_date
@@ -25,7 +26,7 @@ from modules.shared.services.date_time import validate_institutional_date
 
 class MovimientoFinancieroService:
     _CAMPOS_ALTA = frozenset({
-        "grupo_utn_id", "fecha", "tipo_movimiento", "monto",
+        "grupo_utn_id", "fecha", "tipo_movimiento", "monto", "moneda",
         "fuente_financiamiento_id", "categoria_erogacion_id",
         "equipamiento_id",
     })
@@ -202,10 +203,17 @@ class MovimientoFinancieroService:
                 details={"fields": {"tipo_movimiento": "Seleccione ingreso o egreso."}},
             )
         fecha = MovimientoFinancieroService._fecha(data.get("fecha"))
+        moneda = data.get("moneda")
+        if moneda not in {"ARS", "USD"}:
+            raise ValidationError("Seleccione una moneda válida.",
+                                  details={"fields": {"moneda": "Seleccione ARS o USD."}})
         # Serializa la numeración, el saldo y la unicidad del equipo dentro del grupo.
         MovimientoFinancieroService._bloquear_grupo(grupo_id)
         equipo = None
         if data.get("equipamiento_id") is not None:
+            if moneda != "ARS":
+                raise ValidationError("El equipamiento utiliza un monto en ARS. Seleccione ARS o quite el vínculo.",
+                                      details={"fields": {"moneda": "Seleccione ARS para vincular equipamiento."}})
             if tipo != "EGRESO":
                 raise ValidationError("Un ingreso no puede incluir equipamiento.")
             equipo = MovimientoFinancieroService._equipamiento_disponible(
@@ -216,7 +224,7 @@ class MovimientoFinancieroService:
             grupo_utn_id=grupo_id,
             tipo_movimiento=tipo,
             monto=MovimientoFinancieroService._monto_equipo(equipo) if equipo else data.get("monto"),
-            moneda="ARS",
+            moneda=moneda,
             fecha=fecha,
             created_by=user_id,
             equipamiento_id=equipo.id if equipo else None,
@@ -231,6 +239,15 @@ class MovimientoFinancieroService:
         if not fuente or fuente.deleted_at is not None:
             raise NotFoundError("La fuente ya no está disponible. Elija otra e intente nuevamente.")
         movimiento.fuente_financiamiento_id = fuente.id
+        if moneda == "USD":
+            cotizacion = TipoCambioService.obtener_vigente_para_fecha(fecha)
+            movimiento.tipo_cambio = cotizacion
+            movimiento.tipo_cambio_aplicado = cotizacion.valor
+            movimiento.monto_equivalente_ars = (
+                movimiento.monto * cotizacion.valor
+            ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        else:
+            movimiento.monto_equivalente_ars = movimiento.monto
         if tipo == "INGRESO":
             if categoria_id is not None:
                 raise ValidationError(
@@ -249,7 +266,7 @@ class MovimientoFinancieroService:
         if tipo == "EGRESO":
             saldo = SaldoFinancieroService.calcular(grupo_id).saldo_disponible
             saldo_fuente = SaldoFinancieroService.saldo_de_fuente(grupo_id, fuente_id)
-            if movimiento.monto > saldo or movimiento.monto > saldo_fuente:
+            if movimiento.monto_equivalente_ars > saldo or movimiento.monto_equivalente_ars > saldo_fuente:
                 raise ConflictError(
                     "El saldo disponible de la fuente no alcanza para registrar el egreso.",
                     details={"fields": {"monto": "Ingrese un monto igual o menor al saldo disponible de la fuente."}},
@@ -285,6 +302,8 @@ class MovimientoFinancieroService:
         nuevos = {}
         if "fecha" in data:
             nuevos["fecha"] = MovimientoFinancieroService._fecha(data["fecha"])
+            if movimiento.moneda == "USD" and nuevos["fecha"] != movimiento.fecha:
+                raise ValidationError("La fecha de un movimiento USD no puede cambiar porque conserva su cotización histórica.")
         if "monto" in data:
             nuevos["monto"] = validar_monto_financiero(data["monto"])
         if "fuente_financiamiento_id" in data:
@@ -323,18 +342,22 @@ class MovimientoFinancieroService:
             nuevos["categoria_erogacion_id"] = categoria.id
 
         nuevo_monto = nuevos.get("monto", movimiento.monto)
+        nuevo_equivalente = (nuevo_monto * movimiento.tipo_cambio_aplicado).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        ) if movimiento.moneda == "USD" else nuevo_monto
+        anterior_equivalente = movimiento.monto_equivalente_ars or movimiento.monto
         nueva_fuente = nuevos.get("fuente_financiamiento_id", movimiento.fuente_financiamiento_id)
         signo = 1 if movimiento.tipo_movimiento == "INGRESO" else -1
         saldo_fuente_anterior = SaldoFinancieroService.saldo_de_fuente(
             movimiento.grupo_utn_id, movimiento.fuente_financiamiento_id
         )
         if nueva_fuente == movimiento.fuente_financiamiento_id:
-            saldo_fuente_resultante = saldo_fuente_anterior + signo * (nuevo_monto - movimiento.monto)
+            saldo_fuente_resultante = saldo_fuente_anterior + signo * (nuevo_equivalente - anterior_equivalente)
         else:
-            saldo_fuente_resultante = saldo_fuente_anterior - signo * movimiento.monto
+            saldo_fuente_resultante = saldo_fuente_anterior - signo * anterior_equivalente
             saldo_fuente_nueva = SaldoFinancieroService.saldo_de_fuente(
                 movimiento.grupo_utn_id, nueva_fuente
-            ) + signo * nuevo_monto
+            ) + signo * nuevo_equivalente
             if saldo_fuente_nueva < 0:
                 raise ConflictError("El saldo disponible de la nueva fuente es insuficiente.",
                                     details={"fields": {"monto": "El monto supera el saldo de la fuente."}})
@@ -344,9 +367,9 @@ class MovimientoFinancieroService:
         if nuevo_monto != movimiento.monto:
             saldo = SaldoFinancieroService.calcular(movimiento.grupo_utn_id).saldo_disponible
             if movimiento.tipo_movimiento == "EGRESO":
-                saldo_resultante = saldo + movimiento.monto - nuevo_monto
+                saldo_resultante = saldo + anterior_equivalente - nuevo_equivalente
             else:
-                saldo_resultante = saldo - movimiento.monto + nuevo_monto
+                saldo_resultante = saldo - anterior_equivalente + nuevo_equivalente
             if saldo_resultante < 0:
                 raise ConflictError(
                     "El cambio dejaría al grupo sin saldo suficiente.",
@@ -364,6 +387,11 @@ class MovimientoFinancieroService:
                 cambios[campo] = cambio
                 setattr(movimiento, campo, nuevo_valor)
         if cambios:
+            if nuevo_equivalente != anterior_equivalente:
+                cambios["monto_equivalente_ars"] = AuditoriaService.construir_cambio(
+                    str(anterior_equivalente), str(nuevo_equivalente)
+                )
+                movimiento.monto_equivalente_ars = nuevo_equivalente
             movimiento.mark_updated(user_id)
             AuditoriaService.registrar_cambios(
                 entidad="movimiento_financiero", registro_id=movimiento.id,
@@ -387,7 +415,8 @@ class MovimientoFinancieroService:
             saldo_fuente = SaldoFinancieroService.saldo_de_fuente(
                 movimiento.grupo_utn_id, movimiento.fuente_financiamiento_id
             )
-            if saldo - movimiento.monto < 0 or saldo_fuente - movimiento.monto < 0:
+            equivalente = movimiento.monto_equivalente_ars or movimiento.monto
+            if saldo - equivalente < 0 or saldo_fuente - equivalente < 0:
                 raise ConflictError(
                     "No se puede eliminar el ingreso porque el saldo resultante sería negativo."
                 )
@@ -412,6 +441,10 @@ class MovimientoFinancieroService:
                 tipo_movimiento=movimiento.tipo_movimiento,
                 monto=movimiento.monto,
                 moneda=movimiento.moneda,
+                tipo_cambio_aplicado=movimiento.tipo_cambio_aplicado,
+                monto_equivalente_ars=movimiento.monto_equivalente_ars,
+                fecha_cotizacion=(movimiento.tipo_cambio.fecha_cotizacion if movimiento.tipo_cambio else None),
+                serie_bcra=(movimiento.tipo_cambio.serie_bcra if movimiento.tipo_cambio else None),
                 fuente_financiamiento_id=movimiento.fuente_financiamiento_id,
                 fuente_financiamiento_nombre=(
                     movimiento.fuente_financiamiento.nombre

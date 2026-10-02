@@ -18,8 +18,11 @@ from modules.recursos.models.movimiento_financiero import (
     CategoriaErogacion, MovimientoFinanciero, MovimientoMemoriaVersion,
 )
 from modules.recursos.models.equipamiento import Equipamiento
+from modules.recursos.models.tipo_cambio import TipoCambio
+from modules.recursos.clients.bcra_client import CotizacionBCRA
 from modules.recursos.services.movimiento_financiero_service import MovimientoFinancieroService
 from modules.recursos.services.saldo_financiero_service import SaldoFinancieroService
+from modules.recursos.services.tipo_cambio_service import TipoCambioService
 from modules.shared.exceptions import ConflictError, ValidationError
 from modules.shared.models.auditoria_campo import AuditoriaCampo
 from tools.seed_testing_data import _seed_group
@@ -55,11 +58,102 @@ class MovimientoFinancieroAltaTestCase(unittest.TestCase):
             "grupo_utn_id": self.grupo.id,
             "fecha": "2026-09-01",
             "tipo_movimiento": tipo,
+            "moneda": "ARS",
             "monto": "100.25",
             "fuente_financiamiento_id": self.fuente.id,
         }
         payload.update(changes)
         return payload
+
+    def test_usd_usa_cotizacion_anterior_y_conserva_snapshot(self):
+        cotizacion = TipoCambio(moneda_origen="USD", moneda_destino="ARS",
+                                fecha_cotizacion=date(2026, 8, 31), valor=Decimal("1538.390000"),
+                                serie_bcra=TipoCambioService.serie(), fuente="BCRA")
+        db.session.add(cotizacion)
+        db.session.commit()
+        ingreso = MovimientoFinancieroService.create(
+            self._payload("INGRESO", moneda="USD", monto="1000.00"), 1,
+        )
+        self.assertEqual(ingreso["monto"], "1000.00")
+        self.assertEqual(ingreso["monto_equivalente_ars"], "1538390.00")
+        self.assertEqual(ingreso["tipo_cambio"]["fecha_cotizacion"], "2026-08-31")
+        self.assertEqual(SaldoFinancieroService.calcular(self.grupo.id).saldo_disponible,
+                         Decimal("1538390.00"))
+        cotizacion.valor = Decimal("1600")
+        db.session.commit()
+        guardado = MovimientoFinancieroService.get_by_id(ingreso["id"])
+        self.assertEqual(guardado["tipo_cambio_aplicado"], "1538.390000")
+        self.assertEqual(guardado["monto_equivalente_ars"], "1538390.00")
+
+    def test_usd_sin_cotizacion_anterior_se_rechaza(self):
+        with self.assertRaises(ConflictError):
+            MovimientoFinancieroService.create(self._payload("INGRESO", moneda="USD"), 1)
+
+    def test_usd_consolida_saldos_y_memoria_sin_recalcular_cotizacion(self):
+        db.session.add(TipoCambio(moneda_origen="USD", moneda_destino="ARS",
+                                  fecha_cotizacion=date(2026, 9, 1), valor=Decimal("2.500000"),
+                                  serie_bcra=TipoCambioService.serie(), fuente="BCRA"))
+        db.session.commit()
+        ingreso = MovimientoFinancieroService.create(
+            self._payload("INGRESO", moneda="USD", monto="100.00"), 1)
+        egreso = MovimientoFinancieroService.create(
+            self._payload("EGRESO", moneda="USD", monto="10.00",
+                          categoria_erogacion_id=self.categoria.id), 1)
+        self.assertEqual(SaldoFinancieroService.calcular(self.grupo.id).saldo_disponible,
+                         Decimal("225.00"))
+        self.assertEqual(SaldoFinancieroService.saldo_de_fuente(self.grupo.id, self.fuente.id),
+                         Decimal("225.00"))
+        resumen = DashboardService.get_resumen()["resumen"]
+        self.assertEqual(resumen["total_ingresos"], "250.00")
+        self.assertEqual(resumen["egresos_corrientes"], "25.00")
+        version = SimpleNamespace(id=83, memoria=SimpleNamespace(
+            grupo_utn_id=self.grupo.id,
+            periodo_inicio=date(2026, 1, 1), periodo_fin=date(2026, 12, 31),
+        ))
+        MovimientoFinancieroService.snapshot_para_memoria_version(version, 1)
+        db.session.commit()
+        foto = MovimientoMemoriaVersion.query.filter_by(
+            memoria_version_id=83, movimiento_id=egreso["id"]).one()
+        self.assertEqual(foto.monto, Decimal("10.00"))
+        self.assertEqual(foto.monto_equivalente_ars, Decimal("25.00"))
+        self.assertEqual(foto.tipo_cambio_aplicado, Decimal("2.500000"))
+        actualizado = MovimientoFinancieroService.update(ingreso["id"], {"monto": "101.00"}, 1)
+        self.assertEqual(actualizado["tipo_cambio_aplicado"], "2.500000")
+        self.assertEqual(actualizado["monto_equivalente_ars"], "252.50")
+        self.assertEqual(foto.monto_equivalente_ars, Decimal("25.00"))
+        with self.assertRaises(ValidationError):
+            MovimientoFinancieroService.update(ingreso["id"], {"fecha": "2026-09-02"}, 1)
+
+    def test_ars_no_consulta_tipo_cambio(self):
+        with patch.object(TipoCambioService, "obtener_vigente_para_fecha") as buscar:
+            ingreso = MovimientoFinancieroService.create(self._payload("INGRESO"), 1)
+        buscar.assert_not_called()
+        self.assertIsNone(ingreso["tipo_cambio_id"])
+        self.assertEqual(ingreso["monto_equivalente_ars"], "100.25")
+
+    def test_sincronizacion_es_idempotente_y_no_inventa_fines_de_semana(self):
+        cliente = SimpleNamespace(
+            serie=TipoCambioService.serie(), verificar_variable=lambda: None,
+            consultar_tipo_cambio=lambda _desde, _hasta: [
+                CotizacionBCRA(date(2026, 9, 25), Decimal("1538.39"), 4),
+                CotizacionBCRA(date(2026, 9, 28), Decimal("1540.10"), 4),
+            ],
+        )
+        primero = TipoCambioService.sincronizar(cliente, hoy=date(2026, 9, 28))
+        segundo = TipoCambioService.sincronizar(cliente, hoy=date(2026, 9, 28))
+        self.assertEqual((primero["inserted"], segundo["inserted"]), (2, 0))
+        self.assertEqual(TipoCambio.query.count(), 2)
+        self.assertEqual(TipoCambioService.obtener_vigente_para_fecha(date(2026, 9, 26)).fecha_cotizacion,
+                         date(2026, 9, 25))
+
+    def test_sincronizacion_fallida_no_persiste_cambios(self):
+        def fallar(_desde, _hasta):
+            raise RuntimeError("BCRA unavailable")
+        cliente = SimpleNamespace(serie=TipoCambioService.serie(),
+                                  verificar_variable=lambda: None, consultar_tipo_cambio=fallar)
+        with self.assertRaises(RuntimeError):
+            TipoCambioService.sincronizar(cliente, hoy=date(2026, 9, 28))
+        self.assertEqual(TipoCambio.query.count(), 0)
 
     def test_semilla_usa_la_uct_activa_en_vez_de_crear_un_grupo_invisible(self):
         self.assertEqual(_seed_group().id, self.grupo.id)
@@ -377,6 +471,9 @@ class MovimientoFinancieroAltaTestCase(unittest.TestCase):
             {"numero_movimiento": 3, "fecha": date(2026, 5, 3), "tipo_movimiento": "EGRESO",
              "monto": "10.00", "moneda": "ARS", "categoria_erogacion_codigo": "CAPITAL",
              "categoria_erogacion_nombre": "Capital"},
+            {"numero_movimiento": 4, "fecha": date(2026, 5, 4), "tipo_movimiento": "INGRESO",
+             "monto": "100.00", "moneda": "USD", "monto_equivalente_ars": "200.00",
+             "tipo_cambio_aplicado": "2.000000", "fuente_financiamiento_nombre": "UTN"},
         ])
         with patch.object(ExportService, "_build_memoria_snapshot_sources", return_value=fuentes):
             archivo = ExportService.generar_excel_memoria(1, 1)
@@ -388,6 +485,7 @@ class MovimientoFinancieroAltaTestCase(unittest.TestCase):
         self.assertIn("Corriente", celdas)
         self.assertIn("Capital", celdas)
         self.assertIn("UTN", celdas)
+        self.assertIn(200.0, celdas)
 
 
 if __name__ == "__main__":

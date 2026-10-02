@@ -8,6 +8,22 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-57 a ISS-62: movimientos financieros ARS/USD y cotización BCRA
+
+- Los movimientos conservan su importe y moneda original; los saldos,
+  dashboard, búsqueda y exportaciones consolidan en ARS con el equivalente
+  persistido. El detalle muestra la cotización y su fecha.
+- La cotización minorista vendedor del BCRA se sincroniza mediante un job
+  idempotente. El alta USD usa la observación oficial de su fecha o la última
+  anterior y conserva el valor aplicado en el movimiento y la memoria.
+- Se incorporaron migración, validaciones, permisos, auditoría y pruebas de
+  regresión para precisión decimal, saldos, snapshots y exportación.
+
+Validaciones: 36 pruebas backend focalizadas y 192 frontend correctas,
+`typecheck` y build correctos; job BCRA ejecutado dos veces con cinco
+observaciones insertadas y luego cero duplicados. El usuario aprobó el flujo
+financiero; el ajuste y validación final del Excel de Memorias siguen pendientes.
+
 ### ISS-89: paginacion de listados desde SQL
 
 - Los listados de catalogos, grupo, memorias, personal, produccion, proyectos,

@@ -708,6 +708,7 @@ def _seed_manual_testing_dataset(grupo, catalogs, investigador, admin_user_id):
             defaults={
                 "tipo_movimiento": tipo_movimiento,
                 "monto": str(15000 + index * 3000 if index % 2 == 0 else 10000 + index * 2500),
+                "monto_equivalente_ars": str(15000 + index * 3000 if index % 2 == 0 else 10000 + index * 2500),
                 "moneda": "ARS",
                 "fecha": date(year, month, 15),
                 "fuente_financiamiento_id": catalogs["fuente"].id,

@@ -3,6 +3,7 @@ from flask import g, jsonify, request
 from modules.recursos.models.movimiento_financiero import CategoriaErogacion
 from modules.recursos.services.movimiento_financiero_service import MovimientoFinancieroService
 from modules.recursos.services.saldo_financiero_service import SaldoFinancieroService
+from modules.recursos.services.tipo_cambio_service import TipoCambioService
 from modules.shared.exceptions import ValidationError
 from modules.shared.controllers.responses import exception_response
 from modules.shared.controllers.pagination import pagination_requested, parse_pagination_params
@@ -13,6 +14,14 @@ from modules.shared.controllers.pagination import pagination_requested, parse_pa
 
 
 class MovimientoFinancieroController:
+    @staticmethod
+    def get_cotizacion():
+        try:
+            fecha = MovimientoFinancieroService._fecha(request.args.get("fecha"))
+            return jsonify(TipoCambioService.obtener_vigente_para_fecha(fecha).serialize()), 200
+        except Exception as error:
+            return exception_response(error, operation="consultar cotización oficial")
+
     @staticmethod
     def get_all():
         try:

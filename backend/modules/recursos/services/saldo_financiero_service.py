@@ -36,6 +36,10 @@ class ResumenFinanciero:
 
 class SaldoFinancieroService:
     @staticmethod
+    def _importe_ars():
+        return func.coalesce(MovimientoFinanciero.monto_equivalente_ars, MovimientoFinanciero.monto)
+
+    @staticmethod
     def _grupo_permitido(grupo_utn_id: int | None) -> int | None:
         actual = getattr(g, "current_grupo_utn_id", None) if has_request_context() else None
         if actual is not None:
@@ -50,11 +54,11 @@ class SaldoFinancieroService:
         # Reutiliza la validación de grupo y moneda del saldo consolidado.
         SaldoFinancieroService.calcular(grupo_utn_id)
         ingresos = func.coalesce(func.sum(case(
-            (MovimientoFinanciero.tipo_movimiento == "INGRESO", MovimientoFinanciero.monto),
+            (MovimientoFinanciero.tipo_movimiento == "INGRESO", SaldoFinancieroService._importe_ars()),
             else_=0,
         )), 0)
         egresos = func.coalesce(func.sum(case(
-            (MovimientoFinanciero.tipo_movimiento == "EGRESO", MovimientoFinanciero.monto),
+            (MovimientoFinanciero.tipo_movimiento == "EGRESO", SaldoFinancieroService._importe_ars()),
             else_=0,
         )), 0)
         filas = db.session.execute(
@@ -89,8 +93,8 @@ class SaldoFinancieroService:
     def saldo_de_fuente(grupo_utn_id: int, fuente_id: int) -> Decimal:
         grupo_utn_id = SaldoFinancieroService._grupo_permitido(grupo_utn_id)
         total = db.session.scalar(select(func.coalesce(func.sum(case(
-            (MovimientoFinanciero.tipo_movimiento == "INGRESO", MovimientoFinanciero.monto),
-            else_=-MovimientoFinanciero.monto,
+            (MovimientoFinanciero.tipo_movimiento == "INGRESO", SaldoFinancieroService._importe_ars()),
+            else_=-SaldoFinancieroService._importe_ars(),
         )), 0)).where(
             MovimientoFinanciero.grupo_utn_id == grupo_utn_id,
             MovimientoFinanciero.fuente_financiamiento_id == fuente_id,
@@ -117,7 +121,8 @@ class SaldoFinancieroService:
             activos.append(MovimientoFinanciero.fecha <= fecha_hasta)
         monedas_no_convertidas = db.session.scalar(
             select(func.count(MovimientoFinanciero.id)).where(
-                *activos, MovimientoFinanciero.moneda != "ARS"
+                *activos, MovimientoFinanciero.moneda == "USD",
+                MovimientoFinanciero.monto_equivalente_ars.is_(None),
             )
         ) or 0
         if monedas_no_convertidas:
@@ -128,11 +133,11 @@ class SaldoFinancieroService:
         ingresos, egresos, cantidad = db.session.execute(
             select(
                 func.coalesce(func.sum(case(
-                    (MovimientoFinanciero.tipo_movimiento == "INGRESO", MovimientoFinanciero.monto),
+                    (MovimientoFinanciero.tipo_movimiento == "INGRESO", SaldoFinancieroService._importe_ars()),
                     else_=0,
                 )), 0),
                 func.coalesce(func.sum(case(
-                    (MovimientoFinanciero.tipo_movimiento == "EGRESO", MovimientoFinanciero.monto),
+                    (MovimientoFinanciero.tipo_movimiento == "EGRESO", SaldoFinancieroService._importe_ars()),
                     else_=0,
                 )), 0),
                 func.count(MovimientoFinanciero.id),

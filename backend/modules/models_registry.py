@@ -94,6 +94,7 @@ from modules.recursos.models.erogacion import (  # noqa: F401
     ErogacionMemoriaVersion,
     TipoErogacion,
 )
+from modules.recursos.models.tipo_cambio import TipoCambio  # noqa: F401
 from modules.recursos.models.movimiento_financiero import (  # noqa: F401
     CategoriaErogacion,
     MovimientoFinanciero,

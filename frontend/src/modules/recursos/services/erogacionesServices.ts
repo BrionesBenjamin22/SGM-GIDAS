@@ -17,6 +17,10 @@ export type Erogacion = {
   tipo_movimiento: TipoMovimiento;
   monto: string;
   moneda: MonedaMovimiento;
+  tipo_cambio_id: number | null;
+  tipo_cambio_aplicado: string | null;
+  monto_equivalente_ars: string | null;
+  tipo_cambio: CotizacionMovimiento | null;
   fecha: string;
   grupo_utn_id: number;
   fuente_financiamiento_id: number | null;
@@ -39,6 +43,16 @@ export type Erogacion = {
 };
 
 export type Erogaciones = Erogacion;
+
+export type CotizacionMovimiento = {
+  id: number;
+  fecha_cotizacion: string;
+  valor: string;
+  serie_bcra: number;
+  fuente: string;
+  moneda_origen: "USD";
+  moneda_destino: "ARS";
+};
 
 export type HistorialErogacionItem = {
   id: number | string;
@@ -75,6 +89,7 @@ export type EquipamientoDisponible = {
 
 export type CreateErogacionPayload = {
   tipo_movimiento: TipoMovimiento;
+  moneda: MonedaMovimiento;
   monto: string;
   fecha: string;
   grupo_utn_id: number;
@@ -105,6 +120,10 @@ export async function getHistorialErogacionById(id: number) {
 
 export async function getCategoriasErogacion() {
   return http<CategoriaErogacion[]>(`${BASE}/categorias`);
+}
+
+export async function getCotizacionMovimiento(fecha: string) {
+  return http<CotizacionMovimiento>(`${BASE}/cotizacion?fecha=${encodeURIComponent(fecha)}`);
 }
 
 export async function getResumenFinanciero(grupoId: number) {

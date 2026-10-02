@@ -46,6 +46,9 @@ class MovimientoFinanciero(db.Model, AuditMixin):
     tipo_movimiento = db.Column(db.String(7), nullable=False)
     monto = db.Column(db.Numeric(18, 2, asdecimal=True), nullable=False)
     moneda = db.Column(db.String(3), nullable=False, default="ARS")
+    tipo_cambio_id = db.Column(db.Integer, db.ForeignKey("tipo_cambio.id"), nullable=True)
+    tipo_cambio_aplicado = db.Column(db.Numeric(18, 6, asdecimal=True), nullable=True)
+    monto_equivalente_ars = db.Column(db.Numeric(24, 2, asdecimal=True), nullable=True)
     fuente_financiamiento_id = db.Column(
         db.Integer, db.ForeignKey("fuente_financiamiento.id"), nullable=False
     )
@@ -60,6 +63,7 @@ class MovimientoFinanciero(db.Model, AuditMixin):
     fuente_financiamiento = db.relationship("FuenteFinanciamiento")
     categoria_erogacion = db.relationship("CategoriaErogacion", back_populates="movimientos")
     equipamiento = db.relationship("Equipamiento")
+    tipo_cambio = db.relationship("TipoCambio")
 
     __table_args__ = (
         db.UniqueConstraint(
@@ -71,6 +75,13 @@ class MovimientoFinanciero(db.Model, AuditMixin):
         ),
         db.CheckConstraint("monto > 0", name="ck_movimiento_monto_positivo"),
         db.CheckConstraint("moneda IN ('ARS', 'USD')", name="ck_movimiento_moneda"),
+        db.CheckConstraint(
+            "(moneda = 'ARS' AND tipo_cambio_id IS NULL AND tipo_cambio_aplicado IS NULL) OR "
+            "(moneda = 'USD' AND tipo_cambio_id IS NOT NULL AND tipo_cambio_aplicado IS NOT NULL "
+            "AND tipo_cambio_aplicado > 0 AND monto_equivalente_ars IS NOT NULL "
+            "AND monto_equivalente_ars > 0)",
+            name="ck_movimiento_tipo_cambio",
+        ),
         db.CheckConstraint("numero_movimiento > 0", name="ck_movimiento_numero_positivo"),
         db.CheckConstraint(
             "fuente_financiamiento_id IS NOT NULL AND "
@@ -106,6 +117,9 @@ class MovimientoFinanciero(db.Model, AuditMixin):
     def serialize(self):
         data = self.to_dict()
         data["monto"] = str(self.monto)
+        data["tipo_cambio_aplicado"] = str(self.tipo_cambio_aplicado) if self.tipo_cambio_aplicado is not None else None
+        data["monto_equivalente_ars"] = str(self.monto_equivalente_ars) if self.monto_equivalente_ars is not None else None
+        data["tipo_cambio"] = self.tipo_cambio.serialize() if self.tipo_cambio else None
         data["grupo"] = (
             {"id": self.grupo_utn.id, "nombre": self.grupo_utn.nombre_sigla_grupo}
             if self.grupo_utn else None
@@ -146,6 +160,10 @@ class MovimientoMemoriaVersion(db.Model, AuditMixin):
     tipo_movimiento = db.Column(db.String(7), nullable=False)
     monto = db.Column(db.Numeric(18, 2, asdecimal=True), nullable=False)
     moneda = db.Column(db.String(3), nullable=False)
+    tipo_cambio_aplicado = db.Column(db.Numeric(18, 6, asdecimal=True), nullable=True)
+    monto_equivalente_ars = db.Column(db.Numeric(24, 2, asdecimal=True), nullable=True)
+    fecha_cotizacion = db.Column(db.Date, nullable=True)
+    serie_bcra = db.Column(db.Integer, nullable=True)
     fuente_financiamiento_id = db.Column(db.Integer, nullable=True)
     fuente_financiamiento_nombre = db.Column(db.String(255), nullable=True)
     categoria_erogacion_id = db.Column(db.Integer, nullable=True)
@@ -166,4 +184,6 @@ class MovimientoMemoriaVersion(db.Model, AuditMixin):
     def serialize(self):
         data = self.to_dict()
         data["monto"] = str(self.monto)
+        data["tipo_cambio_aplicado"] = str(self.tipo_cambio_aplicado) if self.tipo_cambio_aplicado is not None else None
+        data["monto_equivalente_ars"] = str(self.monto_equivalente_ars) if self.monto_equivalente_ars is not None else None
         return data

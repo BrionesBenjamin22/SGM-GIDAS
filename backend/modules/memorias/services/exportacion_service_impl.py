@@ -938,7 +938,7 @@ class ExportService:
 
     @classmethod
     def _monto_movimiento(cls, item: dict, tipo: str):
-        return cls._money(item.get("monto")) if item.get("tipo_movimiento") == tipo else 0.0
+        return cls._money(item.get("monto_equivalente_ars") or item.get("monto")) if item.get("tipo_movimiento") == tipo else 0.0
 
     @staticmethod
     def _clasificar_registro(tipo_registro_nombre: str | None):
@@ -1916,8 +1916,9 @@ class ExportService:
         total_ingresos = 0.0
         total_egresos = 0.0
         for erogacion in erogaciones:
-            ingresos = cls._money(erogacion.monto) if erogacion.tipo_movimiento == "INGRESO" else 0.0
-            egresos = cls._money(erogacion.monto) if erogacion.tipo_movimiento == "EGRESO" else 0.0
+            importe_ars = erogacion.monto_equivalente_ars or erogacion.monto
+            ingresos = cls._money(importe_ars) if erogacion.tipo_movimiento == "INGRESO" else 0.0
+            egresos = cls._money(importe_ars) if erogacion.tipo_movimiento == "EGRESO" else 0.0
             total_ingresos += ingresos
             total_egresos += egresos
             saldo = ingresos - egresos

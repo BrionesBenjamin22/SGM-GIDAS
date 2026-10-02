@@ -69,6 +69,14 @@ export default function ErogacionesDetalle() {
             <div><dt className="font-semibold text-slate-800">Fecha</dt><dd className="text-slate-600">{formatFecha(data.fecha)}</dd></div>
             <div><dt className="font-semibold text-slate-800">Monto</dt><dd className="text-slate-600">{formatMovimientoMoney(data.monto, data.moneda)}</dd></div>
             <div><dt className="font-semibold text-slate-800">Moneda</dt><dd className="text-slate-600">{data.moneda}</dd></div>
+            {data.moneda === "USD" && <>
+              <div><dt className="font-semibold text-slate-800">Cotización oficial diaria utilizada</dt><dd className="text-slate-600">ARS {data.tipo_cambio_aplicado} / USD</dd></div>
+              <div><dt className="font-semibold text-slate-800">Fecha de cotización</dt><dd className="text-slate-600">{data.tipo_cambio ? formatFecha(data.tipo_cambio.fecha_cotizacion) : "—"}</dd></div>
+              <div><dt className="font-semibold text-slate-800">Equivalente en ARS</dt><dd className="text-slate-600">{data.monto_equivalente_ars ? formatMovimientoMoney(data.monto_equivalente_ars, "ARS") : "—"}</dd></div>
+              <div><dt className="font-semibold text-slate-800">Fuente</dt><dd className="text-slate-600">Banco Central de la República Argentina · {data.tipo_cambio?.serie_bcra === 7927
+                ? "Tipo de Cambio Minorista · Com. B 9791 · Promedio vendedor"
+                : `Serie ${data.tipo_cambio?.serie_bcra ?? "—"}`}</dd></div>
+            </>}
             <div><dt className="font-semibold text-slate-800">Fuente de financiamiento</dt><dd className="text-slate-600">{data.fuente?.nombre ?? "—"}</dd></div>
             {data.tipo_movimiento === "EGRESO" && <>
               <div><dt className="font-semibold text-slate-800">Categoría de erogación</dt><dd className="text-slate-600">{data.categoria_erogacion?.nombre ?? "—"}</dd></div>

@@ -12,20 +12,22 @@ import { applyFieldErrors, getApiFieldErrors, getErrorMessage } from "@/lib/http
 import { useFuentesFinanciamiento } from "@/modules/catalogos/hooks/useFuenteFinanciamiento";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 import { useCategoriasErogacion } from "@/modules/recursos/hooks/useCategoriasErogacion";
+import { useCotizacionMovimiento } from "@/modules/recursos/hooks/useCotizacionMovimiento";
 import {
   createErogacion, getEquipamientosDisponibles, getErogacionById, getSaldosPorFuente,
   updateErogacion,
-  type CreateErogacionPayload, type TipoMovimiento, type UpdateMovimientoPayload,
+  type CreateErogacionPayload, type MonedaMovimiento, type TipoMovimiento, type UpdateMovimientoPayload,
 } from "@/modules/recursos/services/erogacionesServices";
 import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
 import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
 import { formatMovimientoMoney } from "@/modules/recursos/utils/movimientoHistory";
-import { excedeSaldoDisponible } from "@/modules/recursos/utils/movimientoSaldo";
-import { toCivilDateString } from "@/utils/dateTime";
+import { equivalenteArs, excedeSaldoDisponible } from "@/modules/recursos/utils/movimientoSaldo";
+import { formatFecha, toCivilDateString } from "@/utils/dateTime";
 
 type FormData = {
   tipo_movimiento: TipoMovimiento | "";
+  moneda: MonedaMovimiento;
   fecha: string;
   monto: string;
   fuente_financiamiento_id: string;
@@ -34,7 +36,7 @@ type FormData = {
 };
 
 const emptyData: FormData = {
-  tipo_movimiento: "", fecha: "", monto: "",
+  tipo_movimiento: "", moneda: "ARS", fecha: "", monto: "",
   fuente_financiamiento_id: "", categoria_erogacion_id: "",
   equipamiento_id: "",
 };
@@ -54,6 +56,8 @@ export default function ErogacionesForm() {
   const { fuentes } = useFuentesFinanciamiento();
   const { data: categorias = [] } = useCategoriasErogacion();
   const [data, setData] = useState<FormData>(emptyData);
+  const { data: cotizacion, isLoading: cotizacionLoading, isError: cotizacionError, refetch: refetchCotizacion } =
+    useCotizacionMovimiento(data.fecha, !isEdit && data.moneda === "USD");
   const { data: equipos = [], isError: equiposError, refetch: refetchEquipos } = useQuery({
     queryKey: ["equipamientos-disponibles", uct?.id, id],
     queryFn: () => getEquipamientosDisponibles(uct!.id, isEdit ? Number(id) : undefined),
@@ -85,6 +89,7 @@ export default function ErogacionesForm() {
     if (!movimiento) return;
     setData({
       tipo_movimiento: movimiento.tipo_movimiento,
+      moneda: movimiento.moneda,
       fecha: movimiento.fecha,
       monto: movimiento.monto,
       fuente_financiamiento_id: movimiento.fuente_financiamiento_id?.toString() ?? "",
@@ -140,7 +145,7 @@ export default function ErogacionesForm() {
         return;
       }
       if (applyFieldErrors(error, setErrors, [
-        "tipo_movimiento", "fecha", "monto", "fuente_financiamiento_id", "categoria_erogacion_id", "equipamiento_id",
+        "tipo_movimiento", "moneda", "fecha", "monto", "fuente_financiamiento_id", "categoria_erogacion_id", "equipamiento_id",
       ])) return;
       setErrorMessage(getErrorMessage(
         error,
@@ -159,6 +164,7 @@ export default function ErogacionesForm() {
     if (isPending || checkingSaldo || !uct) return;
     const nextErrors: Record<string, string> = {};
     if (data.tipo_movimiento !== "INGRESO" && data.tipo_movimiento !== "EGRESO") nextErrors.tipo_movimiento = "Seleccione ingreso o egreso.";
+    if (data.moneda === "USD" && !isEdit && !cotizacion) nextErrors.moneda = "No existe una cotización oficial disponible. Seleccione otra fecha o reintente.";
     if (!data.fecha) nextErrors.fecha = "Seleccione la fecha del movimiento.";
     if (!/^\d{1,16}(\.\d{1,2})?$/.test(data.monto.trim()) || Number(data.monto) <= 0) {
       nextErrors.monto = "Ingrese un monto mayor que cero, con hasta dos decimales.";
@@ -178,6 +184,7 @@ export default function ErogacionesForm() {
     if (!isEdit) {
       payload = {
         tipo_movimiento: data.tipo_movimiento as TipoMovimiento,
+        moneda: data.moneda,
         monto, fecha: data.fecha, grupo_utn_id: uct.id,
         fuente_financiamiento_id: Number(data.fuente_financiamiento_id),
         ...(data.tipo_movimiento === "EGRESO" ? {
@@ -217,8 +224,9 @@ export default function ErogacionesForm() {
         const saldos = await getSaldosPorFuente(uct.id);
         qc.setQueryData(["saldos-por-fuente", uct.id], saldos);
         const saldoFuente = saldos.find((item) => item.fuente_id === Number(data.fuente_financiamiento_id))?.saldo_disponible ?? "0.00";
-        const montoAnterior = isEdit && movimiento?.fuente_financiamiento_id === Number(data.fuente_financiamiento_id) ? movimiento.monto : "0.00";
-        if (excedeSaldoDisponible(monto, saldoFuente, montoAnterior)) {
+        const montoArs = data.moneda === "USD" ? equivalenteArs(monto, (isEdit ? movimiento?.tipo_cambio_aplicado : cotizacion?.valor)!) : monto;
+        const montoAnterior = isEdit && movimiento?.fuente_financiamiento_id === Number(data.fuente_financiamiento_id) ? movimiento.monto_equivalente_ars ?? movimiento.monto : "0.00";
+        if (excedeSaldoDisponible(montoArs, saldoFuente, montoAnterior)) {
           setInsufficientBalance(saldoFuente);
           return;
         }
@@ -261,9 +269,12 @@ export default function ErogacionesForm() {
           )}
         </Field>
         <Field required label="Fecha" name="fecha" error={errors.fecha}>
-          <DatePicker value={data.fecha ? new Date(`${data.fecha}T00:00:00`) : null} maxDate={new Date()} onChange={(date) => setField("fecha", toCivilDateString(date) ?? "")} helperText="DD/MM/AAAA" />
+          {isEdit && data.moneda === "USD" ? <>
+            <p className="rounded-lg border border-slate-200 bg-slate-50 p-2">{formatFecha(data.fecha)}</p>
+            <p className="mt-1 text-xs text-slate-500">La fecha se conserva junto con la cotización histórica aplicada.</p>
+          </> : <DatePicker value={data.fecha ? new Date(`${data.fecha}T00:00:00`) : null} maxDate={new Date()} onChange={(date) => setField("fecha", toCivilDateString(date) ?? "")} helperText="DD/MM/AAAA" />}
         </Field>
-        {data.tipo_movimiento === "EGRESO" && <Field label="Equipamiento relacionado" name="equipamiento_id" error={errors.equipamiento_id}>
+        {data.tipo_movimiento === "EGRESO" && data.moneda === "ARS" && <Field label="Equipamiento relacionado" name="equipamiento_id" error={errors.equipamiento_id}>
           <select className="input" value={data.equipamiento_id ?? ""} onChange={(event) => {
             const equipoId = event.target.value;
             const equipo = equipos.find((item) => String(item.id) === equipoId);
@@ -286,7 +297,27 @@ export default function ErogacionesForm() {
           <input type="number" min="0.01" step="0.01" readOnly={Boolean(data.equipamiento_id)} className="input" value={data.monto} placeholder="Ej.: 150000.00" onChange={(event) => setField("monto", event.target.value)} />
           {data.equipamiento_id && <p className="mt-1 text-xs text-slate-500">El monto se toma del equipamiento al vincularlo y se conserva como importe histórico.</p>}
         </Field>
-        <Field label="Moneda" name="moneda"><p className="rounded-lg border border-slate-200 bg-slate-50 p-2">ARS</p></Field>
+        <Field required label="Moneda" name="moneda" error={errors.moneda}>
+          {isEdit ? <p className="rounded-lg border border-slate-200 bg-slate-50 p-2">{data.moneda}</p> :
+            <select className="input" value={data.moneda} onChange={(event) => setData((previous) => ({ ...previous, moneda: event.target.value as MonedaMovimiento, equipamiento_id: "" }))}>
+              <option value="ARS">ARS</option><option value="USD">USD</option>
+            </select>}
+        </Field>
+        {data.moneda === "USD" && <div aria-live="polite" className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+          {isEdit && movimiento?.tipo_cambio ? <>
+            <p>Cotización oficial diaria utilizada: ARS {movimiento.tipo_cambio_aplicado} / USD</p>
+            <p>Fecha de cotización: {formatFecha(movimiento.tipo_cambio.fecha_cotizacion)}</p>
+            <p>Equivalente: ARS {data.monto && /^\d+(\.\d{1,2})?$/.test(data.monto) ? equivalenteArs(data.monto, movimiento.tipo_cambio_aplicado!) : "—"}</p>
+          </> : cotizacionLoading ? <p>Consultando cotización...</p> : cotizacionError ?
+            <p role="alert">Lo sentimos, no pudimos recuperar la cotización. <button type="button" className="underline" onClick={() => refetchCotizacion()}>Intente nuevamente.</button></p> : cotizacion ? <>
+            <p>Cotización oficial diaria utilizada: ARS {cotizacion.valor} / USD</p>
+            <p>Fecha de cotización: {formatFecha(cotizacion.fecha_cotizacion)}</p>
+            <p>Equivalente: ARS {data.monto && /^\d+(\.\d{1,2})?$/.test(data.monto) ? equivalenteArs(data.monto, cotizacion.valor) : "—"}</p>
+          </> : <p>Seleccione la fecha para consultar la cotización oficial.</p>}
+          <p className="mt-2 text-xs">Banco Central de la República Argentina · {((isEdit ? movimiento?.tipo_cambio : cotizacion)?.serie_bcra === 7927)
+            ? "Tipo de Cambio Minorista · Com. B 9791 · Promedio vendedor"
+            : `Serie ${(isEdit ? movimiento?.tipo_cambio : cotizacion)?.serie_bcra ?? "—"}`}</p>
+        </div>}
         <Field required label="Fuente de financiamiento" name="fuente_financiamiento_id" error={errors.fuente_financiamiento_id}>
             <select className="input" value={data.fuente_financiamiento_id} onChange={(event) => setField("fuente_financiamiento_id", event.target.value)}>
               <option value="">Seleccione una fuente</option>

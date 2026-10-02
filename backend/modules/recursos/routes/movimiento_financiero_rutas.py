@@ -21,6 +21,12 @@ def get_categorias():
     return MovimientoFinancieroController.get_categorias()
 
 
+@movimiento_financiero_bp.route("/cotizacion", methods=["GET"])
+@requiere_rol("ADMIN", "GESTOR", "LECTURA")
+def get_cotizacion():
+    return MovimientoFinancieroController.get_cotizacion()
+
+
 @movimiento_financiero_bp.route("/grupos/<int:grupo_id>/resumen", methods=["GET"])
 @requiere_rol("ADMIN", "GESTOR", "LECTURA")
 def get_resumen(grupo_id):

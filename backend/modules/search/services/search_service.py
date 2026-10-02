@@ -649,8 +649,8 @@ class SearchService:
                     for e in erogaciones[:5]  # recientes
                 ]
 
-                total_egresos = sum(e.monto for e in tipo.movimientos if e.tipo_movimiento == "EGRESO" and e.deleted_at is None)
-                total_ingresos = sum(e.monto for e in tipo.movimientos if e.tipo_movimiento == "INGRESO" and e.deleted_at is None)
+                total_egresos = sum((e.monto_equivalente_ars or e.monto) for e in tipo.movimientos if e.tipo_movimiento == "EGRESO" and e.deleted_at is None)
+                total_ingresos = sum((e.monto_equivalente_ars or e.monto) for e in tipo.movimientos if e.tipo_movimiento == "INGRESO" and e.deleted_at is None)
 
                 resultados.append(SearchService.with_status(tipo, {
                     "tipo": "Categoría de Erogación",

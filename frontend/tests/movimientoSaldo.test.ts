@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { excedeSaldoDisponible } from "../src/modules/recursos/utils/movimientoSaldo.ts";
+import { equivalenteArs, excedeSaldoDisponible } from "../src/modules/recursos/utils/movimientoSaldo.ts";
 
 test("un egreso igual al saldo disponible puede guardarse y uno superior no", () => {
   assert.equal(excedeSaldoDisponible("91.00", "91.00"), false);
@@ -16,4 +16,10 @@ test("al editar un egreso se reintegra su monto anterior antes de comparar", () 
 
 test("compara centavos exactos aun con importes grandes", () => {
   assert.equal(excedeSaldoDisponible("9999999999999999.01", "9999999999999999.00"), true);
+});
+
+test("convierte USD a ARS con redondeo decimal exacto", () => {
+  assert.equal(equivalenteArs("1000.00", "1538.390000"), "1538390.00");
+  assert.equal(equivalenteArs("0.01", "1.500000"), "0.02");
+  assert.equal(equivalenteArs("1000000000000000.00", "1538.390000"), "1538390000000000000.00");
 });

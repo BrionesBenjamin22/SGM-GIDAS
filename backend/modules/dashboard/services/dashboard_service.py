@@ -135,14 +135,14 @@ class DashboardService:
             "total_egresos": str(saldo_financiero.total_egresos),
             "saldo_financiero": str(saldo_financiero.saldo_disponible),
             "egresos_corrientes": str(sum(
-                (item.monto for item in erogaciones
+                (item.monto_equivalente_ars or item.monto for item in erogaciones
                  if item.tipo_movimiento == "EGRESO"
                  and item.categoria_erogacion
                  and item.categoria_erogacion.codigo == "CORRIENTE"),
                 start=Decimal("0"),
             )),
             "egresos_capital": str(sum(
-                (item.monto for item in erogaciones
+                (item.monto_equivalente_ars or item.monto for item in erogaciones
                  if item.tipo_movimiento == "EGRESO"
                  and item.categoria_erogacion
                  and item.categoria_erogacion.codigo == "CAPITAL"),
@@ -454,9 +454,9 @@ class DashboardService:
         agrupado = defaultdict(lambda: {
             "tipo": "Sin tipo",
             "total_registros": 0,
-            "total_egresos": 0.0,
-            "total_ingresos": 0.0,
-            "balance": 0.0,
+            "total_egresos": Decimal("0"),
+            "total_ingresos": Decimal("0"),
+            "balance": Decimal("0"),
         })
 
         for erogacion in erogaciones:
@@ -469,19 +469,19 @@ class DashboardService:
             agrupado[tipo]["tipo"] = tipo
             agrupado[tipo]["total_registros"] += 1
             if erogacion.tipo_movimiento == "EGRESO":
-                agrupado[tipo]["total_egresos"] += float(erogacion.monto)
+                agrupado[tipo]["total_egresos"] += Decimal(str(erogacion.monto_equivalente_ars or erogacion.monto))
             else:
-                agrupado[tipo]["total_ingresos"] += float(erogacion.monto)
-            agrupado[tipo]["balance"] = round(
+                agrupado[tipo]["total_ingresos"] += Decimal(str(erogacion.monto_equivalente_ars or erogacion.monto))
+            agrupado[tipo]["balance"] = (
                 agrupado[tipo]["total_ingresos"]
-                - agrupado[tipo]["total_egresos"],
-                2
+                - agrupado[tipo]["total_egresos"]
             )
 
         data = list(agrupado.values())
         for item in data:
-            item["total_egresos"] = round(item["total_egresos"], 2)
-            item["total_ingresos"] = round(item["total_ingresos"], 2)
+            item["total_egresos"] = float(item["total_egresos"])
+            item["total_ingresos"] = float(item["total_ingresos"])
+            item["balance"] = float(item["balance"])
 
         data.sort(key=lambda item: item["total_egresos"], reverse=True)
         return data
