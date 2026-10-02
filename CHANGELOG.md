@@ -8,6 +8,22 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-94: Excel institucional y escenario formal de memorias
+
+- La generación completa la referencia `Memorias 2025 - GIDAS.xlsx` conservando
+  hojas, encabezados, combinaciones, formato e impresión; amplía tablas cuando
+  exceden sus filas disponibles y normaliza contenido a Calibri 11 negro.
+- El documento usa snapshots inmutables, autoridades y planificación congeladas,
+  fechas nativas y finanzas consolidadas en ARS por fuente y categoría.
+- Seed optativa institucional 2025 y escenario formal 2025/2026 con protección de
+  credenciales, otras UCT y fotos históricas. El escenario 2026 no crea memorias
+  ni exporta: el operador selecciona el período y genera desde la interfaz.
+- El botón de Excel muestra `Generando el archivo...` exclusivamente dentro del
+  control mientras se procesa y evita envíos duplicados.
+
+Validaciones: aceptación visual/funcional del usuario el 02/10/2026; suite backend
+de 637 casos, 193 pruebas frontend, TypeScript y build de producción correctos.
+
 ### ISS-57 a ISS-62: movimientos financieros ARS/USD y cotización BCRA
 
 - Los movimientos conservan su importe y moneda original; los saldos,

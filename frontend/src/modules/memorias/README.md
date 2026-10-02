@@ -1,5 +1,18 @@
 # Memorias
 
+## Generación institucional validada (ISS-94)
+
+El operador carga datos en los módulos del sistema, crea una memoria con UCT y
+período, cierra su versión y descarga el archivo institucional desde
+`MemoriaVersionDetalle`. El formato es fijo y los datos corresponden a la foto
+del cierre. Las correcciones posteriores de entidades no cambian ese archivo.
+El acceso a la descarga requiere ADMIN o GESTOR y una versión cerrada.
+
+Durante la descarga, el botón `Generar Excel` muestra exclusivamente
+`Generando el archivo...` dentro del mismo control y queda bloqueado para evitar
+envíos duplicados. Al terminar se muestra éxito o un error que permite reintentar.
+El indicador de progreso no introduce porcentajes ni mensajes externos al botón.
+
 ## Error del programa de actividades (ISS-74)
 
 La etiqueta de descripción se asocia al `textarea`. Cuando falta el texto, el
@@ -18,10 +31,10 @@ está pendiente conserva el diálogo y bloquea la cancelación.
 ## Carga y exportación Excel (ISS-70)
 
 El detalle de versión y sus snapshots muestran skeletons durante la carga.
-`exportarExcelMemoria` informa etapas `generating`, `receiving` y `saving` al
-componente; corresponden a solicitud, lectura de respuesta e inicio de descarga,
-sin porcentaje estimado. `MemoriaVersionDetalle` bloquea envíos duplicados,
-muestra el estado en curso y, al terminar, presenta éxito o un error accionable.
+`exportarExcelMemoria` admite un callback opcional de etapas `generating`,
+`receiving` y `saving`. `MemoriaVersionDetalle` utiliza únicamente el estado
+pendiente de la mutación para mostrar el texto dentro del botón, bloquea envíos
+duplicados y, al terminar, presenta éxito o un error accionable.
 Tras un fallo se libera el botón para reintentar. El endpoint y el archivo
 descargado conservan su contrato.
 

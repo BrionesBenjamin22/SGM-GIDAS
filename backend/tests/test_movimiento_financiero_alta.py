@@ -479,13 +479,16 @@ class MovimientoFinancieroAltaTestCase(unittest.TestCase):
             archivo = ExportService.generar_excel_memoria(1, 1)
         libro = load_workbook(BytesIO(archivo.getvalue()), data_only=True)
         celdas = [celda.value for hoja in libro for fila in hoja for celda in fila]
-        self.assertIn("11.1.- Erogaciones Corrientes", celdas)
-        self.assertIn("11.2.- Erogaciones de Capital", celdas)
-        self.assertIn("11.3.- Ingresos", celdas)
-        self.assertIn("Corriente", celdas)
-        self.assertIn("Capital", celdas)
+        self.assertIn("Erogaciones Corrientes", celdas)
+        self.assertIn("Erogaciones de Capital", celdas)
+        self.assertIn("Fuente de Financiamiento", celdas)
         self.assertIn("UTN", celdas)
-        self.assertIn(200.0, celdas)
+        hoja = libro["Hoja1"]
+        self.assertEqual(hoja["C309"].value, 300.25)  # ARS 100.25 + equivalente ARS 200.00 del USD
+        self.assertEqual(hoja["E309"].value, 0)
+        self.assertEqual(hoja["E310"].value, 25)  # Fuente no indicada: separada de UTN
+        self.assertEqual(hoja["C318"].value, 0)  # No duplicar ingresos en capital
+        self.assertEqual(hoja["E318"].value, 10)
 
 
 if __name__ == "__main__":

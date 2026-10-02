@@ -12,3 +12,6 @@ skills-lock.json
 .vscode/
 .gemini/
 .codex/
+
+# Respaldos locales de bases de desarrollo
+/artifacts/backups/

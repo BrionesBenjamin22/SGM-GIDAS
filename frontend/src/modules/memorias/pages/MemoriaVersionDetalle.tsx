@@ -214,7 +214,6 @@ export default function MemoriaVersionDetalle() {
   const programaDialogRef = useRef<HTMLDialogElement>(null);
   const [programaDescripcion, setProgramaDescripcion] = useState("");
   const [programaError, setProgramaError] = useState("");
-  const [exportStage, setExportStage] = useState<"generating" | "receiving" | "saving" | null>(null);
   const exportInFlight = useRef(false);
 
   const { data: memoria, isLoading: isLoadingMemoria } = useQuery({
@@ -287,7 +286,7 @@ export default function MemoriaVersionDetalle() {
   }, [showProgramaModal]);
 
   const { mutate: descargarExcel, isPending: isExportingExcel } = useMutation({
-    mutationFn: () => exportarExcelMemoria(memoriaId, memoriaVersionId, setExportStage),
+    mutationFn: () => exportarExcelMemoria(memoriaId, memoriaVersionId),
     onSuccess: (result) => {
       setMessage(`Excel generado con éxito: ${result.filename}`);
       setShowSuccess(true);
@@ -302,14 +301,12 @@ export default function MemoriaVersionDetalle() {
     },
     onSettled: () => {
       exportInFlight.current = false;
-      setExportStage(null);
     },
   });
 
   const startExport = () => {
     if (exportInFlight.current || isExportingExcel) return;
     exportInFlight.current = true;
-    setExportStage("generating");
     descargarExcel();
   };
 
@@ -432,14 +429,9 @@ export default function MemoriaVersionDetalle() {
           )}
 
           {puedeExportarExcel && (
-            <>
-              <Button size="sm" onClick={startExport} disabled={isExportingExcel} loading={isExportingExcel} loadingText="Exportando Excel...">
-                Generar Excel
-              </Button>
-              {isExportingExcel && <span role="status" aria-live="polite" className="text-sm text-slate-600">
-                {exportStage === "receiving" ? "Recibiendo el archivo…" : exportStage === "saving" ? "Iniciando descarga…" : "Generando el archivo…"}
-              </span>}
-            </>
+            <Button size="sm" onClick={startExport} disabled={isExportingExcel} loading={isExportingExcel} loadingText="Generando el archivo...">
+              Generar Excel
+            </Button>
           )}
 
           <Button

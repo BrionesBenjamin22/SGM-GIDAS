@@ -1,5 +1,46 @@
 # Memorias
 
+## Excel institucional y seed de validación (ISS-94)
+
+`GET /api/v1/memorias/{id}/versiones/{version_id}/exportar-excel` requiere
+ADMIN o GESTOR y una versión cerrada con contexto institucional válido. El
+exportador lee únicamente snapshots y completa
+`backend/assets/Memorias 2025 - GIDAS.xlsx` mediante `memoria_excel_template.py`.
+Conserva las dos hojas, encabezados, combinaciones, dimensiones, bordes y
+configuración de impresión. Cuando una tabla excede sus filas disponibles,
+inserta filas copiando su formato y desplaza las secciones siguientes. Los datos
+usan Calibri 11 negro; los títulos mantienen su diseño institucional. Los textos
+largos ajustan su altura y las celdas se escriben como datos, sin ejecutar fórmulas.
+
+El cierre congela identificación, autoridades, planificación del año siguiente
+y resultados de informes PID asociados. Las horas y relaciones corresponden al
+período inclusivo y a la UCT de la memoria; no se reconstruye una versión cerrada
+desde datos actuales. La exportación financiera agrupa por fuente, separa egresos
+corrientes/capital y utiliza `monto_equivalente_ars`; los ingresos aparecen una
+sola vez. La conversión USD/ARS se conserva desde el movimiento hasta el snapshot.
+
+La seed es optativa e independiente de la seed genérica:
+
+```text
+python tools/seed_memoria_2025.py --help
+python tools/seed_memoria_2025.py --scenario-2026 --group-id 1 --user-id 1
+```
+
+El modo institucional 2025 lee la referencia y requiere una base exclusiva de
+testing; sus opciones permiten inicializar usuarios, cerrar por los servicios
+reales y exportar. El escenario 2026 usa `seed_memoria_validacion.py`, admite sólo
+desarrollo/testing, exige GIDAS y un ADMIN activo y ejecuta simulación por defecto.
+`--apply` persiste y `--replace-2026` solicita la limpieza delimitada, dentro de la
+misma transacción; realizar un respaldo antes de usar esta última opción. Preserva
+credenciales, otras UCT y snapshots históricos. Los hechos llegan al 02/10/2026,
+incluye controles de 2025 y respeta duraciones iniciales PID de 12 a 36 meses.
+Este escenario no crea memorias ni genera Excel: el operador selecciona el período
+y valida el flujo desde la interfaz. Los datos ficticios tienen redacción formal.
+
+Pruebas: `test_memoria_excel_formato`, `test_memoria_2025_seed` y
+`test_memoria_seed_validacion` verifican desbordes, estilos, filtros, idempotencia,
+protección de datos existentes e inmutabilidad histórica.
+
 ## Listado y snapshots paginados (ISS-89)
 
 `GET /api/v1/memorias` cuenta las Memorias filtradas y limita la consulta

@@ -8,6 +8,7 @@ from modules.memorias.services.memoria_periodo_service import (
 
 
 def snapshot_contexto_institucional(version):
+    from modules.informes.models.informe import Informe
     memoria = version.memoria
     grupo = memoria.grupo_utn
     datos_grupo = {campo: getattr(grupo, campo) for campo in (
@@ -28,9 +29,20 @@ def snapshot_contexto_institucional(version):
     plan = PlanificacionGrupo.query.filter_by(
         grupo_id=grupo.id, anio=memoria.periodo_fin.year + 1, deleted_at=None,
     ).order_by(PlanificacionGrupo.id.desc()).first()
+    informes = Informe.query.filter_by(memoria_id=memoria.id, grupo_utn_id=grupo.id, deleted_at=None).order_by(
+        Informe.fecha_realizacion, Informe.id,
+    ).all()
+    logros = {}
+    for informe in informes:
+        if informe.tipo == "pid":
+            for vinculo in informe.proyectos:
+                if vinculo.deleted_at is None:
+                    logros.setdefault(str(vinculo.proyecto_id), []).append(informe.resultados)
     return {
+        "_schema_version": 2,
         "grupo": datos_grupo,
         "directivos": directivos,
         "programa_actividades": plan.descripcion if plan else None,
         "anio_programa": memoria.periodo_fin.year + 1,
+        "logros_proyectos": {key: "\n\n".join(values) for key, values in logros.items()},
     }
