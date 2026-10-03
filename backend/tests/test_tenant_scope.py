@@ -34,9 +34,95 @@ from modules.shared.services.tenant_scope import register_tenant_orm_policy
 from modules.shared.services.tenant_request import register_tenant_request_scope
 from modules.transferencia.models.transferencia_socio import Adoptante
 from modules.transferencia.services.adoptante_service import AdoptanteService
+from modules.transferencia.models.transferencia_socio import TransferenciaSocioProductiva, TipoContrato, AdoptanteTransferencia
+from modules.transferencia.services.transferencia_service import TransferenciaSocioProductivaService
 
 
 class TenantScopeTest(unittest.TestCase):
+    def test_transfer_search_does_not_match_foreign_historical_adoptantes(self):
+        self._seed_table_transfers()
+        item = db.session.get(TransferenciaSocioProductiva, 1)
+        item.participaciones.append(AdoptanteTransferencia(adoptante_id=2))
+        db.session.commit()
+        db.session.remove()
+        from flask import request
+        with self.app.test_request_context("/list?page=1&q=Organismo+externo"):
+            g.current_grupo_utn_id = 1
+            rows, total, _ = TransferenciaSocioProductivaService.get_table_page({}, request.args)
+            self.assertEqual((rows, total), ([], 0))
+
+    def _seed_table_transfers(self):
+        db.session.add_all([TipoContrato(id=1, nombre="Convenio"),
+                           Adoptante(id=1, nombre="Municipalidad", grupo_utn_id=1),
+                           Adoptante(id=2, nombre="Organismo externo", grupo_utn_id=2)])
+        for index in range(1, 23):
+            item = TransferenciaSocioProductiva(
+                id=index, numero_transferencia=index, denominacion=f"Actividad {index:02}",
+                demandante="Instituto", descripcion_actividad="Asistencia institucional",
+                fecha_inicio=date(2026 if index <= 12 else 2025, 1, 1),
+                grupo_utn_id=1 if index <= 20 else 2, tipo_contrato_id=1,
+            )
+            item.participaciones.append(AdoptanteTransferencia(adoptante_id=1 if index <= 20 else 2))
+            db.session.add(item)
+        db.session.commit()
+        db.session.remove()
+
+    def test_table_transfer_page_total_facets_and_scope(self):
+        self._seed_table_transfers()
+        with self.app.test_request_context("/list?page=2&per_page=9&sort=denominacion"):
+            g.current_grupo_utn_id = 1
+            from flask import request
+            rows, total, options = TransferenciaSocioProductivaService.get_table_page({}, request.args)
+            self.assertEqual(total, 20)
+            self.assertEqual([row["id"] for row in rows], list(range(10, 19)))
+            self.assertEqual([option["value"] for option in options["grupo"]], ["UCT 1"])
+            self.assertEqual([option["value"] for option in options["anio"]], ["2025", "2026"])
+            self.assertTrue(all(row["adoptantes"][0]["nombre"] == "Municipalidad" for row in rows))
+
+    def test_table_memory_ids_and_filters_apply_before_pagination(self):
+        self._seed_table_transfers()
+        from flask import request
+        with self.app.test_request_context("/list?page=1&per_page=9&ids=2,13,21&filter_anio=2025&q=municipalidad"):
+            g.current_grupo_utn_id = 1
+            rows, total, options = TransferenciaSocioProductivaService.get_table_page({}, request.args)
+            self.assertEqual([row["id"] for row in rows], [13])
+            self.assertEqual(total, 1)
+            self.assertEqual([option["value"] for option in options["anio"]], ["2025", "2026"])
+            self.assertEqual([option["value"] for option in options["grupo"]], ["UCT 1"])
+        with self.app.test_request_context("/list?page=1&ids="):
+            g.current_grupo_utn_id = 1
+            rows, total, options = TransferenciaSocioProductivaService.get_table_page({}, request.args)
+            self.assertEqual((rows, total), ([], 0))
+            self.assertEqual([option["value"] for option in options["grupo"]], [])
+
+    def test_table_invalid_filters_and_literal_search(self):
+        self._seed_table_transfers()
+        from flask import request
+        for query in ("ids=invalid", "ids=-1", "sort=invalid", "direction=invalid", "q=" + "a" * 201):
+            with self.subTest(query=query), self.app.test_request_context("/list?page=1&" + query):
+                g.current_grupo_utn_id = 1
+                with self.assertRaises(ValidationError):
+                    TransferenciaSocioProductivaService.get_table_page({}, request.args)
+        with self.app.test_request_context("/list?page=1&q=%25"):
+            g.current_grupo_utn_id = 1
+            rows, total, _ = TransferenciaSocioProductivaService.get_table_page({}, request.args)
+            self.assertEqual((rows, total), ([], 0))
+
+    def test_transfer_collection_queries_do_not_grow_per_record(self):
+        self._seed_table_transfers()
+        with self.app.test_request_context("/list"):
+            g.current_grupo_utn_id = 1
+            queries = []
+            def count_sql(*args):
+                queries.append(args[2])
+            event.listen(db.engine, "before_cursor_execute", count_sql)
+            try:
+                rows = TransferenciaSocioProductivaService.get_all()
+                self.assertEqual(len(rows), 20)
+                self.assertLessEqual(len(queries), 5)
+            finally:
+                event.remove(db.engine, "before_cursor_execute", count_sql)
+
     def setUp(self):
         self.app = Flask(__name__)
         self.app.config.update(TESTING=True, SQLALCHEMY_DATABASE_URI="sqlite:///:memory:")

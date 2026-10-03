@@ -5,8 +5,8 @@ import builtins
 import math
 from datetime import datetime
 from extension import db
-from sqlalchemy import func, text
-from sqlalchemy.orm import selectinload
+from sqlalchemy import Integer, cast, func, text
+from sqlalchemy.orm import joinedload, selectinload
 from modules.shared.services.text_validation import has_letter, has_only_letters_and_spaces
 
 from modules.transferencia.models.transferencia_socio import (
@@ -22,6 +22,7 @@ from modules.shared.services.auditoria_service import AuditoriaService
 from modules.shared.services.date_time import INSTITUTIONAL_MIN_DATE
 from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError as ValueError
+from modules.shared.controllers.pagination import table_query_page, table_scope_predicate
 
 
 class TransferenciaSocioProductivaService:
@@ -139,7 +140,12 @@ class TransferenciaSocioProductivaService:
 
     @staticmethod
     def _list_query(filters: dict = None):
-        query = db.session.query(TransferenciaSocioProductiva)
+        query = db.session.query(TransferenciaSocioProductiva).options(
+            selectinload(TransferenciaSocioProductiva.participaciones)
+            .joinedload(AdoptanteTransferencia.adoptante),
+            joinedload(TransferenciaSocioProductiva.tipo_contrato_transferencia),
+            joinedload(TransferenciaSocioProductiva.grupo_utn).lazyload("*"),
+        )
         filters = filters or {}
 
         activos = filters.get("activos", "true")
@@ -176,15 +182,31 @@ class TransferenciaSocioProductivaService:
         query = TransferenciaSocioProductivaService._list_query(filters)
         if orden == "desc":
             query = query.order_by(None).order_by(TransferenciaSocioProductiva.id.desc())
-        query = query.options(
-            selectinload(TransferenciaSocioProductiva.participaciones)
-            .selectinload(AdoptanteTransferencia.adoptante),
-            selectinload(TransferenciaSocioProductiva.tipo_contrato_transferencia),
-            selectinload(TransferenciaSocioProductiva.grupo_utn),
-        )
         total = query.count()
         rows = query.offset((page - 1) * per_page).limit(per_page).all()
         return [row.serialize() for row in rows], total
+
+    @staticmethod
+    def get_table_page(filters, args):
+        query = TransferenciaSocioProductivaService._list_query(filters).outerjoin(
+            TransferenciaSocioProductiva.tipo_contrato_transferencia,
+        ).outerjoin(TransferenciaSocioProductiva.grupo_utn)
+        fields = {"denominacion": TransferenciaSocioProductiva.denominacion,
+                  "numero": TransferenciaSocioProductiva.numero_transferencia,
+                  "demandante": TransferenciaSocioProductiva.demandante,
+                  "descripcion": TransferenciaSocioProductiva.descripcion_actividad,
+                  "tipo": TipoContrato.nombre, "grupo": GrupoInvestigacionUtn.nombre_sigla_grupo,
+                  "anio": cast(func.extract("year", TransferenciaSocioProductiva.fecha_inicio), Integer)}
+        return table_query_page(query, TransferenciaSocioProductiva, args, fields,
+                                default_sort="denominacion",
+                                searchable=("numero", "denominacion", "demandante", "descripcion", "tipo", "grupo"),
+                                facets=("tipo", "grupo", "anio"),
+                                extra_search=lambda term: TransferenciaSocioProductiva.participaciones.any(
+                                    (AdoptanteTransferencia.deleted_at.is_(None)) &
+                                    table_scope_predicate(AdoptanteTransferencia) &
+                                    AdoptanteTransferencia.adoptante.has(
+                                        table_scope_predicate(Adoptante) &
+                                        func.lower(Adoptante.nombre).contains(term, autoescape=True))))
 
 
     # =================================================
@@ -627,7 +649,6 @@ class TransferenciaSocioProductivaService:
                 created_by=user_id
             )
             db.session.add(snapshot)
-            db.session.flush()
 
             for participacion in transferencia.participaciones:
                 if not relacion_vigente_en_memoria(memoria_version, participacion) or participacion.adoptante is None:

@@ -175,6 +175,25 @@ export async function getTransferencias(
   return items.map(fromBackend);
 }
 
+export type TransferenciasPageParams = {
+  page: number; activos: "true" | "false" | "all"; q: string;
+  direction: "asc" | "desc"; ids?: Array<number | string>;
+  filters: { tipo: string; grupo: string; anio: string };
+};
+
+export async function getTransferenciasPage(params: TransferenciasPageParams) {
+  const query = new URLSearchParams({ view: "table", page: String(params.page), per_page: "9",
+    activos: params.activos, q: params.q, sort: "denominacion", direction: params.direction });
+  if (params.ids !== undefined) query.set("ids", params.ids.join(","));
+  for (const [key, value] of Object.entries(params.filters)) {
+    if (value) query.set(`filter_${key}`, value);
+  }
+  const result = await http<{ data: TransferenciaBackend[]; meta: {
+    total: number; total_pages: number; options: Record<string, Array<{ value: string; label: string }>>;
+  } }>(`/transferencias/?${query}`);
+  return { ...result, data: result.data.map(fromBackend) };
+}
+
 export async function getTransferenciaById(
   id: number
 ): Promise<Transferencia | null> {

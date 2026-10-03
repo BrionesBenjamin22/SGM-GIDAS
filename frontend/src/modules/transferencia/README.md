@@ -168,3 +168,25 @@ El máximo de resultados por página conserva el contrato del módulo.
 En TransferenciasDetalle, las etiquetas de datos y los encabezados de tarjetas
 usan peso seminegrita y color pizarra oscuro para distinguirse del contenido.
 La disposición, los textos, las acciones y el contrato permanecen iguales.
+
+## Paginacion del servidor (ISS-94)
+
+`TransferenciasHome` consume `getTransferenciasPage` mediante TanStack
+Query y la clave `["transferencias", "table", params]`. El service solicita
+nueve filas, transmite busqueda, orden por denominacion y filtros de
+estado, tipo, grupo y anio, y normaliza con el adaptador existente.
+Las opciones de filtro y el total provienen de `meta`, no de las nueve
+filas visibles. La cache de cada combinacion tiene `staleTime=60_000`.
+
+Desde Memorias se envian sus IDs y `activos=all`; un conjunto vacio
+conserva el resultado vacio. Cambiar filtros u orden reinicia la pagina;
+cambiar de pagina no se revierte mientras llega la nueva metadata.
+Se clonan las opciones antes de ordenarlas para no modificar la cache.
+
+La consulta distingue carga inicial, actualizacion y error con reintento.
+Se conservan permisos, acciones, confirmacion de baja, contexto de retorno,
+feedback e historial de tres eventos. Las mutaciones existentes invalidan
+el prefijo `transferencias`, incluyendo las consultas nuevas.
+`getTransferencias` y `useTransferencias` conservan sus consumidores
+de formularios y detalle. Las regresiones del contrato y cambios de pagina
+estan en `tests/transferenciasTable.test.ts`.

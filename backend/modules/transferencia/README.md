@@ -107,3 +107,27 @@ Adoptantes, tipos de contrato y transferencias consultan el total filtrado y
 limitan las filas en SQL antes de serializar. Se mantienen el array sin
 `page`/`per_page`, el contrato paginado `data`/`meta`/`error`, los filtros,
 permisos y el alcance UCT. Los historiales conservan tres eventos por pagina.
+
+## Listado paginado y carga de relaciones (ISS-94)
+
+`GET /api/v1/transferencia/transferencias/?view=table&page=1&per_page=9`
+ejecuta busqueda, filtros, conteo y orden en SQL. Acepta `activos`, `q`,
+`direction`, `ids` y `filter_tipo`, `filter_grupo`, `filter_anio`.
+El home ordena por `sort=denominacion`; el service tambien admite numero,
+demandante, descripcion, tipo, grupo y anio. El anio corresponde al inicio
+de la transferencia. La busqueda incluye adoptantes vinculados sin baja,
+con el mismo alcance UCT que los registros serializados.
+
+La respuesta contiene `data` y `meta` de paginacion, con
+`options.tipo`, `options.grupo` y `options.anio` como pares
+`value/label`. Las opciones abarcan todo el alcance activo/memoria,
+independientemente de la pagina o filtros de busqueda seleccionados.
+Sin `view=table` se conserva la lista anterior y su paginacion opcional.
+
+El service precarga participaciones/adoptantes, contrato y grupo, evitando
+consultas por cada transferencia. En snapshots usa la relacion ORM para
+asignar la FK del adoptante al persistir, sin flush por transferencia.
+Se mantienen permisos, auditoria, bajas logicas y validacion UCT.
+Las pruebas de tablas y ausencia de consultas por registro estan en
+`tests/test_tenant_scope.py`; la suite completa conserva las pruebas
+de relaciones, snapshots y paginacion anteriores.
