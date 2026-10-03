@@ -53,3 +53,16 @@ confirmaciones bloquean además cancelar, el fondo y los campos del diálogo.
 El estado se libera al resolver o fallar, conservando errores y mensajes de
 éxito existentes. Los callbacks basados en React Query deben devolver
 mutateAsync para que el diálogo cubra toda la operación.
+
+## Rendimiento del resumen (ISS-94)
+
+`useDashboardResumen` y `dashboardGeneralService.ts` mantienen su
+contrato. El backend reutiliza datos del resumen y precarga relaciones
+para reducir consultas repetidas; no cambian filtros, permisos,
+indicadores ni formato de importes. La validacion conserva las respuestas
+en distintos periodos y el usuario confirmo la mejora de carga.
+
+La entrega de archivos compilados se midio por separado del servidor
+Vite. Esa medicion no representa tiempo de renderizado o navegacion
+completa; el servidor de desarrollo conserva su costo de primera
+transformacion de modulos.

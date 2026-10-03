@@ -2,7 +2,7 @@ from collections import Counter, defaultdict
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, lazyload, selectinload
 
 from modules.recursos.models.becas import Beca, Beca_Becario
 from modules.recursos.models.movimiento_financiero import MovimientoFinanciero
@@ -27,11 +27,18 @@ class DashboardService:
         solo_becarios_con_beca_activa: bool = False
     ):
         hoy = date.today()
-        todos_los_proyectos = ProyectoInvestigacion.query.all()
-        investigadores = Investigador.query.all()
-        becarios = Becario.query.all()
-        personal = Personal.query.all()
-        grupos = GrupoInvestigacionUtn.query.all()
+        todos_los_proyectos = ProyectoInvestigacion.query.options(
+            lazyload("*"),
+            joinedload(ProyectoInvestigacion.tipo_proyecto),
+            joinedload(ProyectoInvestigacion.fuente_financiamiento),
+            selectinload(ProyectoInvestigacion.distinciones),
+        ).all()
+        investigadores = Investigador.query.options(lazyload("*")).all()
+        becarios = Becario.query.options(
+            selectinload(Becario.tipo_formacion),
+        ).all()
+        personal = Personal.query.options(lazyload("*")).all()
+        grupos = GrupoInvestigacionUtn.query.options(lazyload("*")).all()
         fuentes = FuenteFinanciamiento.query.all()
         todas_las_becas = Beca.query.all()
         asignaciones_beca = Beca_Becario.query.all()
@@ -40,7 +47,9 @@ class DashboardService:
         todas_las_erogaciones = MovimientoFinanciero.query.options(
             joinedload(MovimientoFinanciero.categoria_erogacion)
         ).filter(MovimientoFinanciero.deleted_at.is_(None)).all()
-        todas_las_transferencias = TransferenciaSocioProductiva.query.all()
+        todas_las_transferencias = TransferenciaSocioProductiva.query.options(
+            joinedload(TransferenciaSocioProductiva.tipo_contrato_transferencia),
+        ).all()
 
         proyectos = DashboardService._filtrar_intervalo(
             todos_los_proyectos,
@@ -179,7 +188,8 @@ class DashboardService:
             "integrantes_por_grupo": DashboardService._integrantes_por_grupo(
                 grupos,
                 hoy,
-                {proyecto.id for proyecto in proyectos}
+                {proyecto.id for proyecto in proyectos},
+                investigadores, becarios, personal, todos_los_proyectos,
             ),
         }
 
@@ -281,13 +291,21 @@ class DashboardService:
         ]
 
     @staticmethod
-    def _integrantes_por_grupo(grupos, hoy, proyecto_ids_filtrados=None):
+    def _integrantes_por_grupo(grupos, hoy, proyecto_ids_filtrados=None,
+                              investigadores=None, becarios=None, personal=None,
+                              proyectos=None):
         data = []
+        # Reuse the scoped rows already collected for the dashboard instead of
+        # issuing another query for each group and each collection.
+        counts = [Counter(item.grupo_utn_id for item in rows) if rows is not None else None
+                  for rows in (investigadores, becarios, personal)]
 
         for grupo in grupos:
             proyectos_activos = sum(
-                1 for proyecto in grupo.proyectos_investigacion
+                1 for proyecto in (proyectos if proyectos is not None else grupo.proyectos_investigacion)
                 if (
+                    (proyectos is None or proyecto.grupo_utn_id == grupo.id)
+                    and
                     (proyecto_ids_filtrados is None or proyecto.id in proyecto_ids_filtrados)
                     and (proyecto.fecha_fin is None or proyecto.fecha_fin >= hoy)
                 )
@@ -297,13 +315,13 @@ class DashboardService:
                 "grupo_id": grupo.id,
                 "grupo": grupo.nombre_sigla_grupo,
                 "unidad_academica": grupo.nombre_unidad_academica,
-                "investigadores": len(grupo.investigadores),
-                "becarios": len(grupo.becarios),
-                "personal": len(grupo.personal),
+                "investigadores": counts[0][grupo.id] if counts[0] is not None else len(grupo.investigadores),
+                "becarios": counts[1][grupo.id] if counts[1] is not None else len(grupo.becarios),
+                "personal": counts[2][grupo.id] if counts[2] is not None else len(grupo.personal),
                 "total_integrantes": (
-                    len(grupo.investigadores)
-                    + len(grupo.becarios)
-                    + len(grupo.personal)
+                    sum(counter[grupo.id] for counter in counts)
+                    if all(counter is not None for counter in counts)
+                    else len(grupo.investigadores) + len(grupo.becarios) + len(grupo.personal)
                 ),
                 "proyectos_activos": proyectos_activos,
             })
