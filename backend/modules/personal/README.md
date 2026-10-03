@@ -246,3 +246,24 @@ relaciones necesarias se precargan para esas filas. Sin `page`/`per_page` se
 conserva el array anterior; con ellos se mantiene `data`/`meta`/`error`, el
 orden, los filtros y el aislamiento UCT. Los historiales conservan tres
 eventos por pagina.
+
+## Precarga de listados auxiliares (ISS-94)
+
+Las consultas completas y paginadas de Investigadores y Becarios comparten
+opciones ORM de lectura. Investigadores precarga identidad, horas,
+categorias, dedicacion, grupo, proyectos, participaciones y autorias de
+reunion utilizadas al serializar. Desactiva la precarga de publicaciones
+no consumidas. Becarios precarga identidad, formacion, grupo e historial
+de horas, evitando una consulta de horas por integrante.
+
+Se conservan campos, permisos, auditoria, reglas de alta/edicion y alcance
+UCT. El listado raiz sigue ordenado por ID; las colecciones relacionadas
+sin order_by explicito no ofrecen garantia de orden fisico y deben
+ordenarse en el consumidor cuando requieran una presentacion estable.
+El home combinado de Personal mantiene su endpoint paginado y contrato.
+
+Las pruebas de paginacion e aislamiento permanecen en
+`tests/test_personal_sql_pagination.py` y `tests/test_tenant_scope.py`.
+Las mediciones locales comparables de endpoints completos pasaron de
+71 a 10 consultas para Investigadores y de 48 a 7 para Becarios;
+son cantidades observadas con el escenario local, no limites universales.

@@ -272,3 +272,15 @@ El máximo de resultados por página conserva el contrato del módulo.
 En PersonalDetalle, las etiquetas de datos y los encabezados de tarjetas
 usan peso seminegrita y color pizarra oscuro para distinguirse del contenido.
 La disposición, los textos, las acciones y el contrato permanecen iguales.
+
+## Lecturas auxiliares de personal (ISS-94)
+
+Los services de Investigadores y Becarios conservan sus tipos y contratos.
+El backend precarga las relaciones que devuelve, por lo que formularios y
+selectores mantienen los mismos datos con menos peticiones SQL internas.
+Las colecciones relacionadas sin orden contractual deben ordenarse en el
+consumidor si la vista lo necesita. PersonalHome conserva la paginacion
+combinada del servidor de nueve filas, sus filtros, permisos e historial.
+
+La validacion de la etapa incluyo 648 pruebas backend, 197 frontend,
+TypeScript y build de produccion, con aceptacion funcional del usuario.

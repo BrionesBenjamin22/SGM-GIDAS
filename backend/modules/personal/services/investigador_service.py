@@ -5,7 +5,7 @@ from datetime import date
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, lazyload, selectinload
 
 from extension import db
 from modules.personal.services.identidad_service import asignar_identidad, conflicto_identidad_por_integridad
@@ -403,7 +403,20 @@ def restaurar_investigador(id):
 # =====================================================
 
 def _consulta_investigadores(activos=None):
-    query = Investigador.query
+    query = Investigador.query.options(
+        lazyload("*"),
+        joinedload(Investigador.identidad),
+        selectinload(Investigador.historial_horas),
+        joinedload(Investigador.categoria_utn),
+        joinedload(Investigador.programa_incentivos),
+        joinedload(Investigador.tipo_dedicacion),
+        joinedload(Investigador.grupo_utn).lazyload("*"),
+        selectinload(Investigador.participaciones_proyecto)
+        .joinedload(InvestigadorProyecto.proyecto).lazyload("*"),
+        selectinload(Investigador.participaciones_relevantes),
+        selectinload(Investigador.autorias_reunion)
+        .joinedload(TrabajoReunionAutor.trabajo).lazyload("*"),
+    )
 
     if activos is None:
         activos = "true"
@@ -430,16 +443,6 @@ def listar_investigadores_paginado(page, per_page, activos="true", orden="asc"):
     query = _consulta_investigadores(activos)
     if orden == "desc":
         query = query.order_by(None).order_by(Investigador.id.desc())
-    query = query.options(
-        selectinload(Investigador.historial_horas),
-        selectinload(Investigador.categoria_utn),
-        selectinload(Investigador.programa_incentivos),
-        selectinload(Investigador.tipo_dedicacion),
-        selectinload(Investigador.grupo_utn),
-        selectinload(Investigador.participaciones_proyecto).selectinload(InvestigadorProyecto.proyecto),
-        selectinload(Investigador.participaciones_relevantes),
-        selectinload(Investigador.autorias_reunion).selectinload(TrabajoReunionAutor.trabajo),
-    )
     total = query.count()
     return query.offset((page - 1) * per_page).limit(per_page).all(), total
 
