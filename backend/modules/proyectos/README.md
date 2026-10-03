@@ -214,3 +214,16 @@ Participaciones relevantes y tipos de proyecto aplican conteo y
 `LIMIT/OFFSET` en SQL con los filtros y el orden vigentes. El service
 serializa solo la pagina. Sin `page` ni `per_page` sigue el array previo;
 con alguno se mantienen `data`, `meta`, `error`, permisos y alcance UCT.
+
+## Carga del listado PID (ISS-94)
+
+El listado precarga distinciones y reduce las columnas y relaciones de
+participantes a las necesarias para serializar sus nombres, IDs y estado.
+Evita que la precarga de investigadores/becarios active publicaciones o
+historiales ajenos al listado. Se conserva la respuesta exacta verificada
+contra el escenario anterior, junto con paginacion, filtros, permisos,
+auditoria, reglas de duracion y logros obtenidos.
+
+La medicion local paso de 21 a 9 consultas. Las pruebas existentes del
+modulo y del flujo de Memorias se incluyen en los 648 casos backend
+validados para esta etapa.

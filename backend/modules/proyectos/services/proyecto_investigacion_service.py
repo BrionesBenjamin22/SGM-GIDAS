@@ -362,10 +362,22 @@ class ProyectoInvestigacionService:
             joinedload(ProyectoInvestigacion.grupo_utn),
             selectinload(
                 ProyectoInvestigacion.participaciones_investigador
-            ).joinedload(InvestigadorProyecto.investigador),
+            ).lazyload("*"),
+            selectinload(
+                ProyectoInvestigacion.participaciones_investigador
+            ).joinedload(InvestigadorProyecto.investigador).load_only(
+                Investigador.id, Investigador.nombre_apellido,
+                Investigador.activo, Investigador.deleted_at,
+            ).lazyload("*"),
             selectinload(
                 ProyectoInvestigacion.participaciones_becario
-            ).joinedload(BecarioProyecto.becario),
+            ).lazyload("*"),
+            selectinload(
+                ProyectoInvestigacion.participaciones_becario
+            ).joinedload(BecarioProyecto.becario).load_only(
+                Becario.id, Becario.nombre_apellido,
+            ).lazyload("*"),
+            selectinload(ProyectoInvestigacion.distinciones),
         )
 
         if activos == "true":

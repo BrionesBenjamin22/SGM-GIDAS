@@ -271,3 +271,12 @@ El máximo de resultados por página conserva el contrato del módulo.
 En ProyectosDetalle y ParticipacionesDetalle, las etiquetas de datos y los encabezados de tarjetas
 usan peso seminegrita y color pizarra oscuro para distinguirse del contenido.
 La disposición, los textos, las acciones y el contrato permanecen iguales.
+
+## Rendimiento de la consulta PID (ISS-94)
+
+ProyectosHome conserva su paginacion del servidor de nueve elementos y
+los contratos de services, filtros y permisos. El backend precarga
+distinciones y limita relaciones/columnas de participantes al contenido
+del listado, manteniendo los datos usados por las vistas.
+La mejora fue validada tecnicamente junto con el flujo de Memorias y
+aceptada por el usuario como parte de la etapa de rendimiento.
