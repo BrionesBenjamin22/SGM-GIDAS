@@ -3,6 +3,7 @@ from datetime import date, datetime
 from unittest.mock import patch
 
 from flask import Flask, g
+from sqlalchemy import event
 
 from extension import db
 from modules import models_registry  # noqa: F401
@@ -278,6 +279,68 @@ class TenantScopeTest(unittest.TestCase):
         db.session.commit()
         with self.app.test_request_context("/api/v1/recursos/becas"):
             g.current_grupo_utn_id = 1
+            db.session.add(Beca_Becario(id_beca=1, id_becario=2,
+                                        fecha_inicio=date(2025, 1, 1)))
+            with self.assertRaises(ForbiddenError):
+                db.session.flush()
+            db.session.rollback()
+
+    def _crear_becarios_para_relaciones(self, cantidad):
+        db.session.add(TipoFormacion(id=1, nombre="Doctorado"))
+        db.session.add(Beca(id=1, nombre_beca="Beca institucional", grupo_utn_id=1))
+        db.session.add_all([
+            Becario(id=i, nombre_apellido=f"Integrante {i}", horas_semanales=10,
+                    grupo_utn_id=1, tipo_formacion_id=1)
+            for i in range(1, cantidad + 1)
+        ])
+        db.session.commit()
+
+    def test_valida_mas_de_500_relaciones_con_consultas_acotadas(self):
+        self._crear_becarios_para_relaciones(501)
+        with self.app.test_request_context("/api/v1/recursos/becas"):
+            g.current_grupo_utn_id = 1
+            db.session.add_all([
+                Beca_Becario(id_beca=1, id_becario=i, fecha_inicio=date(2025, 1, 1))
+                for i in range(1, 502)
+            ])
+            selects = []
+            def contar(conn, cursor, statement, parameters, context, executemany):
+                if statement.lstrip().upper().startswith("SELECT"):
+                    selects.append(statement)
+            event.listen(db.engine, "before_cursor_execute", contar)
+            try:
+                db.session.flush()
+            finally:
+                event.remove(db.engine, "before_cursor_execute", contar)
+            self.assertLessEqual(len(selects), 3)
+            self.assertEqual(Beca_Becario.query.count(), 501)
+            db.session.rollback()
+
+    def test_un_origen_ajeno_rechaza_el_lote_completo(self):
+        self._crear_becarios_para_relaciones(2)
+        db.session.add(Becario(id=3, nombre_apellido="Integrante ajeno", horas_semanales=10,
+                              grupo_utn_id=2, tipo_formacion_id=1))
+        db.session.commit()
+        with self.app.test_request_context("/api/v1/recursos/becas"):
+            g.current_grupo_utn_id = 1
+            db.session.add_all([
+                Beca_Becario(id_beca=1, id_becario=i, fecha_inicio=date(2025, 1, 1))
+                for i in (1, 2, 3)
+            ])
+            with self.assertRaises(ForbiddenError):
+                db.session.flush()
+            db.session.rollback()
+        self.assertEqual(Beca_Becario.query.count(), 0)
+
+    def test_revalida_el_mismo_origen_tras_cambiar_su_uct_entre_flushes(self):
+        self._crear_becarios_para_relaciones(2)
+        with self.app.test_request_context("/api/v1/recursos/becas"):
+            g.current_grupo_utn_id = 1
+            db.session.add(Beca_Becario(id_beca=1, id_becario=1,
+                                        fecha_inicio=date(2025, 1, 1)))
+            db.session.flush()
+            # Simulate an ownership change already visible to this transaction.
+            db.session.execute(Beca.__table__.update().where(Beca.id == 1).values(grupo_utn_id=2))
             db.session.add(Beca_Becario(id_beca=1, id_becario=2,
                                         fecha_inicio=date(2025, 1, 1)))
             with self.assertRaises(ForbiddenError):

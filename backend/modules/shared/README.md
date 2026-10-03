@@ -69,3 +69,34 @@ El listado de borradores incluye opcionalmente `display_name`, derivado de
 campos de identificacion ya guardados (nombre, titulo, denominacion, evento
 o numero, segun modulo). La lista sigue omitiendo `data` y solo el usuario
 propietario puede consultarla. El valor se normaliza y limita a 120 caracteres.
+
+## Rendimiento UCT y tablas paginadas (ISS-94)
+
+La politica ORM reutiliza las mismas opciones inmutables de alcance que ya
+heredan las consultas de relaciones. Antes de cada flush agrupa las claves
+foraneas por modelo y columna y valida lotes de hasta 500 IDs. Conserva el
+rechazo de relaciones ajenas y vuelve a consultar la pertenencia en cada
+flush: no almacena resultados de autorizacion entre escrituras.
+
+`table_query_page` recibe expresiones SQL definidas por cada service, aplica
+el alcance UCT explicito a la entidad raiz y recupera solo la pagina pedida.
+El parametro interno `sortable` permite limitar el orden a un subconjunto
+de campos, independientemente de las expresiones usadas en filtros.
+`table_scope_predicate` protege tambien las proyecciones y subconsultas de
+relaciones, donde un filtro ORM implicito puede no alcanzar el conteo.
+
+Las rutas que optan por `view=table` aceptan `page`, `per_page`,
+`activos=true|false|all`, `q` (hasta 200 caracteres), `sort`,
+`direction=asc|desc`, `filter_<campo>` e `ids` separados por coma.
+Los nombres de orden y filtro se definen en el modulo; nunca se interpolan
+expresiones SQL recibidas del cliente. Los IDs deben ser positivos y se
+intersectan con la UCT; `ids=` produce un listado vacio.
+
+`table_page_response` devuelve `data`, `error` y `meta` con
+`page`, `per_page`, `total`, `total_pages` y `options`.
+Cada opcion es `{value: string, label: string}`. Se calcula sobre todo el
+alcance de estado/IDs/UCT antes de busqueda y filtros individuales, para
+conservar opciones de otras paginas. Los errores son `VALIDATION_ERROR`
+(400); siguen disponibles las respuestas anteriores sin `view=table`.
+Las regresiones de aislamiento, lotes y tablas estan en
+`tests/test_tenant_scope.py`.

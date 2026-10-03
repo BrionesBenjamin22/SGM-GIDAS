@@ -138,7 +138,10 @@ def register_tenant_orm_policy():
             return
         statement = state.statement
         options, _ = _read_scope_options(group_id)
-        statement = statement.options(*options)
+        # Loader criteria propagate to relationship queries. Adding the same
+        # immutable options again grows each nested load and its SQL/cache key.
+        inherited = {id(option) for option in statement._with_options}
+        statement = statement.options(*(option for option in options if id(option) not in inherited))
         for description in getattr(statement, "column_descriptions", ()):
             model = description.get("entity")
             if model is None or not hasattr(model, "__table__"):
@@ -155,7 +158,8 @@ def register_tenant_orm_policy():
         group_id = getattr(g, "current_grupo_utn_id", None)
         if group_id is None:
             return
-        classes = _classes_by_table()
+        classes = _read_scope_options(group_id)[1]
+        relations = {}
         for instance in session.new | session.dirty | session.deleted:
             columns = instance.__table__.columns
             for name in GROUP_COLUMNS:
@@ -179,13 +183,25 @@ def register_tenant_orm_policy():
                     if (parent is None or parent is type(instance)
                             or parent.__table__.name in REVERSE_SCOPED_TABLES):
                         continue
-                    parent_predicate = _predicate(parent, group_id, classes)
+                    parent_predicate = _read_entity_predicate(parent, group_id)
                     if parent_predicate is None:
                         continue
-                    parent_id = getattr(parent, foreign_key.column.name)
-                    if session.execute(select(parent_id).where(
-                        parent_id == value, parent_predicate,
-                    )).scalar_one_or_none() is None:
-                        raise ForbiddenError("La relacion pertenece a otra UCT.")
+                    key = (parent, foreign_key.column.name)
+                    relations.setdefault(key, set()).add(value)
+
+        # Validate all referenced IDs once per parent column and flush. Do not
+        # cache authorization results: memberships/owners can change between
+        # flushes in the same transaction.
+        for (parent, column_name), values in relations.items():
+            parent_id = getattr(parent, column_name)
+            parent_predicate = _read_entity_predicate(parent, group_id)
+            values = list(values)
+            for start in range(0, len(values), 500):
+                batch = values[start:start + 500]
+                allowed = set(session.execute(select(parent_id).where(
+                    parent_id.in_(batch), parent_predicate,
+                )).scalars())
+                if any(value not in allowed for value in batch):
+                    raise ForbiddenError("La relacion pertenece a otra UCT.")
 
     register_tenant_orm_policy.installed = True
