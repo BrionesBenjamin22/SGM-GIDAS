@@ -301,3 +301,37 @@ serializar. Los historiales de Documentacion y Docencia aplican sus filtros
 de eventos antes del limite SQL; el de Docencia combina auditoria y grados en
 una consulta paginada. Se conservan filtros, orden, permisos, UCT y el
 contrato plano o `data`/`meta`/`error` segun se envien parametros.
+
+## Docencia y Biblioteca: paginacion SQL (ISS-94)
+
+Los listados de `/api/v1/produccion/actividades-docencia` y
+`/api/v1/produccion/documentacion-bibliografica` admiten `view=table`.
+Devuelven `data` y `meta` con pagina, tamano, total, paginas y
+`options` (pares `value/label`). Los homes solicitan nueve filas.
+Sin ese parametro se conservan los contratos de lista anteriores.
+
+Ambos aceptan `activos`, `page`, `per_page`, `q` (hasta 200
+caracteres), `direction=asc|desc` e `ids` positivos separados por
+coma. IDs vacios producen cero registros; la UCT protege filas, totales,
+opciones y busquedas relacionales. Los parametros invalidos responden
+`VALIDATION_ERROR` (400) con el contrato compartido.
+
+- Docencia: orden por curso, institucion, investigador, rol, grado,
+  fecha_inicio o estado. Filtros `filter_curso`, `filter_institucion`,
+  `filter_investigador`, `filter_rol`, `filter_grado`.
+  El grado es el historial vigente mas reciente por fecha e ID, igual que
+  en la serializacion. Un investigador eliminado permanece oculto en
+  busqueda y opciones. Se precargan investigador reducido, rol e historiales
+  completos de grados.
+- Biblioteca: orden por titulo, editorial o anio; el home usa titulo.
+  Filtros `filter_autor` por nombre y `filter_anio`.
+  La busqueda incluye titulo, editorial, anio y autores vigentes. Los
+  filtros de autores usan EXISTS para que varias autorias no dupliquen
+  documentos ni alteren LIMIT/OFFSET. Se precargan autores y grupo.
+
+Las opciones corresponden al alcance de estado/memoria antes de aplicar
+busqueda o filtros individuales, por lo que incluyen registros de paginas
+no visibles. Se mantienen permisos ADMIN/GESTOR/LECTURA de lectura y los
+contratos de mutaciones, auditoria e historial existentes.
+Las regresiones estan en `tests/test_tenant_scope.py` y se complementan
+con `tests/test_produccion_list_sql_pagination.py`.

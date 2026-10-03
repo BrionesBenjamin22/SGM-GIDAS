@@ -11,15 +11,13 @@ import type { TableColumn } from "@/components/Table";
 import TableFilterSelect from "@/components/TableFilterSelect";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/lib/httpError";
-import { applyMemoriaSectionFilter, getMemoriaSectionFilter } from "@/lib/memoriaSectionFilter";
+import { getMemoriaSectionFilter } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
-import { useDocumentacion } from "@/modules/produccion/hooks/useDocumentacion";
-import { deleteDocumentacion, getHistorialDocumentacionById, type Documentacion } from "@/modules/produccion/services/documentacionServices";
+import { deleteDocumentacion, getDocumentacionPage, getHistorialDocumentacionById, type Documentacion } from "@/modules/produccion/services/documentacionServices";
 import { formatDocumentacionHistoryEntry, presentDocumentacionHistoryItems } from "@/modules/produccion/utils/documentacionHistory";
 import { formatFecha, formatFechaHora } from "@/utils/dateTime";
 import { toTitleCase } from "@/utils/format";
 
-const ITEMS_PER_PAGE = 9;
 const HISTORY_PER_PAGE = 3;
 
 export default function DocumentacionHome() {
@@ -40,26 +38,23 @@ export default function DocumentacionHome() {
   const [historyPage, setHistoryPage] = useState(1);
 
   const memoriaFilter = useMemo(() => getMemoriaSectionFilter(location.state, "documentacion-bibliografica"), [location.state]);
-  const documents = useDocumentacion(memoriaFilter ? "all" : estado);
-  const scoped = useMemo(() => applyMemoriaSectionFilter(documents.list, memoriaFilter), [documents.list, memoriaFilter]);
-  const options = useMemo(() => ({
-    autores: [...new Set(scoped.flatMap((item) => item.autores.map((entry) => entry.nombre_apellido.trim())).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es")),
-    anios: [...new Set(scoped.map((item) => item.anio).filter(Boolean))].sort((a, b) => b - a),
-  }), [scoped]);
-  const filtered = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase("es");
-    return scoped.filter((item) => {
-      const matches = !query || [item.titulo, item.editorial, String(item.anio), ...item.autores.map((entry) => entry.nombre_apellido)].some((value) => value.toLocaleLowerCase("es").includes(query));
-      return matches && (!autor || item.autores.some((entry) => entry.nombre_apellido === autor)) && (!anio || String(item.anio) === anio);
-    }).sort((a, b) => direction === "asc" ? a.titulo.localeCompare(b.titulo, "es") : b.titulo.localeCompare(a.titulo, "es"));
-  }, [scoped, search, autor, anio, direction]);
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const visible = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const params = { page, activos: memoriaFilter ? "all" as const : estado, q: search, direction,
+    autor, anio, ids: memoriaFilter?.ids };
+  const result = useQuery({ queryKey: ["documentacion", "table", params],
+    queryFn: () => getDocumentacionPage(params), staleTime: 60_000 });
+  const documents = { ...result, list: result.data?.data ?? [] };
+  const scoped = documents.list;
+  const options = {
+    autores: result.data?.meta.options.autor ?? [],
+    anios: [...(result.data?.meta.options.anio ?? [])].sort((a, b) => Number(b.value) - Number(a.value)),
+  };
+  const totalPages = result.data?.meta.total_pages ?? 0;
+  const visible = documents.list;
   const expandedItem = expanded === null ? undefined : scoped.find((item) => item.id === expanded);
   const history = useQuery({ queryKey: ["documentacion-historial", expandedItem?.id], queryFn: () => getHistorialDocumentacionById(expandedItem!.id), enabled: Boolean(expandedItem), staleTime: 5 * 60_000 });
 
-  useEffect(() => { setPage(1); setExpanded(null); }, [search, estado, autor, anio]);
-  useEffect(() => { if (page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1)); }, [page, totalPages]);
+  useEffect(() => { setPage(1); setExpanded(null); }, [search, estado, autor, anio, direction, memoriaFilter]);
+  useEffect(() => { if (result.data && page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1)); }, [page, totalPages, result.data]);
   useEffect(() => {
     if (!location.state?.successMessage) return;
     setSuccess(location.state.successMessage);
@@ -104,7 +99,7 @@ export default function DocumentacionHome() {
     <section className="min-h-[calc(100vh-120px)] w-full px-4 py-4">
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between"><div><h2 className="text-2xl font-semibold md:text-3xl">Documentación y Biblioteca</h2><p className="mt-1 text-sm text-slate-500">Consulte documentos, autores, editoriales y estados.</p></div>{canCreateRecords() && <Button size="sm" onClick={() => navigate("/documentacion/nuevo")}>Agregar nuevo</Button>}</div>
       {memoriaFilter && <div className="mb-4"><MemoriaFilterBanner filter={memoriaFilter} /></div>}
-      <Table caption="Listado de documentación y biblioteca" columns={columns} rows={visible} getRowId={(item) => item.id} density="compact" loading={documents.isLoading} refreshing={documents.isFetching && !documents.isLoading} error={documents.isError && documents.list.length === 0} onRetry={() => documents.refetch()} emptyMessage="No hay documentos que coincidan con los filtros." onRowClick={(item) => navigate(`/documentacion/${item.id}`, { state: buildMemoriaDetailState(location) })} getRowTitle={(item) => `Ver detalle de ${item.titulo}`} sortKey="titulo" sortDirection={direction} onSortChange={(_, next) => setDirection(next)} expandedRowId={expanded} renderExpanded={renderHistory} onToggleRow={(item) => { setExpanded((current) => current === item.id ? null : item.id); setHistoryPage(1); }} getExpandLabel={(item, open) => `${open ? "Ocultar" : "Mostrar"} historial de ${item.titulo}`} page={page} totalPages={totalPages} totalRecords={filtered.length} onPageChange={(next) => { setExpanded(null); setPage(next); }} toolbar={<TableToolbar><div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center"><TableSearch label="Buscar documentación" placeholder="Buscar por título, autor, editorial o año" value={search} onChange={(event) => setSearch(event.target.value)} /><div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-1 whitespace-nowrap [scrollbar-color:rgb(203_213_225)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-track]:bg-transparent" aria-label="Filtros de documentación"><span className="shrink-0 text-xs font-medium text-slate-500">Estado</span><TableFilterChip className="shrink-0" active={estado === "true"} onClick={() => setEstado("true")}>Activos</TableFilterChip><TableFilterChip className="shrink-0" active={estado === "all"} onClick={() => setEstado("all")}>Todos</TableFilterChip><TableFilterChip className="shrink-0" active={estado === "false"} onClick={() => setEstado("false")}>Inactivos</TableFilterChip><TableFilterSelect label="Filtrar por autor" placeholder="Todos los autores" value={autor || undefined} onValueChange={(value) => setAutor(value ?? "")} options={options.autores.map((value) => ({ value, label: value }))} /><TableFilterSelect label="Filtrar por año" placeholder="Todos los años" value={anio || undefined} onValueChange={(value) => setAnio(value ?? "")} options={options.anios.map((value) => ({ value: String(value), label: String(value) }))} /></div></div></TableToolbar>} />
+      <Table caption="Listado de documentación y biblioteca" columns={columns} rows={visible} getRowId={(item) => item.id} density="compact" loading={documents.isLoading} refreshing={documents.isFetching && !documents.isLoading} error={documents.isError && documents.list.length === 0} onRetry={() => documents.refetch()} emptyMessage="No hay documentos que coincidan con los filtros." onRowClick={(item) => navigate(`/documentacion/${item.id}`, { state: buildMemoriaDetailState(location) })} getRowTitle={(item) => `Ver detalle de ${item.titulo}`} sortKey="titulo" sortDirection={direction} onSortChange={(_, next) => setDirection(next)} expandedRowId={expanded} renderExpanded={renderHistory} onToggleRow={(item) => { setExpanded((current) => current === item.id ? null : item.id); setHistoryPage(1); }} getExpandLabel={(item, open) => `${open ? "Ocultar" : "Mostrar"} historial de ${item.titulo}`} page={page} totalPages={totalPages} totalRecords={result.data?.meta.total ?? 0} onPageChange={(next) => { setExpanded(null); setPage(next); }} toolbar={<TableToolbar><div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center"><TableSearch label="Buscar documentación" placeholder="Buscar por título, autor, editorial o año" value={search} onChange={(event) => setSearch(event.target.value)} /><div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-1 whitespace-nowrap [scrollbar-color:rgb(203_213_225)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-track]:bg-transparent" aria-label="Filtros de documentación"><span className="shrink-0 text-xs font-medium text-slate-500">Estado</span><TableFilterChip className="shrink-0" active={estado === "true"} onClick={() => setEstado("true")}>Activos</TableFilterChip><TableFilterChip className="shrink-0" active={estado === "all"} onClick={() => setEstado("all")}>Todos</TableFilterChip><TableFilterChip className="shrink-0" active={estado === "false"} onClick={() => setEstado("false")}>Inactivos</TableFilterChip><TableFilterSelect label="Filtrar por autor" placeholder="Todos los autores" value={autor || undefined} onValueChange={(value) => setAutor(value ?? "")} options={options.autores} /><TableFilterSelect label="Filtrar por año" placeholder="Todos los años" value={anio || undefined} onValueChange={(value) => setAnio(value ?? "")} options={options.anios} /></div></div></TableToolbar>} />
       <ConfirmDialog open={Boolean(pendingDelete)} title="Eliminar documentación" message={`¿Está seguro de eliminar ${pendingDelete?.titulo || "este documento"}?`} onCancel={() => setPendingDelete(null)} onConfirm={confirmDelete} loadingText="Eliminando..." />
     </section>
     <SuccessToast open={Boolean(success)} message={success} onClose={() => setSuccess("")} />

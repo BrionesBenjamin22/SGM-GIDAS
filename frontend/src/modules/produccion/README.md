@@ -36,8 +36,9 @@ Los borradores anteriores con filas vacías de autor se recuperan sin esas filas
 El alta vuelve al home y la edición al detalle con `successMessage`.
 
 `documentacionServices.ts` define los tipos y adapta listas, detalle, historial y
-payloads del backend. `useDocumentacion` expone lista, carga inicial,
-actualización y reintento. `documentacionAutores.ts` concentra la búsqueda y
+payloads del backend. `DocumentacionHome` consume la consulta paginada descrita en ISS-94;
+`useDocumentacion` conserva el acceso a listas completas para otros consumidores.
+`documentacionAutores.ts` concentra la búsqueda y
 normalización de nombres; `documentacionHistory.ts` filtra inicializaciones y
 valores equivalentes y presenta cambios de campos y eventos de autores sin IDs
 internos ni JSON. Las consultas de catálogo e historial tienen estados de error
@@ -443,3 +444,27 @@ Artículos de divulgación y `git diff --check` correctos.
 En los detalles de producción, las etiquetas de datos y los encabezados de tarjetas
 usan peso seminegrita y color pizarra oscuro para distinguirse del contenido.
 La disposición, los textos, las acciones y el contrato permanecen iguales.
+
+## Docencia y Biblioteca: consultas paginadas (ISS-94)
+
+`DocenciaHome` usa `getActividadesDocenciaPage` y
+`DocumentacionHome` usa `getDocumentacionPage`, con tipos de parametros
+dedicados y los adaptadores de sus services actuales. Cada llamada solicita
+nueve registros y envia busqueda, filtros y orden al backend. Los totales
+y opciones completas se consumen de `meta`; no se filtra una pagina
+localmente como si fuera el listado completo.
+
+Las claves son `["docencia", "table", params]` y
+`["documentacion", "table", params]`, con `staleTime=60_000`.
+Las altas, ediciones y bajas siguen invalidando esos prefijos. Desde
+Memorias se transmiten IDs y `activos=all`, incluidos conjuntos vacios,
+y se conserva el contexto para navegar al detalle y regresar.
+
+Los cambios de filtros/orden reinician la pagina. Durante la consulta de
+otra pagina se espera la nueva metadata antes de corregir un numero fuera
+de rango. Se mantienen la grilla, los permisos, mensajes, reintento,
+confirmaciones y el historial de tres eventos. Los services de listas
+completas y `useDocumentacion` siguen disponibles para otros consumidores.
+Las pruebas de transicion y contrato se encuentran en
+`tests/transferenciasTable.test.ts`; la grilla e historial de Docencia
+siguen cubiertos por `tests/docenciaTable.test.ts`.

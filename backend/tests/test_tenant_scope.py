@@ -36,9 +36,71 @@ from modules.transferencia.models.transferencia_socio import Adoptante
 from modules.transferencia.services.adoptante_service import AdoptanteService
 from modules.transferencia.models.transferencia_socio import TransferenciaSocioProductiva, TipoContrato, AdoptanteTransferencia
 from modules.transferencia.services.transferencia_service import TransferenciaSocioProductivaService
+from modules.produccion.models.actividad_docencia import ActividadDocencia, InvestigadorActividadGrado, GradoAcademico
+from modules.produccion.services.actividad_docencia_service import ActividadDocenciaService
+from modules.produccion.models.documentacion_autores import Autor, DocumentacionBibliografica
+from modules.produccion.services.documentacion_service import DocumentacionBibliograficaService
 
 
 class TenantScopeTest(unittest.TestCase):
+    def test_docencia_search_and_facets_match_hidden_deleted_investigator(self):
+        db.session.add(Investigador(id=1, nombre_apellido="Integrante Retirado", horas_semanales=10,
+                                   grupo_utn_id=1, deleted_at=datetime(2026, 1, 1)))
+        db.session.add(ActividadDocencia(id=1, curso="Curso Institucional", institucion="Universidad",
+            fecha_inicio=date(2025, 1, 1), fecha_fin=date(2026, 12, 31), investigador_id=1))
+        db.session.commit()
+        db.session.remove()
+        from flask import request
+        with self.app.test_request_context("/list?page=1"):
+            g.current_grupo_utn_id = 1
+            rows, total, options = ActividadDocenciaService.get_table_page({}, request.args)
+            self.assertEqual(total, 1)
+            self.assertIsNone(rows[0]["investigador"])
+            self.assertEqual(options["investigador"], [])
+        with self.app.test_request_context("/list?page=1&q=Retirado"):
+            g.current_grupo_utn_id = 1
+            rows, total, _ = ActividadDocenciaService.get_table_page({}, request.args)
+            self.assertEqual((rows, total), ([], 0))
+
+    def test_documentation_authors_do_not_duplicate_pages_or_leak_facets(self):
+        authors = [Autor(id=1, nombre_apellido="Autora Institucional", grupo_utn_id=1),
+                   Autor(id=2, nombre_apellido="Autor Asociado", grupo_utn_id=1),
+                   Autor(id=3, nombre_apellido="Autor Reservado", grupo_utn_id=2)]
+        db.session.add_all(authors)
+        for index in range(1, 13):
+            item = DocumentacionBibliografica(id=index, titulo=f"Documento {index:02}",
+                editorial="Editorial Universitaria", anio=2026 if index <= 6 else 2025,
+                fecha=date(2026, 1, 1), grupo_id=1 if index <= 11 else 2)
+            item.autores = authors[:2] if index <= 11 else [authors[2]]
+            # A historical inconsistent link must not expose another UCT.
+            if index == 1:
+                item.autores.append(authors[2])
+            db.session.add(item)
+        db.session.commit()
+        db.session.remove()
+        from flask import request
+        with self.app.test_request_context("/list?page=2&per_page=9&filter_autor=Autora+Institucional&sort=titulo"):
+            g.current_grupo_utn_id = 1
+            rows, total, options = DocumentacionBibliograficaService.get_table_page({}, request.args)
+            self.assertEqual(total, 11)
+            self.assertEqual([row["id"] for row in rows], [10, 11])
+            self.assertEqual({item["value"] for item in options["autor"]},
+                             {"Autora Institucional", "Autor Asociado"})
+        with self.app.test_request_context("/list?page=1&sort=autor"):
+            g.current_grupo_utn_id = 1
+            with self.assertRaises(ValidationError):
+                DocumentacionBibliograficaService.get_table_page({}, request.args)
+        for query in ("q=Reservado", "filter_autor=Autor+Reservado"):
+            with self.app.test_request_context("/list?page=1&" + query):
+                g.current_grupo_utn_id = 1
+                rows, total, _ = DocumentacionBibliograficaService.get_table_page({}, request.args)
+                self.assertEqual((rows, total), ([], 0))
+        with self.app.test_request_context("/list?page=1&ids=1,7,12&filter_anio=2025"):
+            g.current_grupo_utn_id = 1
+            rows, total, options = DocumentacionBibliograficaService.get_table_page({}, request.args)
+            self.assertEqual(([row["id"] for row in rows], total), ([7], 1))
+            self.assertEqual({item["value"] for item in options["anio"]}, {"2025", "2026"})
+
     def test_transfer_search_does_not_match_foreign_historical_adoptantes(self):
         self._seed_table_transfers()
         item = db.session.get(TransferenciaSocioProductiva, 1)
@@ -122,6 +184,34 @@ class TenantScopeTest(unittest.TestCase):
                 self.assertLessEqual(len(queries), 5)
             finally:
                 event.remove(db.engine, "before_cursor_execute", count_sql)
+
+    def test_docencia_current_grade_filter_history_and_scope(self):
+        db.session.add_all([
+            Investigador(id=1, nombre_apellido="Integrante Uno", horas_semanales=10, grupo_utn_id=1),
+            Investigador(id=2, nombre_apellido="Integrante Dos", horas_semanales=10, grupo_utn_id=2),
+            GradoAcademico(id=1, nombre="Maestria"), GradoAcademico(id=2, nombre="Doctorado"),
+        ])
+        for index in range(1, 13):
+            db.session.add(ActividadDocencia(id=index, curso=f"Curso {index:02}", institucion="Universidad",
+                fecha_inicio=date(2025, 1, 1), fecha_fin=date(2026, 12, 31), investigador_id=1 if index <= 11 else 2))
+            db.session.add_all([
+                InvestigadorActividadGrado(actividad_docencia_id=index, investigador_id=1 if index <= 11 else 2,
+                    grado_academico_id=1, fecha_inicio=date(2025, 1, 1), fecha_fin=date(2025, 12, 31)),
+                InvestigadorActividadGrado(actividad_docencia_id=index, investigador_id=1 if index <= 11 else 2,
+                    grado_academico_id=2, fecha_inicio=date(2026, 1, 1)),
+            ])
+        db.session.commit()
+        db.session.remove()
+        from flask import request
+        with self.app.test_request_context("/list?page=2&per_page=9&filter_grado=doctorado&sort=curso"):
+            g.current_grupo_utn_id = 1
+            rows, total, options = ActividadDocenciaService.get_table_page({}, request.args)
+            self.assertEqual(total, 11)
+            self.assertEqual([row["id"] for row in rows], [10, 11])
+            self.assertEqual([option["value"] for option in options["investigador"]], ["Integrante Uno"])
+            self.assertEqual([option["value"] for option in options["grado"]], ["Doctorado"])
+            self.assertEqual(len(options["curso"]), 11)
+            self.assertTrue(all(len(row["historial_grados"]) == 2 for row in rows))
 
     def setUp(self):
         self.app = Flask(__name__)

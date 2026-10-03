@@ -18,11 +18,11 @@ import type { TableColumn, TableSortDirection } from "@/components/Table";
 import TableFilterSelect from "@/components/TableFilterSelect";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/lib/httpError";
-import { applyMemoriaSectionFilter, getMemoriaSectionFilter } from "@/lib/memoriaSectionFilter";
+import { getMemoriaSectionFilter } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
 import {
   eliminarActividadDocencia,
-  getActividadesDocencia,
+  getActividadesDocenciaPage,
   getHistorialActividadDocenciaById,
   type ActividadDocencia,
   type HistorialActividadDocenciaItem,
@@ -31,7 +31,6 @@ import { isVisibleActividadDocenciaHistoryItem } from "@/modules/produccion/util
 import { formatFecha } from "@/utils/dateTime";
 import { toTitleCase } from "@/utils/format";
 
-const ITEMS_PER_PAGE = 9;
 const HISTORY_PER_PAGE = 3;
 
 type DocenciaSort = "curso" | "investigador" | "institucion" | "rol" | "grado" | "fecha_inicio" | "estado";
@@ -86,65 +85,21 @@ export default function DocenciaLanding() {
 
   const memoriaFilter = useMemo(() => getMemoriaSectionFilter(location.state, "actividades-docencia"), [location.state]);
   const activos = memoriaFilter ? "all" : activeFilter;
+  const params = { page, activos, q: search, sort, direction, filters, ids: memoriaFilter?.ids };
   const actividades = useQuery({
-    queryKey: ["docencia", "all", activos],
-    queryFn: () => getActividadesDocencia(undefined, activos),
+    queryKey: ["docencia", "table", params],
+    queryFn: () => getActividadesDocenciaPage(params),
+    staleTime: 60_000,
   });
-  const scopedList = useMemo(() => applyMemoriaSectionFilter(actividades.data ?? [], memoriaFilter), [actividades.data, memoriaFilter]);
-
-  const filterOptions = useMemo(() => {
-    const values = {
-      cursos: new Set<string>(), instituciones: new Set<string>(), investigadores: new Set<string>(),
-      grados: new Set<string>(), roles: new Set<string>(),
-    };
-    scopedList.forEach((item) => {
-      if (item.curso) values.cursos.add(toTitleCase(item.curso));
-      if (item.institucion) values.instituciones.add(toTitleCase(item.institucion));
-      if (getInvestigadorNombre(item)) values.investigadores.add(toTitleCase(getInvestigadorNombre(item)));
-      if (item.grado_academico) values.grados.add(toTitleCase(item.grado_academico));
-      if (item.rol_actividad) values.roles.add(toTitleCase(item.rol_actividad));
-    });
-    const options = (entries: Set<string>) => Array.from(entries).sort().map((value) => ({ value, label: value }));
-    return {
-      cursos: options(values.cursos), instituciones: options(values.instituciones), investigadores: options(values.investigadores),
-      grados: options(values.grados), roles: options(values.roles),
-    };
-  }, [scopedList]);
-
-  const filteredList = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase("es");
-    const matching = scopedList.filter((item) => {
-      const curso = toTitleCase(item.curso);
-      const institucion = toTitleCase(item.institucion);
-      const investigador = toTitleCase(getInvestigadorNombre(item));
-      const grado = toTitleCase(item.grado_academico);
-      const rol = toTitleCase(item.rol_actividad);
-      const matchesSearch = !query || [curso, institucion, investigador, grado, rol]
-        .some((value) => value.toLocaleLowerCase("es").includes(query));
-      return matchesSearch && (!filters.curso || curso === filters.curso)
-        && (!filters.institucion || institucion === filters.institucion)
-        && (!filters.investigador || investigador === filters.investigador)
-        && (!filters.grado || grado === filters.grado) && (!filters.rol || rol === filters.rol);
-    });
-    const sortValue = (item: ActividadDocencia) => {
-      switch (sort) {
-        case "curso": return item.curso;
-        case "investigador": return getInvestigadorNombre(item);
-        case "institucion": return item.institucion;
-        case "rol": return item.rol_actividad;
-        case "grado": return item.grado_academico;
-        case "estado": return item.deleted_at ? 1 : 0;
-        default: return item.fecha_inicio;
-      }
-    };
-    return [...matching].sort((left, right) => {
-      const result = String(sortValue(left) ?? "").localeCompare(String(sortValue(right) ?? ""), "es", { numeric: true, sensitivity: "base" });
-      return direction === "asc" ? result : -result;
-    });
-  }, [direction, filters, scopedList, search, sort]);
-
-  const totalPages = Math.ceil(filteredList.length / ITEMS_PER_PAGE);
-  const rows = useMemo(() => filteredList.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE), [filteredList, page]);
+  const rows = actividades.data?.data ?? [];
+  const scopedList = rows;
+  const options = (key: string) => (actividades.data?.meta.options[key] ?? [])
+    .map((option) => ({ ...option, label: toTitleCase(option.label) }));
+  const filterOptions = {
+    cursos: options("curso"), instituciones: options("institucion"),
+    investigadores: options("investigador"), grados: options("grado"), roles: options("rol"),
+  };
+  const totalPages = actividades.data?.meta.total_pages ?? 0;
   const expandedItem = expandedRow === null ? undefined : scopedList.find((item) => item.id === expandedRow);
   const history = useQuery({
     queryKey: ["actividad-docencia-historial", expandedItem?.id],
@@ -235,7 +190,7 @@ export default function DocenciaLanding() {
       expandedRowId={expandedRow} renderExpanded={renderHistory}
       onToggleRow={(item) => { setExpandedRow((current) => current === item.id ? null : item.id); setHistoryPage(1); }}
       getExpandLabel={(item, expanded) => `${expanded ? "Ocultar" : "Mostrar"} historial de ${item.curso}`}
-      page={page} totalPages={totalPages} totalRecords={filteredList.length}
+      page={page} totalPages={totalPages} totalRecords={actividades.data?.meta.total ?? 0}
       onPageChange={(nextPage) => { setExpandedRow(null); setPage(nextPage); }}
       toolbar={<TableToolbar><div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center">
         <TableSearch label="Buscar actividades en docencia" placeholder="Buscar por curso, institución o investigador" value={search} onChange={(event) => setSearch(event.target.value)} />

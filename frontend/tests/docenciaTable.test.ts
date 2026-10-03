@@ -19,7 +19,6 @@ test("Actividades en Docencia usa la grilla comun y acciones por fila", () => {
   assert.match(home, /<TableRowActionButton action="delete"/);
   assert.match(home, /getHistorialActividadDocenciaById/);
   assert.match(home, /const HISTORY_PER_PAGE = 3/);
-  assert.match(home, /const ITEMS_PER_PAGE = 9/);
   assert.doesNotMatch(home, /<Tarjeta/);
   assert.doesNotMatch(home, /selectMode/);
 });

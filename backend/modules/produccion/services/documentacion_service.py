@@ -2,7 +2,9 @@ from modules.memorias.services.memoria_periodo_service import (
     consultar_entidades_memoria, registro_puntual_en_memoria,
 )
 from datetime import datetime
-from sqlalchemy import or_
+from sqlalchemy import func, or_
+from sqlalchemy.orm import joinedload, selectinload
+from modules.shared.controllers.pagination import table_query_page, table_scope_predicate
 
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.produccion.models.documentacion_autores import (
@@ -58,7 +60,10 @@ class DocumentacionBibliograficaService:
     # =========================
     @staticmethod
     def _list_query(filters: dict = None):
-        query = DocumentacionBibliografica.query
+        query = DocumentacionBibliografica.query.options(
+            joinedload(DocumentacionBibliografica.grupo_utn).lazyload("*"),
+            selectinload(DocumentacionBibliografica.autores),
+        )
 
         if not filters:
             filters = {"activos": "true"}
@@ -90,6 +95,25 @@ class DocumentacionBibliograficaService:
     @staticmethod
     def get_all(filters: dict = None):
         return [d.serialize() for d in DocumentacionBibliograficaService._list_query(filters).all()]
+
+    @staticmethod
+    def get_table_page(filters, args):
+        doc = DocumentacionBibliografica
+        fields = {"titulo": doc.titulo, "editorial": doc.editorial,
+                  "anio": doc.anio, "autor": Autor.nombre_apellido}
+        def author_condition(value, search=False):
+            name = func.lower(func.trim(Autor.nombre_apellido))
+            match = name.contains(value.lower(), autoescape=True) if search else name == value.lower()
+            return doc.autores.any(Autor.deleted_at.is_(None) & table_scope_predicate(Autor) & match)
+        return table_query_page(
+            DocumentacionBibliograficaService._list_query(filters), doc, args, fields,
+            default_sort="titulo", sortable=("titulo", "editorial", "anio"),
+            searchable=("titulo", "editorial", "anio"),
+            facets=("autor", "anio"), extra_search=lambda value: author_condition(value, True),
+            facet_joins={"autor": lambda scoped: scoped.join(doc.autores).filter(
+                Autor.deleted_at.is_(None), table_scope_predicate(Autor))},
+            filter_conditions={"autor": author_condition},
+        )
 
     @staticmethod
     def get_page(filters: dict, page: int, per_page: int):

@@ -3,7 +3,8 @@ from modules.memorias.services.memoria_periodo_service import (
 )
 from datetime import date, datetime
 from flask import has_request_context, request
-from sqlalchemy import String, cast, func, literal, select, union_all
+from sqlalchemy import String, case, cast, func, literal, select, union_all
+from sqlalchemy.orm import joinedload, selectinload
 
 from modules.produccion.models.actividad_docencia import (
     ActividadDocencia,
@@ -17,6 +18,7 @@ from modules.personal.models.personal import Investigador
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.shared.models.auditoria_campo import AuditoriaCampo
 from modules.shared.controllers.pagination import pagination_requested, parse_pagination_params
+from modules.shared.controllers.pagination import table_query_page, table_scope_predicate
 from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
@@ -192,7 +194,14 @@ class ActividadDocenciaService:
     @staticmethod
     def _list_query(filters: dict = None):
         filters = filters or {}
-        query = ActividadDocencia.query
+        query = ActividadDocencia.query.options(
+            joinedload(ActividadDocencia.investigador).load_only(
+                Investigador.id, Investigador.nombre_apellido, Investigador.deleted_at,
+            ).lazyload("*"),
+            joinedload(ActividadDocencia.rol_actividad),
+            selectinload(ActividadDocencia.investigadores_grado)
+            .joinedload(InvestigadorActividadGrado.grado_academico),
+        )
 
         investigador_id = filters.get("investigador_id")
         if investigador_id is not None:
@@ -226,6 +235,30 @@ class ActividadDocenciaService:
         query = ActividadDocenciaService._list_query(filters)
         total = query.count()
         return [a.serialize() for a in query.offset((page - 1) * per_page).limit(per_page).all()], total
+
+    @staticmethod
+    def get_table_page(filters, args):
+        grade = select(GradoAcademico.nombre).join(
+            InvestigadorActividadGrado,
+            InvestigadorActividadGrado.grado_academico_id == GradoAcademico.id,
+        ).where(
+            InvestigadorActividadGrado.actividad_docencia_id == ActividadDocencia.id,
+            InvestigadorActividadGrado.fecha_fin.is_(None),
+            table_scope_predicate(InvestigadorActividadGrado),
+        ).order_by(InvestigadorActividadGrado.fecha_inicio.desc(),
+                   InvestigadorActividadGrado.id.desc()).limit(1).scalar_subquery()
+        query = ActividadDocenciaService._list_query(filters).outerjoin(
+            ActividadDocencia.investigador,
+        ).outerjoin(ActividadDocencia.rol_actividad)
+        fields = {"curso": ActividadDocencia.curso, "institucion": ActividadDocencia.institucion,
+                  "investigador": case((Investigador.deleted_at.is_(None), Investigador.nombre_apellido), else_=""),
+                  "rol": RolActividad.nombre, "grado": grade,
+                  "fecha_inicio": ActividadDocencia.fecha_inicio,
+                  "estado": ActividadDocencia.deleted_at.isnot(None)}
+        return table_query_page(query, ActividadDocencia, args, fields,
+                                default_sort="fecha_inicio",
+                                searchable=("curso", "institucion", "investigador", "rol", "grado"),
+                                facets=("curso", "institucion", "investigador", "rol", "grado"))
 
     @staticmethod
     def get_by_id(actividad_id: int):
