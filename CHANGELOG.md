@@ -8,6 +8,34 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-94: rendimiento de listados y cierre de memorias
+
+- Docencia, Transferencias y Biblioteca recuperan nueve filas por pagina
+  desde el servidor, con busqueda, orden, totales y opciones de filtro sobre
+  todo el alcance de estado/memoria. Se conservan listas anteriores para
+  formularios y otros consumidores, permisos y aislamiento UCT.
+- Se precargan relaciones utilizadas en Produccion, Transferencias,
+  Personal, Becas y PID. Inicio reutiliza los registros del resumen para
+  contar integrantes por grupo, evitando consultas por coleccion.
+- La politica UCT reutiliza opciones ORM heredadas y valida claves foraneas
+  en lotes por flush, sin cachear resultados de autorizacion entre escrituras.
+  Los totales, opciones y subconsultas de tablas conservan el alcance explicito.
+- El cierre recolecta snapshots sin autoflush por consulta ni flush por
+  transferencia; conserva commit atomico, validacion, auditoria y contenido.
+  MemoriaDetalle invalida lista, detalle e historial en paralelo.
+
+Mediciones locales: Docencia 41 a 11 consultas en su nueva tabla,
+Transferencias 68 a 9, Biblioteca 16 a 8 e Inicio 59 a 19. El cierre
+paso de 1540 a 413 consultas. Son resultados del escenario local, no
+limites de latencia. La primera carga de Vite conserva su costo de
+transformacion; los archivos compilados se midieron por separado.
+
+Validacion: 648 pruebas backend, 197 frontend, TypeScript, build de
+produccion, Compose, topologia y escaneo de secretos correctos.
+Aceptacion funcional del usuario el 03/10/2026, confirmando cargas mas
+rapidas, y solicitud expresa de commits. Las tareas y artefactos permanecen
+excluidos de Git.
+
 ### Preparación de PR y verificación de CI
 
 - El control de mensajes admite scopes separados por coma y conserva los tipos,
