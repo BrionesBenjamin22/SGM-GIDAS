@@ -161,3 +161,24 @@ UCT valida pertenencias por registro y constituye el costo principal observado.
 La primera consulta del listado PID tardó 1,65 s y la siguiente 0,60 s. La medición
 con cProfile añade sobrecosto y no representa una garantía de tiempos. Esta etapa
 documenta el diagnóstico: no aplica optimización ni modifica controles de seguridad.
+
+## Recoleccion durante el cierre (ISS-94)
+
+Al cerrar una version, MemoriaService recolecta contexto y snapshots bajo
+`db.session.no_autoflush`. El commit posterior sigue ejecutando la
+validacion UCT y persiste el estado y todas las capturas en la misma
+transaccion. Si falla un paso se mantiene el rollback del flujo.
+En pruebas sin contexto Flask se usa `nullcontext`.
+
+La captura de transferencias asigna sus vinculaciones mediante relaciones
+ORM sin flush individual por registro. Las validaciones de claves
+foraneas se agrupan por modelo/columna en la politica UCT y se vuelven a
+ejecutar en cada flush; no se cachean resultados de autorizacion.
+
+Se mantienen transiciones, permisos, fechas, auditoria, inmutabilidad y
+datos de Excel. La comparacion de 296 registros capturados, incluidos
+adoptantes, conserva su contenido de negocio. El diagnostico local
+redujo el cierre de 1540 a 413 consultas, con tiempos variables; no es
+una garantia de duracion para otros volumenes. La suite de cierre,
+snapshots, exportacion y aislamiento forma parte de los 648 casos
+backend correctos de esta etapa.

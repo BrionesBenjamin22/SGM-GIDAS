@@ -1,4 +1,5 @@
 from datetime import datetime
+from contextlib import nullcontext
 from flask import g, has_app_context, has_request_context, request
 from sqlalchemy import func, select, union_all
 from sqlalchemy.orm import selectinload
@@ -827,77 +828,80 @@ class MemoriaService:
             version_actual.estado = nuevo_estado
 
             if nuevo_estado == EstadoMemoria.CERRADA:
-                version_actual.contexto_institucional = snapshot_contexto_institucional(version_actual)
-                version_actual.fecha_cierre = MemoriaService._resolver_fecha_evento(
-                    data.get("fecha_cierre"),
-                    "fecha_cierre"
-                )
-                if user_id is not None:
-                    version_actual.mark_updated(user_id)
-                    snapshot_investigadores_para_memoria_version(
-                        version_actual,
-                        user_id
+                # Collect snapshots before query-triggered flushes; commit still validates
+                # every pending write under the request UCT policy.
+                with (db.session.no_autoflush if has_app_context() else nullcontext()):
+                    version_actual.contexto_institucional = snapshot_contexto_institucional(version_actual)
+                    version_actual.fecha_cierre = MemoriaService._resolver_fecha_evento(
+                        data.get("fecha_cierre"),
+                        "fecha_cierre"
                     )
-                    snapshot_becarios_para_memoria_version(
-                        version_actual,
-                        user_id
-                    )
-                    snapshot_personal_para_memoria_version(
-                        version_actual,
-                        user_id
-                    )
-                    ProyectoInvestigacionService.snapshot_para_memoria_version(
-                        version_actual,
-                        user_id
-                    )
-                    ActividadDocenciaService.snapshot_para_memoria_version(
-                        version_actual,
-                        user_id
-                    )
-                    ParticipacionRelevanteService.snapshot_para_memoria_version(
-                        version_actual,
-                        user_id
-                    )
-                    DocumentacionBibliograficaService.snapshot_para_memoria_version(
-                        version_actual,
-                        user_id
-                    )
-                    EquipamientoService.snapshot_para_memoria_version(
-                        version_actual,
-                        user_id
-                    )
-                    MovimientoFinancieroService.snapshot_para_memoria_version(
-                        version_actual,
-                        user_id
-                    )
-                    TransferenciaSocioProductivaService.snapshot_para_memoria_version(
-                        version_actual,
-                        user_id
-                    )
-                    TrabajoReunionCientificaService.snapshot_para_memoria_version(
-                        version_actual,
-                        user_id
-                    )
-                    TrabajosRevistasReferatoService.snapshot_para_memoria_version(
-                        version_actual,
-                        user_id
-                    )
-                    DistincionRecibidaService.snapshot_para_memoria_version(
-                        version_actual,
-                        user_id
-                    )
-                    RegistrosPropiedadService.snapshot_para_memoria_version(
-                        version_actual,
-                        user_id
-                    )
-                    ArticuloDivulgacionService.snapshot_para_memoria_version(
-                        version_actual,
-                        user_id
-                    )
-                    snapshot_visitas_para_memoria_version(
-                        version_actual,
-                        user_id
-                    )
+                    if user_id is not None:
+                        version_actual.mark_updated(user_id)
+                        snapshot_investigadores_para_memoria_version(
+                            version_actual,
+                            user_id
+                        )
+                        snapshot_becarios_para_memoria_version(
+                            version_actual,
+                            user_id
+                        )
+                        snapshot_personal_para_memoria_version(
+                            version_actual,
+                            user_id
+                        )
+                        ProyectoInvestigacionService.snapshot_para_memoria_version(
+                            version_actual,
+                            user_id
+                        )
+                        ActividadDocenciaService.snapshot_para_memoria_version(
+                            version_actual,
+                            user_id
+                        )
+                        ParticipacionRelevanteService.snapshot_para_memoria_version(
+                            version_actual,
+                            user_id
+                        )
+                        DocumentacionBibliograficaService.snapshot_para_memoria_version(
+                            version_actual,
+                            user_id
+                        )
+                        EquipamientoService.snapshot_para_memoria_version(
+                            version_actual,
+                            user_id
+                        )
+                        MovimientoFinancieroService.snapshot_para_memoria_version(
+                            version_actual,
+                            user_id
+                        )
+                        TransferenciaSocioProductivaService.snapshot_para_memoria_version(
+                            version_actual,
+                            user_id
+                        )
+                        TrabajoReunionCientificaService.snapshot_para_memoria_version(
+                            version_actual,
+                            user_id
+                        )
+                        TrabajosRevistasReferatoService.snapshot_para_memoria_version(
+                            version_actual,
+                            user_id
+                        )
+                        DistincionRecibidaService.snapshot_para_memoria_version(
+                            version_actual,
+                            user_id
+                        )
+                        RegistrosPropiedadService.snapshot_para_memoria_version(
+                            version_actual,
+                            user_id
+                        )
+                        ArticuloDivulgacionService.snapshot_para_memoria_version(
+                            version_actual,
+                            user_id
+                        )
+                        snapshot_visitas_para_memoria_version(
+                            version_actual,
+                            user_id
+                        )
             else:
                 version_actual.fecha_cierre = None
                 if user_id is not None:

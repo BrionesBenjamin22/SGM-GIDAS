@@ -71,9 +71,11 @@ export default function MemoriaDetalle() {
           estado === "cerrada" ? new Date().toISOString().slice(0, 19) : undefined,
       }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["memorias"] });
-      await queryClient.invalidateQueries({ queryKey: ["memoria", id] });
-      await queryClient.invalidateQueries({ queryKey: ["memoria-historial", id] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["memorias"] }),
+        queryClient.invalidateQueries({ queryKey: ["memoria", id] }),
+        queryClient.invalidateQueries({ queryKey: ["memoria-historial", id] }),
+      ]);
 
       setSuccessMessage("Estado de la memoria actualizado con éxito.");
       setShowSuccess(true);
@@ -94,10 +96,11 @@ export default function MemoriaDetalle() {
         fecha_apertura: new Date().toISOString().slice(0, 19),
       }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["memorias"] });
-      await queryClient.invalidateQueries({ queryKey: ["memoria", id] });
-
-      await queryClient.invalidateQueries({ queryKey: ["memoria-historial", id] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["memorias"] }),
+        queryClient.invalidateQueries({ queryKey: ["memoria", id] }),
+        queryClient.invalidateQueries({ queryKey: ["memoria-historial", id] }),
+      ]);
       setSuccessMessage("Memoria reabierta con éxito.");
       setShowSuccess(true);
       setShowReopenConfirm(false);

@@ -206,3 +206,16 @@ El máximo de resultados por página conserva el contrato del módulo.
 En MemoriaDetalle, las etiquetas de datos y los encabezados de tarjetas
 usan peso seminegrita y color pizarra oscuro para distinguirse del contenido.
 La disposición, los textos, las acciones y el contrato permanecen iguales.
+
+## Actualizacion despues de transiciones (ISS-94)
+
+MemoriaDetalle invalida en paralelo listado, detalle e historial al
+cambiar estado o reabrir. Espera todas las invalidaciones antes de
+finalizar la operacion, conservando feedback y bloqueo de duplicados.
+
+Los accesos de seccion hacia Docencia, Transferencias y Biblioteca
+transmiten sus IDs al nuevo listado paginado del servidor, con nueve
+filas y `activos=all`. Los filtros y totales se aplican a todo el
+conjunto de la seccion, no solo a la pagina visible. Los IDs vacios
+mantienen el listado vacio y la UCT se valida en el backend.
+No cambian las versiones, acciones, snapshots ni la exportacion Excel.
