@@ -3,6 +3,7 @@ import builtins
 from datetime import date, datetime, timedelta
 from sqlalchemy import func
 from sqlalchemy import extract, or_
+from sqlalchemy.orm import joinedload, selectinload
 from extension import db
 from modules.recursos.models.becas import (
     Beca,
@@ -153,7 +154,11 @@ class BecaService:
         inicio = date(anio, 1, 1)
         fin = date(anio, 12, 31)
         return (
-            Beca.query
+            Beca.query.options(
+                joinedload(Beca.fuente_financiamiento),
+                selectinload(Beca.becarios).joinedload(Beca_Becario.becario)
+                .load_only(Becario.id, Becario.nombre_apellido, Becario.deleted_at).lazyload("*"),
+            )
             .join(Beca_Becario, Beca_Becario.id_beca == Beca.id)
             .join(Becario, Becario.id == Beca_Becario.id_becario)
             .filter(
@@ -178,7 +183,11 @@ class BecaService:
 
     @staticmethod
     def _list_query(activos="true", orden="asc"):
-        query = Beca.query
+        query = Beca.query.options(
+            joinedload(Beca.fuente_financiamiento),
+            selectinload(Beca.becarios).joinedload(Beca_Becario.becario)
+            .load_only(Becario.id, Becario.nombre_apellido, Becario.deleted_at).lazyload("*"),
+        )
         if activos == "true":
             query = query.filter(Beca.deleted_at.is_(None))
         elif activos == "false":
@@ -193,7 +202,6 @@ class BecaService:
 
     @staticmethod
     def get_page(page, per_page, activos="true", orden="asc", q=""):
-        from sqlalchemy.orm import selectinload
         query = BecaService._list_query(activos, orden)
         term = q.strip()[:100]
         if term:
@@ -202,10 +210,6 @@ class BecaService:
                 Beca.nombre_beca.ilike(f"%{escaped}%", escape="\\"),
                 Beca.descripcion.ilike(f"%{escaped}%", escape="\\"),
             ))
-        query = query.options(
-            selectinload(Beca.fuente_financiamiento),
-            selectinload(Beca.becarios).selectinload(Beca_Becario.becario),
-        )
         total = query.count()
         rows = query.offset((page - 1) * per_page).limit(per_page).all()
         return [b.serialize() for b in rows], total
@@ -440,6 +444,9 @@ class BecaService:
 
         query = Beca_Becario.query.filter(
             Beca_Becario.id_beca == beca.id, Beca_Becario.deleted_at.is_(None)
+        ).options(
+            joinedload(Beca_Becario.becario)
+            .load_only(Becario.id, Becario.nombre_apellido).lazyload("*"),
         ).order_by(Beca_Becario.id.asc())
         total = query.count() if page is not None else None
         relaciones = (query.offset((page - 1) * per_page).limit(per_page).all()
@@ -468,7 +475,11 @@ class BecaService:
             raise ValueError("Debe proporcionar un año.")
 
         relaciones = (
-            Beca_Becario.query
+            Beca_Becario.query.options(
+                joinedload(Beca_Becario.becario).lazyload("*"),
+                joinedload(Beca_Becario.becario).joinedload(Becario.tipo_formacion),
+                joinedload(Beca_Becario.becario).joinedload(Becario.grupo_utn).lazyload("*"),
+            )
             .join(Beca, Beca.id == Beca_Becario.id_beca)
             .join(Becario, Becario.id == Beca_Becario.id_becario)
             .filter(

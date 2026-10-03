@@ -117,3 +117,20 @@ financieros y categorias de erogacion cuentan y limitan en SQL las filas que
 cumplen sus filtros. Se preservan ano, vigencia, disponibilidad, pertenencia
 al grupo y UCT. Los historiales siguen ordenados y paginados de a tres; las
 rutas sin `page`/`per_page` conservan su respuesta previa.
+
+## Precarga de becas y distribuciones (ISS-94)
+
+Los listados completos, paginados y activos por anio de Beca precargan
+fuente, vinculaciones y los campos de Becario necesarios para serializar
+ID, nombre y estado. El detalle de vinculaciones tambien precarga el
+becario. El dashboard anual precarga formacion y grupo en la consulta de
+vinculos para evitar lecturas por cada becario.
+
+Los endpoints, parametros, importes, reglas de vigencia, permisos,
+auditoria, bajas logicas y alcance UCT conservan sus contratos. No se
+modifico la conversion monetaria ni el servicio de movimientos.
+Se compararon listas activas de 2025/2026, lista completa y dashboard
+anual contra las respuestas anteriores, conservando datos y orden.
+
+Las pruebas existentes de becas, paginacion y aislamiento estan incluidas
+en la suite backend completa de 648 casos validada para esta etapa.

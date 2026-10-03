@@ -171,3 +171,11 @@ El máximo de resultados por página conserva el contrato del módulo.
 En EquipamientoDetalle y ErogacionesDetalle, las etiquetas de datos y los encabezados de tarjetas
 usan peso seminegrita y color pizarra oscuro para distinguirse del contenido.
 La disposición, los textos, las acciones y el contrato permanecen iguales.
+
+## Carga de becas (ISS-94)
+
+Becas conserva sus services, filtros por anio y estado, permisos, mensajes
+e historial. El backend precarga fuentes, becarios y clasificaciones para
+reducir consultas de listado y dashboard anual. No cambia el contrato
+financiero ni la paginacion de nueve filas de Becas. Las pruebas de la
+etapa y su aceptacion funcional quedaron registradas en el CHANGELOG.
