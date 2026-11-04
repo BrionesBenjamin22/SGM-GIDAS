@@ -63,6 +63,9 @@ services:
     env_file: !override
       - ./frontend/${FRONTEND_ENV_FILE:-.env}
     environment:
+      # Windows bind mounts do not reliably forward file watch events.
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "500"
       VITE_APP_ENV: ${VITE_APP_ENV:-local}
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
       VITE_API_URL: ${VITE_API_URL:-/api}

@@ -13,6 +13,7 @@ RETENTION = timedelta(days=7)
 MAX_BYTES = 65536
 SENSITIVE_KEY = re.compile(r"token|password|contrasena|contraseña|secret|credential|authorization|cookie|clave", re.I)
 MODULES = {
+    "catalogos": ("Catalogo", "/catalogos", "/catalogos"),
     "personal-personal": ("Personal", "/personal/nuevo?tipo=PERSONAL", "/personal/personal/{id}/editar"),
     "personal-becario": ("Becario", "/personal/nuevo?tipo=BECARIO", "/personal/becario/{id}/editar"),
     "personal-investigador": ("Investigador", "/personal/nuevo?tipo=INVESTIGADOR", "/personal/investigador/{id}/editar"),
@@ -34,6 +35,7 @@ MODULES = {
 }
 
 DISPLAY_FIELDS = {
+    "catalogos": ("name",),
     "grupo-uct": ("data.nombreSigla", "data.facultadRegional"),
     "grupo-visitantes": ("razon", "procedencia"),
     "proyectos": ("nombreProyecto", "codigoProyecto"),

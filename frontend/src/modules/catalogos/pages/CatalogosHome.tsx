@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useCatalogDraft, type CatalogDraft } from "@/modules/catalogos/hooks/useCatalogDraft";
+import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -314,11 +316,17 @@ function CatalogPanel({
   canCreate,
   canEdit,
   canDelete,
+  initialDraft,
+  onDraftChange,
+  onDraftClear,
 }: {
   def: CatalogDef;
   canCreate: boolean;
   canEdit: boolean;
   canDelete: boolean;
+  initialDraft: CatalogDraft | null;
+  onDraftChange: (value: CatalogDraft | null) => void;
+  onDraftClear: () => Promise<void>;
 }) {
   const queryClient = useQueryClient();
   const nameField = def.nameField ?? "nombre";
@@ -340,15 +348,15 @@ function CatalogPanel({
   const [historyErrorId, setHistoryErrorId] = useState<number | null>(null);
   const [historyPageByItem, setHistoryPageByItem] = useState<Record<number, number>>({});
 
-  const [showAdd, setShowAdd] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newDesc, setNewDesc] = useState("");
-  const [newFkId, setNewFkId] = useState<number | "">("");
+  const [showAdd, setShowAdd] = useState(initialDraft?.mode === "create");
+  const [newName, setNewName] = useState(initialDraft?.mode === "create" ? initialDraft.name : "");
+  const [newDesc, setNewDesc] = useState(initialDraft?.mode === "create" ? initialDraft.description : "");
+  const [newFkId, setNewFkId] = useState<number | "">(initialDraft?.mode === "create" ? initialDraft.fkId : "");
 
-  const [editId, setEditId] = useState<number | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editDesc, setEditDesc] = useState("");
-  const [editFkId, setEditFkId] = useState<number | "">("");
+  const [editId, setEditId] = useState<number | null>(initialDraft?.mode === "edit" ? initialDraft.editId : null);
+  const [editName, setEditName] = useState(initialDraft?.mode === "edit" ? initialDraft.name : "");
+  const [editDesc, setEditDesc] = useState(initialDraft?.mode === "edit" ? initialDraft.description : "");
+  const [editFkId, setEditFkId] = useState<number | "">(initialDraft?.mode === "edit" ? initialDraft.fkId : "");
 
   const [deleteTarget, setDeleteTarget] = useState<CatalogItem | null>(null);
   const [search, setSearch] = useState("");
@@ -360,6 +368,12 @@ function CatalogPanel({
     message: "",
     variant: "success",
   });
+
+  useEffect(() => {
+    onDraftChange(editId ? { endpoint: def.endpoint, mode: "edit", editId, name: editName, description: editDesc, fkId: editFkId }
+      : showAdd ? { endpoint: def.endpoint, mode: "create", editId: null, name: newName, description: newDesc, fkId: newFkId } : null);
+  }, [def.endpoint, editId, editName, editDesc, editFkId, showAdd, newName, newDesc, newFkId, onDraftChange]);
+
 
   const entityLabel = def.label.toLowerCase();
   const fkLabel = def.fkField?.label ?? "";
@@ -475,6 +489,13 @@ function CatalogPanel({
     }
   }, [currentPage, totalPages]);
 
+  useEffect(() => {
+    if (!initialDraft?.editId) return;
+    setStatusFilter("all");
+    const index = filteredItems.findIndex(item => item.id === initialDraft.editId);
+    if (index >= 0) setCurrentPage(Math.floor(index / CATALOG_ITEMS_PER_PAGE) + 1);
+  }, [filteredItems, initialDraft]);
+
   const handleAdd = async () => {
     if (actionInFlight.current) return;
     if (!canCreate) return;
@@ -500,6 +521,7 @@ function CatalogPanel({
     setPendingAction("create");
     try {
       await createCatalogItem(def.endpoint, body);
+      await onDraftClear().catch(() => undefined);
       setNewName("");
       setNewDesc("");
       setNewFkId("");
@@ -562,6 +584,7 @@ function CatalogPanel({
     }
 
     if (Object.keys(body).length === 0) {
+      await onDraftClear().catch(() => undefined);
       setEditId(null);
       setErrorMessage("");
       showToast("No hubo cambios para actualizar.", "success");
@@ -572,6 +595,7 @@ function CatalogPanel({
     setPendingAction("update");
     try {
       await updateCatalogItem(def.endpoint, id, body);
+      await onDraftClear().catch(() => undefined);
       setEditId(null);
       setErrorMessage("");
       showToast(`Los cambios se guardaron correctamente en ${def.label}.`, "success");
@@ -737,7 +761,7 @@ function CatalogPanel({
                       type="button"
                       variant="secondary"
                       size="sm"
-                      onClick={() => setEditId(null)}
+                      onClick={() => { void onDraftClear().catch(() => undefined); setEditId(null); }}
                     >
                       Cancelar
                     </Button>
@@ -1019,6 +1043,7 @@ function CatalogPanel({
               variant="secondary"
               size="sm"
               onClick={() => {
+                void onDraftClear().catch(() => undefined);
                 setShowAdd(false);
                 setNewName("");
                 setNewDesc("");
@@ -1078,12 +1103,28 @@ function CatalogPanel({
 
 export default function CatalogosHome() {
   const navigate = useNavigate();
-  const { canCreateRecords, canEditRecords, canDeleteRecords } = useAuth();
+  const { user, canCreateRecords, canEditRecords, canDeleteRecords } = useAuth();
+  const draft = useCatalogDraft(user?.id, canCreateRecords() || canEditRecords());
+  const [restoredDraft, setRestoredDraft] = useState<CatalogDraft | null>(null);
+  const [draftVersion, setDraftVersion] = useState(0);
+  const onDraftChange = useCallback((value: CatalogDraft | null) => draft.setValue(value), [draft.setValue]);
   const [selectedEndpoint, setSelectedEndpoint] = useState(CATALOGS[0].endpoint);
   const selectedCatalog = CATALOGS.find((catalog) => catalog.endpoint === selectedEndpoint) ?? CATALOGS[0];
 
   return (
     <section className="w-full min-h-[calc(100vh-120px)] px-4 py-4 flex flex-col">
+      {draft.available && <DraftRecoveryNotice savedAt={draft.available.saved_at}
+        onDiscard={draft.clear}
+        onRestore={() => {
+          const saved = draft.available!.data;
+          if (!CATALOGS.some(item => item.endpoint === saved.endpoint) || (saved.mode === "edit" ? !canEditRecords() : !canCreateRecords())) return;
+          setSelectedEndpoint(saved.endpoint);
+          setRestoredDraft(saved);
+          setDraftVersion(value => value + 1);
+          draft.restore();
+        }} />}
+      {draft.status && <p role="status" className="mb-3 text-sm text-slate-600">{draft.status}</p>}
+      {!draft.ready && !draft.available && <Button type="button" onClick={draft.retry}>Reintentar carga del borrador</Button>}
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h2 className="text-2xl font-semibold md:text-3xl">Gestionar Catálogos</h2>
@@ -1104,7 +1145,10 @@ export default function CatalogosHome() {
         </Field>
         <p className="mt-3 text-sm text-slate-600">{selectedCatalog.description}</p>
         <CatalogPanel
-          key={selectedCatalog.endpoint}
+          key={`${selectedCatalog.endpoint}:${draftVersion}`}
+          initialDraft={restoredDraft?.endpoint === selectedCatalog.endpoint ? restoredDraft : null}
+          onDraftChange={onDraftChange}
+          onDraftClear={async () => { await draft.clear(); setRestoredDraft(null); }}
           def={selectedCatalog}
           canCreate={canCreateRecords()}
           canEdit={canEditRecords()}
