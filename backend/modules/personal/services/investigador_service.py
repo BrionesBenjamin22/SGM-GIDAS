@@ -491,6 +491,7 @@ def snapshot_investigadores_para_memoria_version(memoria_version, user_id):
             memoria_version_id=memoria_version.id,
             investigador_id=investigador.id,
             nombre_apellido=nombre_para_memoria(investigador),
+            identidad_id=getattr(investigador, "identidad_id", None),
             fecha_alta_grupo=investigador.fecha_alta_grupo,
             horas_semanales=resolver_horas_al_fin(investigador, memoria_version),
             tipo_dedicacion_id=investigador.tipo_dedicacion_id,

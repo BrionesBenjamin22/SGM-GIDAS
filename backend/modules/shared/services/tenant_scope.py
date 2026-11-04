@@ -26,6 +26,11 @@ GLOBAL_TABLES = {
     "tipo_registro_propiedad", "tipo_reunion_cientifica", "tipo_revista",
     "tipo_erogacion", "categoria_erogacion", "tipo_contrato_transferencia",
 }
+PERSONAL_SNAPSHOT_SOURCES = {
+    "personal_memoria_version": "personal",
+    "becario_memoria_version": "becario",
+    "investigador_memoria_version": "investigador",
+}
 
 
 def _classes_by_table():
@@ -66,6 +71,19 @@ def _predicate(model, group_id, classes, seen=frozenset()):
             owner.identidad_id == model.id,
             owner.grupo_utn_id == group_id,
         )) for owner in owners)))
+
+    if table in PERSONAL_SNAPSHOT_SOURCES:
+        # Las fotos con identidad sobreviven al cambio de clase. Para fotos
+        # heredadas sin identidad se conserva la verificación del origen vivo.
+        source_name = PERSONAL_SNAPSHOT_SOURCES[table]
+        source = aliased(classes[source_name])
+        source_predicate = _predicate(source, group_id, classes, seen)
+        predicates.append(or_(
+            model.identidad_id.is_not(None),
+            exists(select(source.id).where(
+                source.id == getattr(model, f"{source_name}_id"), source_predicate,
+            )),
+        ))
 
     parent_columns = []
     for column in model.__table__.columns:
@@ -172,6 +190,11 @@ def register_tenant_orm_policy():
                     raise ForbiddenError("La informacion pertenece a otra UCT.")
             if instance.__table__.name in {"usuario", "persona", "usuario_grupo_utn"}:
                 continue
+            source_name = PERSONAL_SNAPSHOT_SOURCES.get(instance.__table__.name)
+            if source_name and instance.identidad_id is None:
+                # Las fotos sin identidad aún deben acreditar su origen en la UCT.
+                source = classes[source_name]
+                relations.setdefault((source, "id"), set()).add(getattr(instance, f"{source_name}_id"))
             for column in columns:
                 if column.name in AUDIT_FKS or not column.foreign_keys:
                     continue

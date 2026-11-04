@@ -9,6 +9,11 @@ personal_bp = Blueprint(
     url_prefix="/personal"
 )
 
+@personal_bp.route("/<string:rol>/<int:id>/reclasificar", methods=["PUT"])
+@requiere_rol("ADMIN", "GESTOR")
+def reclasificar(rol, id):
+    return PersonalController.reclasificar(request, rol, id)
+
 @personal_bp.route("", methods=["POST"])
 @requiere_rol("ADMIN", "GESTOR")
 def crear():

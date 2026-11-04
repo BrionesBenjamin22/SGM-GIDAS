@@ -604,6 +604,7 @@ def snapshot_personal_para_memoria_version(memoria_version, user_id):
         snapshot = PersonalMemoriaVersion(
             memoria_version_id=memoria_version.id,
             personal_id=personal.id,
+            identidad_id=getattr(personal, "identidad_id", None),
             nombre_apellido=nombre_para_memoria(personal),
             fecha_alta_grupo=personal.fecha_alta_grupo,
             horas_semanales=resolver_horas_al_fin(personal, memoria_version),

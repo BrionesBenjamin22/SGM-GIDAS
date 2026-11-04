@@ -341,3 +341,48 @@ Las pruebas de paginacion e aislamiento permanecen en
 Las mediciones locales comparables de endpoints completos pasaron de
 71 a 10 consultas para Investigadores y de 48 a 7 para Becarios;
 son cantidades observadas con el escenario local, no limites universales.
+
+## Corrección de clase por alta errónea
+
+La reclasificación permite corregir la clase elegida por error al dar de alta
+un integrante y advertirlo en ese momento. No define una transición de carrera
+ni un cambio de categoría laboral posterior: esos casos no fueron especificados
+y quedan fuera del alcance aprobado. No hay un límite temporal automático;
+el uso previsto es la corrección del alta, sujeta a las dependencias existentes.
+
+`PUT /api/v1/personal/{rol}/{id}/reclasificar` admite ADMIN/GESTOR dentro de su
+UCT. `rol` y `clase_destino` usan `personal`, `becario` o `investigador`, con un
+destino diferente del origen. El JSON incluye `clase_destino`, las diferencias
+de campos comunes y los campos de la clase destino: `tipo_personal_id` para
+Personal, `tipo_formacion_id` para Becario o `tipo_dedicacion_id`,
+`categoria_utn_id` y `programa_incentivos_id` para Investigador, respetando la
+obligatoriedad de sus altas. Becario admite además la colección `becas`.
+Se rechazan campos ajenos, catálogos inactivos y registros inactivos o dados de
+baja. Deben reactivarse antes de corregirlos.
+
+El traslado conserva la misma `IdentidadPersonal`, DNI/CUIL, nombres, UCT,
+fecha de alta, creación, intervalos de horas e historial de cambios. Se auditan
+la clase anterior/nueva y los campos exclusivos retirados o incorporados. El ID
+numérico puede cambiar porque cada clase tiene su propia tabla. La respuesta
+HTTP 200 devuelve el registro serializado con `rol` e `id` efectivos. Todo se
+persiste en una transacción; un error revierte el traslado completo.
+
+Las becas, proyectos, autorías y demás antecedentes referenciados desde otras
+tablas bloquean la reclasificación, incluso si tienen baja lógica. Un conflicto
+HTTP 409 conserva todos los vínculos; no se eliminan, cierran ni trasladan
+automáticamente. Desvincular con baja lógica no garantiza habilitar la operación.
+Las fotos existentes de Personal/Becario/Investigador en memorias son la
+excepción histórica: mantienen su contenido y se vinculan a la identidad estable.
+
+La migración `e4a6c8f0b2d3`, posterior a `d3f5a7c9e1b2`, agrega `identidad_id`
+nullable, índice, FK restrictiva y unicidad por versión/identidad en cada tabla
+de fotos. Los IDs de clase quedan como procedencia congelada, sin FK al registro
+vivo. Se completa la identidad disponible sin modificar contenido histórico.
+El aislamiento UCT contempla tanto fotos con identidad como fotos heredadas sin
+ella. El downgrade rechaza una reversión cuando el origen ya no existe o su
+identidad cambió; requiere restaurar un respaldo coherente previamente.
+
+Pruebas: `test_personal_reclasificacion.py`, `test_personal_snapshot_migration.py`
+y `test_personal_snapshot_postgres.py` (optativa con rol migrador, en esquemas
+efímeros). Cubren identidad, traslado atómico, rechazo de dependencias,
+conservación de fotos y Excel, aislamiento UCT y reversión de la migración.

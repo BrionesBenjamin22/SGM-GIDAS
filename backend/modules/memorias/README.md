@@ -203,3 +203,24 @@ redujo el cierre de 1540 a 413 consultas, con tiempos variables; no es
 una garantia de duracion para otros volumenes. La suite de cierre,
 snapshots, exportacion y aislamiento forma parte de los 648 casos
 backend correctos de esta etapa.
+
+## Personal histórico y corrección de clase
+
+Las fotos de Personal, Becario e Investigador conservan sus datos, etiquetas,
+horas y clase al corregir un alta errónea en el registro actual. Se relacionan
+con `IdentidadPersonal` mediante `identidad_id`; el ID original de clase queda
+como procedencia histórica. Las lecturas y el Excel utilizan los campos de la
+foto y no completan información con la ficha actual. El contrato de captura
+agrega únicamente la referencia de identidad, nullable para datos heredados.
+
+Reabrir genera una versión vacía; al cerrarla se captura la clase corregida,
+respetando las reglas existentes de UCT, período e intervalos de horas. Una
+persona no se incorpora a dos clases por conservar fotos de versiones anteriores.
+Los permisos y endpoints de versiones y exportación conservan sus contratos.
+
+Este alcance admite corregir un alta errónea; no define cambios de categoría
+posteriores durante la trayectoria. Las relaciones operativas con becas,
+proyectos, autorías o antecedentes continúan bloqueando el traslado y no se
+eliminan. La migración y sus condiciones de reversión se detallan en Personal.
+Las pruebas comparan fotos y celdas Excel de seis correcciones sucesivas, con
+aislamiento UCT y conservación de contenido durante la migración.

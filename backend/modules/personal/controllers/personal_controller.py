@@ -18,6 +18,15 @@ from modules.shared.controllers.responses import error_response, exception_respo
 class PersonalController:
 
     @staticmethod
+    def reclasificar(req, rol, id):
+        from modules.personal.services.reclasificacion_service import reclasificar_personal
+        try:
+            resultado = reclasificar_personal(rol, id, req.get_json(silent=True), g.current_user_id)
+            return jsonify(resultado), 200
+        except Exception as error:
+            return exception_response(error, operation="reclasificar personal")
+
+    @staticmethod
     def crear(req: Request) -> Response:
         data = req.get_json(force=True, silent=False)
 
