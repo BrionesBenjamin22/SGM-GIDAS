@@ -301,7 +301,7 @@ export default function ProyectosForm() {
       montoDestinado.trim() !== "" &&
       (!Number.isFinite(Number(montoDestinado)) || Number(montoDestinado) < 0)
     ) {
-      newErrors.montoDestinado = "El monto debe ser un numero mayor o igual a cero";
+      newErrors.montoDestinado = "El monto debe ser un número mayor o igual a cero";
     }
 
     if (investigadoresIds.some(id => !Number.isInteger(id) || id <= 0)) {

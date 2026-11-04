@@ -35,7 +35,7 @@ export default function PersonalSnapshotDialog({ sectionKey, title, versionLabel
 
   const columns: TableColumn<MemoriaSnapshotEntry>[] = [
     { id: "nombre", header: "Nombre y apellido", render: row => text(row.nombre_apellido) },
-    { id: "clasificacion", header: sectionKey === "becarios" ? "Formación" : sectionKey === "investigadores" ? "Dedicación" : "Función",
+    { id: "clasificacion", header: sectionKey === "becarios" ? "Nivel de Formación" : sectionKey === "investigadores" ? "Tipo de Dedicación" : "Tipo de Personal",
       render: row => text(row[sectionKey === "becarios" ? "tipo_formacion_nombre" : sectionKey === "investigadores" ? "tipo_dedicacion_nombre" : "tipo_personal_nombre"]) },
     { id: "horas", header: "Horas semanales", render: row => typeof row.horas_semanales === "number" ? `${row.horas_semanales} h` : "Sin dato" },
     { id: "alta", header: "Fecha de alta", render: row => typeof row.fecha_alta_grupo === "string" ? formatFecha(row.fecha_alta_grupo) : "Sin dato" },

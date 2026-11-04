@@ -172,7 +172,7 @@ export default function PersonalDetalle() {
             {relaciones.tipo_formacion?.nombre && (
               <p>
                 <span className="font-semibold text-slate-800">
-                  Grado de Formación:
+                  Nivel de Formación:
                 </span>{" "}
                 {relaciones.tipo_formacion.nombre}
               </p>
@@ -199,7 +199,7 @@ export default function PersonalDetalle() {
             {relaciones.tipo_dedicacion?.nombre && (
               <p>
                 <span className="font-semibold text-slate-800">
-                  Tipo de Dedicacion:
+                  Tipo de Dedicación:
                 </span>{" "}
                 {relaciones.tipo_dedicacion.nombre}
               </p>

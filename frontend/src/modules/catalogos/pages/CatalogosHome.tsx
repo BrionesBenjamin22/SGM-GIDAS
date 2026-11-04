@@ -149,7 +149,7 @@ const CATALOGS: CatalogDef[] = [
     description: "Administra los adoptantes disponibles para transferencias. Puede añadir adoptantes nuevos desde el formulario de transferencia.",
   },
   {
-    label: "Tipo de Registro Propiedad",
+    label: "Tipo de Registro de Propiedad",
     endpoint: "/tipo-registro-propiedad/",
     description: "Clasifica registros de propiedad intelectual e industrial.",
   },
@@ -527,7 +527,7 @@ function CatalogPanel({
       setNewFkId("");
       setShowAdd(false);
       setErrorMessage("");
-      showToast(`El registro se creo correctamente en ${def.label}.`, "success");
+      showToast(`El registro se creó correctamente en ${def.label}.`, "success");
       await queryClient.invalidateQueries();
       await load();
     } catch (error) {
@@ -561,7 +561,7 @@ function CatalogPanel({
     }
 
     if (!editName.trim()) {
-      setErrorMessage("El nombre no puede estar vacio.");
+      setErrorMessage("El nombre no puede estar vacío.");
       return;
     }
 
@@ -633,7 +633,7 @@ function CatalogPanel({
       await deleteCatalogItem(def.endpoint, deleteTarget.id);
       setDeleteTarget(null);
       setErrorMessage("");
-      showToast(`El registro se elimino correctamente de ${def.label}.`, "success");
+      showToast(`El registro se eliminó correctamente de ${def.label}.`, "success");
       await queryClient.invalidateQueries();
       await load();
     } catch (error) {

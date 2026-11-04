@@ -351,10 +351,13 @@ export default function FormPTAAProfesional({
           <Button type="button" variant="secondary" onClick={() => void refetchTipos()} loading={tiposFetching} loadingText="Reintentando...">Reintentar</Button>
         </div>}
         {!tiposLoading && !tiposError && !tiposPersonal.length && <p role="alert">No hay tipos de personal disponibles. Agregue un tipo en el catálogo e intente nuevamente.</p>}
-        <Field label="Función del personal" required error={errors.tipoPersonal} name="tipoPersonal">
+        {!tiposLoading && !tiposError && isEdit && tipoPersonalId && !tiposPersonal.some((tipo) => tipo.id === tipoPersonalId) && (
+          <p role="status" className="text-sm text-slate-600">El tipo asignado actualmente ya no está disponible. Seleccione un tipo vigente para guardar cambios.</p>
+        )}
+        <Field label="Tipo de Personal" required error={errors.tipoPersonal} name="tipoPersonal">
           <select
             id="personal-tipoPersonal"
-            aria-label="Función del personal"
+            aria-label="Tipo de Personal"
             className={`input ${
               errors.tipoPersonal ? "border-red-500 ring-2 ring-red-500" : ""
             }`}

@@ -8,6 +8,23 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### Tipos de personal sin opciones duplicadas
+
+- Depuración auditada de opciones agregadas, conservando Técnico, Administrativo,
+  De Apoyo y Profesional como opciones activas de la configuración revisada.
+- Se preservan registros, asignaciones y fotos históricas. La edición informa
+  cuando el tipo anterior está retirado y permite elegir uno vigente.
+- Altas y ediciones de catálogo rechazan duplicados por tildes, mayúsculas,
+  espacios y puntuación. Las cargas de prueba evitan recrear variantes agregadas.
+
+### Etiquetas de catálogos y ortografía de la interfaz
+
+- Denominaciones consistentes en formularios, selectores, detalles, historiales,
+  gráficos y encabezados de memorias para Personal, Docencia y Propiedad.
+- Corregidas tildes y signos de apertura en etiquetas, ayudas, confirmaciones y
+  mensajes de Inicio, Catálogos, Usuarios, Visitas, Personal, Producción,
+  Proyectos, Memorias y Búsqueda, conservando los contratos y permisos.
+
 ### Corrección de clase por alta errónea y consulta histórica de Personal
 
 - Edición permite corregir Personal, Becario o Investigador con validaciones de

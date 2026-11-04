@@ -158,7 +158,7 @@ export default function HistorialCambiosCard({
 
     const titulo =
       item.tipo === "historial_grado"
-        ? "Historial de grado academico"
+        ? "Historial de grado académico"
         : formatLabel(item.campo);
 
     const valorAnterior = formatItemValue

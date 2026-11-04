@@ -246,3 +246,7 @@ versión anterior. Al cerrar una nueva versión se captura la clase corregida.
 Los cambios posteriores de categoría laboral no forman parte del alcance
 definido. Los bloqueos por vínculos operativos se conservan en Personal.
 `personalSnapshot.test.ts` cubre las tres clases, campos ausentes y paginación.
+
+Los encabezados históricos usan Tipo de Personal, Nivel de Formación y Tipo de
+Dedicación, alineados con los catálogos de los formularios. Los valores guardados
+en cada foto conservan su contenido; corregir una etiqueta no reescribe versiones.

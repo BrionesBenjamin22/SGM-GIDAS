@@ -335,3 +335,9 @@ no visibles. Se mantienen permisos ADMIN/GESTOR/LECTURA de lectura y los
 contratos de mutaciones, auditoria e historial existentes.
 Las regresiones estan en `tests/test_tenant_scope.py` y se complementan
 con `tests/test_produccion_list_sql_pagination.py`.
+
+## Mensajes públicos de Grado Académico
+
+Los errores de consulta, duplicación, edición y baja muestran Grado Académico
+con tildes. Conservan los códigos de error, estados HTTP y reglas de validación;
+las claves del contrato API permanecen iguales.

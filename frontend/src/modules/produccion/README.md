@@ -468,3 +468,11 @@ completas y `useDocumentacion` siguen disponibles para otros consumidores.
 Las pruebas de transicion y contrato se encuentran en
 `tests/transferenciasTable.test.ts`; la grilla e historial de Docencia
 siguen cubiertos por `tests/docenciaTable.test.ts`.
+
+## Denominaciones visibles de catálogos
+
+Docencia utiliza Grado Académico y Rol de Actividad en formulario, detalle y
+listado; la selección y los mensajes mantienen las tildes. El detalle muestra
+Fecha de finalización. Registro de Propiedad utiliza Tipo de Registro de
+Propiedad en etiqueta, selector, detalle e historial, igual que Catálogos.
+Estas denominaciones no cambian las claves API, IDs ni validaciones de negocio.

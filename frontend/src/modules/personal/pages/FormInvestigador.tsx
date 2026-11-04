@@ -180,7 +180,7 @@ export default function FormInvestigador({
     }
 
     if (!dedicacionId) {
-      newErrors.dedicacion = "Debe seleccionar dedicación";
+      newErrors.dedicacion = "Debe seleccionar un tipo de dedicación";
     }
 
     if (!fechaAltaGrupo) {
@@ -349,7 +349,7 @@ export default function FormInvestigador({
         </>
       </Field>
 
-      <Field required label="Dedicacion" name="dedicacion" error={errors.dedicacion}>
+      <Field required label="Tipo de Dedicación" name="dedicacion" error={errors.dedicacion}>
         <>
           <select
             className={`input ${
@@ -363,7 +363,7 @@ export default function FormInvestigador({
             }}
           >
             <option value="" disabled>
-              Seleccionar dedicación
+              Seleccionar tipo de dedicación
             </option>
             {dedicaciones.map((d) => (
               <option key={d.id} value={d.id}>
@@ -405,7 +405,7 @@ export default function FormInvestigador({
         </>
       </Field>
 
-      <Field label="Programa de incentivos" name="programa" error={errors.programa}>
+      <Field label="Programa de Incentivos" name="programa" error={errors.programa}>
         <>
           <select
             className={`input ${

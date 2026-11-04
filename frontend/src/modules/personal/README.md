@@ -108,8 +108,8 @@ becas se formatean como informacion legible y no exponen el JSON de auditoria.
 
 `Agregar nuevo` navega a `/personal/nuevo` y conserva la clase seleccionada en
 la URL. El alta permite elegir Personal, Becario o Investigador mediante opciones
-visibles. En edicion la clase es informativa e inmutable. El catalogo antes
-rotulado `Tipo de personal` se presenta como `Funcion del personal`.
+visibles. En edición puede corregirse la clase de un alta errónea, según las
+reglas de reclasificación. El catálogo se presenta como `Tipo de Personal`.
 
 Categoria UTN y Programa de Incentivos son opcionales para investigadores. Los
 selectores ofrecen valores explicitos sin relacion y el payload envia `null`
@@ -365,3 +365,16 @@ en el módulo Memorias.
 
 `personalGuardarFeedback.test.ts` cubre guardado, navegación y errores;
 `personalSnapshot.test.ts` cubre consulta histórica.
+
+## Nombres de catálogos y opciones vigentes
+
+Los formularios, detalles e historiales usan Tipo de Personal, Nivel de Formación,
+Tipo de Dedicación, Categoría UTN y Programa de Incentivos, en correspondencia
+con Gestionar Catálogos. Los selectores y las validaciones usan esos mismos
+conceptos. Las claves API y los IDs de los campos permanecen iguales.
+
+Tipo de Personal consume las opciones activas del servidor sin IDs ni listas
+fijas en el formulario. La configuración depurada conserva Técnico,
+Administrativo, De Apoyo y Profesional. Si una ficha existente referencia una
+opción retirada, conserva su valor como no disponible e informa que debe elegir
+uno vigente para guardar. No se reasigna automáticamente su categoría.

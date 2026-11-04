@@ -97,7 +97,7 @@ export default function VisitantesForm() {
     const newErrors: Record<string, string> = {};
 
     if (!razon.trim()) {
-      newErrors.razon = "Debe ingresar razon de la visita";
+      newErrors.razon = "Debe ingresar razón de la visita";
     }
 
     if (!fecha) {
@@ -261,7 +261,7 @@ export default function VisitantesForm() {
           </div>
         )}
 
-        <Field required label="Razon de la visita" name="razon" error={errors.razon}>
+        <Field required label="Razón de la visita" name="razon" error={errors.razon}>
           <>
             <textarea
               className={`${inputClass("razon")} min-h-[80px]`}

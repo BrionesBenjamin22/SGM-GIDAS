@@ -109,7 +109,7 @@ export default function RegistrosPropiedadForm() {
     }
 
     if (!data.tipo_registro_id) {
-      newErrors.tipo_registro_id = "Debe seleccionar un tipo de registro";
+      newErrors.tipo_registro_id = "Debe seleccionar un tipo de registro de propiedad";
     }
 
     setErrors(newErrors);
@@ -307,7 +307,7 @@ export default function RegistrosPropiedadForm() {
           />
         </Field>
 
-        <Field required label="Tipo de registro" name="tipo_registro_id" error={errors.tipo_registro_id}>
+        <Field required label="Tipo de Registro de Propiedad" name="tipo_registro_id" error={errors.tipo_registro_id}>
           <>
             <select
               className={`${inputClass("tipo_registro_id")} ${
@@ -323,7 +323,7 @@ export default function RegistrosPropiedadForm() {
               }}
             >
               <option value="" disabled>
-                Seleccionar tipo
+                Seleccionar tipo de registro de propiedad
               </option>
 
               {tipos.map((tipo) => (

@@ -206,11 +206,11 @@ export default function UsuariosHome() {
     if (!mail) {
       errors.mail = "El email es obligatorio";
     } else if (!isValidEmail(mail)) {
-      errors.mail = "Ingrese un email valido";
+      errors.mail = "Ingrese un email válido";
     }
 
     if (!["ADMIN", "GESTOR", "LECTURA"].includes(editForm.rol)) {
-      errors.rol = "Debe seleccionar un rol valido";
+      errors.rol = "Debe seleccionar un rol válido";
     }
 
     if (

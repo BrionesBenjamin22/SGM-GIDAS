@@ -192,3 +192,15 @@ ayuda que el control ya tenía y evita referencias a mensajes inexistentes. El
 mensaje mantiene `role="alert"`; al limpiarse el error se restauran los
 atributos anteriores. La comprobación manual con NVDA confirmó la descripción
 de los controles del sistema.
+
+## Ortografía de los textos visibles
+
+Los títulos, etiquetas, opciones, ayudas, confirmaciones y mensajes se escriben
+en español con tildes y signos de apertura. Los nombres de los campos asociados
+a catálogos deben coincidir con Gestionar Catálogos, también en detalle e historial.
+Los archivos usan UTF-8. Las correcciones de presentación conservan rutas,
+identificadores, claves API y valores persistidos.
+
+Los mensajes de carga, validación, éxito y error siguen el estilo del sistema.
+La revisión incluye estados menos frecuentes, como errores de métricas,
+confirmaciones de eliminación y avisos de exportación vacía.

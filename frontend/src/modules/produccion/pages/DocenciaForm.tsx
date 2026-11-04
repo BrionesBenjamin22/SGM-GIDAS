@@ -183,7 +183,7 @@ export default function FormDocenciaInvestigador() {
     }
     if (!fechaFin) newErrors.fechaFin = "Debe seleccionar fecha de fin";
     if (!gradoAcademicoId) {
-      newErrors.gradoAcademico = "Debe seleccionar grado academico";
+      newErrors.gradoAcademico = "Debe seleccionar un grado académico";
     }
     if (!rolActividadId) {
       newErrors.rolActividad = "Debe seleccionar rol";
@@ -362,7 +362,7 @@ export default function FormDocenciaInvestigador() {
           </Field>
         </div>
 
-        <Field required label="Grado academico" name="gradoAcademico" error={errors.gradoAcademico}>
+        <Field required label="Grado Académico" name="gradoAcademico" error={errors.gradoAcademico}>
           <>
             <select
               className={`${inputClass("gradoAcademico")} ${
@@ -376,7 +376,7 @@ export default function FormDocenciaInvestigador() {
               }}
             >
               <option value="" disabled>
-                Seleccionar grado academico
+                Seleccionar grado académico
               </option>
               {gradosAcademicos.map((grado) => (
                 <option key={grado.id} value={grado.id}>
@@ -392,7 +392,7 @@ export default function FormDocenciaInvestigador() {
           </>
         </Field>
 
-        <Field required label="Rol en la actividad" name="rolActividad" error={errors.rolActividad}>
+        <Field required label="Rol de Actividad" name="rolActividad" error={errors.rolActividad}>
           <>
             <select
               className={`${inputClass("rolActividad")} ${
@@ -406,7 +406,7 @@ export default function FormDocenciaInvestigador() {
               }}
             >
               <option value="" disabled>
-                Seleccionar rol en la actividad
+                Seleccionar rol de actividad
               </option>
               {rolesActividad.map((rol) => (
                 <option key={rol.id} value={rol.id}>

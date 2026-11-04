@@ -121,7 +121,7 @@ export function useSearch() {
       setError(
         getErrorMessage(
           caught,
-          "Lo sentimos, no pudimos recuperar la informacion. Intente nuevamente."
+          "Lo sentimos, no pudimos recuperar la información. Intente nuevamente."
         )
       );
       setHasSearched(false);

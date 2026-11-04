@@ -27,9 +27,9 @@ function load(file: string, page = 1): any {
 test("consulta de versión presenta exclusivamente los datos congelados de las tres clases", () => {
   const Dialog = load("src/modules/memorias/components/PersonalSnapshotDialog.tsx").default;
   for (const [sectionKey, label, field] of [
-    ["personal", "Función", "tipo_personal_nombre"],
-    ["becarios", "Formación", "tipo_formacion_nombre"],
-    ["investigadores", "Dedicación", "tipo_dedicacion_nombre"],
+    ["personal", "Tipo de Personal", "tipo_personal_nombre"],
+    ["becarios", "Nivel de Formación", "tipo_formacion_nombre"],
+    ["investigadores", "Tipo de Dedicación", "tipo_dedicacion_nombre"],
   ]) {
     const html = renderToStaticMarkup(React.createElement(Dialog, { sectionKey, title: "Personal histórico", versionLabel: "Versión 1", onClose() {},
       items: [{ id: 1, nombre_apellido: "Nombre histórico", [field]: "Clasificación histórica", horas_semanales: 12, fecha_alta_grupo: "2020-03-01", grupo_utn_nombre: "Grupo histórico" }],

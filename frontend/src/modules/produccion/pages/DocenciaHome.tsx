@@ -41,8 +41,8 @@ const historyLabels: Record<string, string> = {
   institucion: "Institución",
   fecha_inicio: "Fecha de inicio",
   fecha_fin: "Fecha de finalización",
-  grado_academico_id: "Grado académico",
-  rol_actividad_id: "Rol en la actividad",
+  grado_academico_id: "Grado Académico",
+  rol_actividad_id: "Rol de Actividad",
 };
 
 function getInvestigadorNombre(item: ActividadDocencia) {

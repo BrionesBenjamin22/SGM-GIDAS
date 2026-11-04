@@ -242,7 +242,7 @@ export default function FormBecario({ initialData, onReclassify, onSavingChange,
     }
 
     if (!tipoFormacionId) {
-      newErrors.tipoFormacion = "Debe seleccionar tipo de formación";
+      newErrors.tipoFormacion = "Debe seleccionar un nivel de formación";
     }
 
     if (!fechaAltaGrupo) {
@@ -445,7 +445,7 @@ export default function FormBecario({ initialData, onReclassify, onSavingChange,
         </>
       </Field>
 
-      <Field required label="Tipo de formación" name="tipoFormacion" error={errors.tipoFormacion}>
+      <Field required label="Nivel de Formación" name="tipoFormacion" error={errors.tipoFormacion}>
         <>
           <select
             className={`input ${
@@ -459,7 +459,7 @@ export default function FormBecario({ initialData, onReclassify, onSavingChange,
             }}
           >
             <option value="" disabled>
-              Seleccionar tipo de formación
+              Seleccionar nivel de formación
             </option>
             {tiposFormacion.map((t) => (
               <option key={t.id} value={t.id}>

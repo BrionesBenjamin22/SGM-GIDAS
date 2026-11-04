@@ -141,3 +141,15 @@ administra desde Personal > Becas y ya no forma parte de `CatalogosHome`.
 Los resultados paginados muestran controles centrados de anterior, números
 de página y siguiente, inmediatamente debajo de las tarjetas o resultados.
 El máximo de resultados por página conserva el contrato del módulo.
+
+## Denominaciones y tipos de personal
+
+Los nombres de Gestionar Catálogos son la referencia para las etiquetas y
+selectores de los formularios consumidores. Se usa Tipo de Registro de Propiedad
+para ese catálogo. Los mensajes visibles mantienen tildes y signos de apertura.
+
+La API de Tipo de Personal rechaza nombres equivalentes por tildes, mayúsculas,
+espacios o puntuación, incluidos registros inactivos. Los errores se muestran
+en el flujo existente. Una opción retirada conserva su historial y referencias;
+la depuración no reasigna personas. Los permisos, nueve valores por página y
+tres eventos por página de historial mantienen sus contratos.

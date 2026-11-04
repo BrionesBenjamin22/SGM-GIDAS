@@ -12,6 +12,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function formatLabel(value?: string) {
   if (!value) return "Cambio";
   if (value === "dni" || value === "cuil") return value.toUpperCase();
+  const labels: Record<string, string> = {
+    tipo_personal_id: "Tipo de Personal",
+    tipo_formacion_id: "Nivel de Formación",
+    tipo_dedicacion_id: "Tipo de Dedicación",
+    categoria_utn_id: "Categoría UTN",
+    programa_incentivos_id: "Programa de Incentivos",
+    grupo_utn_id: "Grupo de investigación (UCT)",
+    fecha_alta_grupo: "Fecha de alta en el grupo",
+    nombre_apellido: "Nombre y apellido",
+    clase_registro: "Clase de registro",
+  };
+  if (labels[value]) return labels[value];
   const normalized = value.endsWith("_id") ? value.slice(0, -3) : value;
   const label = normalized.replace(/_/g, " ");
   return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
