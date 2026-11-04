@@ -1,6 +1,7 @@
+import NombrePersonalFields from "@/modules/personal/components/NombrePersonalFields";
+import { validatePersonalName, validatePersonalStartDate } from "@/modules/personal/utils/personalValidation";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
-import { hasOnlyLettersAndSpaces } from "../../../lib/textValidation";
 import { LoaderCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -44,6 +45,7 @@ export default function FormPTAAProfesional({
   const { user } = useAuth();
 
   const [nombreApellido, setNombre] = useState("");
+  const [apellido, setApellido] = useState("");
   const [dni, setDni] = useState("");
   const [cuil, setCuil] = useState("");
   const [horasSemanales, setHoras] = useState<number | "">("");
@@ -57,6 +59,7 @@ export default function FormPTAAProfesional({
   useEffect(() => {
     if (!initialData) {
       setNombre("");
+      setApellido("");
       setDni("");
       setCuil("");
       setHoras("");
@@ -66,7 +69,8 @@ export default function FormPTAAProfesional({
       return;
     }
 
-    setNombre(initialData.nombre_apellido ?? "");
+    setNombre(initialData.nombre ?? "");
+    setApellido(initialData.apellido ?? "");
     setDni(initialData.dni ?? "");
     setCuil(initialData.cuil ?? "");
     setHoras(initialData.horas_semanales ?? "");
@@ -88,19 +92,20 @@ export default function FormPTAAProfesional({
     userId: user?.id,
     module: "personal-personal",
     recordId: initialData?.id,
-    value: { nombreApellido, dni, cuil, horasSemanales, tipoPersonalId, fechaAltaGrupo: toCivilDateString(fechaAltaGrupo), activo },
+    value: { nombreApellido, apellido, dni, cuil, horasSemanales, tipoPersonalId, fechaAltaGrupo: toCivilDateString(fechaAltaGrupo), activo },
     ready: hydrated,
     autosave: false,
-    hasContent: (draft) => Boolean(draft.nombreApellido || draft.dni || draft.cuil || draft.horasSemanales || draft.tipoPersonalId || draft.fechaAltaGrupo),
+    hasContent: (draft) => Boolean(draft.nombreApellido || draft.apellido || draft.dni || draft.cuil || draft.horasSemanales || draft.tipoPersonalId || draft.fechaAltaGrupo),
     onRestore: (draft) => {
-      setNombre(draft.nombreApellido); setDni(draft.dni ?? ""); setCuil(draft.cuil ?? ""); setHoras(draft.horasSemanales); setTipoPersonalId(draft.tipoPersonalId);
+      setNombre(draft.nombreApellido); setApellido(draft.apellido ?? ""); setDni(draft.dni ?? ""); setCuil(draft.cuil ?? ""); setHoras(draft.horasSemanales); setTipoPersonalId(draft.tipoPersonalId);
       setFechaAltaGrupo(draft.fechaAltaGrupo ? new Date(`${draft.fechaAltaGrupo}T00:00:00`) : null); setActivo(draft.activo);
     },
   });
 
   const hasUnsavedChanges = () => {
     if (!initialData) return true;
-    return nombreApellido !== (initialData.nombre_apellido ?? "") ||
+    return nombreApellido !== (initialData.nombre ?? "") ||
+      apellido !== (initialData.apellido ?? "") ||
       dni !== (initialData.dni ?? "") || cuil !== (initialData.cuil ?? "") ||
       Number(horasSemanales) !== Number(initialData.horas_semanales) ||
       Number(tipoPersonalId) !== Number(initialData.relaciones?.tipo_personal?.id ?? initialData.tipo_personal_id) ||
@@ -120,11 +125,7 @@ export default function FormPTAAProfesional({
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!nombreApellido.trim()) {
-      newErrors.nombre = "Debe ingresar nombre y apellido";
-    } else if (!hasOnlyLettersAndSpaces(nombreApellido)) {
-      newErrors.nombre = "Use solo letras y espacios en nombre y apellido";
-    }
+    Object.assign(newErrors, validatePersonalName(nombreApellido, apellido));
 
     const dniError = validateDni(dni);
     if (dniError) newErrors.dni = dniError;
@@ -146,6 +147,8 @@ export default function FormPTAAProfesional({
     if (!uct?.id) {
       newErrors.grupo = "Lo sentimos, no pudimos recuperar el grupo. Intente nuevamente.";
     }
+    const dateError = validatePersonalStartDate(fechaAltaGrupo);
+    if (dateError) newErrors.fechaAltaGrupo = dateError;
     setErrors(newErrors);
     if (Object.keys(newErrors).length) {
       focusFieldErrors(newErrors);
@@ -176,7 +179,7 @@ export default function FormPTAAProfesional({
       return true;
     } catch (error) {
       onError(error);
-      if (applyFieldErrors(error, setErrors, ["nombre","dni","cuil","horas","tipoPersonal","fechaAltaGrupo","grupo"])) return false;
+      if (applyFieldErrors(error, setErrors, ["nombre","apellido","dni","cuil","horas","tipoPersonal","fechaAltaGrupo","grupo"])) return false;
       const fieldErrors = personalFieldErrors(error);
       if (Object.keys(fieldErrors).length) {
         setErrors(fieldErrors);
@@ -196,7 +199,9 @@ export default function FormPTAAProfesional({
     try {
 
       const payload = {
-        nombre_apellido: nombreApellido,
+        nombre: nombreApellido.trim(),
+        apellido: apellido.trim(),
+        nombre_apellido: `${nombreApellido.trim()} ${apellido.trim()}`,
         dni,
         cuil,
         horas_semanales: Number(horasSemanales),
@@ -208,6 +213,8 @@ export default function FormPTAAProfesional({
 
       if (isEdit && initialData?.id) {
         const original = {
+          nombre: initialData.nombre ?? undefined,
+          apellido: initialData.apellido ?? undefined,
           nombre_apellido: initialData.nombre_apellido,
           dni: initialData.dni ?? "",
           cuil: initialData.cuil ?? "",
@@ -274,22 +281,9 @@ export default function FormPTAAProfesional({
       {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
       {errors.grupo && <p id="personal-grupo" tabIndex={-1} role="alert">{errors.grupo}</p>}
 
-      <Field label="Nombre y apellido" required error={errors.nombre} name="nombre">
-        <input
-          id="personal-nombre"
-          aria-label="Nombre y apellido"
-          placeholder="Ingrese nombre y apellido"
-          className={`input ${
-            errors.nombre ? "border-red-500 ring-2 ring-red-500" : ""
-          }`}
-          value={nombreApellido}
-          aria-invalid={Boolean(errors.nombre)}
-          onChange={(e) => {
-            setNombre(e.target.value);
-            if (e.target.value.trim()) clearError("nombre");
-          }}
-        />
-      </Field>
+      <NombrePersonalFields prefix="personal" nombre={nombreApellido} apellido={apellido}
+        errors={errors} onNombreChange={(value) => { setNombre(value); clearError("nombre"); }}
+        onApellidoChange={(value) => { setApellido(value); clearError("apellido"); }} />
 
       <IdentidadFields prefix="personal" dni={dni} cuil={cuil} errors={errors}
         onDniChange={(value) => { setDni(value); clearError("dni"); clearError("cuil"); }}
@@ -320,6 +314,7 @@ export default function FormPTAAProfesional({
       <div id="personal-fechaAltaGrupo" tabIndex={-1}>
       <Field label="Fecha de alta en el grupo" required error={errors.fechaAltaGrupo} name="fechaAltaGrupo">
         <Calendar
+          maxDate={new Date()}
           value={fechaAltaGrupo}
           onChange={(date) => {
             setFechaAltaGrupo(date);

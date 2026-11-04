@@ -1,5 +1,6 @@
+import NombrePersonalFields from "@/modules/personal/components/NombrePersonalFields";
+import { validatePersonalName, validatePersonalStartDate } from "@/modules/personal/utils/personalValidation";
 import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
-import { hasOnlyLettersAndSpaces } from "../../../lib/textValidation";
 import { LoaderCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
@@ -48,6 +49,7 @@ export default function FormInvestigador({
   const { user } = useAuth();
 
   const [nombreApellido, setNombre] = useState("");
+  const [apellido, setApellido] = useState("");
   const [dni, setDni] = useState("");
   const [cuil, setCuil] = useState("");
   const [horasSemanales, setHoras] = useState<number | "">("");
@@ -63,6 +65,7 @@ export default function FormInvestigador({
   useEffect(() => {
     if (!initialData) {
       setNombre("");
+      setApellido("");
       setDni("");
       setCuil("");
       setHoras("");
@@ -74,7 +77,8 @@ export default function FormInvestigador({
       return;
     }
 
-    setNombre(initialData.nombre_apellido ?? "");
+    setNombre(initialData.nombre ?? "");
+    setApellido(initialData.apellido ?? "");
     setDni(initialData.dni ?? "");
     setCuil(initialData.cuil ?? "");
     setHoras(initialData.horas_semanales ?? "");
@@ -106,12 +110,12 @@ export default function FormInvestigador({
     userId: user?.id,
     module: "personal-investigador",
     recordId: initialData?.id,
-    value: { nombreApellido, dni, cuil, horasSemanales, dedicacionId, categoriaId, programaId, fechaAltaGrupo: toCivilDateString(fechaAltaGrupo), activo },
+    value: { nombreApellido, apellido, dni, cuil, horasSemanales, dedicacionId, categoriaId, programaId, fechaAltaGrupo: toCivilDateString(fechaAltaGrupo), activo },
     ready: hydrated,
     autosave: false,
-    hasContent: (draft) => Boolean(draft.nombreApellido || draft.dni || draft.cuil || draft.horasSemanales || draft.dedicacionId || draft.categoriaId || draft.programaId || draft.fechaAltaGrupo),
+    hasContent: (draft) => Boolean(draft.nombreApellido || draft.apellido || draft.dni || draft.cuil || draft.horasSemanales || draft.dedicacionId || draft.categoriaId || draft.programaId || draft.fechaAltaGrupo),
     onRestore: (draft) => {
-      setNombre(draft.nombreApellido); setDni(draft.dni ?? ""); setCuil(draft.cuil ?? ""); setHoras(draft.horasSemanales); setDedicacionId(draft.dedicacionId);
+      setNombre(draft.nombreApellido); setApellido(draft.apellido ?? ""); setDni(draft.dni ?? ""); setCuil(draft.cuil ?? ""); setHoras(draft.horasSemanales); setDedicacionId(draft.dedicacionId);
       setCategoriaId(draft.categoriaId); setProgramaId(draft.programaId);
       setFechaAltaGrupo(draft.fechaAltaGrupo ? new Date(`${draft.fechaAltaGrupo}T00:00:00`) : null); setActivo(draft.activo);
     },
@@ -119,7 +123,8 @@ export default function FormInvestigador({
 
   const hasUnsavedChanges = () => {
     if (!initialData) return true;
-    return nombreApellido !== (initialData.nombre_apellido ?? "") ||
+    return nombreApellido !== (initialData.nombre ?? "") ||
+      apellido !== (initialData.apellido ?? "") ||
       dni !== (initialData.dni ?? "") || cuil !== (initialData.cuil ?? "") ||
       Number(horasSemanales) !== Number(initialData.horas_semanales) ||
       Number(dedicacionId) !== Number(initialData.relaciones?.tipo_dedicacion?.id ?? initialData.tipo_dedicacion_id) ||
@@ -157,11 +162,7 @@ export default function FormInvestigador({
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!nombreApellido.trim()) {
-      newErrors.nombre = "Debe ingresar nombre y apellido";
-    } else if (!hasOnlyLettersAndSpaces(nombreApellido)) {
-      newErrors.nombre = "Use solo letras y espacios en nombre y apellido";
-    }
+    Object.assign(newErrors, validatePersonalName(nombreApellido, apellido));
 
     const dniError = validateDni(dni);
     if (dniError) newErrors.dni = dniError;
@@ -181,6 +182,8 @@ export default function FormInvestigador({
     }
     if (!uct?.id) newErrors.grupo = "Lo sentimos, no pudimos recuperar el grupo. Intente nuevamente.";
 
+    const dateError = validatePersonalStartDate(fechaAltaGrupo);
+    if (dateError) newErrors.fechaAltaGrupo = dateError;
     setErrors(newErrors);
     if (Object.keys(newErrors).length) {
       focusFieldErrors(newErrors);
@@ -195,7 +198,7 @@ export default function FormInvestigador({
       return true;
     } catch (error) {
       onError(error);
-      if (applyFieldErrors(error, setErrors, ["nombre","dni","cuil","horas","dedicacion","categoria","programa","fechaAltaGrupo"])) return false;
+      if (applyFieldErrors(error, setErrors, ["nombre","apellido","dni","cuil","horas","dedicacion","categoria","programa","fechaAltaGrupo"])) return false;
       const fieldErrors = personalFieldErrors(error);
       if (fieldErrors.horas) {
         setErrors((prev) => ({ ...prev, horas: fieldErrors.horas }));
@@ -213,7 +216,9 @@ export default function FormInvestigador({
     try {
 
       const payload = {
-        nombre_apellido: nombreApellido,
+        nombre: nombreApellido.trim(),
+        apellido: apellido.trim(),
+        nombre_apellido: `${nombreApellido.trim()} ${apellido.trim()}`,
         dni,
         cuil,
         horas_semanales: Number(horasSemanales),
@@ -227,6 +232,8 @@ export default function FormInvestigador({
 
       if (isEdit && initialData?.id) {
         const original = {
+          nombre: initialData.nombre ?? undefined,
+          apellido: initialData.apellido ?? undefined,
           nombre_apellido: initialData.nombre_apellido,
           dni: initialData.dni ?? "",
           cuil: initialData.cuil ?? "",
@@ -291,23 +298,9 @@ export default function FormInvestigador({
     >
       {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
       {errors.grupo && <p role="alert">{errors.grupo}</p>}
-      <Field required label="Nombre y apellido" name="nombre" error={errors.nombre}>
-        <>
-          <input
-            className={`input ${
-              errors.nombre ? "!border-red-500 !ring-2 !ring-red-500" : ""
-            }`}
-            value={nombreApellido}
-            onChange={(e) => {
-              setNombre(e.target.value);
-              if (e.target.value.trim()) clearError("nombre");
-            }}
-          />
-          {errors.nombre && (
-            <p className="mt-1 text-sm text-red-500">{errors.nombre}</p>
-          )}
-        </>
-      </Field>
+      <NombrePersonalFields prefix="investigador" nombre={nombreApellido} apellido={apellido}
+        errors={errors} onNombreChange={(value) => { setNombre(value); clearError("nombre"); }}
+        onApellidoChange={(value) => { setApellido(value); clearError("apellido"); }} />
 
       <IdentidadFields prefix="investigador" dni={dni} cuil={cuil} errors={errors}
         onDniChange={(value) => { setDni(value); clearError("dni"); clearError("cuil"); }}
@@ -426,6 +419,7 @@ export default function FormInvestigador({
 
       <Field required label="Fecha de alta en el grupo" name="fechaAltaGrupo" error={errors.fechaAltaGrupo}>
         <Calendar
+          maxDate={new Date()}
           value={fechaAltaGrupo}
           onChange={(date) => {
             setFechaAltaGrupo(date);

@@ -1,5 +1,53 @@
 # Modulo backend de personal
 
+## Nombres, fechas e historial (ISS-34, ISS-35, ISS-36)
+
+Personal, Becario e Investigador incorporan `nombre` y `apellido` independientes.
+Las altas en sus endpoints existentes exigen ambos: letras Unicode y espacios,
+hasta 60 caracteres por campo y 120 en conjunto, incluido el separador. Por
+ejemplo, `{"nombre":"María del Carmen","apellido":"De la Cruz"}` conserva
+los nombres y apellidos compuestos. `nombre_apellido` se deriva como
+`María del Carmen De la Cruz` para listados y consumidores existentes.
+Las lecturas individuales incluyen los dos campos; el listado combinado conserva
+su contrato plano. Los PUT admiten modificar uno de los campos, completan el otro
+desde el registro y auditan las diferencias. Un nombre compuesto enviado por sí
+solo no puede reemplazar los campos de un registro ya estructurado.
+
+`services/nombre_service.py` concentra normalización, asignación y composición
+para memoria; `services/fecha_validation.py` valida `fecha_alta_grupo` entre
+2010-01-01 y hoy inclusive en altas y ediciones genéricas o especializadas.
+Valores vacíos, inválidos o futuros devuelven HTTP 400 y errores de campo cuando
+corresponde. Se mantienen permisos ADMIN/GESTOR de escritura, lectura para
+LECTURA, identidad documental, auditoría y baja lógica existentes.
+
+`services/historial_service.py` enriquece las referencias de función de personal,
+formación, dedicación, categoría UTN, incentivos y grupo con
+`valor_anterior_nombre` y `valor_nuevo_nombre`. Conserva los IDs originales y
+resuelve etiquetas en lotes, incluidos catálogos inactivos; una referencia ausente
+se presenta como `Referencia no disponible` y un valor vacío como `Sin dato`.
+El contrato admite el array anterior y la respuesta paginada con `data`/`meta`.
+
+Migraciones:
+
+- `c2e4a6b8d0f1` agrega las columnas anulables después de `a7c9e2f4b6d8`,
+  sin depender de funcionalidades de búsqueda.
+- `d3f5a7c9e1b2` normaliza el dataset ficticio revisado mediante correspondencias
+  explícitas. Planifica todo antes de escribir y aborta ante un nombre desconocido
+  o un valor parcial incompatible. Conserva nombres ya estructurados, IDs,
+  relaciones y valores anteriores/nuevos en `auditoria_campo`. Se aplicó a
+  112 registros de desarrollo: 41 Personal, 49 Becario y 22 Investigador.
+  No es un algoritmo general para dividir nombres reales: otra base con datos
+  distintos requiere revisar sus correspondencias antes del despliegue.
+  Su downgrade automático se rechaza para no sobrescribir ediciones posteriores;
+  una recuperación requiere revisar auditoría o respaldo. Las columnas siguen
+  siendo anulables para compatibilidad de esquema; las altas API exigen ambos
+  campos.
+
+Pruebas: `test_personal_nombres_fechas_historial.py`,
+`test_personal_nombres_migration.py` y regresiones de Personal, auditoría y Excel:
+75 casos backend aprobados. Aceptación visual y funcional del usuario el
+04/11/2026.
+
 ## Baja y reactivacion (ISS-39)
 
 `DELETE /api/v1/personal/:rol/:id` acepta un cuerpo opcional
@@ -101,9 +149,9 @@ los endpoints de este módulo vuelven a validar permisos, campos, relaciones y
 reglas de negocio al guardar definitivamente. La tabla, vencimiento y
 aislamiento por usuario se documentan en `../shared/README.md`.
 
-Los nombres de Personal, Investigador y Becario admiten solo letras Unicode y
-espacios entre palabras. `22`, `Ana 22` y `Ana-María` devuelven
-`details.fields.nombre_apellido`; `Ana María` es válido.
+Los campos `nombre` y `apellido` de Personal, Investigador y Becario admiten solo
+letras Unicode y espacios entre palabras. `22`, `Ana 22` y `Ana-María` devuelven
+errores asociados al campo correspondiente; `Ana María` es válido.
 
 Las variantes Investigador y Becario identifican nombre, selecciones de catálogo y proyectos inválidos mediante `error.details.fields`. Las validaciones internas del usuario conservan un mensaje general seguro.
 
@@ -111,7 +159,8 @@ El formulario Becario asocia las fechas, montos y selección de becas al campo `
 
 ## Contrato de fechas
 
-`fecha_alta_grupo` y los períodos de relaciones se validan desde el 01/01/2010.
+`fecha_alta_grupo` se valida entre el 01/01/2010 y hoy inclusive. Los períodos
+de relaciones mantienen sus reglas propias y el mínimo institucional de 2010.
 El límite no corresponde a datos biográficos ajenos a la actividad del grupo.
 
 ## Responsabilidad
@@ -134,10 +183,11 @@ pertenencia al grupo, carga horaria, proyectos y relaciones con becas.
 categorías. El catálogo `tipo_personal_id` determina el tipo; no se requieren
 formación, dedicación, categoría UTN ni incentivos de otros subtipos.
 
-Payload obligatorio: `nombre_apellido` (hasta 120 caracteres), `dni` (7 u 8
+Payload obligatorio: `nombre` y `apellido` (hasta 60 caracteres cada uno y
+120 en conjunto, incluido el espacio), `dni` (7 u 8
 digitos), `cuil` (`XX-XXXXXXXX-X` con digito verificador valido),
 `horas_semanales` (entero entre 1 y 168), `tipo_personal_id`, `grupo_utn_id` y
-`fecha_alta_grupo` (`YYYY-MM-DD`, desde 2010-01-01). Tipo y grupo deben existir
+`fecha_alta_grupo` (`YYYY-MM-DD`, desde 2010-01-01 hasta hoy). Tipo y grupo deben existir
 y estar activos. El alta establece `activo=true` y registra `created_by`.
 
 Devuelve 201 con la entidad serializada y su historial inicial de horas.

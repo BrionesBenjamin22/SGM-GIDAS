@@ -9,6 +9,8 @@ export type PersonalType =
 
 export interface PersonalItem {
   id: number;
+  nombre?: string | null;
+  apellido?: string | null;
   nombre_apellido: string;
   horas_semanales: number;
   tipo?: "PTAA" | "PROFESIONAL" | "BECARIO" | "INVESTIGADOR";
@@ -41,6 +43,8 @@ export interface PersonalPage {
   error: null;
 }
 export interface PersonalPayload {
+  nombre?: string | null;
+  apellido?: string | null;
   nombre_apellido: string;
   dni: string;
   cuil: string;

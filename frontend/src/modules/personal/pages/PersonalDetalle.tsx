@@ -1,3 +1,4 @@
+import { formatPersonalHistoryEntry } from "@/modules/personal/utils/personalHistory";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -14,11 +15,6 @@ import {
 import type { HistorialHorasItem } from "@/modules/personal/services/personalCompletoServices";
 import { useAuditoria } from "@/modules/shared/hooks/useAuditoria";
 import { useAuth } from "@/context/AuthContext";
-import { useTiposFormacion } from "@/modules/personal/hooks/useTiposFormacion";
-import { useDedicaciones } from "@/modules/personal/hooks/useDedicaciones";
-import { useCategoriasUtn } from "@/modules/catalogos/hooks/useCategoriasUtn";
-import { useProgramasIncentivos } from "@/modules/grupo/hooks/useProgramasIncentivos";
-import { useTiposPersonal } from "@/modules/personal/hooks/useTiposPersonal";
 import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,
@@ -29,11 +25,6 @@ export default function PersonalDetalle() {
   const navigate = useNavigate();
   const location = useLocation();
   const { canEditRecords } = useAuth();
-  const { data: tiposFormacion = [] } = useTiposFormacion();
-  const { data: dedicaciones = [] } = useDedicaciones();
-  const { data: categoriasUtn = [] } = useCategoriasUtn();
-  const { data: programasIncentivos = [] } = useProgramasIncentivos();
-  const { data: tiposPersonal = [] } = useTiposPersonal();
 
   const puedeEditar = canEditRecords();
 
@@ -127,52 +118,6 @@ export default function PersonalDetalle() {
 
   const handleEditar = () => {
     navigate(`/personal/${rol}/${id}/editar`);
-  };
-
-  const getCatalogName = (
-    collection: Array<{ id: number; nombre: string }>,
-    value: unknown
-  ) => {
-    const normalizedId =
-      typeof value === "number"
-        ? value
-        : typeof value === "string" && value.trim() !== ""
-          ? Number(value)
-          : NaN;
-
-    if (Number.isNaN(normalizedId)) {
-      return null;
-    }
-
-    return collection.find((item) => item.id === normalizedId)?.nombre ?? null;
-  };
-
-  const formatHistorialValue = (item: { campo?: string }, value: unknown) => {
-    if (value === null || value === undefined || value === "") {
-      return "-";
-    }
-
-    switch (item.campo) {
-      case "tipo_formacion_id":
-        return getCatalogName(tiposFormacion, value) ?? String(value);
-      case "tipo_dedicacion_id":
-        return getCatalogName(dedicaciones, value) ?? String(value);
-      case "categoria_utn_id":
-        return getCatalogName(categoriasUtn, value) ?? String(value);
-      case "programa_incentivos_id":
-        return getCatalogName(programasIncentivos, value) ?? String(value);
-      case "tipo_personal_id":
-        return getCatalogName(tiposPersonal, value) ?? String(value);
-      default:
-        if (typeof value === "object") {
-          try {
-            return JSON.stringify(value);
-          } catch {
-            return "-";
-          }
-        }
-        return String(value);
-    }
   };
 
   return (
@@ -467,7 +412,7 @@ export default function PersonalDetalle() {
           isLoading={isLoadingHistorial}
           updatedAt={data.updated_at}
           updatedByName={nombreActualizador}
-          formatItemValue={(item, value) => formatHistorialValue(item, value)}
+          formatItemPresentation={formatPersonalHistoryEntry}
         />
 
         <div className="flex justify-start pt-4">

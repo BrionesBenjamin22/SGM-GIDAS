@@ -1,3 +1,4 @@
+from modules.personal.services.nombre_service import nombre_para_memoria
 from types import SimpleNamespace
 from copy import copy
 from io import BytesIO
@@ -1103,9 +1104,9 @@ class ExportService:
         row = cls._write_table(ws, row, "1.6.- Autoridades y cargos de gestion del grupo", ["Nro.", "Apellido y nombre", "Cargo desempenado", "Fecha de inicio", "Fecha de finalizacion"], directivos_rows, merge_span=8, date_cols={4, 5})
         row = cls._write_multiline_block(ws, row, "1.7.- Objetivos y desarrollo", grupo.objetivo_desarrollo)
         row = cls._write_subsection(ws, row, "2.- PERSONAL", span=10)
-        investigadores_rows = [[idx, inv.nombre_apellido, inv.categoria_utn.nombre if inv.categoria_utn else "-", inv.programa_incentivos.nombre if inv.programa_incentivos else "-", inv.tipo_dedicacion.nombre if inv.tipo_dedicacion else "-", cls._current_hours(inv)] for idx, inv in enumerate(investigadores, start=1)]
+        investigadores_rows = [[idx, nombre_para_memoria(inv), inv.categoria_utn.nombre if inv.categoria_utn else "-", inv.programa_incentivos.nombre if inv.programa_incentivos else "-", inv.tipo_dedicacion.nombre if inv.tipo_dedicacion else "-", cls._current_hours(inv)] for idx, inv in enumerate(investigadores, start=1)]
         row = cls._write_table(ws, row, "2.1.- Investigadores", ["Nro.", "Apellido y nombre", "Categoria UTN", "Programa de incentivos", "Tipo de dedicacion", "Carga horaria semanal"], investigadores_rows, merge_span=8)
-        personal_rows = [[idx, persona.nombre_apellido, persona.tipo_personal.nombre if persona.tipo_personal else "-", cls._current_hours(persona)] for idx, persona in enumerate(personal, start=1)]
+        personal_rows = [[idx, nombre_para_memoria(persona), persona.tipo_personal.nombre if persona.tipo_personal else "-", cls._current_hours(persona)] for idx, persona in enumerate(personal, start=1)]
         row = cls._write_table(ws, row, "2.2.- Personal tecnico, administrativo y de apoyo", ["Nro.", "Apellido y nombre", "Categoria de personal", "Carga horaria semanal"], personal_rows, merge_span=8)
 
         becarios_rows = []
@@ -1113,7 +1114,7 @@ class ExportService:
             relaciones_activas = [rel for rel in becario.becas if rel.deleted_at is None and rel.beca and rel.beca.deleted_at is None]
             nombres_becas = ", ".join(sorted({rel.beca.nombre_beca for rel in relaciones_activas})) or "-"
             fuentes = ", ".join(sorted({rel.beca.fuente_financiamiento.nombre for rel in relaciones_activas if rel.beca.fuente_financiamiento is not None})) or "-"
-            becarios_rows.append([idx, becario.nombre_apellido, becario.tipo_formacion.nombre if becario.tipo_formacion else "-", nombres_becas, fuentes, cls._current_hours(becario)])
+            becarios_rows.append([idx, nombre_para_memoria(becario), becario.tipo_formacion.nombre if becario.tipo_formacion else "-", nombres_becas, fuentes, cls._current_hours(becario)])
         row = cls._write_table(ws, row, "2.3.- Becarios y personal en formacion", ["Nro.", "Apellido y nombre", "Tipo de formacion", "Becas asociadas", "Fuente de financiamiento", "Carga horaria semanal"], becarios_rows, merge_span=8)
         equipamiento_rows = [[idx, item.denominacion, item.descripcion_breve, item.fecha_incorporacion, cls._money(item.monto_invertido)] for idx, item in enumerate(equipamiento, start=1)]
         row = cls._write_table(ws, row, "3.- EQUIPAMIENTO DEL GRUPO", ["Nro.", "Denominacion del equipamiento", "Descripcion breve", "Fecha de incorporacion", "Monto invertido"], equipamiento_rows, accent=True, merge_span=8, date_cols={4}, money_cols={5})

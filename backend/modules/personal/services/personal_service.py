@@ -1,3 +1,6 @@
+from modules.personal.services.nombre_service import preparar_nombre, asignar_nombre, nombre_para_memoria
+from modules.personal.services.fecha_validation import validar_fecha_alta_grupo
+from modules.personal.services.historial_service import obtener_historial_personal
 from modules.memorias.services.memoria_periodo_service import (
     consultar_entidades_memoria, resolver_horas_al_fin,
 )
@@ -30,7 +33,6 @@ from modules.catalogos.models.categoria_utn import CategoriaUtn
 from modules.grupo.models.programa_incentivos import ProgramaIncentivos
 from modules.shared.services.auditoria_service import AuditoriaService
 from modules.memorias.services.memoria_periodo_service import (
-    validar_fecha_alta_grupo,
     estuvo_activo_en_periodo_memoria,
 )
 
@@ -204,6 +206,7 @@ def crear_personal(data, user_id):
     _validar_payload(data)
     _validar_user_id(user_id)
 
+    data = preparar_nombre(data)
     nombre = _validar_nombre(data.get("nombre_apellido"))
     horas = _validar_horas(data.get("horas_semanales"))
     tipo_personal_id = _validar_tipo_personal(data.get("tipo_personal_id"))
@@ -212,7 +215,7 @@ def crear_personal(data, user_id):
     try:
         fecha_alta = validar_fecha_alta_grupo(data.get("fecha_alta_grupo"))
     except ValueError as error:
-        message = "Ingrese una fecha de alta válida desde el 01/01/2010."
+        message = "Ingrese una fecha de alta válida entre el 01/01/2010 y hoy."
         raise ValueError(message, details={"fields": {"fecha_alta_grupo": message}}) from error
 
     nuevo = Personal(
@@ -224,6 +227,7 @@ def crear_personal(data, user_id):
         activo=True,
         created_by=user_id
     )
+    asignar_nombre(nuevo, data)
     asignar_identidad(nuevo, data, nueva=True)
 
     try:
@@ -267,6 +271,8 @@ def actualizar_personal(id, data, rol, user_id: int):
     if entidad.deleted_at is not None:
         raise ConflictError("No se puede modificar un registro eliminado.")
 
+    data = preparar_nombre(data, entidad)
+    cambios.update(asignar_nombre(entidad, data))
     cambios.update(asignar_identidad(entidad, data))
 
     if "nombre_apellido" in data:
@@ -325,7 +331,7 @@ def actualizar_personal(id, data, rol, user_id: int):
         try:
             nuevo_valor = validar_fecha_alta_grupo(data["fecha_alta_grupo"])
         except ValueError as error:
-            message = "Ingrese una fecha de alta válida desde el 01/01/2010."
+            message = "Ingrese una fecha de alta válida entre el 01/01/2010 y hoy."
             raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_alta_grupo": message}}) from error
         cambio = AuditoriaService.construir_cambio(
             entidad.fecha_alta_grupo,
@@ -578,7 +584,7 @@ def obtener_historial_personal_por_rol(id, rol):
     if not entidad:
         raise NotFoundError("Registro no encontrado.")
 
-    return AuditoriaService.obtener_historial_entidad(
+    return obtener_historial_personal(
         entidad=rol,
         registro_id=entidad.id
     )
@@ -598,7 +604,7 @@ def snapshot_personal_para_memoria_version(memoria_version, user_id):
         snapshot = PersonalMemoriaVersion(
             memoria_version_id=memoria_version.id,
             personal_id=personal.id,
-            nombre_apellido=personal.nombre_apellido,
+            nombre_apellido=nombre_para_memoria(personal),
             fecha_alta_grupo=personal.fecha_alta_grupo,
             horas_semanales=resolver_horas_al_fin(personal, memoria_version),
             tipo_personal_id=personal.tipo_personal_id,

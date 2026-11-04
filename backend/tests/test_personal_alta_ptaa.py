@@ -52,7 +52,7 @@ class PersonalAltaPTAATest(unittest.TestCase):
         self.context.pop()
 
     def payload(self, **changes):
-        return {"nombre_apellido": "Persona PTAA", "dni": "12345678", "cuil": "20-12345678-6", "horas_semanales": 20,
+        return {"nombre": "Persona", "apellido": "PTAA", "nombre_apellido": "Persona PTAA", "dni": "12345678", "cuil": "20-12345678-6", "horas_semanales": 20,
                 "tipo_personal_id": 1, "grupo_utn_id": 1,
                 "fecha_alta_grupo": "2026-09-01", **changes}
 
@@ -213,7 +213,7 @@ class PersonalAltaPTAATest(unittest.TestCase):
         self.assertEqual(self.post(self.payload()).status_code, 400)
 
     def test_obligatorios_y_horas_enteras(self):
-        for field in ("nombre_apellido", "horas_semanales", "tipo_personal_id", "grupo_utn_id", "fecha_alta_grupo"):
+        for field in ("nombre", "apellido", "horas_semanales", "tipo_personal_id", "grupo_utn_id", "fecha_alta_grupo"):
             with self.subTest(field=field):
                 payload = self.payload()
                 del payload[field]

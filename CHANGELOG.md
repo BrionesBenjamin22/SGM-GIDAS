@@ -8,6 +8,22 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-34, ISS-35, ISS-36: nombres, fechas e historial de Personal
+
+- Personal, Becario e Investigador requieren Nombre y Apellido independientes
+  en sus formularios y altas API; la edición precarga ambos y conserva el envío
+  de diferencias. Memorias nuevas y Excel componen `Nombre, APELLIDO`.
+- Migración controlada de 112 registros ficticios, con nombres de personas,
+  preservación de IDs y relaciones y auditoría de valores originales. El plan
+  rechaza correspondencias desconocidas antes de escribir; no modifica versiones
+  congeladas de memoria ni revierte automáticamente la normalización de datos.
+- Fecha de alta entre 01/01/2010 y hoy inclusive, validada en frontend y backend.
+- Historial de home y detalle con etiquetas de catálogo anteriores/nuevas,
+  soporte de catálogos inactivos y referencias ausentes, conservando tres eventos
+  por página. El detalle evita cinco consultas auxiliares a catálogos.
+- 75 pruebas backend, 208 frontend, TypeScript y build de producción aprobados;
+  aceptación visual y funcional y solicitud de commit el 04/11/2026.
+
 ### ISS-39: reactivacion de personal e identidad conservada
 
 - Personal, Becario e Investigador pueden reactivarse desde Inactivos con

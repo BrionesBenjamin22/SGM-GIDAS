@@ -1,5 +1,17 @@
 # Memorias
 
+## Nombres estructurados de Personal (ISS-34)
+
+Los nuevos snapshots de Personal, Becario e Investigador componen el nombre como
+`Nombre, APELLIDO` a partir de sus campos independientes, conservando nombres y
+apellidos compuestos. El Excel del grupo usa la misma función
+`personal.services.nombre_service.nombre_para_memoria`; por ejemplo,
+`María del Carmen, DE LA CRUZ`. Si una fuente anterior no tiene datos estructurados,
+conserva su texto completo. Las versiones ya congeladas siguen exportando su
+snapshot original y no se reescriben por la normalización del dataset ficticio.
+El contenido real del Excel de las tres clases y el formato institucional están
+cubiertos por las regresiones backend; aceptación del usuario el 04/11/2026.
+
 ## Continuidad de acceso (ISS-52)
 
 La corrección de navegación ADMIN agrega el enlace a Memorias en frontend y

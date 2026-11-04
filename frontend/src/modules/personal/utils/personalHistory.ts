@@ -66,6 +66,6 @@ export function formatPersonalHistoryEntry(entry: HistorialCambioItem): HistoryP
 
   return {
     title: formatLabel(entry.campo || entry.tipo),
-    description: `${formatValue(entry.valor_anterior)} → ${formatValue(entry.valor_nuevo)}`,
+    description: `${formatValue(entry.valor_anterior_nombre ?? entry.valor_anterior)} → ${formatValue(entry.valor_nuevo_nombre ?? entry.valor_nuevo)}`,
   };
 }

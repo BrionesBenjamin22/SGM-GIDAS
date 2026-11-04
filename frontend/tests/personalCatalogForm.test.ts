@@ -7,7 +7,7 @@ type Element = { type: string; props: Record<string, any>; children: any[] };
 
 test("formulario real muestra catálogo arbitrario, envía su ID y bloquea 220 horas", async () => {
   const harness = {
-    values: ["Persona", "12345678", "20-12345678-6", 20, 37, new Date(2026, 8, 1), true, {}] as any[],
+    values: ["Persona", "Apellido", "12345678", "20-12345678-6", 20, 37, new Date(2026, 8, 1), true, {}] as any[],
     cursor: 0, calls: [] as any[], catalog: [{ id: 37, nombre: "Especialista de laboratorio" }],
     errors: [] as unknown[], focused: 0,
   };
@@ -58,16 +58,18 @@ test("formulario real muestra catálogo arbitrario, envía su ID y bloquea 220 h
     await tree.props.onSubmit({preventDefault() {}});
     assert.equal(harness.calls[0].payload.tipo_personal_id, 37);
     assert.equal(harness.calls[0].payload.horas_semanales, 20);
+    assert.equal(harness.calls[0].payload.nombre, "Persona");
+    assert.equal(harness.calls[0].payload.apellido, "Apellido");
     assert.equal(harness.calls[1].navigate[0], "/personal");
     harness.calls = [];
-    harness.values[3] = 220;
+    harness.values[4] = 220;
     tree = render();
     await tree.props.onSubmit({preventDefault() {}});
     assert.equal(harness.calls.length, 0);
-    assert.match(harness.values[7].horas, /168/);
+    assert.match(harness.values[8].horas, /168/);
     assert.equal(harness.focused, 1);
     assert.match((harness.errors[0] as Error).message, /Complete o corrija/);
-    harness.values[3] = 168;
+    harness.values[4] = 168;
     tree = render();
     await tree.props.onSubmit({preventDefault() {}});
     assert.equal(harness.calls[0].payload.horas_semanales, 168);
@@ -77,7 +79,7 @@ test("formulario real muestra catálogo arbitrario, envía su ID y bloquea 220 h
     assert.ok(walk(tree).some(node => node.type === "select" && node.props.disabled));
     await tree.props.onSubmit({preventDefault() {}});
     assert.equal(harness.calls.length, 0);
-    assert.ok(harness.values[7].tipoPersonal);
+    assert.ok(harness.values[8].tipoPersonal);
   } finally {
     globalThis.document = previousDocument;
     globalThis.requestAnimationFrame = previousFrame;

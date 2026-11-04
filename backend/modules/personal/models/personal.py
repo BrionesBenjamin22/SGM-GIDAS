@@ -10,6 +10,8 @@ class Personal(db.Model, AuditMixin):
     __tablename__ = 'personal'
 
     id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(60), nullable=True)
+    apellido = db.Column(db.String(60), nullable=True)
     nombre_apellido = db.Column(db.String(120), nullable=False)
     identidad_id = db.Column(db.Integer, db.ForeignKey('identidad_personal.id'), unique=True, nullable=True)
     identidad = db.relationship(IdentidadPersonal, lazy='joined')
@@ -118,6 +120,8 @@ class Becario(db.Model, AuditMixin):
     __tablename__ = 'becario'
 
     id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(60), nullable=True)
+    apellido = db.Column(db.String(60), nullable=True)
     nombre_apellido = db.Column(db.String(120), nullable=False)
     identidad_id = db.Column(db.Integer, db.ForeignKey('identidad_personal.id'), unique=True, nullable=True)
     identidad = db.relationship(IdentidadPersonal, lazy='joined')
@@ -240,6 +244,8 @@ class Investigador(db.Model, AuditMixin):
     __tablename__ = 'investigador'
 
     id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(60), nullable=True)
+    apellido = db.Column(db.String(60), nullable=True)
     nombre_apellido = db.Column(db.String(120), nullable=False)
     identidad_id = db.Column(db.Integer, db.ForeignKey('identidad_personal.id'), unique=True, nullable=True)
     identidad = db.relationship(IdentidadPersonal, lazy='joined')

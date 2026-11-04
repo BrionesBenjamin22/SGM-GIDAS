@@ -39,6 +39,8 @@ export interface RelacionesPersonal {
 
 export interface PersonalCompleto {
   id: number;
+  nombre?: string | null;
+  apellido?: string | null;
   nombre_apellido: string;
   dni: string | null;
   cuil: string | null;

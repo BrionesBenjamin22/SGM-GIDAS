@@ -1,5 +1,37 @@
 # Modulo frontend de personal
 
+## Nombre, apellido, fechas e historial (ISS-34, ISS-35, ISS-36)
+
+Los formularios de Personal, Becario e Investigador muestran exclusivamente
+`Nombre` y `Apellido`, ambos obligatorios, mediante el componente del módulo
+`NombrePersonalFields`. Cada campo admite letras Unicode y espacios, hasta
+60 caracteres, con 120 en conjunto incluido el separador. No existe una variante
+de formulario para nombres históricos: el dataset ficticio de desarrollo fue
+normalizado mediante una migración controlada y auditada de 112 registros.
+
+`personalServices`, `becarioServices` e `investigadorServices` incluyen los dos
+campos en sus contratos; `personalCompletoServices` los recibe para precargar la
+edición. Los borradores guardan ambos por separado. La edición envía únicamente
+diferencias y omite el PUT si no hubo cambios; alta vuelve al home y edición al
+detalle con `successMessage`. Los errores de API de nombre y apellido se asocian
+a los controles visibles mediante el manejo existente y `personalFieldErrors`.
+
+`utils/personalValidation.ts` reúne las validaciones de nombre y fecha de alta.
+La fecha admite desde 01/01/2010 hasta hoy inclusive: Calendar recibe `maxDate`
+y el envío vuelve a comprobar el rango. La API aplica el mismo límite.
+
+`PersonalHome` y `PersonalDetalle` usan `formatPersonalHistoryEntry`, que muestra
+las etiquetas de catálogo resueltas por el backend para el valor anterior y el
+nuevo. Las referencias ausentes muestran `Referencia no disponible`; el detalle
+ya no necesita cinco consultas auxiliares a catálogos para presentar el historial.
+Se conservan nueve registros por home, tres eventos por página de historial,
+los hooks existentes, permisos y feedback de guardado.
+
+Verificación: 208 pruebas frontend, TypeScript y build de producción aprobados.
+La suite de guardado ejercita los tres formularios; `personalNombresFechas.test.ts`
+verifica nombres compuestos, campos obligatorios, límites de fecha y etiquetas.
+Aceptación visual y funcional del usuario el 04/11/2026.
+
 ## Baja y reactivacion (ISS-39)
 
 `PersonalHome` permite localizar registros mediante Inactivos o Todos y muestra
@@ -126,8 +158,8 @@ ISS-19: los errores de nombre, fecha de alta y catálogos del backend se asocian
 Seguimiento ISS-08: ingresar 2008 en una fecha de alta no cambia el valor
 confirmado; Calendar explica el límite 01/01/2010 junto al campo y lo resalta.
 
-Las altas al grupo y los períodos de sus relaciones admiten fechas desde el
-01/01/2010. Esta regla describe actividad institucional y no debe extenderse a
+Las altas al grupo admiten fechas desde el 01/01/2010 hasta hoy; los períodos
+de sus relaciones conservan sus reglas propias. Esta regla describe actividad institucional y no debe extenderse a
 fechas biográficas o de identidad.
 
 ## Vistas
