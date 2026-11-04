@@ -25,6 +25,7 @@ import { toCivilDateString } from "@/utils/dateTime";
 import { useAuth } from "@/context/AuthContext";
 import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
 import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
+import { isMoneda, type Moneda } from "@/utils/money";
 
 export default function TransferenciasForm() {
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ export default function TransferenciasForm() {
     demandante: "",
     descripcionActividad: "",
     monto: "",
+    moneda: "ARS" as Moneda,
     fechaInicio: "",
     fechaFin: "",
     tipoContratoId: "",
@@ -71,6 +73,7 @@ export default function TransferenciasForm() {
       demandante: transferencia.demandante ?? "",
       descripcionActividad: transferencia.descripcionActividad ?? "",
       monto: transferencia.monto?.toString() ?? "",
+      moneda: transferencia.moneda ?? "ARS",
       fechaInicio: transferencia.fechaInicio ?? "",
       fechaFin: transferencia.fechaFin ?? "",
       tipoContratoId: transferencia.tipoContratoId?.toString() ?? "",
@@ -85,8 +88,8 @@ export default function TransferenciasForm() {
     value: { data, adoptantes },
     ready: !isEdit || (!isLoading && Boolean(transferencia)),
     autosave: false,
-    hasContent: (draft) => Object.values(draft.data).some(Boolean) || draft.adoptantes.length > 0,
-    onRestore: (draft) => { setData(draft.data); setAdoptantes(draft.adoptantes); },
+    hasContent: (draft) => Object.entries(draft.data).some(([key, value]) => key === "moneda" ? value === "USD" : Boolean(value)) || draft.adoptantes.length > 0,
+    onRestore: (draft) => { setData({ ...draft.data, moneda: draft.data.moneda ?? "ARS" }); setAdoptantes(draft.adoptantes); },
   });
 
   const clearError = (field: string) => {
@@ -99,6 +102,7 @@ export default function TransferenciasForm() {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
+    if (!isMoneda(data.moneda)) newErrors.moneda = "Seleccione ARS o USD";
 
     if (!data.denominacion.trim() || data.denominacion.trim().length < 3) {
       newErrors.denominacion = "Debe ingresar una denominación válida";
@@ -149,6 +153,7 @@ export default function TransferenciasForm() {
         demandante: data.demandante.trim(),
         descripcionActividad: data.descripcionActividad.trim(),
         monto: Number(data.monto),
+        moneda: data.moneda,
         fechaInicio: data.fechaInicio,
         fechaFin: data.fechaFin || undefined,
         tipoContratoId: Number(data.tipoContratoId),
@@ -169,6 +174,7 @@ export default function TransferenciasForm() {
         demandante: transferencia?.demandante ?? "",
         descripcionActividad: transferencia?.descripcionActividad ?? "",
         monto: transferencia?.monto ?? 0,
+        moneda: transferencia?.moneda ?? "ARS",
         fechaInicio: transferencia?.fechaInicio ?? "",
         fechaFin: transferencia?.fechaFin ?? undefined,
         tipoContratoId: transferencia?.tipoContratoId ?? 0,
@@ -227,7 +233,7 @@ export default function TransferenciasForm() {
       });
     },
     onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["denominacion","demandante","descripcionActividad","monto","fechaInicio","fechaFin","tipoContratoId","adoptantes"])) return;
+      if (applyFieldErrors(error, setErrors, ["denominacion","demandante","descripcionActividad","monto","moneda","fechaInicio","fechaFin","tipoContratoId","adoptantes"])) return;
       setErrorMessage(
         getErrorMessage(
           error,
@@ -348,6 +354,21 @@ export default function TransferenciasForm() {
             />
             {errors.monto && <p className="mt-1 text-sm text-red-500">{errors.monto}</p>}
           </>
+        </Field>
+
+        <Field required label="Moneda" name="moneda" error={errors.moneda}>
+          <select className={inputClass("moneda")} value={data.moneda}
+            onChange={(event) => {
+              const moneda = event.target.value;
+              if (isMoneda(moneda)) {
+                setData((previous) => ({ ...previous, moneda }));
+                clearError("moneda");
+              }
+            }}>
+            <option value="ARS">ARS — Pesos argentinos</option>
+            <option value="USD">USD — Dólares estadounidenses</option>
+          </select>
+          <p className="mt-1 text-xs text-slate-500">El monto se guarda en la moneda elegida, sin conversión.</p>
         </Field>
 
         <Field required label="Fecha de inicio" name="fechaInicio" error={errors.fechaInicio}>

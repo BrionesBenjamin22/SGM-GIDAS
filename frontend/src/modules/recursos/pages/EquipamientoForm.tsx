@@ -26,6 +26,7 @@ import { parseCivilDate, toCivilDateString } from "@/utils/dateTime";
 import { useAuth } from "@/context/AuthContext";
 import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
 import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
+import { isMoneda, type Moneda } from "@/utils/money";
 
 export default function EquipamientoForm() {
   const { id } = useParams<{ id: string }>();
@@ -46,6 +47,7 @@ export default function EquipamientoForm() {
     denominacion: "",
     descripcion_breve: "",
     monto_invertido: undefined as number | undefined,
+    moneda: "ARS" as Moneda,
     fecha_incorporacion: "",
   });
 
@@ -60,6 +62,7 @@ export default function EquipamientoForm() {
       denominacion: initial.denominacion ?? "",
       descripcion_breve: initial.descripcion_breve ?? "",
       monto_invertido: initial.monto_invertido ?? undefined,
+      moneda: initial.moneda ?? "ARS",
       fecha_incorporacion: initial.fecha_incorporacion ?? "",
     });
   }, [initial]);
@@ -71,8 +74,8 @@ export default function EquipamientoForm() {
     value: data,
     ready: !isEdit || (!isLoading && Boolean(initial)),
     autosave: false,
-    hasContent: (draft) => Boolean(draft.denominacion || draft.descripcion_breve || draft.fecha_incorporacion || draft.monto_invertido),
-    onRestore: setData,
+    hasContent: (draft) => Boolean(draft.denominacion || draft.descripcion_breve || draft.fecha_incorporacion || draft.monto_invertido || draft.moneda === "USD"),
+    onRestore: (draft) => setData({ ...draft, moneda: draft.moneda ?? "ARS" }),
   });
 
   const clearError = (field: string) => {
@@ -85,6 +88,7 @@ export default function EquipamientoForm() {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
+    if (!isMoneda(data.moneda)) newErrors.moneda = "Seleccione ARS o USD";
 
     if (!data.denominacion.trim()) {
       newErrors.denominacion = "La denominación es obligatoria";
@@ -136,7 +140,7 @@ export default function EquipamientoForm() {
       });
     },
     onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["denominacion","descripcion","fecha_incorporacion","monto"])) return;
+      if (applyFieldErrors(error, setErrors, ["denominacion","descripcion","fecha_incorporacion","monto","moneda"])) return;
       const backendMessage = getErrorMessage(
         error,
         isEdit
@@ -160,6 +164,7 @@ export default function EquipamientoForm() {
       descripcion_breve: data.descripcion_breve.trim(),
       fecha_incorporacion: data.fecha_incorporacion,
       monto_invertido: data.monto_invertido!,
+      moneda: data.moneda,
     };
 
     if (!isEdit) {
@@ -173,6 +178,7 @@ export default function EquipamientoForm() {
       descripcion_breve: initial?.descripcion_breve ?? "",
       fecha_incorporacion: initial?.fecha_incorporacion ?? "",
       monto_invertido: initial?.monto_invertido ?? undefined,
+      moneda: initial?.moneda ?? "ARS",
     };
 
     const changedPayload = Object.fromEntries(
@@ -280,6 +286,21 @@ export default function EquipamientoForm() {
               <p className="mt-1 text-sm text-red-500">{errors.monto}</p>
             )}
           </>
+        </Field>
+
+        <Field required label="Moneda" name="moneda" error={errors.moneda}>
+          <select className={inputClass("moneda")} value={data.moneda}
+            onChange={(event) => {
+              const moneda = event.target.value;
+              if (isMoneda(moneda)) {
+                setData((previous) => ({ ...previous, moneda }));
+                clearError("moneda");
+              }
+            }}>
+            <option value="ARS">ARS — Pesos argentinos</option>
+            <option value="USD">USD — Dólares estadounidenses</option>
+          </select>
+          <p className="mt-1 text-xs text-slate-500">El monto se guarda en la moneda elegida, sin conversión.</p>
         </Field>
 
         <Field required label="Fecha de incorporación" name="fecha_incorporacion" error={errors.fecha_incorporacion}>

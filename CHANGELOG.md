@@ -8,6 +8,17 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### Moneda original en Equipamiento y Transferencias
+
+- Alta y edición permiten guardar el importe original en ARS o USD, sin
+  conversión, con código de moneda en listado y detalle y filtro por moneda.
+- Los registros existentes y sus versiones se identifican como ARS conservando
+  sus importes. Las nuevas versiones de Memorias capturan la moneda; Excel la
+  muestra y los totales de transferencias se separan por moneda.
+- La moneda se audita. Equipos vinculados a movimientos conservan su moneda;
+  el vínculo automático sigue limitado a ARS, con validación y bloqueo de fila.
+- Se conserva el requisito de monto positivo en ambos módulos.
+
 ### Horas de auditoría e historial en formato de 24 horas
 
 - Las marcas de tiempo del formateador compartido se muestran en horario

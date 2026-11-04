@@ -1,5 +1,13 @@
 # Memorias
 
+## Moneda en exportaciones de Equipamiento y Transferencias
+
+Las fotos de Equipamiento y Transferencias incluyen `moneda` ARS/USD junto al
+importe original. El Excel de una versión usa esos valores históricos y muestra
+el código de moneda en el formato de la celda numérica, sin conversiones. Las
+fotos anteriores se identifican como ARS; editar la ficha actual no cambia su
+importe ni la moneda guardada en una versión anterior.
+
 ## Acceso desde el menú ADMIN (ISS-52)
 
 El menú ADMIN ofrece Inicio, Administración, Memorias y Búsqueda. El enlace

@@ -1,5 +1,26 @@
 # Recursos
 
+## Moneda de Equipamiento
+
+`EquipamientoForm` permite elegir ARS o USD junto al monto invertido. El alta
+inicia en ARS y la edición precarga la moneda guardada; el monto se conserva en
+la moneda elegida, sin cotización ni conversión. La edición envía solo diferencias.
+Se mantienen la validación de monto positivo, los permisos y la navegación:
+alta al home y edición al detalle con `successMessage`.
+
+`equipamientoServices.ts` tipa y transmite `moneda`; las respuestas heredadas
+sin ese campo se interpretan como ARS. Borradores anteriores recuperan ARS,
+pero el valor predeterminado no hace que un formulario vacío tenga contenido.
+`utils/money.ts` concentra el formato con código de moneda. Home y detalle
+distinguen ARS/USD; el home permite filtrar por moneda y sus rangos comparan
+importes originales. El historial de monto muestra el número sin atribuirle la
+moneda actual de la ficha; los cambios de moneda tienen su propio evento.
+
+El backend impide cambiar la moneda de un equipo con un movimiento vinculado,
+incluido uno histórico, y muestra el error junto al selector. El vínculo
+automático de Movimientos continúa disponible solo para equipos en ARS.
+`tests/moneda.test.ts` verifica formato, transporte HTTP, diferencias y borradores.
+
 ## Becas (ISS-93)
 
 La gestión de Becas está en Personal > Becas, fuera de Catálogos. `BecasHome`

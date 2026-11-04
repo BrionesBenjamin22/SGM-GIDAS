@@ -1,5 +1,20 @@
 # Transferencia frontend
 
+## Moneda del monto
+
+`TransferenciasForm` permite elegir ARS o USD, con ARS inicial, precarga en
+edición y envío de diferencias reales. No convierte el importe ni solicita
+cotización; se mantienen validación de monto positivo, permisos y navegación.
+Los errores de moneda se muestran junto al campo. Borradores anteriores sin
+moneda recuperan ARS; ese valor predeterminado no crea borradores vacíos.
+
+`transferenciasServices.ts` tipa y transmite `moneda`, usando ARS para respuestas
+heredadas. `TransferenciasHome` presenta monto y código de moneda y envía
+`filter_moneda` al listado SQL. Detalle utiliza el mismo formato. Los importes
+del historial se presentan sin adjudicarles la moneda actual; los cambios de
+moneda se muestran como eventos propios. Los permisos y las relaciones con
+adoptantes se conservan. `tests/moneda.test.ts` cubre servicios y borradores.
+
 ## Historial de adoptantes (ISS-83)
 
 `TransferenciasDetalle` conserva el historial de la transferencia para cambios
