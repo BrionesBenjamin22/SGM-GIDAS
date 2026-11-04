@@ -1,3 +1,4 @@
+import type { ReclasificarFormulario } from "@/modules/personal/services/reclasificacionService";
 import NombrePersonalFields from "@/modules/personal/components/NombrePersonalFields";
 import { validatePersonalName, validatePersonalStartDate } from "@/modules/personal/utils/personalValidation";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
@@ -27,6 +28,8 @@ import IdentidadFields from "@/modules/personal/components/IdentidadFields";
 import { MAX_HORAS_SEMANALES, validWeeklyHours, WEEKLY_HOURS_ERROR } from "@/modules/personal/utils/weeklyHours";
 
 interface Props {
+  onReclassify?: ReclasificarFormulario;
+  onSavingChange?: (saving: boolean) => void;
   initialData?: PersonalCompleto;
   onCancel: () => void;
   onError: (error: unknown) => void;
@@ -34,6 +37,8 @@ interface Props {
 
 export default function FormPTAAProfesional({
   initialData,
+  onReclassify,
+  onSavingChange,
   onCancel,
   onError,
 }: Props) {
@@ -54,6 +59,7 @@ export default function FormPTAAProfesional({
   const [activo, setActivo] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  useEffect(() => { onSavingChange?.(isSaving); }, [isSaving, onSavingChange]);
   const [hydrated, setHydrated] = useState(!isEdit);
 
   useEffect(() => {
@@ -90,7 +96,7 @@ export default function FormPTAAProfesional({
 
   const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
     userId: user?.id,
-    module: "personal-personal",
+    module: onReclassify ? `personal-reclasificar-${initialData?.rol}-personal` : "personal-personal",
     recordId: initialData?.id,
     value: { nombreApellido, apellido, dni, cuil, horasSemanales, tipoPersonalId, fechaAltaGrupo: toCivilDateString(fechaAltaGrupo), activo },
     ready: hydrated,
@@ -210,6 +216,16 @@ export default function FormPTAAProfesional({
         grupo_utn_id: uct!.id,
         activo,
       };
+
+      if (onReclassify) {
+        let result: PersonalCompleto | undefined;
+        const saved = await executeSafely(async () => { result = await onReclassify(payload); });
+        if (saved && result) {
+          clearDraft();
+          navigate(`/personal/${result.rol}/${result.id}`, { replace: true, state: { successMessage: "¡Actualizado con éxito!" } });
+        }
+        return;
+      }
 
       if (isEdit && initialData?.id) {
         const original = {

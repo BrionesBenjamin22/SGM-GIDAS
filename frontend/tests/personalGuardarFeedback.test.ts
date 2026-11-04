@@ -61,7 +61,7 @@ test("formularios Personal, Investigador y Becario enfocan errores y muestran gu
       });
       try {
         const {default: Form} = await import(url(js));
-        const render = (initialData?: Record<string, unknown>) => {h.cursor = 0; return Form({initialData, onCancel() {h.cancels++;}, onError: (error: unknown) => h.errors.push(error)});};
+        const render = (initialData?: Record<string, unknown>, onReclassify?: (payload: Record<string, unknown>) => Promise<unknown>) => {h.cursor = 0; return Form({initialData, onReclassify, onCancel() {h.cancels++;}, onError: (error: unknown) => h.errors.push(error)});};
         h.values = [...config.values];
         const unchangedBack = walk(render(config.initialData)).find(n => n.props.onClick && n.children.includes("Volver"));
         unchangedBack.props.onClick();
@@ -103,12 +103,30 @@ test("formularios Personal, Investigador y Becario enfocan errores y muestran gu
         h.resolve(); await pending;
         assert.equal(h.navigations[0][0], "/personal");
         assert.equal(walk(render()).find(n => n.props.type === "submit").props.disabled, false);
+
+        h.values = [...config.values];
+        const previousCalls = h.calls.length;
+        const previousNavigations = h.navigations.length;
+        let reclassificationPayload: Record<string, unknown> | undefined;
+        await render(config.initialData, async payload => {
+          reclassificationPayload = payload;
+          return {id: 99, rol: "becario"};
+        }).props.onSubmit({preventDefault() {}});
+        assert.equal(h.calls.length, previousCalls, "reclasificar no llama al alta ni al PUT de la clase anterior");
+        assert.equal(reclassificationPayload?.dni, "12345678");
+        assert.equal(h.navigations[previousNavigations][0], "/personal/becario/99");
+        assert.equal(h.navigations[previousNavigations][1].state.successMessage, "¡Actualizado con éxito!");
+
+        h.values = [...config.values];
+        await render(config.initialData, async () => {throw new Error("El integrante tiene vínculos");}).props.onSubmit({preventDefault() {}});
+        assert.equal(h.navigations.length, previousNavigations + 1, "una reclasificación rechazada conserva el formulario");
+        assert.match(h.errors.at(-1).message, /vínculos/);
         assert.deepEqual(queryClient.getQueryData(key), h.serverRecords, `${config.name}: refresca el listado activo pese a staleTime`);
 
         const failure = render().props.onSubmit({preventDefault() {}});
         h.reject(new Error("Servidor no disponible")); await failure;
-        assert.equal(h.navigations.length, 1, "no navega después del error");
-        assert.equal(h.errors.length, 2);
+        assert.equal(h.navigations.length, previousNavigations + 1, "no navega después del error");
+        assert.equal(h.errors.length, 3);
         assert.equal(walk(render()).find(n => n.props.type === "submit").props.disabled, false);
       } finally {
         unsubscribe(); queryClient.clear();

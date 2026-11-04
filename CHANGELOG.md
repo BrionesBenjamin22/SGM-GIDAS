@@ -8,6 +8,20 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### Corrección de clase por alta errónea y consulta histórica de Personal
+
+- Edición permite corregir Personal, Becario o Investigador con validaciones de
+  destino, confirmación, borradores independientes y retorno al detalle efectivo.
+- Se conservan identidad, DNI/CUIL, datos comunes, horas y auditoría en una
+  transacción. Los vínculos con becas, proyectos, autorías y antecedentes,
+  incluidos los dados de baja, mantienen el bloqueo y se preservan.
+- El alcance es corregir un alta errónea advertida en el momento. Las
+  transiciones de carrera o categoría posteriores quedan sin definir; no se
+  establece un plazo automático para habilitar la corrección.
+- Las fotos de Personal en memorias se vinculan a la identidad estable y
+  conservan su contenido y Excel. Las secciones de versión muestran sus datos
+  históricos; la próxima versión cerrada captura la clase corregida.
+
 ### ISS-34, ISS-35, ISS-36: nombres, fechas e historial de Personal
 
 - Personal, Becario e Investigador requieren Nombre y Apellido independientes

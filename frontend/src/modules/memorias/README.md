@@ -227,3 +227,22 @@ filas y `activos=all`. Los filtros y totales se aplican a todo el
 conjunto de la seccion, no solo a la pagina visible. Los IDs vacios
 mantienen el listado vacio y la UCT se valida en el backend.
 No cambian las versiones, acciones, snapshots ni la exportacion Excel.
+
+## Consulta histórica de Personal
+
+En `MemoriaVersionDetalle`, las secciones Personal, Becarios e Investigadores
+ofrecen «Ver datos de esta versión». `components/PersonalSnapshotDialog.tsx`
+recibe la colección ya capturada por la versión y muestra los datos congelados
+con nueve filas por página; no consulta ni edita la ficha actual del integrante.
+Los campos ausentes se muestran como «Sin dato». Se conserva el acceso existente
+a la versión y sus permisos, sin agregar endpoints ni hooks compartidos.
+
+El diálogo tiene título y descripción accesibles, cierre por Escape y clic
+exterior, foco inicial y retorno al botón que lo abrió. Las demás secciones
+mantienen sus accesos. El Excel continúa utilizando las fotos de esa versión.
+
+La corrección de una clase elegida erróneamente durante el alta no modifica una
+versión anterior. Al cerrar una nueva versión se captura la clase corregida.
+Los cambios posteriores de categoría laboral no forman parte del alcance
+definido. Los bloqueos por vínculos operativos se conservan en Personal.
+`personalSnapshot.test.ts` cubre las tres clases, campos ausentes y paginación.

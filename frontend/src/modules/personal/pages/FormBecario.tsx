@@ -1,3 +1,4 @@
+import type { ReclasificarFormulario } from "@/modules/personal/services/reclasificacionService";
 import NombrePersonalFields from "@/modules/personal/components/NombrePersonalFields";
 import { validatePersonalName, validatePersonalStartDate } from "@/modules/personal/utils/personalValidation";
 import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
@@ -27,6 +28,8 @@ import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
 import { toCivilDateString } from "@/utils/dateTime";
 
 interface Props {
+  onReclassify?: ReclasificarFormulario;
+  onSavingChange?: (saving: boolean) => void;
   initialData?: PersonalCompleto;
   onCancel: () => void;
   onError: (error: unknown) => void;
@@ -40,7 +43,7 @@ type BecaVinculada = {
   monto: number | "";
 };
 
-export default function FormBecario({ initialData, onCancel, onError }: Props) {
+export default function FormBecario({ initialData, onReclassify, onSavingChange, onCancel, onError }: Props) {
   const navigate = useNavigate();
   const { uct } = useUct();
   const { data: tiposFormacion = [] } = useTiposFormacion();
@@ -73,6 +76,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
   const [becasVinculadas, setBecasVinculadas] = useState<BecaVinculada[]>([]);
   const [becasPage, setBecasPage] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
+  useEffect(() => { onSavingChange?.(isSaving); }, [isSaving, onSavingChange]);
   const [hydrated, setHydrated] = useState(!isEdit);
   const [becasSearch, setBecasSearch] = useState("");
   const filteredBecas = becasVinculadas.map((beca, index) => ({ beca, index })).filter(({ beca }) => {
@@ -149,7 +153,7 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
 
   const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
     userId: user?.id,
-    module: "personal-becario",
+    module: onReclassify ? `personal-reclasificar-${initialData?.rol}-becario` : "personal-becario",
     recordId: initialData?.id,
     value: {
       nombreApellido, apellido, dni, cuil, horasSemanales, tipoFormacionId, fechaAltaGrupo: toCivilDateString(fechaAltaGrupo), activo, agregarBeca,
@@ -326,6 +330,16 @@ export default function FormBecario({ initialData, onCancel, onError }: Props) {
             }))
           : [],
       };
+
+      if (onReclassify) {
+        let result: PersonalCompleto | undefined;
+        const saved = await executeSafely(async () => { result = await onReclassify(payload); });
+        if (saved && result) {
+          clearDraft();
+          navigate(`/personal/${result.rol}/${result.id}`, { replace: true, state: { successMessage: "¡Actualizado con éxito!" } });
+        }
+        return;
+      }
 
       if (isEdit && initialData?.id) {
         const original = {

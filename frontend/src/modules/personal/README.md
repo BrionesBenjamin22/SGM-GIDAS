@@ -333,3 +333,35 @@ combinada del servidor de nueve filas, sus filtros, permisos e historial.
 
 La validacion de la etapa incluyo 648 pruebas backend, 197 frontend,
 TypeScript y build de produccion, con aceptacion funcional del usuario.
+
+## Corrección de clase por alta errónea
+
+El selector de clase está disponible en edición para corregir una clase
+seleccionada por error al dar de alta al integrante. Este flujo no define el
+paso posterior de Becario a Investigador u otra categoría durante su trayectoria.
+No se implementa un plazo automático: la finalidad aprobada es corregir el alta,
+y la API determina si las dependencias permiten hacerlo.
+
+`PersonalForm` confirma el cambio de clase, descarta cambios sin guardar y
+precarga los campos comunes del registro guardado. Los formularios
+`FormPTAAProfesional`, `FormBecario` y `FormInvestigador` solicitan los campos del
+destino y conservan sus validaciones. El cambio se persiste al pulsar Actualizar,
+mediante `services/reclasificacionService.ts`, con `clase_destino` y diferencias
+reales. No se usa el endpoint de alta ni se crean duplicados inactivos.
+
+El service tipa la clase y el callback de reclasificación. Los formularios
+reutilizan sus hooks existentes y borradores por combinación origen/destino,
+sin compartirlos con altas o con otro integrante de igual ID numérico. Durante
+el guardado se bloquea el selector. El éxito limpia el borrador, invalida las
+consultas relacionadas y navega al detalle del `rol`/`id` devuelto con
+`successMessage`. Los errores de API permanecen visibles y conservan el formulario.
+
+Los permisos siguen siendo ADMIN/GESTOR y requieren un integrante activo y UCT
+válida. Becas, proyectos, autorías y antecedentes existentes, incluso históricos
+o con baja lógica, pueden impedir la corrección. No deben eliminarse para forzar
+el cambio. Las versiones anteriores de memoria conservan sus fotos; las nuevas
+toman la clase corregida al cerrarse. El contrato histórico se documenta también
+en el módulo Memorias.
+
+`personalGuardarFeedback.test.ts` cubre guardado, navegación y errores;
+`personalSnapshot.test.ts` cubre consulta histórica.
