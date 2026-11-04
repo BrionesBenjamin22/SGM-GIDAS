@@ -1,5 +1,13 @@
 # Memorias
 
+## Acceso desde el menú ADMIN (ISS-52)
+
+El menú ADMIN ofrece Inicio, Administración, Memorias y Búsqueda. El enlace
+`/memorias` permanece visible con versiones abiertas, en revisión, cerradas o
+sin memorias. Cerrar la única memoria no impide volver al listado, crear otro
+período o utilizar la reapertura existente. El ajuste se limita a Sidebar;
+no cambia vistas, servicios, validaciones, confirmaciones ni permisos.
+
 ## Generación institucional validada (ISS-94)
 
 El operador carga datos en los módulos del sistema, crea una memoria con UCT y

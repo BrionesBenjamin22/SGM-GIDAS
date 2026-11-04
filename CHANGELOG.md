@@ -8,6 +8,17 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-52: conservar acceso a Memorias para ADMIN
+
+- El menú ADMIN muestra Inicio, Administración, Memorias y Búsqueda en
+  escritorio y móvil, independientemente del estado del período.
+- Se mantiene el acceso al listado, alta y reapertura existentes al cerrar
+  la única memoria. Los demás módulos y permisos conservan su comportamiento.
+- Regresión automatizada del Sidebar para ADMIN, GESTOR y LECTURA, con
+  destinos exactos de ADMIN y sin consultas al estado de las memorias.
+- Aceptación funcional del usuario recibida el 04/11/2026 y alcance limitado
+  expresamente a navegación. Sin cambios de contratos o lógica backend.
+
 ### ISS-94: rendimiento de listados y cierre de memorias
 
 - Docencia, Transferencias y Biblioteca recuperan nueve filas por pagina

@@ -1,5 +1,14 @@
 # Memorias
 
+## Continuidad de acceso (ISS-52)
+
+La corrección de navegación ADMIN agrega el enlace a Memorias en frontend y
+no modifica el contrato backend. Listado y detalle siguen disponibles con la
+versión actual cerrada. Alta, cierre y reapertura conservan autorización
+ADMIN/GESTOR, validaciones de UCT, auditoría y snapshots existentes. Reabrir
+crea una nueva versión abierta y preserva la cerrada; exige que no exista otra
+memoria abierta o en revisión en la UCT.
+
 ## Excel institucional y seed de validación (ISS-94)
 
 `GET /api/v1/memorias/{id}/versiones/{version_id}/exportar-excel` requiere

@@ -46,6 +46,7 @@ const baseItems: Item[] = [
 const adminItems: Item[] = [
   { label: "Inicio", to: "/inicio" },
   { label: "Administración", to: "/administracion" },
+  { label: "Memorias", to: "/memorias" },
   { label: "Búsqueda", to: "/busqueda" },
 ];
 
