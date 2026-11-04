@@ -1,5 +1,31 @@
 # Recursos
 
+## Moneda original de Equipamiento
+
+`Equipamiento` y `EquipamientoMemoriaVersion` guardan `moneda` como `ARS` o
+`USD`, con restricción de base y valor predeterminado ARS. POST y PUT de
+Equipamiento aceptan ese campo; las consultas y fotos lo devuelven junto a
+`monto_invertido`. Omitirlo en alta conserva compatibilidad con clientes que
+registraban pesos; en edición se conserva el valor actual si no se envía.
+Un valor explícito inválido devuelve validación con `details.fields.moneda`.
+El importe original no se convierte ni se agrega una cotización.
+
+La edición registra diferencias de moneda en auditoría. Un equipamiento
+vinculado a un movimiento, incluido uno dado de baja, no permite cambiar su
+moneda. El selector de equipos de Movimientos y su validación backend admiten
+solo ARS; un egreso USD puede registrarse sin ese vínculo automático. Edición
+del equipo y vinculación bloquean y refrescan la misma fila para serializar
+operaciones concurrentes. Se conservan los permisos, las bajas lógicas y la
+validación de monto positivo.
+
+La migración `f6b8d0e2a4c6`, sucesora de `e4a6c8f0b2d3`, agrega moneda a
+las tablas de Equipamiento y Transferencias y sus versiones. Identifica los
+datos anteriores como ARS sin cambiar importes ni otras columnas. El downgrade
+se rechaza mientras alguna tabla conserve USD, para evitar perder su unidad.
+Las nuevas fotos copian la moneda vigente al cerrar la versión. Las pruebas
+de persistencia, auditoría, vínculos y migración están en
+`tests/test_moneda_equipamiento_transferencia.py`.
+
 ## Becas y vencimientos (ISS-93)
 
 Las rutas de Becas se publican bajo `/api/v1/recursos/becas` mediante

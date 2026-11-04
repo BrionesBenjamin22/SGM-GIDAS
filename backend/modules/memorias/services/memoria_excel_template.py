@@ -2,6 +2,7 @@
 from copy import copy
 from datetime import date, datetime
 from decimal import Decimal
+from dataclasses import dataclass
 from io import BytesIO
 from math import ceil
 from textwrap import wrap
@@ -14,6 +15,16 @@ from openpyxl.worksheet.cell_range import CellRange, MultiCellRange
 
 EMPTY = "No registra datos en este período."
 CONTENT_FONT = Font(name="Calibri", size=11, color="FF000000")
+
+
+@dataclass(frozen=True)
+class ImporteOriginal:
+    valor: Decimal
+    moneda: str
+
+
+def importe_original(item, campo):
+    return ImporteOriginal(Decimal(str(item.get(campo) or 0)), item.get("moneda") or "ARS")
 
 
 class TemplateWriter:
@@ -38,11 +49,16 @@ class TemplateWriter:
 
     def set_at(self, row, column, value, *, content=True):
         cell = self.sheet[f"{column}{row}"]
+        importe = value if isinstance(value, ImporteOriginal) else None
+        if importe is not None:
+            value = importe.valor
         if isinstance(value, (date, datetime)) and not is_date_format(cell.number_format):
             value = value.strftime("%d/%m/%Y")
         style = copy(cell._style)
         cell.value = value
         cell._style = style
+        if importe is not None:
+            cell.number_format = f'"{importe.moneda}" #,##0.00'
         if isinstance(value, str):
             cell.data_type = "s"
         if content and value is not None:
@@ -214,7 +230,7 @@ def render_memoria(workbook, sources, context, helpers):
             for i, item in enumerate(items, 1)], prototype=86 if category == "doctorado" else start,
             empty_row=82 if category == "doctorado" else None, replace_placeholder=category == "doctorado")
     w.table(126, 128, ["A", "B", "C", "D", "E"], [[i, item.get("denominacion"), civil_date(item.get("fecha_incorporacion")),
-        Decimal(str(item.get("monto_invertido") or 0)), item.get("descripcion_breve")] for i, item in enumerate(sources["equipamiento"], 1)])
+        importe_original(item, "monto_invertido"), item.get("descripcion_breve")] for i, item in enumerate(sources["equipamiento"], 1)])
     w.table(132, 133, ["A", "B", "C", "D", "E", "F"], [[i, item.get("titulo"), helpers._join_dict_names(item.get("autores"), "nombre_apellido"),
         item.get("editorial"), item.get("anio"), civil_date(item.get("fecha"))] for i, item in enumerate(sources["documentacion"], 1)])
     w.table(139, 141, ["A", "B", "C", "D", "F", "G", "H", "I", "J"], [[i, item.get("tipo_proyecto_nombre"), item.get("codigo_proyecto"),
@@ -265,7 +281,7 @@ def render_memoria(workbook, sources, context, helpers):
                                 (293, 294, "asistencia"), (298, 298, "servicios"), (302, 304, "difusion")):
         items = [item for item in sources["transferencias"] if helpers._clasificar_transferencia(item.get("tipo_contrato_nombre")) == category]
         w.table(start, end, ["A", "B", "D", "F", "G", "H"], [[i, item.get("denominacion"), helpers._join_dict_names(item.get("adoptantes"), "adoptante_nombre"),
-            item.get("demandante"), Decimal(str(item.get("monto") or 0)), item.get("descripcion_actividad")] for i, item in enumerate(items, 1)])
+            item.get("demandante"), importe_original(item, "monto"), item.get("descripcion_actividad")] for i, item in enumerate(items, 1)])
     for start, end, category in ((309, 314, "CORRIENTE"), (318, 319, "CAPITAL")):
         totals = {}
         for item in sources["erogaciones"]:

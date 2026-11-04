@@ -1,5 +1,23 @@
 # Modulo backend de transferencia
 
+## Moneda del importe original
+
+`TransferenciaSocioProductiva` y su modelo de versión guardan `moneda`, no nula
+y restringida a ARS/USD. POST y PUT de `/api/v1/transferencia/transferencias`
+aceptan el campo junto a `monto`; las lecturas lo serializan. Alta sin moneda
+usa ARS por compatibilidad; omitirla en PUT conserva la anterior. Un valor
+explícito inválido genera validación con `details.fields.moneda`. Cambiar moneda
+no convierte el importe y deja un evento de auditoría; no se guarda cotización.
+Se conservan la validación de monto positivo, los permisos y las relaciones.
+
+El listado `view=table` admite `filter_moneda` y publica `options.moneda`,
+manteniendo búsqueda y paginación SQL. Las versiones nuevas capturan la moneda
+de la transferencia; los registros y fotos anteriores quedan identificados
+como ARS por la migración aditiva `f6b8d0e2a4c6`, sin reescribir importes.
+La reversión impide descartar moneda si existen USD. Las regresiones están en
+`tests/test_moneda_equipamiento_transferencia.py` y las de formato de exportación
+en `tests/test_memoria_excel_formato.py`.
+
 El nombre de adoptante admite solo letras Unicode y espacios, tanto al crear
 como al editar. Denominación y demandante requieren alguna letra. Los errores
 identifican el campo en `details.fields`.

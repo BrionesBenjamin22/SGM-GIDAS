@@ -10,6 +10,20 @@ from modules.memorias.services.memoria_excel_template import render_memoria, CON
 
 
 class MemoriaFormatoTest(unittest.TestCase):
+
+    def test_importes_originales_con_moneda_en_equipamiento_y_transferencias(self):
+        _, generated = self.render(
+            equipamiento=[{"denominacion": "Equipo USD", "monto_invertido": "123.45", "moneda": "USD"},
+                          {"denominacion": "Equipo histórico", "monto_invertido": "123.45"}],
+            transferencias=[{"denominacion": "Convenio USD", "monto": "456.78", "moneda": "USD", "tipo_contrato_nombre": "Transferencia de tecnología"}],
+        )
+        sheet = generated["Hoja1"]
+        self.assertEqual(sheet["D126"].value, 123.45)
+        self.assertEqual(sheet["D126"].number_format, '"USD" #,##0.00')
+        self.assertEqual(sheet["D127"].number_format, '"ARS" #,##0.00')
+        usd_cells = [cell for row in sheet for cell in row if cell.value == 456.78]
+        self.assertEqual(len(usd_cells), 1)
+        self.assertEqual(usd_cells[0].number_format, '"USD" #,##0.00')
     def render(self, **records):
         sources = {key: [] for key in (
             "investigadores", "personal", "becarios", "equipamiento", "documentacion",
@@ -91,6 +105,9 @@ class MemoriaFormatoTest(unittest.TestCase):
                 target_row = cell.row + sum(amount for start, amount in offsets if cell.row >= start)
                 target = output.cell(target_row, cell.column)
                 for property_name in ("font", "fill", "border", "alignment", "number_format"):
+                    if property_name == "number_format" and cell.column == 4 and 126 <= cell.row <= 128:
+                        self.assertEqual(target.number_format, '"ARS" #,##0.00')
+                        continue
                     if property_name == "font" and target.value is not None and target.font == CONTENT_FONT:
                         continue
                     self.assertEqual(copy(getattr(cell, property_name)), copy(getattr(target, property_name)),

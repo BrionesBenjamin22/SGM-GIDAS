@@ -1116,8 +1116,8 @@ class ExportService:
             fuentes = ", ".join(sorted({rel.beca.fuente_financiamiento.nombre for rel in relaciones_activas if rel.beca.fuente_financiamiento is not None})) or "-"
             becarios_rows.append([idx, nombre_para_memoria(becario), becario.tipo_formacion.nombre if becario.tipo_formacion else "-", nombres_becas, fuentes, cls._current_hours(becario)])
         row = cls._write_table(ws, row, "2.3.- Becarios y personal en formacion", ["Nro.", "Apellido y nombre", "Tipo de formacion", "Becas asociadas", "Fuente de financiamiento", "Carga horaria semanal"], becarios_rows, merge_span=8)
-        equipamiento_rows = [[idx, item.denominacion, item.descripcion_breve, item.fecha_incorporacion, cls._money(item.monto_invertido)] for idx, item in enumerate(equipamiento, start=1)]
-        row = cls._write_table(ws, row, "3.- EQUIPAMIENTO DEL GRUPO", ["Nro.", "Denominacion del equipamiento", "Descripcion breve", "Fecha de incorporacion", "Monto invertido"], equipamiento_rows, accent=True, merge_span=8, date_cols={4}, money_cols={5})
+        equipamiento_rows = [[idx, item.denominacion, item.descripcion_breve, item.fecha_incorporacion, cls._money(item.monto_invertido), item.moneda or "ARS"] for idx, item in enumerate(equipamiento, start=1)]
+        row = cls._write_table(ws, row, "3.- EQUIPAMIENTO DEL GRUPO", ["Nro.", "Denominacion del equipamiento", "Descripcion breve", "Fecha de incorporacion", "Monto invertido", "Moneda"], equipamiento_rows, accent=True, merge_span=8, date_cols={4}, money_cols={5})
         docs_rows = [[idx, doc.titulo, ", ".join(a.nombre_apellido for a in doc.autores if not hasattr(a, "deleted_at") or a.deleted_at is None) or "-", doc.editorial, doc.anio] for idx, doc in enumerate(documentacion, start=1)]
         row = cls._write_table(ws, row, "4.- DOCUMENTACION Y BIBLIOTECA", ["Nro.", "Titulo de la obra", "Autores", "Editorial", "Anio de publicacion"], docs_rows, merge_span=8)
 
@@ -1161,15 +1161,17 @@ class ExportService:
 
         row = cls._write_section(ws, row, "IV.- VINCULACION CON EL MEDIO SOCIO PRODUCTIVO")
         transferencias_grouped = {}
-        total_transferencias = 0.0
+        total_transferencias = {"ARS": 0.0, "USD": 0.0}
         for transferencia in transferencias:
             monto = cls._money(transferencia.monto)
-            total_transferencias += monto
+            moneda = transferencia.moneda or "ARS"
+            total_transferencias[moneda] += monto
             tipo = transferencia.tipo_contrato_transferencia.nombre if transferencia.tipo_contrato_transferencia else "Sin tipo definido"
             adoptantes = ", ".join(sorted({participacion.adoptante.nombre for participacion in transferencia.participaciones if participacion.deleted_at is None and participacion.adoptante is not None})) or "-"
-            transferencias_grouped.setdefault(tipo, []).append([len(transferencias_grouped.get(tipo, [])) + 1, transferencia.numero_transferencia, transferencia.denominacion, transferencia.demandante, monto, transferencia.fecha_inicio, transferencia.fecha_fin, adoptantes])
-        row = cls._write_grouped_tables(ws, row, "11", "TRANSFERENCIAS SOCIO-PRODUCTIVAS", list(transferencias_grouped.items()), ["Nro.", "Numero de transferencia", "Denominacion", "Demandante", "Monto comprometido", "Fecha de inicio", "Fecha de finalizacion", "Adoptantes vinculados"], accent=True, merge_span=10, date_cols={6, 7}, money_cols={5})
-        row = cls._write_totals(ws, row, "Total monto transferencias", [(5, total_transferencias)])
+            transferencias_grouped.setdefault(tipo, []).append([len(transferencias_grouped.get(tipo, [])) + 1, transferencia.numero_transferencia, transferencia.denominacion, transferencia.demandante, monto, transferencia.fecha_inicio, transferencia.fecha_fin, adoptantes, moneda])
+        row = cls._write_grouped_tables(ws, row, "11", "TRANSFERENCIAS SOCIO-PRODUCTIVAS", list(transferencias_grouped.items()), ["Nro.", "Numero de transferencia", "Denominacion", "Demandante", "Monto comprometido", "Fecha de inicio", "Fecha de finalizacion", "Adoptantes vinculados", "Moneda"], accent=True, merge_span=10, date_cols={6, 7}, money_cols={5})
+        for moneda, total in total_transferencias.items():
+            row = cls._write_totals(ws, row, f"Total monto transferencias {moneda}", [(5, total)])
 
         row = cls._write_section(ws, row, "V.- INFORME SOBRE RENDICION DE CUENTAS")
         erogaciones_grouped = {}

@@ -1,5 +1,18 @@
 # Memorias
 
+## Moneda en Equipamiento y Transferencias
+
+Al cerrar una versión se copian importe original y `moneda` ARS/USD de cada
+equipamiento y transferencia. Las lecturas de esas fotos devuelven la moneda
+guardada; editar la ficha operativa no modifica una versión anterior. Las fotos
+heredadas se identifican como ARS sin cambiar sus importes.
+
+El Excel institucional conserva las celdas numéricas y la disposición de la
+plantilla; el formato de cada importe indica ARS o USD. No calcula conversiones.
+La exportación de grupo incorpora la columna Moneda y separa los totales de
+transferencias por moneda. Las regresiones de formato y preservación del importe
+están en `tests/test_memoria_excel_formato.py`.
+
 ## Nombres estructurados de Personal (ISS-34)
 
 Los nuevos snapshots de Personal, Becario e Investigador componen el nombre como

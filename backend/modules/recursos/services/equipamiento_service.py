@@ -12,6 +12,7 @@ from modules.shared.services.date_time import INSTITUTIONAL_MIN_DATE
 from modules.memorias.services.memoria_periodo_service import estuvo_activo_en_periodo_memoria
 from extension import db
 from modules.shared.services.text_validation import has_letter
+from modules.shared.services.moneda import validar_moneda
 from modules.shared.exceptions import NotFoundError, ValidationError as ValueError
 
 
@@ -86,7 +87,9 @@ class EquipamientoService:
     def _get_activo_or_404(equipamiento_id: int):
         equipamiento = db.session.get(
             Equipamiento,
-            EquipamientoService._validar_id(equipamiento_id, "equipamiento_id")
+            EquipamientoService._validar_id(equipamiento_id, "equipamiento_id"),
+            with_for_update={"of": Equipamiento},
+            populate_existing=True,
         )
         if not equipamiento or equipamiento.deleted_at is not None:
             raise NotFoundError("Equipamiento no encontrado")
@@ -175,6 +178,7 @@ class EquipamientoService:
             monto_invertido=EquipamientoService._validar_monto(
                 data.get("monto_invertido")
             ),
+            moneda=validar_moneda(data.get("moneda", "ARS")),
             grupo_utn_id=EquipamientoService._validar_grupo(
                 data.get("grupo_utn_id")
             ),
@@ -200,6 +204,16 @@ class EquipamientoService:
         EquipamientoService._validar_id(user_id, "user_id")
         equipamiento = EquipamientoService._get_activo_or_404(equipamiento_id)
         cambios = {}
+
+        if "moneda" in data:
+            moneda = validar_moneda(data["moneda"])
+            if moneda != equipamiento.moneda and EquipamientoService._tiene_movimiento(equipamiento.id):
+                raise ValueError("No se puede cambiar la moneda de un equipamiento vinculado a un movimiento.",
+                                 details={"fields": {"moneda": "Conserve la moneda del equipamiento vinculado."}})
+            cambio = AuditoriaService.construir_cambio(equipamiento.moneda, moneda)
+            if cambio:
+                cambios["moneda"] = cambio
+                equipamiento.moneda = moneda
 
         if "denominacion" in data:
             nuevo_valor = EquipamientoService._validar_texto(
@@ -318,6 +332,7 @@ class EquipamientoService:
                 descripcion_breve=equipamiento.descripcion_breve,
                 fecha_incorporacion=equipamiento.fecha_incorporacion,
                 monto_invertido=equipamiento.monto_invertido,
+                moneda=getattr(equipamiento, "moneda", None) or "ARS",
                 grupo_utn_id=equipamiento.grupo_utn_id,
                 grupo_utn_nombre=(
                     equipamiento.grupo_utn.nombre_sigla_grupo
