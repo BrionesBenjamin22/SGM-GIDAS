@@ -8,6 +8,15 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### Horas de auditoría e historial en formato de 24 horas
+
+- Las marcas de tiempo del formateador compartido se muestran en horario
+  argentino, con segundos y sin ambigüedad entre mañana y tarde, aunque el
+  equipo utilice otra zona horaria. Medianoche se presenta como 00:00:00.
+- Se conservan los instantes almacenados, el contrato UTC heredado y las fechas
+  civiles. La corrección alcanza Auditoría, Historial y fechas de versiones de
+  Memorias que ya consumen el formateador.
+
 ### Tipos de personal sin opciones duplicadas
 
 - Depuración auditada de opciones agregadas, conservando Técnico, Administrativo,

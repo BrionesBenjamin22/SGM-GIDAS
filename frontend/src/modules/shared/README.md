@@ -1,5 +1,22 @@
 # Funcionalidades compartidas
 
+## Horas de auditoría e historial
+
+Las vistas que consumen `src/utils/dateTime.ts:formatFechaHora` muestran los
+instantes en la zona `America/Argentina/Buenos_Aires` y en formato de 24 horas,
+con segundos y medianoche como `00:00:00`, independientemente de la zona del
+equipo. Esto incluye Auditoría, Historial de cambios y fechas de versiones de
+Memorias que ya usan el mismo formateador.
+
+Los timestamps heredados sin zona se interpretan como UTC; los que incluyen
+`Z` u offset conservan su instante. Por ejemplo, `2026-09-07T02:13:31Z` se
+presenta como `6/9/2026, 23:13:31`. Valores ausentes o inválidos mantienen el
+fallback del consumidor. Las fechas civiles de formularios siguen su contrato
+independiente; no se modifican datos almacenados ni payloads de la API.
+
+`frontend/tests/dateTime.test.ts` cubre distintas zonas del equipo, formatos de
+entrada equivalentes, medianoche, cambios de día y año y valores inválidos.
+
 ## Breadcrumbs de navegación (ISS-41)
 
 `components/RouteBreadcrumbs.tsx` presenta la ruta actual con una lista ordenada
