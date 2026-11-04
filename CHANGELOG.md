@@ -8,6 +8,19 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-39: reactivacion de personal e identidad conservada
+
+- Personal, Becario e Investigador pueden reactivarse desde Inactivos con
+  confirmacion y permisos ADMIN/GESTOR, conservando identidad y relaciones.
+- La baja admite motivo opcional y registra estado/motivo en el historial;
+  la reactivacion registra auditoria y reabre el periodo de horas.
+- Un DNI inactivo duplicado orienta hacia su reactivacion; el activo sigue
+  rechazandose. Corregidos el bloqueo PostgreSQL sobre relaciones opcionales
+  y la codificacion de los mensajes de confirmacion y exito.
+- 39 pruebas de Personal correctas, validacion PostgreSQL con rollback,
+  TypeScript y build correctos; aceptacion funcional el 04/11/2026.
+
+
 ### ISS-52: conservar acceso a Memorias para ADMIN
 
 - El menú ADMIN muestra Inicio, Administración, Memorias y Búsqueda en

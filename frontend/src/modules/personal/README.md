@@ -1,5 +1,22 @@
 # Modulo frontend de personal
 
+## Baja y reactivacion (ISS-39)
+
+`PersonalHome` permite localizar registros mediante Inactivos o Todos y muestra
+Reactivar solo para integrantes inactivos y usuarios con permiso de edicion.
+La confirmacion conserva identidad y relaciones; `reactivarPersonal` consume
+`PUT /personal/:rol/:id/restore`. El exito actualiza listado, detalle e historial
+y muestra el aviso correspondiente. Los errores permanecen visibles en el dialogo.
+
+La confirmacion de baja ofrece un motivo opcional con etiqueta, placeholder y
+limite de 500 caracteres. `eliminarPersonal` envia el motivo junto al DELETE;
+el historial existente muestra el motivo y los cambios de estado, con tres
+eventos por pagina. Los filtros y el home mantienen nueve registros por pagina.
+El error de DNI inactivo en alta orienta hacia Personal > Inactivos.
+
+Validacion: TypeScript y build de produccion correctos; usuario confirma motivo
+en historial y reactivacion visible en Activos el 04/11/2026.
+
 ## Error de becas en Becario (ISS-74)
 
 La casilla «Vincular beca existente» referencia el error global de becas mientras está

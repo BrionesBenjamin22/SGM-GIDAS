@@ -95,9 +95,14 @@ export function actualizarPersonal(id: number, payload: Partial<PersonalPayload>
   });
 }
 
-export function eliminarPersonal(id: number, rol: string) {
+export function eliminarPersonal(id: number, rol: string, motivo?: string) {
   return http<{ message: string }>(`/personal/${rol}/${id}`, {
     method: "DELETE",
+    body: JSON.stringify({ motivo }),
   });
 }
 
+
+export function reactivarPersonal(id: number, rol: string) {
+  return http<PersonalItem>(`/personal/${rol}/${id}/restore`, { method: "PUT" });
+}

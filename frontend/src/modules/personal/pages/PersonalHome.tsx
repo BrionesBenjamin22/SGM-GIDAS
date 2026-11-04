@@ -13,7 +13,7 @@ import { getErrorMessage } from "@/lib/httpError";
 import { getMemoriaSectionFilter } from "@/lib/memoriaSectionFilter";
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
 import { usePersonal } from "@/modules/personal/hooks/usePersonal";
-import { eliminarPersonal, type PersonalItem, type PersonalSort, type PersonalType } from "@/modules/personal/services/personalServices";
+import { reactivarPersonal, eliminarPersonal, type PersonalItem, type PersonalSort, type PersonalType } from "@/modules/personal/services/personalServices";
 import { getHistorialPersonalByRolAndId } from "@/modules/personal/services/personalCompletoServices";
 import { formatPersonalHistoryEntry } from "@/modules/personal/utils/personalHistory";
 
@@ -45,6 +45,8 @@ export default function PersonalLanding() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
   const [pendingDelete, setPendingDelete] = useState<PersonalItem | null>(null);
+  const [pendingRestore, setPendingRestore] = useState<PersonalItem | null>(null);
+  const [motivo, setMotivo] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -108,8 +110,10 @@ export default function PersonalLanding() {
   const confirmDelete = async () => {
     if (!pendingDelete || !canDeleteRecords() || !pendingDelete.activo) return;
     try {
-      await eliminarPersonal(pendingDelete.id, pendingDelete.rol);
+      await eliminarPersonal(pendingDelete.id, pendingDelete.rol, motivo);
       await queryClient.invalidateQueries({ queryKey: ["personal"] });
+      await queryClient.invalidateQueries({ queryKey: ["personal-historial"] });
+      await queryClient.invalidateQueries({ queryKey: ["personal-detalle"] });
       setPendingDelete(null);
       setSuccessMessage("Registro dado de baja con éxito.");
     } catch (error) {
@@ -127,9 +131,10 @@ export default function PersonalLanding() {
     { id: "estado", header: "Estado", sortable: true, render: (item) => <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${item.activo ? "text-emerald-700" : "text-rose-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${item.activo ? "bg-emerald-500" : "bg-rose-500"}`} />{item.activo ? "Activo" : "Inactivo"}</span> },
     { id: "acciones", header: "Acciones", align: "right", render: (item) => {
       return <TableActions>
+        {!item.activo && canEditRecords() && <TableActionButton onClick={() => setPendingRestore(item)}>Reactivar</TableActionButton>}
         <TableRowActionButton action="view" aria-label={`Ver detalle de ${item.nombre_apellido}`} onClick={() => navigate(`/personal/${item.rol}/${item.id}`, { state: buildMemoriaDetailState(location) })} />
         {item.activo && canEditRecords() && <TableRowActionButton action="edit" aria-label={`Editar ${item.nombre_apellido}`} onClick={() => navigate(`/personal/${item.rol}/${item.id}/editar`)} />}
-        {item.activo && canDeleteRecords() && <TableRowActionButton action="delete" label="Dar de baja" aria-label={`Dar de baja a ${item.nombre_apellido}`} onClick={() => setPendingDelete(item)} />}
+        {item.activo && canDeleteRecords() && <TableRowActionButton action="delete" label="Dar de baja" aria-label={`Dar de baja a ${item.nombre_apellido}`} onClick={() => { setMotivo(""); setPendingDelete(item); }} />}
       </TableActions>;
     } },
   ], [canDeleteRecords, canEditRecords, location, navigate]);
@@ -204,7 +209,19 @@ export default function PersonalLanding() {
         </TableToolbar>
       }
     />
-    <ConfirmDialog open={Boolean(pendingDelete)} title="Eliminar personal" message={`¿Está seguro de dar de baja a ${pendingDelete?.nombre_apellido ?? "este registro"}?`} onCancel={() => setPendingDelete(null)} onConfirm={confirmDelete} loadingText="Eliminando..." />
+    <ConfirmDialog open={Boolean(pendingDelete)} title="Eliminar personal" message={`¿Está seguro de dar de baja a ${pendingDelete?.nombre_apellido ?? "este registro"}?`} onCancel={() => setPendingDelete(null)} onConfirm={confirmDelete} loadingText="Eliminando...">
+      <label htmlFor="motivo-baja" className="block text-sm">Motivo de baja (opcional)</label>
+      <textarea id="motivo-baja" maxLength={500} value={motivo} onChange={(event) => setMotivo(event.target.value)} placeholder="Ingrese el motivo de la baja" className="mt-2 w-full rounded border border-slate-300 p-2" />
+    </ConfirmDialog>
+    <ConfirmDialog open={Boolean(pendingRestore)} title="Reactivar personal" message={`Se reactivará a ${pendingRestore?.nombre_apellido ?? "este registro"}, conservando su identidad y relaciones.`} confirmText="Reactivar" onCancel={() => setPendingRestore(null)} onConfirm={async () => {
+      if (!pendingRestore || !canEditRecords()) return;
+      await reactivarPersonal(pendingRestore.id, pendingRestore.rol);
+      await queryClient.invalidateQueries({ queryKey: ["personal"] });
+      await queryClient.invalidateQueries({ queryKey: ["personal-historial"] });
+      await queryClient.invalidateQueries({ queryKey: ["personal-detalle"] });
+      setPendingRestore(null);
+      setSuccessMessage("Registro reactivado con éxito.");
+    }} />
     <SuccessToast open={Boolean(successMessage)} message={successMessage} onClose={() => setSuccessMessage("")} />
     <SuccessToast open={Boolean(errorMessage)} message={errorMessage} variant="error" onClose={() => setErrorMessage("")} />
   </section>;

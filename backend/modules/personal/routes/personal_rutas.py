@@ -43,3 +43,8 @@ def actualizar(rol, id):
 @requiere_rol("ADMIN", "GESTOR")
 def eliminar(rol, id):
     return PersonalController.eliminar(request, rol, id)
+
+@personal_bp.route("/<string:rol>/<int:id>/restore", methods=["PUT"])
+@requiere_rol("ADMIN", "GESTOR")
+def restaurar(rol, id):
+    return PersonalController.restaurar(request, rol, id)

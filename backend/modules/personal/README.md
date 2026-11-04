@@ -1,5 +1,29 @@
 # Modulo backend de personal
 
+## Baja y reactivacion (ISS-39)
+
+`DELETE /api/v1/personal/:rol/:id` acepta un cuerpo opcional
+`{"motivo": "texto"}` de hasta 500 caracteres. Sin cuerpo o con motivo vacio
+conserva la baja habitual. Cierra el periodo de horas y registra el cambio de
+estado y, cuando existe, el motivo en auditoria, sin borrar identidad ni vinculos.
+
+`PUT /api/v1/personal/:rol/:id/restore` reactiva personal, becario o investigador
+para ADMIN/GESTOR; LECTURA no puede ejecutarlo. Devuelve el registro serializado,
+404 si no existe y 409 si ya esta activo. Conserva ID, identidad y relaciones,
+limpia la baja, registra usuario/fecha de actualizacion y cambio de estado, y abre
+un periodo de horas desde hoy si no existe uno activo. El bloqueo PostgreSQL usa
+`FOR UPDATE OF` sobre la entidad para admitir relaciones opcionales con LEFT JOIN.
+El alias de restauracion de investigador utiliza el mismo servicio.
+
+Los duplicados de DNI activos siguen devolviendo 409. Para identidades inactivas,
+`error.details.fields.dni` orienta a buscar por nombre en Personal > Inactivos y
+solicitar reactivacion. La unicidad documental permanece vigente tras la baja.
+No se requiere migracion; el motivo se conserva en el historial de cambios.
+
+Validacion: 39 pruebas `test_personal_*.py`, incluida colision activa/inactiva
+por HTTP, ausencia de duplicacion y permisos; restauracion PostgreSQL verificada
+con flush y rollback. Aceptacion funcional del usuario el 04/11/2026.
+
 ## Identidad documental (ISS-76)
 
 Personal, Becario e Investigador comparten la tabla `identidad_personal`, con

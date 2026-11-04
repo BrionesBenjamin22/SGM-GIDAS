@@ -1,6 +1,7 @@
 from flask import Request, Response, jsonify, g
 from modules.personal.services.personal_service import (
     crear_personal,
+    restaurar_personal,
     actualizar_personal,
     eliminar_personal_por_rol,
     listar_personal,
@@ -103,9 +104,20 @@ class PersonalController:
 
             user_id = g.current_user_id  
 
-            result = eliminar_personal_por_rol(id, rol, user_id)
+            data = req.get_json(silent=True) or {}
+            if not isinstance(data, dict):
+                return error_response("VALIDATION_ERROR", status_code=400)
+            result = eliminar_personal_por_rol(id, rol, user_id, data.get("motivo"))
 
             return jsonify(result), 200
 
         except Exception as error:
             return exception_response(error, operation="eliminar personal")
+
+    @staticmethod
+    def restaurar(req, rol, id):
+        try:
+            entidad = restaurar_personal(id, rol, g.current_user_id)
+            return jsonify(entidad.serialize()), 200
+        except Exception as error:
+            return exception_response(error, operation="reactivar personal")

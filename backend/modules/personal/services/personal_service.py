@@ -450,7 +450,9 @@ def actualizar_personal(id, data, rol, user_id: int):
 # SOFT DELETE
 # =====================================================
 
-def eliminar_personal_por_rol(id, rol, user_id):
+def eliminar_personal_por_rol(id, rol, user_id, motivo=None):
+    if motivo is not None and (not isinstance(motivo, str) or len(motivo.strip()) > 500):
+        raise ValueError("Ingrese un motivo de hasta 500 caracteres.")
     _validar_user_id(user_id)
 
     entidad, _, _ = _resolver_entidad_por_rol(id, rol)
@@ -468,6 +470,10 @@ def eliminar_personal_por_rol(id, rol, user_id):
 
     entidad.activo = False
     entidad.soft_delete(user_id)
+    cambios = {"activo": AuditoriaService.construir_cambio(True, False)}
+    if motivo and motivo.strip():
+        cambios["motivo_baja"] = AuditoriaService.construir_cambio(None, motivo.strip())
+    AuditoriaService.registrar_cambios(rol, entidad.id, cambios, user_id)
 
     try:
         db.session.commit()
@@ -485,16 +491,29 @@ def eliminar_personal_por_rol(id, rol, user_id):
 # RESTORE
 # =====================================================
 
-def restaurar_personal(id, rol):
-    entidad, _, _ = _resolver_entidad_por_rol(id, rol)
-
+def restaurar_personal(id, rol, user_id):
+    _validar_user_id(user_id)
+    entidad, historial_model, fk_field = _resolver_entidad_por_rol(id, rol)
     if not entidad:
         raise NotFoundError("Personal no encontrado.")
-
+    db.session.refresh(entidad, with_for_update={"of": type(entidad)})
+    if entidad.activo and entidad.deleted_at is None:
+        raise ConflictError("El registro ya se encuentra activo.")
+    if _obtener_historial_activo_unico(entidad) is None:
+        entidad.historial_horas.append(historial_model(**{
+            fk_field: entidad.id, "horas_semanales": entidad.horas_semanales,
+            "fecha_inicio": date.today(), "fecha_fin": None,
+        }))
     entidad.restore()
-
-    db.session.commit()
-
+    entidad.mark_updated(user_id)
+    AuditoriaService.registrar_cambios(rol, entidad.id, {
+        "activo": AuditoriaService.construir_cambio(False, True),
+    }, user_id)
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
     return entidad
 
 
