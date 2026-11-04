@@ -319,7 +319,7 @@ def populate(group_id, user_id, *, replace=False, dry_run=False):
                 tipo_dedicacion_id=catalog(TipoDedicacion, ("Exclusiva", "Semiexclusiva", "Simple")[index % 3]).id)
             add(InvestigadorHorasHistorial, investigador_id=inv.id, horas_semanales=inv.horas_semanales, fecha_inicio=start)
             investigators.append(inv)
-        for category in ("Profesional", "Técnico, administrativo y de apoyo"):
+        for category in ("Profesional", "Técnico"):
             for index in range(5):
                 start = date(2025, 2, 1) if index == 0 else DATES[index]
                 person = add(Personal, nombre_apellido=f"{('María Elena' if category == 'Profesional' else 'Pablo Esteban')} {SURNAMES[index]}",

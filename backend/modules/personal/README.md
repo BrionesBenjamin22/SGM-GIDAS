@@ -386,3 +386,31 @@ Pruebas: `test_personal_reclasificacion.py`, `test_personal_snapshot_migration.p
 y `test_personal_snapshot_postgres.py` (optativa con rol migrador, en esquemas
 efímeros). Cubren identidad, traslado atómico, rechazo de dependencias,
 conservación de fotos y Excel, aislamiento UCT y reversión de la migración.
+
+## Duplicados y depuración de tipos de personal
+
+Las altas y ediciones de Tipo de Personal comparan nombres sin diferencias de
+tildes, mayúsculas, espacios repetidos o puntuación. El nombre guardado conserva
+su escritura y normaliza espacios. Un equivalente existente, incluso inactivo,
+produce HTTP 409. En PostgreSQL un bloqueo transaccional serializa estas
+mutaciones; el commit o rollback libera el bloqueo. Los endpoints, permisos y
+la paginación SQL conservan sus contratos.
+
+`tools/depurar_tipos_personal.py` permite retirar opciones de una configuración
+existente sin eliminar registros ni reasignar personas. Desde `backend`, ejecutar
+primero una vista previa con `--conservar` repetido por cada nombre vigente, por
+ejemplo Técnico, Administrativo, De Apoyo y Profesional. Para aplicar se repite
+el comando con `--aplicar --ids-esperados` y los IDs devueltos por la vista previa,
+separados por comas. Si el plan cambió o falta una opción, se rechaza la operación.
+`--usuario-id` identifica al responsable; sin él la auditoría corresponde al sistema.
+
+La herramienta conserva una opción por nombre normalizado, audita la baja lógica
+de las demás y normaliza las etiquetas elegidas cuando corresponde. Comprueba
+cantidades y huellas de Personal y sus fotos antes de confirmar una transacción
+única. Las asignaciones históricas permanecen; los tipos inactivos dejan de ser
+seleccionables en altas y nuevas asignaciones. Repetir un plan vacío es idempotente.
+El catálogo sigue siendo administrable. Las cargas de prueba utilizan Técnico
+y Profesional sin generar variantes agregadas de técnico, administrativo y apoyo.
+
+`tests/test_tipo_personal_catalogo.py` cubre vista previa, confirmación del plan,
+duplicados normalizados, preservación de referencias, idempotencia y rollback.
