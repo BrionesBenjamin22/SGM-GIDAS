@@ -1,3 +1,4 @@
+import { updateLiveValidationErrors } from "@/lib/liveValidation";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { applyFieldErrors } from "@/lib/httpError";
 import { hasLetter } from "../../../lib/textValidation";
@@ -78,15 +79,9 @@ export default function EquipamientoForm() {
     onRestore: (draft) => setData({ ...draft, moneda: draft.moneda ?? "ARS" }),
   });
 
-  const clearError = (field: string) => {
-    setErrors((prev) => {
-      const copy = { ...prev };
-      delete copy[field];
-      return copy;
-    });
-  };
-
-  const validate = () => {
+  const validationValues = { data };
+  const getValidationErrors = (changes: Partial<typeof validationValues> = {}) => {
+    const { data } = { ...validationValues, ...changes };
     const newErrors: Record<string, string> = {};
     if (!isMoneda(data.moneda)) newErrors.moneda = "Seleccione ARS o USD";
 
@@ -111,6 +106,15 @@ export default function EquipamientoForm() {
       newErrors.monto = "El monto debe ser mayor a 0";
     }
 
+    return newErrors;
+  };
+
+  const validateChangedField = (field: string, changes: Partial<typeof validationValues> = {}) => {
+    setErrors((previous) => updateLiveValidationErrors(previous, getValidationErrors(), getValidationErrors(changes), field));
+  };
+
+  const validate = () => {
+    const newErrors = getValidationErrors();
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -233,8 +237,11 @@ export default function EquipamientoForm() {
                   ...d,
                   denominacion: e.target.value,
                 }));
-                if (e.target.value.trim()) clearError("denominacion");
-              }}
+                validateChangedField("denominacion", { data: {
+                    ...data,
+                    denominacion: e.target.value,
+                  } });
+              }} onBlur={() => validateChangedField("denominacion")}
             />
             {errors.denominacion && (
               <p className="mt-1 text-sm text-red-500">{errors.denominacion}</p>
@@ -253,8 +260,11 @@ export default function EquipamientoForm() {
                   ...d,
                   descripcion_breve: e.target.value,
                 }));
-                if (e.target.value.trim()) clearError("descripcion");
-              }}
+                validateChangedField("descripcion", { data: {
+                    ...data,
+                    descripcion_breve: e.target.value,
+                  } });
+              }} onBlur={() => validateChangedField("descripcion")}
             />
             {errors.descripcion && (
               <p className="mt-1 text-sm text-red-500">{errors.descripcion}</p>
@@ -273,14 +283,15 @@ export default function EquipamientoForm() {
               placeholder="Ej: 1250000"
               onChange={(e) => {
                 const value = e.target.value ? Number(e.target.value) : undefined;
-
                 setData((d) => ({
                   ...d,
                   monto_invertido: value,
                 }));
-
-                if (value && value > 0) clearError("monto");
-              }}
+                validateChangedField("monto", { data: {
+                    ...data,
+                    monto_invertido: value,
+                  } });
+              }} onBlur={() => validateChangedField("monto")}
             />
             {errors.monto && (
               <p className="mt-1 text-sm text-red-500">{errors.monto}</p>
@@ -294,9 +305,9 @@ export default function EquipamientoForm() {
               const moneda = event.target.value;
               if (isMoneda(moneda)) {
                 setData((previous) => ({ ...previous, moneda }));
-                clearError("moneda");
+                validateChangedField("moneda", { data: { ...data, moneda } });
               }
-            }}>
+            }} onBlur={() => validateChangedField("moneda")}>
             <option value="ARS">ARS — Pesos argentinos</option>
             <option value="USD">USD — Dólares estadounidenses</option>
           </select>
@@ -317,8 +328,10 @@ export default function EquipamientoForm() {
                 ...d,
                 fecha_incorporacion: toCivilDateString(dt) ?? "",
               }));
-
-              if (dt) clearError("fecha_incorporacion");
+              validateChangedField("fecha_incorporacion", { data: {
+                  ...data,
+                  fecha_incorporacion: toCivilDateString(dt) ?? "",
+                } });
             }}
             helperText="Ingrese una fecha entre el 01/01/2010 y la fecha actual"
             className={inputClass("fecha_incorporacion")}

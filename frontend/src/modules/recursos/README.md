@@ -1,5 +1,23 @@
 # Recursos
 
+## Validacion preventiva de formularios (ISS-33)
+
+`BecasForm`, `EquipamientoForm` y `ErogacionesForm` reutilizan las mismas
+reglas en la interaccion y al guardar. Los controles nativos validan tambien al
+perder foco. Se conservan nombre y fecha de becas, denominacion, descripcion,
+fecha y monto de equipos, y tipo, monto, moneda, fuente y categoria de movimientos.
+Los cambios de tipo o equipamiento revalidan los campos dependientes.
+Cuando llega la cotizacion solicitada por el flujo existente se retira solamente
+el error local de cotizacion faltante; otros errores del servidor se conservan.
+
+La actualizacion de errores usa `src/lib/liveValidation.ts`, que revalida el
+campo editado y las reglas cuyo resultado cambia por dependencia, preservando
+los demas errores. No agrega hooks compartidos ni modifica componentes globales.
+Las validaciones no disparan escrituras de dominio. Se conservan services,
+contratos, permisos, borradores, navegacion y feedback de exito.
+La etapa fue aceptada visual y funcionalmente por el usuario el 05/11/2026;
+la regresion transversal esta en `tests/liveValidation.test.ts`.
+
 ## Moneda de Equipamiento
 
 `EquipamientoForm` permite elegir ARS o USD junto al monto invertido. El alta
@@ -61,7 +79,7 @@ y enfocan el primer campo inválido. Los nombres locales de los controles se
 vinculan con las claves API, sin cambiar el payload del service ni los permisos.
 Los errores sin campo o con campos desconocidos conservan el aviso general;
 los errores inesperados muestran un mensaje publico seguro o un fallback accionable, sin identificadores internos.
-Se conservan las reglas y el momento de validación existentes. Véase el contrato
+Se conservan las reglas de validacion; ISS-33 incorpora feedback preventivo. Véase el contrato
 transversal en `../README.md`.
 
 ## Fechas

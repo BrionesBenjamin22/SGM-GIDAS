@@ -1,3 +1,4 @@
+import { updateLiveValidationErrors } from "@/lib/liveValidation";
 import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
@@ -43,11 +44,12 @@ export default function BecasForm() {
 
   const setField = (key: keyof FormData, value: string) => {
     setForm((current) => ({ ...current, [key]: value }));
-    setErrors((current) => { const next = { ...current }; delete next[key]; return next; });
+    validateChangedField(key, { form: { ...form, [key]: value } });
   };
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
+  const validationValues = { form };
+  const getValidationErrors = (changes: Partial<typeof validationValues> = {}) => {
+    const { form } = { ...validationValues, ...changes };
     const nextErrors: Record<string, string> = {};
     const name = form.nombre_beca.trim().replace(/\s+/g, " ");
     if (!name) nextErrors.nombre_beca = "Ingrese el nombre de la beca.";
@@ -55,6 +57,17 @@ export default function BecasForm() {
     if (form.descripcion.trim().length > 2000) nextErrors.descripcion = "La descripción no puede superar 2000 caracteres.";
     if (!form.fecha_alta_grupo || form.fecha_alta_grupo < "2010-01-01" || form.fecha_alta_grupo > getLocalIsoDate()) nextErrors.fecha_alta_grupo = "Ingrese una fecha válida entre 2010 y hoy.";
     if (form.fuente_financiamiento_id && !fuentes.some((item) => item.id === Number(form.fuente_financiamiento_id))) nextErrors.fuente_financiamiento_id = "Seleccione una fuente disponible.";
+    return nextErrors;
+  };
+
+  const validateChangedField = (field: string, changes: Partial<typeof validationValues> = {}) => {
+    setErrors((previous) => updateLiveValidationErrors(previous, getValidationErrors(), getValidationErrors(changes), field));
+  };
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    const nextErrors = getValidationErrors();
+    const name = form.nombre_beca.trim().replace(/\s+/g, " ");
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
       const first = Object.keys(nextErrors)[0];
@@ -94,16 +107,16 @@ export default function BecasForm() {
       <h2 className="text-2xl font-semibold md:text-3xl">{isEdit ? "Editar beca" : "Nueva beca"}</h2>
       <form noValidate onSubmit={submit} className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6">
         <Field required label="Nombre de la beca" name="nombre_beca" error={errors.nombre_beca}>
-          <input className="input w-full" maxLength={100} value={form.nombre_beca} placeholder="Ej.: Beca de investigación" onChange={(event) => setField("nombre_beca", event.target.value)} />
+          <input className="input w-full" maxLength={100} value={form.nombre_beca} placeholder="Ej.: Beca de investigación" onChange={(event) => setField("nombre_beca", event.target.value)} onBlur={() => validateChangedField("nombre_beca")} />
         </Field>
         <Field label="Descripción" name="descripcion" error={errors.descripcion}>
-          <textarea className="input w-full" rows={4} maxLength={2000} value={form.descripcion} placeholder="Describa el propósito de la beca" onChange={(event) => setField("descripcion", event.target.value)} />
+          <textarea className="input w-full" rows={4} maxLength={2000} value={form.descripcion} placeholder="Describa el propósito de la beca" onChange={(event) => setField("descripcion", event.target.value)} onBlur={() => validateChangedField("descripcion")} />
         </Field>
         <Field required label="Fecha de alta en el grupo" name="fecha_alta_grupo" error={errors.fecha_alta_grupo}>
-          <input type="date" className="input w-full" min="2010-01-01" max={getLocalIsoDate()} value={form.fecha_alta_grupo} onChange={(event) => setField("fecha_alta_grupo", event.target.value)} />
+          <input type="date" className="input w-full" min="2010-01-01" max={getLocalIsoDate()} value={form.fecha_alta_grupo} onChange={(event) => setField("fecha_alta_grupo", event.target.value)} onBlur={() => validateChangedField("fecha_alta_grupo")} />
         </Field>
         <Field label="Fuente de financiamiento" name="fuente_financiamiento_id" error={errors.fuente_financiamiento_id}>
-          <select className="input w-full" value={form.fuente_financiamiento_id} onChange={(event) => setField("fuente_financiamiento_id", event.target.value)}>
+          <select className="input w-full" value={form.fuente_financiamiento_id} onChange={(event) => setField("fuente_financiamiento_id", event.target.value)} onBlur={() => validateChangedField("fuente_financiamiento_id")} >
             <option value="">Sin fuente de financiamiento</option>
             {fuentes.map((item) => <option key={item.id} value={item.id}>{item.nombre}</option>)}
           </select>

@@ -1,5 +1,16 @@
 # Recursos
 
+## Contrato consumido por la validacion preventiva (ISS-33)
+
+Becas, equipos y movimientos conservan validaciones de nombres, fechas, montos, moneda, cotizacion y relaciones; los controles financieros siguen siendo responsabilidad del servidor.
+
+El frontend reutiliza sus comprobaciones durante la interaccion y muestra
+conjuntamente los errores al guardar. Los errores de campo de la API mantienen
+`error.details.fields`; los no asociados a un control conservan feedback general.
+La etapa no cambia endpoints, payloads, modelos, permisos ni eventos auditados.
+Escribir o corregir un campo no genera una mutacion de dominio; la autoridad
+definitiva sigue siendo el backend. Aceptado por el usuario el 05/11/2026.
+
 ## Moneda original de Equipamiento
 
 `Equipamiento` y `EquipamientoMemoriaVersion` guardan `moneda` como `ARS` o
