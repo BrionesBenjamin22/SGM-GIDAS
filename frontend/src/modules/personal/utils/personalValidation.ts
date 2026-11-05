@@ -22,3 +22,16 @@ export function validatePersonalStartDate(value: Date | null, today = new Date()
     return "Ingrese una fecha de alta válida entre el 01/01/2010 y hoy.";
   return null;
 }
+
+/** Actualiza los campos validados y conserva los errores ajenos a la interacción. */
+export function updatePersonalErrors(
+  previous: Record<string, string>,
+  fields: Record<string, string | null | undefined>,
+): Record<string, string> {
+  const next = { ...previous };
+  for (const [field, message] of Object.entries(fields)) {
+    if (message) next[field] = message;
+    else delete next[field];
+  }
+  return next;
+}

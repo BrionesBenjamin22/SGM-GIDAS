@@ -1,5 +1,19 @@
 # Modulo frontend de personal
 
+## Validacion preventiva de formularios (ISS-33)
+
+`FormPTAAProfesional`, `FormBecario` y `FormInvestigador` validan Nombre,
+Apellido, DNI, CUIL y horas al escribir y al salir del campo. Nombre y apellido
+admiten 60 caracteres cada uno y 120 en conjunto; DNI admite 7 u 8 digitos y
+CUIL exige formato, coincidencia con DNI y digito verificador. Horas exige
+enteros entre 1 y 168. Cambiar Nombre revalida el limite conjunto y cambiar DNI
+revalida CUIL. `updatePersonalErrors` conserva los errores ajenos al cambio.
+El submit muestra conjuntamente todos los errores vigentes y enfoca el primero.
+`tests/personalGuardarFeedback.test.ts` cubre los tres formularios reales.
+
+Se conservan API, permisos, borradores y navegacion. Etapa aceptada por el usuario
+el 05/11/2026; las comprobaciones no disparan escrituras de dominio.
+
 ## Nombre, apellido, fechas e historial (ISS-34, ISS-35, ISS-36)
 
 Los formularios de Personal, Becario e Investigador muestran exclusivamente
@@ -148,7 +162,7 @@ y enfocan el primer campo inválido. Los nombres locales de los controles se
 vinculan con las claves API, sin cambiar el payload del service ni los permisos.
 Los errores sin campo o con campos desconocidos conservan el aviso general;
 los errores inesperados muestran un mensaje publico seguro o un fallback accionable, sin identificadores internos.
-Se conservan las reglas y el momento de validación existentes. Véase el contrato
+Se conservan las reglas de validacion; ISS-33 incorpora feedback preventivo. Véase el contrato
 transversal en `../README.md`.
 
 ISS-19: los errores de nombre, fecha de alta y catálogos del backend se asocian a los controles existentes mediante `applyFieldErrors`. Los formularios conservan el borrador y el aviso general cuando la respuesta no identifica un campo visible.

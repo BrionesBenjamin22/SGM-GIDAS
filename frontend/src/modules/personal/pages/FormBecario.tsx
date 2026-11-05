@@ -1,6 +1,6 @@
 import type { ReclasificarFormulario } from "@/modules/personal/services/reclasificacionService";
 import NombrePersonalFields from "@/modules/personal/components/NombrePersonalFields";
-import { validatePersonalName, validatePersonalStartDate } from "@/modules/personal/utils/personalValidation";
+import { validatePersonalName, validatePersonalStartDate, updatePersonalErrors } from "@/modules/personal/utils/personalValidation";
 import { applyFieldErrors, focusFieldErrors } from "@/lib/httpError";
 import { LoaderCircle } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -411,12 +411,26 @@ export default function FormBecario({ initialData, onReclassify, onSavingChange,
       {availableDraft && <DraftRecoveryNotice savedAt={availableDraft.saved_at} sourceChanged={sourceChanged} onRestore={restoreDraft} onDiscard={discardDraft} />}
       {errors.grupo && <p role="alert">{errors.grupo}</p>}
       <NombrePersonalFields prefix="becario" nombre={nombreApellido} apellido={apellido}
-        errors={errors} onNombreChange={(value) => { setNombre(value); clearError("nombre"); }}
-        onApellidoChange={(value) => { setApellido(value); clearError("apellido"); }} />
+        errors={errors} onNombreChange={(value) => {
+          setNombre(value);
+          const next = validatePersonalName(value, apellido);
+          setErrors((prev) => updatePersonalErrors(prev, { nombre: next.nombre, ...(apellido || prev.apellido ? { apellido: next.apellido } : {}) }));
+        }}
+        onApellidoChange={(value) => {
+          setApellido(value);
+          const next = validatePersonalName(nombreApellido, value);
+          setErrors((prev) => updatePersonalErrors(prev, { apellido: next.apellido }));
+        }} />
 
       <IdentidadFields prefix="becario" dni={dni} cuil={cuil} errors={errors}
-        onDniChange={(value) => { setDni(value); clearError("dni"); clearError("cuil"); }}
-        onCuilChange={(value) => { setCuil(value); clearError("cuil"); }} />
+        onDniChange={(value) => {
+          setDni(value);
+          setErrors((prev) => updatePersonalErrors(prev, { dni: validateDni(value), ...(cuil || prev.cuil ? { cuil: validateCuil(cuil, value) } : {}) }));
+        }}
+        onCuilChange={(value) => {
+          setCuil(value);
+          setErrors((prev) => updatePersonalErrors(prev, { cuil: validateCuil(value, dni) }));
+        }} />
 
       <Field required label="Horas semanales" name="horas" error={errors.horas}>
         <>
@@ -433,10 +447,11 @@ export default function FormBecario({ initialData, onReclassify, onSavingChange,
               errors.horas ? "!border-red-500 !ring-2 !ring-red-500" : ""
             }`}
             value={horasSemanales}
+            onBlur={() => setErrors((prev) => updatePersonalErrors(prev, { horas: validWeeklyHours(horasSemanales) ? null : WEEKLY_HOURS_ERROR }))}
             onChange={(e) => {
               const value = e.target.value === "" ? "" : +e.target.value;
               setHoras(value);
-              if (validWeeklyHours(value)) clearError("horas");
+              setErrors((prev) => updatePersonalErrors(prev, { horas: validWeeklyHours(value) ? null : WEEKLY_HOURS_ERROR }));
             }}
           />
           {errors.horas && (

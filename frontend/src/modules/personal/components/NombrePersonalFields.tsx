@@ -14,11 +14,11 @@ export default function NombrePersonalFields({ prefix, nombre, apellido, errors,
     <div className="grid gap-4 sm:grid-cols-2">
       <Field label="Nombre" name="nombre" required error={errors.nombre}>
         <input id={`${prefix}-nombre`} className="input" value={nombre} maxLength={60}
-          placeholder="Ingrese el nombre" autoComplete="given-name" onChange={(event) => onNombreChange(event.target.value)} />
+          placeholder="Ingrese el nombre" autoComplete="given-name" onChange={(event) => onNombreChange(event.target.value)} onBlur={() => onNombreChange(nombre)} />
       </Field>
       <Field label="Apellido" name="apellido" required error={errors.apellido}>
         <input id={`${prefix}-apellido`} className="input" value={apellido} maxLength={60}
-          placeholder="Ingrese el apellido" autoComplete="family-name" onChange={(event) => onApellidoChange(event.target.value)} />
+          placeholder="Ingrese el apellido" autoComplete="family-name" onChange={(event) => onApellidoChange(event.target.value)} onBlur={() => onApellidoChange(apellido)} />
       </Field>
     </div>
   </div>;

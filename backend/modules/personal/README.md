@@ -1,5 +1,16 @@
 # Modulo backend de personal
 
+## Contrato consumido por la validacion preventiva (ISS-33)
+
+Nombre/apellido, identidad DNI/CUIL y horas conservan sus validaciones definitivas en services, sin cambiar payloads, auditoria ni historial.
+
+El frontend reutiliza sus comprobaciones durante la interaccion y muestra
+conjuntamente los errores al guardar. Los errores de campo de la API mantienen
+`error.details.fields`; los no asociados a un control conservan feedback general.
+La etapa no cambia endpoints, payloads, modelos, permisos ni eventos auditados.
+Escribir o corregir un campo no genera una mutacion de dominio; la autoridad
+definitiva sigue siendo el backend. Aceptado por el usuario el 05/11/2026.
+
 ## Nombres, fechas e historial (ISS-34, ISS-35, ISS-36)
 
 Personal, Becario e Investigador incorporan `nombre` y `apellido` independientes.
