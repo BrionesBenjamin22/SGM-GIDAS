@@ -8,6 +8,22 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-40: becas precargadas y detalle del becario
+
+- El detalle backend del becario devuelve sus asignaciones de beca con fechas
+  y monto, excluyendo bajas lógicas y conservando períodos vencidos vinculados.
+  El formulario precarga las relaciones y mantiene el envío de diferencias.
+- El detalle separa datos personales y becas en tarjetas responsive de alturas
+  independientes; cada asignación muestra estado, período, monto en pesos y
+  acceso al detalle. Historial y auditoría ocupan el ancho completo.
+- Volver y el breadcrumb restauran el becario y su contexto al abrir una beca,
+  incluso después de editarla. El acceso directo conserva el retorno a Becas.
+- El historial global incorpora History en todos sus consumidores. La auditoría
+  de Personal incorpora ShieldCheck; las auditorías de otros módulos mantienen
+  su composición actual.
+- Aceptación del usuario y solicitud de commits: 05/11/2026. Validación técnica:
+  27 pruebas backend, 234 frontend, TypeScript y build de producción aprobados.
+
 ### ISS-33: validacion preventiva en formularios
 
 - Personal valida nombres, DNI, CUIL y horas durante la interaccion y muestra

@@ -1,5 +1,23 @@
 # Recursos
 
+## Retorno al becario desde becas (ISS-40)
+
+`BecasDetalle` y `BecasForm` preservan el estado `becarioReturnTo` generado por
+el enlace desde el detalle del becario. `utils/becaNavigation.ts` valida que el
+destino sea `/personal/becario/<id>` con ID positivo y conserva query, hash y
+estado del origen. Volver restaura el detalle y su contexto previo; sin origen
+válido vuelve al home `/becas`. No se modifica el router ni se depende de que
+exista una entrada previa en el historial del navegador.
+
+El estado se propaga al formulario, al guardar, al volver sin guardar y al
+guardar sin cambios; limpiar `successMessage` en el detalle no elimina el
+origen. El alta mantiene su regreso al home. Permisos, endpoints y payloads
+permanecen iguales. `frontend/tests/becarioDetalle.test.ts` ejecuta los
+componentes con SSR y prueba enlace, retorno, contexto, acceso directo,
+edición y limpieza del éxito. La validación visual corresponde al usuario.
+Etapa aceptada el 05/11/2026 con solicitud expresa de ejecutar los commits;
+validación técnica final: 234 pruebas frontend, TypeScript y build aprobados.
+
 ## Validacion preventiva de formularios (ISS-33)
 
 `BecasForm`, `EquipamientoForm` y `ErogacionesForm` reutilizan las mismas

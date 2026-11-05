@@ -1,5 +1,31 @@
 # Funcionalidades compartidas
 
+## Breadcrumb contextual de becas (ISS-40)
+
+`RouteBreadcrumbs` pasa ruta y estado de navegación a `getRouteBreadcrumbs`.
+En detalle o edición de una beca abierta desde un becario, el estado válido
+`becarioReturnTo` produce `Inicio > Personal > Becario > Beca` y, cuando
+corresponde, `Editar`. El enlace Becario restaura query, hash y el estado del
+detalle original; Beca conserva el origen al volver desde edición. Cada
+`BreadcrumbItem` puede definir su propio `state`, sin heredar el contexto de
+otra pantalla. Los mensajes de éxito se retiran del estado de los enlaces.
+
+Sin origen válido se conserva la jerarquía por URL. El cambio no registra un
+historial global de visitas ni modifica sidebar, layout o router.
+`routeBreadcrumbs.test.ts` verifica resolución y destinos; `becarioDetalle.test.ts`
+verifica el componente compartido, los enlaces renderizados y sus estados.
+
+## Iconos de historial y auditoría
+
+`src/components/HistorialCambiosCard.tsx` incorpora History en su encabezado,
+por lo que todos sus consumidores lo reciben sin cambios por módulo. Su formato,
+desplegable y paginación se conservan. Auditoría sigue compuesta en cada pantalla:
+no existe una tarjeta global. ShieldCheck se incorporó en `PersonalDetalle`,
+que lo muestra para las clases de Personal; no se extendió a auditorías de otros
+módulos. Los iconos decorativos usan `aria-hidden="true"`.
+La etapa fue aceptada el 05/11/2026; 234 pruebas frontend, TypeScript y build
+aprobados, con autorización explícita para ejecutar commits.
+
 ## Validacion preventiva compartida (ISS-33)
 
 `src/lib/liveValidation.ts:updateLiveValidationErrors` recibe errores visibles,

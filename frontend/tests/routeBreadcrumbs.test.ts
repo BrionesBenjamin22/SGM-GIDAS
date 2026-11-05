@@ -21,6 +21,24 @@ test("resuelve detalle y edición de Personal con enlaces a rutas reales", () =>
   });
 });
 
+test("becas refleja el origen del becario y restaura su contexto en detalle y edición", () => {
+  const originState = {memoriaFilter: {anio: 2026}, memoriaReturnTo: "/memorias/1", searchReturnTo: "/busqueda?q=Ana"};
+  const state = {becarioReturnTo: {pathname: "/personal/becario/3", search: "?tab=datos", hash: "#becas", state: originState}};
+  const detail = getRouteBreadcrumbs("/becas/7", state);
+  assert.deepEqual(detail.map(item => item.label), ["Inicio", "Personal", "Becario", "Beca"]);
+  assert.equal(detail[2].to, "/personal/becario/3?tab=datos#becas");
+  assert.deepEqual(detail[2].state, originState);
+  assert.equal(detail.at(-1)?.to, undefined);
+  const edit = getRouteBreadcrumbs("/becas/7/editar", state);
+  assert.deepEqual(edit.map(item => item.label), ["Inicio", "Personal", "Becario", "Beca", "Editar"]);
+  assert.equal(edit[3].to, "/becas/7");
+  assert.deepEqual(edit[3].state, state);
+  for (const origin of [undefined, null, {}, {pathname: "https://example.com"}, {pathname: "/personal/becario/0"}])
+    assert.deepEqual(getRouteBreadcrumbs("/becas/7", {becarioReturnTo: origin}), getRouteBreadcrumbs("/becas/7"));
+  assert.deepEqual(getRouteBreadcrumbs("/becas", state), getRouteBreadcrumbs("/becas"));
+  assert.deepEqual(getRouteBreadcrumbs("/becas/nueva", state), getRouteBreadcrumbs("/becas/nueva"));
+});
+
 test("resuelve rutas de edición de los módulos y el alias anterior de Proyectos", () => {
   assert.deepEqual(getRouteBreadcrumbs("/trabajos-reunion/8/editar"), [
     { label: "Inicio", to: "/inicio" },

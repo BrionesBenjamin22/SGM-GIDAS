@@ -56,6 +56,7 @@ export interface PersonalCompleto {
   activo: boolean;
   tipo_personal_id?: number;
   tipo_formacion_id?: number;
+  tipo_formacion?: string | null;
   tipo_dedicacion_id?: number;
   categoria_utn_id?: number | null;
   programa_incentivos_id?: number | null;

@@ -1,5 +1,59 @@
 # Modulo frontend de personal
 
+## Becarios: detalle y precarga de becas (ISS-40)
+
+`PersonalDetalle` conserva encabezado, permisos, navegación y contexto de memoria.
+Para becarios, `components/BecarioDatosSection.tsx` presenta dos tarjetas con
+alturas independientes: datos personales y becas asignadas. La grilla usa una
+columna flexible y otra de 330 px, con separación de 24 px; una consulta de
+contenedor las apila cuando el ancho disponible es menor a 1000 px. Los campos
+usan dos columnas desde 480 px disponibles y una en espacios menores.
+
+Los datos muestran nombre, apellido, DNI, CUIL, alta y tipo de formación. Las
+horas se separan mediante un borde y conservan el desplegable de su historial.
+Las asignaciones muestran nombre, período, estado, monto percibido y enlace
+`/becas/<id>`, sin descripción extensa. El monto usa formato monetario ARS,
+conserva el cero e informa `Sin registrar` si es nulo o está ausente.
+El estado usa fechas civiles locales: próxima antes del
+inicio, activa desde el inicio hasta el fin inclusive, finalizada después del
+fin; sin fecha de fin continúa activa. Un inicio ausente se informa sin asumir
+vigencia. El estado vacío conserva la tarjeta y el texto
+`Este becario no tiene becas asignadas`.
+
+El enlace a la beca transporta `becarioReturnTo` con el detalle de origen,
+query, hash y contexto de navegación, sin repetir mensajes de éxito anteriores.
+Volver desde la beca restaura ese detalle y su contexto de memoria o búsqueda.
+El retorno también se conserva al editar la beca, cancelar, guardar sin cambios
+o limpiar el mensaje de éxito. El acceso directo a una beca vuelve a `/becas`.
+El breadcrumb compartido usa ese origen para mostrar
+`Inicio > Personal > Becario > Beca` y agrega `Editar` cuando corresponde;
+sus enlaces restauran el estado de cada destino.
+
+Historial y auditoría quedan fuera de la grilla y ocupan todo el ancho, en ese
+orden, seguidos de Volver. Se conserva el formato de ambas tarjetas y el
+historial compartido sigue siendo desplegable y pagina tres elementos. El icono
+History se agrega al componente global `HistorialCambiosCard`, autorizado por
+el usuario para sus consumidores. Auditoría se compone en `PersonalDetalle` y
+agrega ShieldCheck para las clases de Personal; no existe una tarjeta global de
+auditoría. User, GraduationCap y CalendarDays completan la sección del becario.
+Todos los iconos son decorativos y usan `aria-hidden="true"`.
+
+El detalle consume `GET /personal/becario/<id>`, incluida su colección `becas`.
+`PersonalCompleto.tipo_formacion` tipa el nombre que devuelve el backend y sirve
+de respaldo cuando no hay un catálogo anidado en `relaciones`. La misma colección
+precarga el formulario existente; el guardado sigue enviando solo diferencias,
+sin PUT si no hubo cambios ni escrituras de relaciones al editar filas locales.
+Editar requiere registro activo y `canEditRecords()`. La carga conserva el
+skeleton; errores de consulta e historial tienen aviso accesible y reintento.
+
+Validación técnica: `becarioDetalle.test.ts` comprueba contenido, estados,
+vacío, enlaces, orden, permisos, carga, error y paginación con SSR y mocks de
+consultas. `becarioEdicionBecas.test.ts` cubre hidratación y diferencias del
+formulario real. El usuario aprobó el aspecto y, tras los ajustes de retorno,
+monto y breadcrumb, solicitó ejecutar los commits de la etapa el 05/11/2026.
+Validación final: 234 pruebas frontend, TypeScript y build de producción
+aprobados; 27 pruebas backend del flujo aprobadas. La tarea ISS-40 queda cerrada.
+
 ## Validacion preventiva de formularios (ISS-33)
 
 `FormPTAAProfesional`, `FormBecario` y `FormInvestigador` validan Nombre,

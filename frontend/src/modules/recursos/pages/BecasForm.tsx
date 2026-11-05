@@ -1,7 +1,7 @@
 import { updateLiveValidationErrors } from "@/lib/liveValidation";
 import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Button from "@/components/Button";
 import Field from "@/components/Field";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
@@ -10,6 +10,7 @@ import { useFuentesFinanciamiento } from "@/modules/catalogos/hooks/useFuenteFin
 import { applyFieldErrors, getErrorMessage } from "@/lib/httpError";
 import { createBeca, getBecaById, updateBeca, type BecaPayload } from "@/modules/recursos/services/becasService";
 import { getLocalIsoDate } from "@/modules/recursos/utils/equipamientoValidation";
+import { getBecaNavigationState } from "@/modules/recursos/utils/becaNavigation";
 
 type FormData = { nombre_beca: string; descripcion: string; fecha_alta_grupo: string; fuente_financiamiento_id: string };
 const empty: FormData = { nombre_beca: "", descripcion: "", fecha_alta_grupo: "", fuente_financiamiento_id: "" };
@@ -18,6 +19,8 @@ export default function BecasForm() {
   const { id } = useParams<{ id: string }>();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
+  const location = useLocation();
+  const navigationState = isEdit ? getBecaNavigationState(location.state) : undefined;
   const queryClient = useQueryClient();
   const initial = useQuery({ queryKey: ["beca", id], queryFn: () => getBecaById(Number(id)), enabled: isEdit });
   const { fuentes, isLoading: loadingFuentes, isError: fuentesError } = useFuentesFinanciamiento();
@@ -28,7 +31,7 @@ export default function BecasForm() {
     mutationFn: (payload: BecaPayload | Partial<BecaPayload>) => isEdit ? updateBeca(Number(id), payload) : createBeca(payload as BecaPayload),
     onSuccess: async (beca) => {
       await queryClient.invalidateQueries({ queryKey: ["becas"] });
-      navigate(isEdit ? `/becas/${beca.id}` : "/becas", { state: { successMessage: isEdit ? "Beca actualizada con éxito." : "Beca creada con éxito." } });
+      navigate(isEdit ? `/becas/${beca.id}` : "/becas", { state: { ...navigationState, successMessage: isEdit ? "Beca actualizada con éxito." : "Beca creada con éxito." } });
     },
   });
 
@@ -88,7 +91,7 @@ export default function BecasForm() {
     };
     const changes = Object.fromEntries(Object.entries(payload).filter(([key, value]) => value !== original[key as keyof BecaPayload])) as Partial<BecaPayload>;
     if (isEdit && !Object.keys(changes).length) {
-      navigate(`/becas/${id}`, { state: { successMessage: "No hubo cambios para actualizar." } });
+      navigate(`/becas/${id}`, { state: { ...navigationState, successMessage: "No hubo cambios para actualizar." } });
       return;
     }
     try {
@@ -124,7 +127,7 @@ export default function BecasForm() {
         {fuentesError && <p role="alert" className="text-sm text-rose-700">No pudimos cargar las fuentes. Intente nuevamente.</p>}
         <div className="flex flex-wrap gap-3">
           <Button type="submit" loading={mutation.isPending} disabled={fuentesError}>{isEdit ? "Guardar cambios" : "Crear beca"}</Button>
-          <Button type="button" variant="secondary" onClick={() => navigate(isEdit ? `/becas/${id}` : "/becas")}>Volver</Button>
+          <Button type="button" variant="secondary" onClick={() => navigate(isEdit ? `/becas/${id}` : "/becas", { state: navigationState })}>Volver</Button>
         </div>
       </form>
     </section>

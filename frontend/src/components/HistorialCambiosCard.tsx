@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { History } from "lucide-react";
 import Button from "@/components/Button";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { formatFechaHora } from "@/utils/dateTime";
@@ -208,8 +209,9 @@ export default function HistorialCambiosCard({
               <h3 className="text-lg font-semibold text-slate-700">{title}</h3>
               {subtitle && <p className="mt-1 text-xs text-slate-500">{subtitle}</p>}
             </div>
-            <span className="text-sm text-slate-500">
-              {open ? "Ocultar" : "Ver historial"}
+            <span className="ml-3 flex shrink-0 items-center gap-3 text-sm text-slate-500">
+              <span>{open ? "Ocultar" : "Ver historial"}</span>
+              <History className="h-5 w-5 text-slate-400" strokeWidth={1.5} aria-hidden="true" />
             </span>
           </button>
         </CollapsibleTrigger>
