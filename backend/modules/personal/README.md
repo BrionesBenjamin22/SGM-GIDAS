@@ -1,5 +1,31 @@
 # Modulo backend de personal
 
+## Becas en el detalle del becario (ISS-40)
+
+`GET /api/v1/personal/becario/<id>` incorpora `becas` mediante
+`personal_completo_service.obtener_personal_por_tipo`. Cada asignación contiene
+`id` (ID de beca), `nombre_beca`, `descripcion`, `fecha_inicio`, `fecha_fin`
+y `monto_percibido`. Las fechas usan `YYYY-MM-DD`; fin y monto pueden ser nulos,
+y un monto cero se conserva. Sin asignaciones se devuelve un array vacío.
+
+La consulta hace un join entre `beca_becario` y `beca`, limita por becario y
+excluye bajas lógicas de ambas tablas. Ordena por ID de vinculación. Incluye
+períodos vencidos que no fueron desvinculados: el frontend deriva la vigencia
+desde las fechas y no confunde fin de período con baja de la relación. No altera
+los modelos ni amplía el listado combinado; la carga adicional se hace solo
+para el detalle de becarios.
+
+El endpoint mantiene permisos ADMIN/GESTOR/LECTURA y errores existentes.
+Editar otros campos sin incluir `becas` no sincroniza ni modifica relaciones.
+El formulario existente recibe el contrato tipado y compara diferencias antes
+de enviar el PUT. No hay migración ni cambios de configuración de despliegue.
+
+`tests/test_becario_edicion_becas.py` prueba el contrato HTTP con SQLite aislado:
+colección vacía, varias asignaciones, vencimiento, nulos, monto cero, exclusión
+de bajas lógicas y conservación de la relación al modificar horas. La etapa fue
+aceptada por el usuario el 05/11/2026, con solicitud expresa de ejecutar commits.
+Se aprobaron 27 pruebas backend del flujo y 234 frontend, TypeScript y build.
+
 ## Contrato consumido por la validacion preventiva (ISS-33)
 
 Nombre/apellido, identidad DNI/CUIL y horas conservan sus validaciones definitivas en services, sin cambiar payloads, auditoria ni historial.
