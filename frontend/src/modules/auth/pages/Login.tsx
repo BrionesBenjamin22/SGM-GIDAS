@@ -1,5 +1,6 @@
+import { updateLiveValidationErrors } from "@/lib/liveValidation";
 import Field from "@/components/Field";
-import { applyFieldErrors, getErrorMessage } from "@/lib/httpError";
+import { applyFieldErrors, focusFieldErrors, getErrorMessage } from "@/lib/httpError";
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AlertCircle, Eye, EyeOff, LoaderCircle, LogIn } from "lucide-react";
@@ -30,7 +31,7 @@ export default function LoginPage() {
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [sessionEnded, setSessionEnded] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -43,11 +44,27 @@ export default function LoginPage() {
     }
   }, [from, nav, sessionLoading, user]);
 
+  const validationValues = { usuario, password };
+  const getValidationErrors = (changes: Partial<typeof validationValues> = {}) => {
+    const { usuario, password } = { ...validationValues, ...changes };
+    const nextErrors: Record<string, string> = {};
+    if (!usuario.trim()) nextErrors.usuario = "Complete su nombre de usuario.";
+    if (!password.trim()) nextErrors.password = "Complete su contrase\u00f1a.";
+    return nextErrors;
+  };
+
+  const validateChangedField = (field: string, changes: Partial<typeof validationValues> = {}) => {
+    setErrors((previous) => updateLiveValidationErrors(previous, getValidationErrors(), getValidationErrors(changes), field));
+  };
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
 
-    if (!usuario.trim() || !password.trim()) {
+    const nextErrors = getValidationErrors();
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) {
+      focusFieldErrors(nextErrors);
       setError("Complete usuario y contraseña para ingresar al sistema.");
       return;
     }
@@ -57,7 +74,7 @@ export default function LoginPage() {
       const auth = await login(usuario, password);
       nav(auth.user.primer_login ? "/cambiar-password" : from, { replace: true });
     } catch (err: unknown) {
-      if (applyFieldErrors(err, setFieldErrors, ["usuario","password"])) return;
+      if (applyFieldErrors(err, setErrors, ["usuario","password"])) return;
       setError(
         getErrorMessage(err, "Lo sentimos, no pudimos iniciar sesión. Verifique los datos e intente nuevamente.")
       );
@@ -88,7 +105,7 @@ export default function LoginPage() {
                 Su sesión terminó. Inicie sesión nuevamente para continuar.
               </p>
             )}
-            <Field label="Nombre de usuario" required name="usuario" error={fieldErrors.usuario}>
+            <Field label="Nombre de usuario" required name="usuario" error={errors.usuario}>
 
               <input
                 id="usuario"
@@ -96,13 +113,13 @@ export default function LoginPage() {
                 type="text"
                 required
                 value={usuario}
-                onChange={(event) => setUsuario(event.target.value)}
+                onChange={(event) => { setUsuario(event.target.value); validateChangedField("usuario", { usuario: event.target.value }); }} onBlur={() => validateChangedField("usuario")}
                 placeholder="Ej: juanperez"
                 autoComplete="username"
               />
             </Field>
 
-            <Field label="Contraseña" required name="password" error={fieldErrors.password}>
+            <Field label="Contraseña" required name="password" error={errors.password}>
 
               <div className="relative">
                 <input
@@ -111,7 +128,7 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   required
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  onChange={(event) => { setPassword(event.target.value); validateChangedField("password", { password: event.target.value }); }} onBlur={() => validateChangedField("password")}
                   placeholder="••••••••"
                   autoComplete="current-password"
                 />

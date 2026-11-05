@@ -1,5 +1,16 @@
 # Autenticación y usuarios en backend
 
+## Contrato consumido por la validacion preventiva (ISS-33)
+
+Credenciales, rol propio, politica de contrasenas, bloqueo de acceso y sesiones mantienen sus validaciones definitivas. La validacion preventiva del cliente no sustituye esos controles.
+
+El frontend reutiliza sus comprobaciones durante la interaccion y muestra
+conjuntamente los errores al guardar. Los errores de campo de la API mantienen
+`error.details.fields`; los no asociados a un control conservan feedback general.
+La etapa no cambia endpoints, payloads, modelos, permisos ni eventos auditados.
+Escribir o corregir un campo no genera una mutacion de dominio; la autoridad
+definitiva sigue siendo el backend. Aceptado por el usuario el 05/11/2026.
+
 ## Listados paginados (ISS-89)
 
 `GET /api/v1/auth/usuarios` (ADMIN) y `GET /api/v1/auth/ucts-permitidas`

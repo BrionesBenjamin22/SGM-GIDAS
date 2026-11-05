@@ -1,5 +1,25 @@
 # Autenticación y usuarios en frontend
 
+## Validacion preventiva de formularios (ISS-33)
+
+Acceso, registro inicial, cambio de contrasena, perfil, alta de usuarios y
+edicion en el dialogo de Usuarios reutilizan las comprobaciones del guardado
+para informar errores al escribir y al salir de los controles nativos.
+Acceso exige solamente usuario y contrasena completos; no aplica restricciones
+nuevas a credenciales existentes. Cambiar la nueva contrasena revalida su
+confirmacion y la diferencia con la actual cuando corresponde. Perfil y usuarios
+conservan las reglas de nombre, correo y rol, incluida la proteccion del rol
+propio. No cambia la logica de sesion, bloqueo de acceso ni solicitudes de auth.
+No hay un formulario activo de recuperacion de contrasena en este checkout.
+
+La actualizacion de errores usa `src/lib/liveValidation.ts`, que revalida el
+campo editado y las reglas cuyo resultado cambia por dependencia, preservando
+los demas errores. No agrega hooks compartidos ni modifica componentes globales.
+Las validaciones no disparan escrituras de dominio. Se conservan services,
+contratos, permisos, borradores, navegacion y feedback de exito.
+La etapa fue aceptada visual y funcionalmente por el usuario el 05/11/2026;
+la regresion transversal esta en `tests/liveValidation.test.ts`.
+
 ## Capacidades visibles en Mi perfil (ISS-91)
 
 La tarjeta de permisos de `MiPerfil` toma las capacidades del rol activo desde
@@ -57,7 +77,7 @@ y enfocan el primer campo inválido. Los nombres locales de los controles se
 vinculan con las claves API, sin cambiar el payload del service ni los permisos.
 Los errores sin campo o con campos desconocidos conservan el aviso general;
 los errores inesperados muestran un mensaje publico seguro o un fallback accionable, sin identificadores internos.
-Se conservan las reglas y el momento de validación existentes. Véase el contrato
+Se conservan las reglas de validacion; ISS-33 incorpora feedback preventivo. Véase el contrato
 transversal en `../README.md`.
 
 ## Alcance

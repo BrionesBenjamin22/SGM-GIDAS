@@ -1,3 +1,4 @@
+import { updateLiveValidationErrors } from "@/lib/liveValidation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
@@ -190,10 +191,11 @@ export default function UsuariosHome() {
     editarMutation.reset();
   }
 
-  function validarEdicion() {
+  const getEditValidationErrors = (changes: Partial<typeof editForm> = {}) => {
+    const currentForm = { ...editForm, ...changes };
     const errors: typeof editErrors = {};
-    const nombreUsuario = editForm.nombre_usuario.trim();
-    const mail = editForm.mail.trim();
+    const nombreUsuario = currentForm.nombre_usuario.trim();
+    const mail = currentForm.mail.trim();
 
     if (!nombreUsuario) {
       errors.nombre_usuario = "El nombre de usuario es obligatorio";
@@ -209,18 +211,27 @@ export default function UsuariosHome() {
       errors.mail = "Ingrese un email válido";
     }
 
-    if (!["ADMIN", "GESTOR", "LECTURA"].includes(editForm.rol)) {
+    if (!["ADMIN", "GESTOR", "LECTURA"].includes(currentForm.rol)) {
       errors.rol = "Debe seleccionar un rol válido";
     }
 
     if (
       usuarioAEditar &&
       usuarioAEditar.id === user?.id &&
-      !isSameRol(usuarioAEditar.rol, editForm.rol)
+      !isSameRol(usuarioAEditar.rol, currentForm.rol)
     ) {
       errors.rol = "No puede cambiar el rol de su propia cuenta";
     }
 
+    return errors;
+  };
+
+  const validateEditField = (field: string, changes: Partial<typeof editForm> = {}) => {
+    setEditErrors((previous) => updateLiveValidationErrors(previous, getEditValidationErrors(), getEditValidationErrors(changes), field));
+  };
+
+  function validarEdicion() {
+    const errors = getEditValidationErrors();
     setEditErrors(errors);
     const firstInvalidField = errors.nombre_usuario
       ? "editar-usuario-nombre"
@@ -502,19 +513,7 @@ export default function UsuariosHome() {
                   aria-describedby={editErrors.nombre_usuario ? "editar-usuario-nombre-error" : undefined}
                   className={`input ${editErrors.nombre_usuario ? "border-rose-300" : ""}`}
                   value={editForm.nombre_usuario}
-                  onChange={(event) => {
-                    setEditForm((prev) => ({
-                      ...prev,
-                      nombre_usuario: event.target.value,
-                    }));
-                    if (editErrors.nombre_usuario) {
-                      setEditErrors((prev) => ({
-                        ...prev,
-                        nombre_usuario: undefined,
-                        general: undefined,
-                      }));
-                    }
-                  }}
+                  onChange={(event) => { const next = { ...editForm, nombre_usuario: event.target.value }; setEditForm(next); validateEditField("nombre_usuario", next); }} onBlur={() => validateEditField("nombre_usuario")}
                   disabled={editarMutation.isPending}
                 />
                 {editErrors.nombre_usuario && (
@@ -533,19 +532,7 @@ export default function UsuariosHome() {
                   aria-describedby={editErrors.mail ? "editar-usuario-email-error" : undefined}
                   className={`input ${editErrors.mail ? "border-rose-300" : ""}`}
                   value={editForm.mail}
-                  onChange={(event) => {
-                    setEditForm((prev) => ({
-                      ...prev,
-                      mail: event.target.value,
-                    }));
-                    if (editErrors.mail) {
-                      setEditErrors((prev) => ({
-                        ...prev,
-                        mail: undefined,
-                        general: undefined,
-                      }));
-                    }
-                  }}
+                  onChange={(event) => { const next = { ...editForm, mail: event.target.value }; setEditForm(next); validateEditField("mail", next); }} onBlur={() => validateEditField("mail")}
                   disabled={editarMutation.isPending}
                 />
                 {editErrors.mail && (
@@ -574,19 +561,7 @@ export default function UsuariosHome() {
                     aria-describedby={editErrors.rol ? "editar-usuario-rol-error" : undefined}
                     className={`input ${editErrors.rol ? "border-rose-300" : ""}`}
                     value={editForm.rol}
-                    onChange={(event) => {
-                      setEditForm((prev) => ({
-                        ...prev,
-                        rol: event.target.value as Rol,
-                      }));
-                      if (editErrors.rol) {
-                        setEditErrors((prev) => ({
-                          ...prev,
-                          rol: undefined,
-                          general: undefined,
-                        }));
-                      }
-                    }}
+                    onChange={(event) => { const next = { ...editForm, rol: event.target.value as Rol }; setEditForm(next); validateEditField("rol", next); }} onBlur={() => validateEditField("rol")}
                     disabled={editarMutation.isPending}
                   >
                     <option value="ADMIN">Administrador</option>
