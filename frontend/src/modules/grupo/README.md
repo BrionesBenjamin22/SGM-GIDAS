@@ -1,5 +1,23 @@
 # Modulo frontend de grupo
 
+## Validacion preventiva de formularios (ISS-33)
+
+`VisitantesForm` y `UctForm` reutilizan sus reglas durante la escritura,
+al salir del campo y al guardar. Visitas comprueba razon, fecha, procedencia
+con letras y tipo. UCT comprueba datos institucionales, correo, nombres,
+cargos y fechas de alta de directivos, incluido el cargo repetido.
+La edicion local del nombre de un directivo informa su formato inmediatamente
+y conserva la preparacion de cambios hasta guardar la UCT. El dialogo de
+finalizacion mantiene sus comprobaciones preventivas de fecha vigentes.
+
+La actualizacion de errores usa `src/lib/liveValidation.ts`, que revalida el
+campo editado y las reglas cuyo resultado cambia por dependencia, preservando
+los demas errores. No agrega hooks compartidos ni modifica componentes globales.
+Las validaciones no disparan escrituras de dominio. Se conservan services,
+contratos, permisos, borradores, navegacion y feedback de exito.
+La etapa fue aceptada visual y funcionalmente por el usuario el 05/11/2026;
+la regresion transversal esta en `tests/liveValidation.test.ts`.
+
 El formulario UCT valida nombre/sigla y exige solo letras Unicode y espacios
 en nombres de directivos al crear o preparar una edición. Esta validación no
 consulta nuevamente el equipo.
@@ -14,7 +32,7 @@ y enfocan el primer campo inválido. Los nombres locales de los controles se
 vinculan con las claves API, sin cambiar el payload del service ni los permisos.
 Los errores sin campo o con campos desconocidos conservan el aviso general;
 los errores inesperados muestran un mensaje publico seguro o un fallback accionable, sin identificadores internos.
-Se conservan las reglas y el momento de validación existentes. Véase el contrato
+Se conservan las reglas de validacion; ISS-33 incorpora feedback preventivo. Véase el contrato
 transversal en `../README.md`.
 
 ## Fechas
