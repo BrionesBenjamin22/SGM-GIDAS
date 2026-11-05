@@ -1,5 +1,22 @@
 # Informes por período (ISS-85)
 
+## Validacion preventiva de formularios (ISS-33)
+
+`InformeForm` reutiliza `utils/validation.ts:validateInforme` al escribir,
+al salir de los controles nativos y al guardar. Se mantienen Memoria obligatoria,
+titulo de hasta 200 caracteres, secciones de hasta 20000, fecha institucional
+y vinculos obligatorios cuando el tipo los exige. `changeLinks` revalida las
+altas y bajas de seleccion sin persistir cada una; cambiar Memoria contempla
+la limpieza de vinculos. El guardado conserva payload, permisos y diferencias.
+
+La actualizacion de errores usa `src/lib/liveValidation.ts`, que revalida el
+campo editado y las reglas cuyo resultado cambia por dependencia, preservando
+los demas errores. No agrega hooks compartidos ni modifica componentes globales.
+Las validaciones no disparan escrituras de dominio. Se conservan services,
+contratos, permisos, borradores, navegacion y feedback de exito.
+La etapa fue aceptada visual y funcionalmente por el usuario el 05/11/2026;
+la regresion transversal esta en `tests/liveValidation.test.ts`.
+
 ## Vistas y permisos
 
 `InformesHome`, `InformeForm` e `InformeDetalle` atienden las rutas
