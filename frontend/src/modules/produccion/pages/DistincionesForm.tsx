@@ -1,3 +1,4 @@
+import { updateLiveValidationErrors } from "@/lib/liveValidation";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
@@ -74,15 +75,9 @@ export default function DistincionesForm() {
     onRestore: (draft) => { setFecha(draft.fecha ? new Date(`${draft.fecha}T00:00:00`) : null); setDescripcion(draft.descripcion); setProyectoId(draft.proyectoId); },
   });
 
-  const clearError = (field: string) => {
-    setErrors((prev) => {
-      const copy = { ...prev };
-      delete copy[field];
-      return copy;
-    });
-  };
-
-  const validate = () => {
+  const validationValues = { fecha, descripcion, proyectoId };
+  const getValidationErrors = (changes: Partial<typeof validationValues> = {}) => {
+    const { fecha, descripcion, proyectoId } = { ...validationValues, ...changes };
     const newErrors: Record<string, string> = {};
 
     if (!fecha) {
@@ -97,6 +92,15 @@ export default function DistincionesForm() {
       newErrors.proyecto = "Debe seleccionar un proyecto de investigación";
     }
 
+    return newErrors;
+  };
+
+  const validateChangedField = (field: string, changes: Partial<typeof validationValues> = {}) => {
+    setErrors((previous) => updateLiveValidationErrors(previous, getValidationErrors(), getValidationErrors(changes), field));
+  };
+
+  const validate = () => {
+    const newErrors = getValidationErrors();
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -213,7 +217,7 @@ export default function DistincionesForm() {
             value={fecha}
             onChange={(date) => {
               setFecha(date);
-              if (date) clearError("fecha");
+              validateChangedField("fecha", { fecha: date });
             }}
             className={inputClass("fecha")}
             helperText="DD/MM/AAAA"
@@ -226,8 +230,8 @@ export default function DistincionesForm() {
             value={descripcion}
             onChange={(e) => {
               setDescripcion(e.target.value);
-              if (e.target.value.trim()) clearError("descripcion");
-            }}
+              validateChangedField("descripcion", { descripcion: e.target.value });
+            }} onBlur={() => validateChangedField("descripcion")}
             placeholder="Ej.: Reconocimiento por aporte científico"
           />
         </Field>
@@ -241,8 +245,8 @@ export default function DistincionesForm() {
             onChange={(e) => {
               const value = e.target.value ? Number(e.target.value) : null;
               setProyectoId(value);
-              if (value) clearError("proyecto");
-            }}
+              validateChangedField("proyecto", { proyectoId: value });
+            }} onBlur={() => validateChangedField("proyecto")}
           >
             <option value="" disabled>
               Seleccionar proyecto

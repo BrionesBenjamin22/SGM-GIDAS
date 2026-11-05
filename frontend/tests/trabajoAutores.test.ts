@@ -14,6 +14,7 @@ function load(file: string, mocks: Record<string, unknown> = {}) {
     module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX,
   } }).outputText;
   runInNewContext(code, { URL, module, exports: module.exports, require: (name: string) => {
+    if (name === "@/lib/liveValidation") return require("../src/lib/liveValidation.ts");
     if (name in mocks) return mocks[name];
     if (name === "@/utils/dateTime") return { toCivilDateString: (date: Date | null) => date ? date.toISOString().slice(0, 10) : "" };
     if (name === "@/modules/shared/hooks/useFormDraft") return { useFormDraft: () => ({ availableDraft: null, clearDraft() {}, saveStatus: "idle", blocker: { state: "unblocked" } }) };

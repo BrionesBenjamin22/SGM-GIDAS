@@ -1,5 +1,24 @@
 # Produccion
 
+## Validacion preventiva de formularios (ISS-33)
+
+Los siete formularios de Produccion reutilizan `getValidationErrors` para
+validar durante la interaccion y al guardar: ArticulosDivulgacion, Distinciones,
+Docencia, Documentacion, RegistrosPropiedad, TrabajosReunion y TrabajosRevistas.
+Los controles nativos tambien validan al perder foco; Calendar conserva sus
+mensajes propios de formato y rango. Se mantienen las reglas particulares de
+obligatorios, longitudes, nombres, enlaces, autores y fechas. Docencia revalida
+el fin al cambiar el inicio. `DocumentacionAutoresField` informa formato y
+duplicados del autor nuevo antes de prepararlo para el guardado consolidado.
+
+La actualizacion de errores usa `src/lib/liveValidation.ts`, que revalida el
+campo editado y las reglas cuyo resultado cambia por dependencia, preservando
+los demas errores. No agrega hooks compartidos ni modifica componentes globales.
+Las validaciones no disparan escrituras de dominio. Se conservan services,
+contratos, permisos, borradores, navegacion y feedback de exito.
+La etapa fue aceptada visual y funcionalmente por el usuario el 05/11/2026;
+la regresion transversal esta en `tests/liveValidation.test.ts`.
+
 ## ISS-82: autores bibliográficos e historial de Documentación
 
 El formulario de Documentación conserva la búsqueda, selección y creación de
@@ -59,7 +78,7 @@ y enfocan el primer campo inválido. Los nombres locales de los controles se
 vinculan con las claves API, sin cambiar el payload del service ni los permisos.
 Los errores sin campo o con campos desconocidos conservan el aviso general;
 los errores inesperados muestran un mensaje publico seguro o un fallback accionable, sin identificadores internos.
-Se conservan las reglas y el momento de validación existentes. Véase el contrato
+Se conservan las reglas de validacion; ISS-33 incorpora feedback preventivo. Véase el contrato
 transversal en `../README.md`.
 
 ## Fechas

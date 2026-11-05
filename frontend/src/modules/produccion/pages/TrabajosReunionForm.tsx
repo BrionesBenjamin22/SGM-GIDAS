@@ -1,3 +1,4 @@
+import { updateLiveValidationErrors } from "@/lib/liveValidation";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { errorEnlace, MAX_ENLACE } from "@/modules/produccion/utils/trabajoEnlace";
 import { applyFieldErrors } from "@/lib/httpError";
@@ -100,15 +101,9 @@ export default function TrabajoReunionForm() {
     return `${y}-${m}-${d}`;
   };
 
-  const clearError = (field: string) => {
-    setErrors((prev) => {
-      const copy = { ...prev };
-      delete copy[field];
-      return copy;
-    });
-  };
-
-  const validate = () => {
+  const validationValues = { enlace, titulo, nombreReunion, procedencia, fechaPresentacion, tipoId, autores };
+  const getValidationErrors = (changes: Partial<typeof validationValues> = {}) => {
+    const { enlace, titulo, nombreReunion, procedencia, fechaPresentacion, tipoId, autores } = { ...validationValues, ...changes };
     const newErrors: Record<string, string> = {};
 
     if (!titulo.trim()) {
@@ -139,6 +134,15 @@ export default function TrabajoReunionForm() {
 
     const enlaceError = errorEnlace(enlace);
     if (enlaceError) newErrors.enlace = enlaceError;
+    return newErrors;
+  };
+
+  const validateChangedField = (field: string, changes: Partial<typeof validationValues> = {}) => {
+    setErrors((previous) => updateLiveValidationErrors(previous, getValidationErrors(), getValidationErrors(changes), field));
+  };
+
+  const validate = () => {
+    const newErrors = getValidationErrors();
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -267,7 +271,7 @@ export default function TrabajoReunionForm() {
               placeholder="Ej: Aplicación de modelos predictivos en sistemas complejos"
               onChange={(e) => {
                 setTitulo(e.target.value);
-                if (e.target.value.trim()) clearError("titulo");
+                validateChangedField("titulo", { titulo: e.target.value });
               }}
               onBlur={() => {
                 if (titulo.trim()) setTitulo(toTitleCase(titulo));
@@ -287,7 +291,7 @@ export default function TrabajoReunionForm() {
               placeholder="Ej: Congreso Argentino de Ingenieria"
               onChange={(e) => {
                 setNombreReunion(e.target.value);
-                if (e.target.value.trim()) clearError("nombreReunion");
+                validateChangedField("nombreReunion", { nombreReunion: e.target.value });
               }}
               onBlur={() => {
                 if (nombreReunion.trim()) {
@@ -309,7 +313,7 @@ export default function TrabajoReunionForm() {
               placeholder="Ej: Argentina"
               onChange={(e) => {
                 setProcedencia(e.target.value);
-                if (e.target.value.trim()) clearError("procedencia");
+                validateChangedField("procedencia", { procedencia: e.target.value });
               }}
               onBlur={() => {
                 if (procedencia.trim()) {
@@ -333,8 +337,8 @@ export default function TrabajoReunionForm() {
               onChange={(e) => {
                 const value = e.target.value ? Number(e.target.value) : null;
                 setTipoId(value);
-                if (value) clearError("tipoId");
-              }}
+                validateChangedField("tipoId", { tipoId: value });
+              }} onBlur={() => validateChangedField("tipoId")}
             >
               <option value="" disabled>
                 Seleccionar tipo
@@ -354,7 +358,10 @@ export default function TrabajoReunionForm() {
         <Field label="Enlace al trabajo o DOI (opcional)" name="enlace" error={errors.enlace}>
           <input type="url" className={inputClass("enlace")} value={enlace}
             maxLength={MAX_ENLACE} placeholder="https://doi.org/10.1234/ejemplo"
-            onChange={e => { setEnlace(e.target.value); clearError("enlace"); }} />
+            onChange={e => {
+              setEnlace(e.target.value);
+              validateChangedField("enlace", { enlace: e.target.value });
+            }} onBlur={() => validateChangedField("enlace")} />
         </Field>
 
         <Field required label="Autores" name="autores" error={errors.autores}>
@@ -362,7 +369,10 @@ export default function TrabajoReunionForm() {
             <AutoresQueryFeedback query={autoresQuery} />
             <IntegrantesAutoresField value={autores} options={integrantes}
               disabled={guardadoBloqueado}
-              onChange={value => { setAutores(value); if (value.length) clearError("autores"); }} />
+              onChange={value => {
+                setAutores(value);
+                validateChangedField("autores", { autores: value });
+              }} />
           </>
         </Field>
 
@@ -371,7 +381,7 @@ export default function TrabajoReunionForm() {
             value={fechaPresentacion}
             onChange={(date) => {
               setFechaPresentacion(date);
-              if (date) clearError("fechaPresentacion");
+              validateChangedField("fechaPresentacion", { fechaPresentacion: date });
             }}
             className={inputClass("fechaPresentacion")}
             helperText="Desde 01/01/2010. Puede indicar una presentación programada."

@@ -1,3 +1,4 @@
+import { updateLiveValidationErrors } from "@/lib/liveValidation";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { applyFieldErrors } from "@/lib/httpError";
 import { useState, useEffect } from "react";
@@ -160,15 +161,9 @@ export default function FormDocenciaInvestigador() {
     },
   });
 
-  const clearError = (field: string) => {
-    setErrors((prev) => {
-      const copy = { ...prev };
-      delete copy[field];
-      return copy;
-    });
-  };
-
-  const validate = () => {
+  const validationValues = { investigadorId, curso, institucion, fechaInicio, fechaFin, gradoAcademicoId, rolActividadId };
+  const getValidationErrors = (changes: Partial<typeof validationValues> = {}) => {
+    const { investigadorId, curso, institucion, fechaInicio, fechaFin, gradoAcademicoId, rolActividadId } = { ...validationValues, ...changes };
     const newErrors: Record<string, string> = {};
 
     if (!investigadorId) {
@@ -194,6 +189,15 @@ export default function FormDocenciaInvestigador() {
         "La fecha de fin no puede ser anterior a la fecha de inicio";
     }
 
+    return newErrors;
+  };
+
+  const validateChangedField = (field: string, changes: Partial<typeof validationValues> = {}) => {
+    setErrors((previous) => updateLiveValidationErrors(previous, getValidationErrors(), getValidationErrors(changes), field));
+  };
+
+  const validate = () => {
+    const newErrors = getValidationErrors();
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -279,8 +283,8 @@ export default function FormDocenciaInvestigador() {
               onChange={(e) => {
                 const value = e.target.value ? Number(e.target.value) : null;
                 setInvestigadorId(value);
-                if (value) clearError("investigador");
-              }}
+                validateChangedField("investigador", { investigadorId: value });
+              }} onBlur={() => validateChangedField("investigador")}
             >
               <option value="" disabled>
                 Seleccionar investigador
@@ -305,8 +309,8 @@ export default function FormDocenciaInvestigador() {
               placeholder="Ej: Diseño de Sistemas"
               onChange={(e) => {
                 setCurso(e.target.value);
-                if (e.target.value.trim()) clearError("curso");
-              }}
+                validateChangedField("curso", { curso: e.target.value });
+              }} onBlur={() => validateChangedField("curso")}
             />
             {errors.curso && (
               <p className="mt-1 text-sm text-red-500">{errors.curso}</p>
@@ -322,8 +326,8 @@ export default function FormDocenciaInvestigador() {
               placeholder="Ej: UTN Facultad Regional La Plata"
               onChange={(e) => {
                 setInstitucion(e.target.value);
-                if (e.target.value.trim()) clearError("institucion");
-              }}
+                validateChangedField("institucion", { institucion: e.target.value });
+              }} onBlur={() => validateChangedField("institucion")}
             />
             {errors.institucion && (
               <p className="mt-1 text-sm text-red-500">{errors.institucion}</p>
@@ -338,7 +342,7 @@ export default function FormDocenciaInvestigador() {
                 value={fechaInicio}
                 onChange={(date) => {
                   setFechaInicio(date);
-                  if (date) clearError("fechaInicio");
+                  validateChangedField("fechaInicio", { fechaInicio: date });
                 }}
                 className={inputClass("fechaInicio")}
                 helperText="DD/MM/AAAA"
@@ -352,7 +356,7 @@ export default function FormDocenciaInvestigador() {
                 value={fechaFin}
                 onChange={(date) => {
                   setFechaFin(date);
-                  if (date) clearError("fechaFin");
+                  validateChangedField("fechaFin", { fechaFin: date });
                 }}
                 minDate={fechaInicio ?? undefined}
                 className={inputClass("fechaFin")}
@@ -372,8 +376,8 @@ export default function FormDocenciaInvestigador() {
               onChange={(e) => {
                 const value = e.target.value ? Number(e.target.value) : null;
                 setGradoAcademicoId(value);
-                if (value) clearError("gradoAcademico");
-              }}
+                validateChangedField("gradoAcademico", { gradoAcademicoId: value });
+              }} onBlur={() => validateChangedField("gradoAcademico")}
             >
               <option value="" disabled>
                 Seleccionar grado académico
@@ -402,8 +406,8 @@ export default function FormDocenciaInvestigador() {
               onChange={(e) => {
                 const value = e.target.value ? Number(e.target.value) : null;
                 setRolActividadId(value);
-                if (value) clearError("rolActividad");
-              }}
+                validateChangedField("rolActividad", { rolActividadId: value });
+              }} onBlur={() => validateChangedField("rolActividad")}
             >
               <option value="" disabled>
                 Seleccionar rol de actividad

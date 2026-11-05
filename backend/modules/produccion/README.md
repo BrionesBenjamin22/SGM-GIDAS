@@ -1,5 +1,16 @@
 # Producción
 
+## Contrato consumido por la validacion preventiva (ISS-33)
+
+Obligatorios, autores, enlaces, nombres y periodos conservan sus validaciones de dominio y controles relacionales al persistir.
+
+El frontend reutiliza sus comprobaciones durante la interaccion y muestra
+conjuntamente los errores al guardar. Los errores de campo de la API mantienen
+`error.details.fields`; los no asociados a un control conservan feedback general.
+La etapa no cambia endpoints, payloads, modelos, permisos ni eventos auditados.
+Escribir o corregir un campo no genera una mutacion de dominio; la autoridad
+definitiva sigue siendo el backend. Aceptado por el usuario el 05/11/2026.
+
 ## ISS-82: autores de documentación bibliográfica
 
 `Autor` pertenece a una UCT, incorpora auditoría y usa baja lógica. La revisión
