@@ -363,6 +363,14 @@ function CatalogPanel({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
   const [currentPage, setCurrentPage] = useState(1);
   const [errorMessage, setErrorMessage] = useState("");
+  const [newNameError, setNewNameError] = useState("");
+  const [editNameError, setEditNameError] = useState("");
+  const validateName = (value: string) => !value.trim()
+    ? "Ingrese un nombre."
+    : validName(value) ? "" : isBibliographicAuthor || isAdoptante
+      ? "Ingrese un nombre con letras y espacios."
+      : "El nombre debe contener al menos una letra.";
+
   const [toast, setToast] = useState<ToastState>({
     open: false,
     message: "",
@@ -499,6 +507,7 @@ function CatalogPanel({
   const handleAdd = async () => {
     if (actionInFlight.current) return;
     if (!canCreate) return;
+    setNewNameError(validateName(newName));
     if (!newName.trim()) {
       setErrorMessage("Debe ingresar un nombre antes de crear el registro.");
       return;
@@ -522,7 +531,7 @@ function CatalogPanel({
     try {
       await createCatalogItem(def.endpoint, body);
       await onDraftClear().catch(() => undefined);
-      setNewName("");
+      setNewName(""); setNewNameError("");
       setNewDesc("");
       setNewFkId("");
       setShowAdd(false);
@@ -560,6 +569,7 @@ function CatalogPanel({
       return;
     }
 
+    setEditNameError(validateName(editName));
     if (!editName.trim()) {
       setErrorMessage("El nombre no puede estar vacío.");
       return;
@@ -715,12 +725,14 @@ function CatalogPanel({
                 <div className="space-y-3">
                   <Field
                     label={nameLabel}
+                    error={editNameError}
                     required
                   >
                     <input
                       className="input"
                       value={editName}
-                      onChange={(event) => setEditName(event.target.value)}
+                      onChange={(event) => { setEditName(event.target.value); setEditNameError(validateName(event.target.value)); }}
+                      onBlur={() => setEditNameError(validateName(editName))}
                       onKeyDown={(event) => event.key === "Enter" && handleUpdate(item.id)}
                       autoFocus
                     />
@@ -835,7 +847,7 @@ function CatalogPanel({
                         size="sm"
                         onClick={() => {
                           setEditId(item.id);
-                          setEditName(getDisplayName(item));
+                          setEditName(getDisplayName(item)); setEditNameError("");
                           setEditDesc(def.descField ? ((item[def.descField] as string) ?? "") : "");
                           setEditFkId(getFkId(item));
                           setErrorMessage("");
@@ -995,13 +1007,15 @@ function CatalogPanel({
         <div className="space-y-3 rounded-lg border border-emerald-200 bg-emerald-50/30 px-4 py-4">
           <Field
             label={nameLabel}
+            error={newNameError}
             required
           >
             <input
               className="input"
               placeholder="Nombre"
               value={newName}
-              onChange={(event) => setNewName(event.target.value)}
+              onChange={(event) => { setNewName(event.target.value); setNewNameError(validateName(event.target.value)); }}
+              onBlur={() => setNewNameError(validateName(newName))}
               onKeyDown={(event) => event.key === "Enter" && handleAdd()}
               autoFocus
             />
@@ -1045,7 +1059,7 @@ function CatalogPanel({
               onClick={() => {
                 void onDraftClear().catch(() => undefined);
                 setShowAdd(false);
-                setNewName("");
+                setNewName(""); setNewNameError("");
                 setNewDesc("");
                 setNewFkId("");
                 setErrorMessage("");

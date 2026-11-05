@@ -1,5 +1,16 @@
 # Modulo backend de catalogos
 
+## Contrato consumido por la validacion preventiva (ISS-33)
+
+Las reglas de nombres, normalizacion, longitud, duplicados, permisos y baja logica siguen comprobadas por cada service al guardar.
+
+El frontend reutiliza sus comprobaciones durante la interaccion y muestra
+conjuntamente los errores al guardar. Los errores de campo de la API mantienen
+`error.details.fields`; los no asociados a un control conservan feedback general.
+La etapa no cambia endpoints, payloads, modelos, permisos ni eventos auditados.
+Escribir o corregir un campo no genera una mutacion de dominio; la autoridad
+definitiva sigue siendo el backend. Aceptado por el usuario el 05/11/2026.
+
 Gestiona categorias UTN y fuentes de financiamiento con auditoria y baja logica.
 La pantalla de Catalogos tambien consume servicios de catalogo de `personal`,
 `grupo`, `proyectos`, `produccion`, `recursos` y `transferencia`.

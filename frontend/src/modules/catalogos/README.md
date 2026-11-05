@@ -1,5 +1,22 @@
 # Catalogos frontend
 
+## Validacion preventiva de formularios (ISS-33)
+
+`CatalogosHome` muestra el error junto al nombre durante alta y edicion,
+al escribir y al salir del campo. Reutiliza la regla descriptiva del catalogo;
+autores bibliograficos y adoptantes conservan la restriccion de letras Unicode
+y espacios. El guardado conserva sus comprobaciones, normalizacion y control
+definitivo de duplicados en servidor. Abrir otra edicion o completar un alta
+limpia el feedback local correspondiente. No se persiste el catalogo al validar.
+
+El panel mantiene errores locales separados para el nombre de alta y el de
+edicion, con su comprobacion especifica `validateName`. No agrega hooks
+compartidos ni modifica componentes globales.
+Las validaciones no disparan escrituras de dominio. Se conservan services,
+contratos, permisos, borradores, navegacion y feedback de exito.
+La etapa fue aceptada visual y funcionalmente por el usuario el 05/11/2026;
+la regresion transversal esta en `tests/liveValidation.test.ts`.
+
 ## ISS-83: administracion de adoptantes
 
 `CatalogosHome` incluye `Adoptantes` sin ruta nueva. El service generico consulta
