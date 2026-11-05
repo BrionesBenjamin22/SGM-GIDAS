@@ -1,5 +1,22 @@
 # Transferencia frontend
 
+## Validacion preventiva de formularios (ISS-33)
+
+`TransferenciasForm` reutiliza sus reglas de denominacion, demandante,
+descripcion, monto, moneda, contrato y fechas al escribir, al salir de los
+controles nativos y al guardar. Cambiar el inicio revalida el fin.
+`AdoptantesField` informa formato y duplicados durante la carga del nombre y
+al perder foco. Preparar adoptantes no crea registros ni vinculos; el guardado
+de la transferencia sigue consolidando las altas y bajas existentes.
+
+La actualizacion de errores usa `src/lib/liveValidation.ts`, que revalida el
+campo editado y las reglas cuyo resultado cambia por dependencia, preservando
+los demas errores. No agrega hooks compartidos ni modifica componentes globales.
+Las validaciones no disparan escrituras de dominio. Se conservan services,
+contratos, permisos, borradores, navegacion y feedback de exito.
+La etapa fue aceptada visual y funcionalmente por el usuario el 05/11/2026;
+la regresion transversal esta en `tests/liveValidation.test.ts`.
+
 ## Moneda del monto
 
 `TransferenciasForm` permite elegir ARS o USD, con ARS inicial, precarga en
@@ -55,7 +72,7 @@ y enfocan el primer campo inválido. Los nombres locales de los controles se
 vinculan con las claves API, sin cambiar el payload del service ni los permisos.
 Los errores sin campo o con campos desconocidos conservan el aviso general;
 los errores inesperados muestran un mensaje publico seguro o un fallback accionable, sin identificadores internos.
-Se conservan las reglas y el momento de validación existentes. Véase el contrato
+Se conservan las reglas de validacion; ISS-33 incorpora feedback preventivo. Véase el contrato
 transversal en `../README.md`.
 
 ## Fechas

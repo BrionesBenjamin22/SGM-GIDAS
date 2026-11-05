@@ -1,3 +1,4 @@
+import { updateLiveValidationErrors } from "@/lib/liveValidation";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { applyFieldErrors } from "@/lib/httpError";
 import { hasLetter } from "../../../lib/textValidation";
@@ -92,15 +93,9 @@ export default function TransferenciasForm() {
     onRestore: (draft) => { setData({ ...draft.data, moneda: draft.data.moneda ?? "ARS" }); setAdoptantes(draft.adoptantes); },
   });
 
-  const clearError = (field: string) => {
-    setErrors((prev) => {
-      const copy = { ...prev };
-      delete copy[field];
-      return copy;
-    });
-  };
-
-  const validate = () => {
+  const validationValues = { data };
+  const getValidationErrors = (changes: Partial<typeof validationValues> = {}) => {
+    const { data } = { ...validationValues, ...changes };
     const newErrors: Record<string, string> = {};
     if (!isMoneda(data.moneda)) newErrors.moneda = "Seleccione ARS o USD";
 
@@ -138,6 +133,15 @@ export default function TransferenciasForm() {
       newErrors.tipoContratoId = "Debe seleccionar tipo de contrato";
     }
 
+    return newErrors;
+  };
+
+  const validateChangedField = (field: string, changes: Partial<typeof validationValues> = {}) => {
+    setErrors((previous) => updateLiveValidationErrors(previous, getValidationErrors(), getValidationErrors(changes), field));
+  };
+
+  const validate = () => {
+    const newErrors = getValidationErrors();
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -291,8 +295,8 @@ export default function TransferenciasForm() {
               placeholder="Ej: Convenio de asistencia técnica"
               onChange={(e) => {
                 setData((prev) => ({ ...prev, denominacion: e.target.value }));
-                if (e.target.value.trim()) clearError("denominacion");
-              }}
+                validateChangedField("denominacion", { data: { ...data, denominacion: e.target.value } });
+              }} onBlur={() => validateChangedField("denominacion")}
             />
             {errors.denominacion && (
               <p className="mt-1 text-sm text-red-500">{errors.denominacion}</p>
@@ -308,8 +312,8 @@ export default function TransferenciasForm() {
               placeholder="Ej: Municipalidad de Resistencia"
               onChange={(e) => {
                 setData((prev) => ({ ...prev, demandante: e.target.value }));
-                if (e.target.value.trim()) clearError("demandante");
-              }}
+                validateChangedField("demandante", { data: { ...data, demandante: e.target.value } });
+              }} onBlur={() => validateChangedField("demandante")}
             />
             {errors.demandante && (
               <p className="mt-1 text-sm text-red-500">{errors.demandante}</p>
@@ -329,8 +333,11 @@ export default function TransferenciasForm() {
                   ...prev,
                   descripcionActividad: e.target.value,
                 }));
-                if (e.target.value.trim()) clearError("descripcionActividad");
-              }}
+                validateChangedField("descripcionActividad", { data: {
+                    ...data,
+                    descripcionActividad: e.target.value,
+                  } });
+              }} onBlur={() => validateChangedField("descripcionActividad")}
             />
             {errors.descripcionActividad && (
               <p className="mt-1 text-sm text-red-500">{errors.descripcionActividad}</p>
@@ -349,8 +356,8 @@ export default function TransferenciasForm() {
               placeholder="Ej: 250000"
               onChange={(e) => {
                 setData((prev) => ({ ...prev, monto: e.target.value }));
-                if (e.target.value) clearError("monto");
-              }}
+                validateChangedField("monto", { data: { ...data, monto: e.target.value } });
+              }} onBlur={() => validateChangedField("monto")}
             />
             {errors.monto && <p className="mt-1 text-sm text-red-500">{errors.monto}</p>}
           </>
@@ -362,9 +369,9 @@ export default function TransferenciasForm() {
               const moneda = event.target.value;
               if (isMoneda(moneda)) {
                 setData((previous) => ({ ...previous, moneda }));
-                clearError("moneda");
+                validateChangedField("moneda", { data: { ...data, moneda } });
               }
-            }}>
+            }} onBlur={() => validateChangedField("moneda")}>
             <option value="ARS">ARS — Pesos argentinos</option>
             <option value="USD">USD — Dólares estadounidenses</option>
           </select>
@@ -379,7 +386,10 @@ export default function TransferenciasForm() {
                 ...prev,
                 fechaInicio: toCivilDateString(dt) ?? "",
               }));
-              if (dt) clearError("fechaInicio");
+              validateChangedField("fechaInicio", { data: {
+                  ...data,
+                  fechaInicio: toCivilDateString(dt) ?? "",
+                } });
             }}
             helperText="DD/MM/AAAA"
             className={inputClass("fechaInicio")}
@@ -394,7 +404,10 @@ export default function TransferenciasForm() {
                 ...prev,
                 fechaFin: toCivilDateString(dt) ?? "",
               }));
-              clearError("fechaFin");
+              validateChangedField("fechaFin", { data: {
+                  ...data,
+                  fechaFin: toCivilDateString(dt) ?? "",
+                } });
             }}
             helperText="Opcional"
             className={inputClass("fechaFin")}
@@ -410,8 +423,8 @@ export default function TransferenciasForm() {
               value={data.tipoContratoId}
               onChange={(e) => {
                 setData((prev) => ({ ...prev, tipoContratoId: e.target.value }));
-                if (e.target.value) clearError("tipoContratoId");
-              }}
+                validateChangedField("tipoContratoId", { data: { ...data, tipoContratoId: e.target.value } });
+              }} onBlur={() => validateChangedField("tipoContratoId")}
             >
               <option value="" disabled>
                 Seleccionar tipo de contrato
@@ -431,7 +444,7 @@ export default function TransferenciasForm() {
         <div data-error-field="adoptantes">
           <AdoptantesField selected={adoptantes} disabled={isPending} onChange={(next) => {
             setAdoptantes(next);
-            setErrors((previous) => ({ ...previous, adoptantes: "" }));
+            validateChangedField("adoptantes");
           }} />
           {errors.adoptantes && <p role="alert" className="mt-1 text-sm text-red-600">{errors.adoptantes}</p>}
         </div>
