@@ -27,6 +27,7 @@ from modules.personal.models.personal import (
     InvestigadorHorasHistorial,
 )
 from modules.personal.models.tipo_personal import TipoPersonal
+from modules.personal.services.tipo_personal_compatibilidad import compatible_con_personal
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.personal.models.personal import TipoFormacion, TipoDedicacion
 from modules.catalogos.models.categoria_utn import CategoriaUtn
@@ -137,7 +138,15 @@ def _validar_tipo_personal(tipo_personal_id):
         message = "El tipo de personal seleccionado no existe o está inactivo. Seleccione otro tipo."
         raise ValueError(message, details={"fields": {"tipo_personal_id": message}})
 
+    _validar_compatibilidad_tipo(tipo)
+
     return tipo_personal_id
+
+
+def _validar_compatibilidad_tipo(tipo):
+    if tipo and not compatible_con_personal(tipo.nombre):
+        message = "Seleccione una función compatible con Personal de apoyo, técnico o administrativo. Docente, Investigador y Becario corresponden a otras clases de registro."
+        raise ValueError(message, details={"fields": {"tipo_personal_id": message}})
 
 
 def _validar_tipo_formacion(tipo_formacion_id):
@@ -270,6 +279,12 @@ def actualizar_personal(id, data, rol, user_id: int):
 
     if entidad.deleted_at is not None:
         raise ConflictError("No se puede modificar un registro eliminado.")
+
+    if rol == "personal":
+        if "tipo_personal_id" in data:
+            _validar_tipo_personal(data["tipo_personal_id"])
+        else:
+            _validar_compatibilidad_tipo(entidad.tipo_personal)
 
     data = preparar_nombre(data, entidad)
     cambios.update(asignar_nombre(entidad, data))

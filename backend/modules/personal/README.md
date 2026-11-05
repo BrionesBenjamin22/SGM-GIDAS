@@ -283,8 +283,9 @@ se valida antes de mutar campos o historiales. Una carga parcial sin horas no
 reescribe valores históricos; no hay migración/corrección masiva de datos.
 Devuelve HTTP 400 con `error.details.fields.horas_semanales`.
 
-Personal acepta cualquier ID activo de TipoPersonal, sin exigir nombres
-prefijados. El catálogo disponible excluye tipos con `activo=false` o soft delete.
+Personal acepta IDs activos de TipoPersonal compatibles con su clase, sin exigir
+nombres prefijados para las funciones de apoyo. El catálogo disponible excluye
+tipos con `activo=false` o soft delete.
 
 - IDs positivos y sin duplicados.
 - Fechas en formato `YYYY-MM-DD` y fin no anterior al inicio.
@@ -451,3 +452,35 @@ y Profesional sin generar variantes agregadas de técnico, administrativo y apoy
 
 `tests/test_tipo_personal_catalogo.py` cubre vista previa, confirmación del plan,
 duplicados normalizados, preservación de referencias, idempotencia y rollback.
+
+## Compatibilidad de funciones por clase (ISS-43)
+
+`services/tipo_personal_compatibilidad.py` centraliza una regla pura sobre la
+denominación normalizada del catálogo: los nombres que comienzan con Docente,
+Investigador o Becario, incluido el prefijo Personal y variantes de género o
+plural, corresponden a otras clases. La comparación ignora tildes, mayúsculas,
+espacios y puntuación. Las funciones de apoyo y las denominaciones propias del
+catálogo siguen admitidas, sin depender de IDs de una instalación.
+
+`TipoPersonal.serialize()` agrega el booleano `compatible_con_personal` en las
+lecturas existentes del catálogo: listado completo o paginado, detalle y demás
+respuestas que serializan el tipo. El catálogo administrativo conserva sus
+opciones; el consumidor decide cuáles mostrar para la clase Personal.
+
+`POST /api/v1/personal`, `PUT /api/v1/personal/personal/{id}` y la reclasificación
+a `clase_destino=personal` validan la misma regla. Una función incompatible
+devuelve HTTP 400 con `error.details.fields.tipo_personal_id`, antes de modificar
+campos de la persona. Una asignación heredada incompatible exige corregir la
+función al guardar, aunque el payload parcial no incluya ese campo. No se
+reasignan personas ni se modifican fotos históricas automáticamente.
+
+La edición de TipoPersonal devuelve HTTP 409 si el nuevo nombre es incompatible
+y tiene personas asignadas, para evitar introducir la inconsistencia mediante
+el catálogo. Se mantienen roles, aislamiento UCT y auditoría de las operaciones
+válidas. No cambia el modelo de almacenamiento ni se requiere migración.
+
+`tests/test_personal_funciones_clase.py` cubre metadata de catálogo, altas,
+ediciones sin cambios parciales, reclasificación con preservación de identidad,
+renombrados y asignaciones heredadas. La validación conjunta con alta PTAA,
+reclasificación y catálogo completó 42 pruebas backend; frontend completó 242
+pruebas, TypeScript y build de producción. Aceptación del usuario: 05/11/2026.

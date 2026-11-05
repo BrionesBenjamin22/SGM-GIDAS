@@ -8,6 +8,19 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-43: funciones compatibles con la clase Personal
+
+- El selector de Personal excluye funciones de Docente, Investigador y Becario
+  según la compatibilidad informada por el backend. Las funciones de apoyo y
+  las opciones propias del catálogo siguen disponibles.
+- La API aplica la misma regla en altas, ediciones y reclasificaciones. Los
+  registros heredados incompatibles requieren elegir una función válida al
+  guardar; no se corrigen datos ni fotos históricas automáticamente.
+- El catálogo impide renombrar una función asignada a Personal con una
+  denominación incompatible. Se conservan permisos, auditoría y navegación.
+- Aceptación del usuario: 05/11/2026. Validación técnica: 42 pruebas backend,
+  242 frontend, TypeScript y build de producción aprobados. Sin migraciones.
+
 ### ISS-40: becas precargadas y detalle del becario
 
 - El detalle backend del becario devuelve sus asignaciones de beca con fechas

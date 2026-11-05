@@ -44,7 +44,8 @@ export default function FormPTAAProfesional({
 }: Props) {
   const navigate = useNavigate();
   const { uct } = useUct();
-  const { data: tiposPersonal = [], isLoading: tiposLoading, isFetching: tiposFetching, isError: tiposError, refetch: refetchTipos } = useTiposPersonal();
+  const { data: catalogoPersonal = [], isLoading: tiposLoading, isFetching: tiposFetching, isError: tiposError, refetch: refetchTipos } = useTiposPersonal();
+  const tiposPersonal = catalogoPersonal.filter((tipo) => tipo.compatible_con_personal !== false);
   const qc = useQueryClient();
   const isEdit = Boolean(initialData);
   const { user } = useAuth();

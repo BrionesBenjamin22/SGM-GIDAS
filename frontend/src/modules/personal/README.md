@@ -446,3 +446,25 @@ fijas en el formulario. La configuración depurada conserva Técnico,
 Administrativo, De Apoyo y Profesional. Si una ficha existente referencia una
 opción retirada, conserva su valor como no disponible e informa que debe elegir
 uno vigente para guardar. No se reasigna automáticamente su categoría.
+
+## Funciones compatibles con la clase Personal (ISS-43)
+
+`GET /api/v1/tipo-personal/` informa `compatible_con_personal` para cada opción.
+`tiposServices.ts` tipa esa metadata y `FormPTAAProfesional` excluye las opciones
+marcadas como incompatibles tanto del selector como de la validación al guardar.
+La decisión pertenece al backend; el formulario no replica nombres ni IDs de
+clases reservadas. Se conservan las funciones de apoyo y las opciones propias
+del catálogo, como Especialista de laboratorio.
+
+El flujo mantiene `useTiposPersonal`, carga, error con reintento y estado vacío.
+Una asignación heredada incompatible aparece como no disponible y requiere
+seleccionar una función vigente. Un borrador con un ID incompatible no puede
+guardarse. Al cambiar de clase, `PersonalForm` reinicia los campos exclusivos
+y usa el formulario del destino; la reclasificación a Personal aplica el mismo
+selector y las mismas validaciones que su alta y edición.
+
+Los permisos ADMIN/GESTOR, el envío de diferencias y la navegación de éxito no
+cambian. Los rechazos de API se asocian a `tipo_personal_id` y se muestran junto
+al selector. `tests/personalCatalogForm.test.ts` verifica el formulario real,
+el filtrado, las funciones personalizadas y el bloqueo de un ID incompatible.
+Aceptación funcional del usuario: 05/11/2026.
