@@ -135,7 +135,7 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
 }
 
 // Definición de rutas
-const router = createBrowserRouter([
+const routes = [
   { path: "/", element: <Landing /> },
   // rutas públicas (sin login)
   { path: "/login", element: <Login /> },
@@ -350,7 +350,7 @@ const router = createBrowserRouter([
       { path: "*", element: <NotFound /> },
     ],
   },
-]);
+];
 
 // Cliente de React Query
 const queryClient = new QueryClient();
@@ -367,6 +367,11 @@ try {
   // El navegador puede deshabilitar Storage; los borradores nuevos usan el servidor.
 }
 
+// basename: la SGM se sirve bajo /sgm-gidas/ en el Portal GIDAS.
+const router = createBrowserRouter(routes, {
+  basename: import.meta.env.VITE_BASE_PATH?.replace(/\/+$/, "") || "/",
+});
+
 // Renderizado de la aplicación
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
@@ -379,3 +384,4 @@ createRoot(document.getElementById("root")!).render(
     </AuthProvider>
   </QueryClientProvider>
 );
+

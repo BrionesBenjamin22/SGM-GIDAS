@@ -23,7 +23,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 30s
     logging: &default_logging
       driver: json-file
       options:
@@ -36,7 +36,7 @@ services:
     restart: unless-stopped
     init: true
     mem_limit: 256m
-    cpus: 0.5
+    cpus: "0.25"
     stop_grace_period: 5s
     user: redis
     command: ["redis-server", "--appendonly", "no", "--save", "", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
@@ -68,6 +68,7 @@ services:
     restart: "no"
     init: true
     mem_limit: 512m
+    cpus: "0.5"
     depends_on:
       db:
         condition: service_healthy
@@ -98,9 +99,9 @@ services:
       target: production
     container_name: ${COMPOSE_SERVICE_PREFIX:-gidas}_backend
     restart: unless-stopped
-    mem_limit: 1g
-    cpus: 2.0
-    stop_grace_period: 30s
+    stop_grace_period: 45s
+    mem_limit: 768m
+    cpus: "0.5"
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -139,6 +140,7 @@ services:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
         VITE_API_URL: ${VITE_API_URL:-/api}
         VITE_SERVER_FILTER_PERSONAL: ${VITE_SERVER_FILTER_PERSONAL:-true}
+        VITE_BASE_PATH: ${VITE_BASE_PATH:-/}
     container_name: ${COMPOSE_SERVICE_PREFIX:-gidas}_frontend
     restart: unless-stopped
     init: true
@@ -164,14 +166,56 @@ services:
     pids_limit: 128
     logging: *default_logging
 
+  frontend_sgm:
+    # Frontend de la SGM para el Portal GIDAS (subpath /sgm-gidas/).
+    # Build manual (fuera del frontend LAN): base y API apuntan al subpath.
+    # NO publica puerto; el nginx (proxy) lo enruta en location /sgm-gidas/.
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.portal
+      target: production
+      args:
+        VITE_APP_ENV: ${VITE_APP_ENV:-production}
+        VITE_API_BASE_URL: /sgm-gidas/api/v1
+        VITE_API_URL: /sgm-gidas/api
+        VITE_SERVER_FILTER_PERSONAL: ${VITE_SERVER_FILTER_PERSONAL:-true}
+        VITE_BASE_PATH: /sgm-gidas/
+    container_name: ${COMPOSE_SERVICE_PREFIX:-gidas}_frontend_sgm
+    restart: unless-stopped
+    init: true
+    mem_limit: 256m
+    cpus: "0.5"
+    expose:
+      - "8080"
+    networks:
+      gidas_network:
+        aliases:
+          - frontend_sgm
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    logging: *default_logging
+
   nginx:
     image: nginxinc/nginx-unprivileged:1.31-alpine3.24
     container_name: ${COMPOSE_SERVICE_PREFIX:-gidas}_proxy
     restart: unless-stopped
     init: true
     mem_limit: 256m
-    cpus: 0.5
+    cpus: "0.25"
     stop_grace_period: 10s
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     ports:
       - "${NGINX_BIND_ADDRESS:-127.0.0.1}:${NGINX_PORT:-8080}:8080"
     volumes:
