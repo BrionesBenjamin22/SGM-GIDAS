@@ -8,6 +8,18 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-44: actividades de docencia en curso
+
+- Docencia admite fecha de fin vacía en alta y edición; listado y detalle
+  muestran `En curso`. Los períodos finalizados conservan sus fechas y se
+  rechazan finales anteriores al inicio.
+- La entidad y sus snapshots admiten fin nulo mediante la migración
+  `c3e5a7b9d1f2`. No se inventan fechas ni se modifican fotos anteriores;
+  el downgrade se bloquea si existen actividades o versiones sin fin.
+- Se conservan permisos, historial, filtros y navegación. Aceptado el
+  05/11/2026; validación conjunta con ISS-46: 59 pruebas backend, 242 frontend,
+  TypeScript y build de producción aprobados.
+
 ### ISS-43: funciones compatibles con la clase Personal
 
 - El selector de Personal excluye funciones de Docente, Investigador y Becario

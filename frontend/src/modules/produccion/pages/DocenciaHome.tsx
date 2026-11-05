@@ -143,6 +143,7 @@ export default function DocenciaLanding() {
     { id: "rol", header: "Rol", sortable: true, priority: "secondary", render: (item) => toTitleCase(item.rol_actividad) || "—" },
     { id: "grado", header: "Grado", sortable: true, priority: "tertiary", render: (item) => toTitleCase(item.grado_academico) || "—" },
     { id: "fecha_inicio", header: "Inicio", sortable: true, priority: "tertiary", render: (item) => formatFecha(item.fecha_inicio) },
+    { id: "fecha_fin", header: "Fin", sortable: true, priority: "tertiary", render: (item) => item.fecha_fin ? formatFecha(item.fecha_fin) : "En curso" },
     { id: "estado", header: "Estado", sortable: true, render: (item) => {
       const active = !item.deleted_at;
       return <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${active ? "text-emerald-700" : "text-rose-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${active ? "bg-emerald-500" : "bg-rose-500"}`} />{active ? "Activa" : "Inactiva"}</span>;

@@ -174,7 +174,7 @@ export default function ActividadDocenciaDetalle() {
             <span className="font-semibold text-slate-800">
               Fecha de finalización:
             </span>{" "}
-            {formatFecha(data.fecha_fin)}
+            {data.fecha_fin ? formatFecha(data.fecha_fin) : "En curso"}
           </p>
 
           <p>

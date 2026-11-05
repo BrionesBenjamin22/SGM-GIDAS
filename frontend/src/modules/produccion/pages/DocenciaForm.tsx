@@ -176,7 +176,6 @@ export default function FormDocenciaInvestigador() {
     if (!fechaInicio) {
       newErrors.fechaInicio = "Debe seleccionar fecha de inicio";
     }
-    if (!fechaFin) newErrors.fechaFin = "Debe seleccionar fecha de fin";
     if (!gradoAcademicoId) {
       newErrors.gradoAcademico = "Debe seleccionar un grado académico";
     }
@@ -212,7 +211,7 @@ export default function FormDocenciaInvestigador() {
       curso,
       institucion,
       fecha_inicio: formatDateStr(fechaInicio)!,
-      fecha_fin: formatDateStr(fechaFin)!,
+      fecha_fin: formatDateStr(fechaFin),
       grado_academico_id: gradoAcademicoId!,
       rol_actividad_id: rolActividadId!,
     };
@@ -350,7 +349,7 @@ export default function FormDocenciaInvestigador() {
             </>
           </Field>
 
-          <Field required label="Fecha fin" name="fechaFin" error={errors.fechaFin}>
+          <Field label="Fecha fin" name="fechaFin" error={errors.fechaFin}>
             <>
               <Calendar
                 value={fechaFin}
@@ -360,7 +359,7 @@ export default function FormDocenciaInvestigador() {
                 }}
                 minDate={fechaInicio ?? undefined}
                 className={inputClass("fechaFin")}
-                helperText="DD/MM/AAAA"
+                helperText="Opcional. Deje vacía si la actividad está en curso."
               />
             </>
           </Field>

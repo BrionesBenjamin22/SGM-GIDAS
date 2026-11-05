@@ -1,5 +1,31 @@
 # Producción
 
+## Docencia en curso sin fecha de fin (ISS-44)
+
+Las altas y ediciones de Actividades en Docencia admiten `fecha_fin` ausente,
+`null` o vacía para representar una actividad en curso. La fecha de inicio
+sigue siendo obligatoria, no futura y dentro del rango institucional. Si se
+informa un fin, debe ser válido e igual o posterior al inicio. Omitir el campo
+en una edición conserva el valor anterior; enviar `null` permite reabrirla.
+
+`ActividadDocenciaService` aplica estas reglas en los endpoints existentes de
+`/api/v1/actividades-docencia`, mantiene los errores por campo y registra los
+cambios de fin en el historial. El listado de tabla admite ordenar por
+`fecha_fin`. Los permisos y el estado de baja lógica no cambian: estar en curso
+no equivale al estado activo/inactivo del registro.
+
+`ActividadDocencia` y `ActividadDocenciaMemoriaVersion` admiten fin nulo. La
+migración `c3e5a7b9d1f2`, posterior a `f6b8d0e2a4c6`, modifica ambas columnas
+sin alterar fechas existentes. El downgrade se rechaza mientras haya alguna
+actividad o foto sin fin, evitando completar datos inventados. Las fotos de
+memorias conservan su fin abierto aunque luego se cierre la actividad original.
+
+`tests/test_docencia_sin_fin.py` cubre alta, consultas, edición, cierre,
+reapertura, historial, fechas inválidas, snapshots y upgrade/downgrade. La
+migración fue aplicada en desarrollo con el servicio migrador. Aceptación
+funcional del usuario: 05/11/2026; validación conjunta con ISS-46: 59 pruebas
+backend, 242 frontend, TypeScript y build de producción aprobados.
+
 ## Contrato consumido por la validacion preventiva (ISS-33)
 
 Obligatorios, autores, enlaces, nombres y periodos conservan sus validaciones de dominio y controles relacionales al persistir.

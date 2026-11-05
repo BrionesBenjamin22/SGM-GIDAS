@@ -1,5 +1,23 @@
 # Produccion
 
+## Docencia en curso (ISS-44)
+
+`DocenciaForm` permite dejar Fecha fin vacía y explica que representa una
+actividad en curso. `actividadDocenciaServices.ts` tipa el fin de lectura como
+`string | null` y el payload como opcional o nulo. Al quitar una fecha existente
+el formulario envía solo la diferencia `fecha_fin: null`; si no hay cambios,
+no realiza PUT. Un fin anterior al inicio sigue siendo inválido.
+
+`DocenciaHome` incorpora la columna Fin ordenable y presenta `En curso` para
+valores nulos; `DocenciaDetalle` usa la misma indicación. Se mantienen filtros,
+hooks, permisos, borradores, feedback y navegación. El estado activo/inactivo
+del registro conserva su significado de baja lógica.
+
+`tests/docenciaMontosOpcionales.test.ts` ejecuta el formulario real mediante
+un harness para alta sin fin, eliminación diferencial, guardado sin cambios y
+rechazo de períodos inválidos. La validación visual y funcional fue aceptada
+por el usuario el 05/11/2026; pasaron 242 pruebas frontend, TypeScript y build.
+
 ## Validacion preventiva de formularios (ISS-33)
 
 Los siete formularios de Produccion reutilizan `getValidationErrors` para
