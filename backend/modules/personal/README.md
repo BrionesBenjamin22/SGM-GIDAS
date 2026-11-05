@@ -1,5 +1,20 @@
 # Modulo backend de personal
 
+## Contrato histórico de becas y presentación (ISS-41)
+
+`GET /api/v1/personal/becario/<id>/historial` mantiene el contrato de auditoría
+con `campo`, `valor_anterior`, `valor_nuevo`, fecha y usuario. Los eventos actuales
+de `becas` contienen `accion` y `detalle`, con referencia de beca, fechas y monto
+cuando corresponden. La compatibilidad con formatos históricos se resuelve en
+el frontend; no se reescriben filas ni se alteran modelos, permisos o endpoints.
+
+`tests/test_becario_historial_becas.py` verifica por HTTP los eventos de cambio
+de fecha de fin y monto cero, y la conservación exacta de valores serializados
+o estructuras anteriores al consultar el historial. La consulta de registros
+existentes para la validación del usuario fue de solo lectura. Etapa aceptada
+el 05/11/2026: 12 pruebas backend del flujo, 239 frontend, TypeScript y build
+aprobados. No hay migración ni cambios de despliegue.
+
 ## Becas en el detalle del becario (ISS-40)
 
 `GET /api/v1/personal/becario/<id>` incorpora `becas` mediante

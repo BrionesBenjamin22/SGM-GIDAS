@@ -1,5 +1,27 @@
 # Modulo frontend de personal
 
+## Resumen seguro del historial de becas (ISS-41)
+
+`utils/personalHistory.ts:formatPersonalHistoryEntry` resume los eventos del
+campo `becas` tanto en `PersonalDetalle` como en el historial de `PersonalHome`.
+Reconoce vinculación, actualización y desvinculación con `accion`/`detalle`,
+incluidos valores almacenados como texto JSON con hasta dos niveles de
+serialización y detalles serializados. También resume objetos y colecciones
+históricas; muestra valores anteriores y nuevos cuando ambos están disponibles.
+
+La presentación solo usa nombre o referencia de beca, fechas civiles válidas y
+monto numérico en ARS. Conserva el cero y distingue monto nulo y fin abierto.
+Una entrada inesperada muestra `Se registró un cambio en las becas asignadas.`
+en lugar de JSON, valores arbitrarios o `[object Object]`. El parser no modifica
+los registros ni completa datos ausentes con valores actuales.
+
+Se mantienen tarjeta compartida, fechas y usuarios del historial, permisos,
+navegación y paginación de tres elementos. No cambian services, hooks, contratos
+HTTP ni validaciones del formulario. `tests/personalHistory.test.ts` cubre
+formatos actuales e históricos, datos inesperados y la tarjeta real mediante
+SSR con ambas páginas de resultados. Aceptación del usuario: 05/11/2026.
+Validación: 239 pruebas frontend, 12 backend, TypeScript y build aprobados.
+
 ## Becarios: detalle y precarga de becas (ISS-40)
 
 `PersonalDetalle` conserva encabezado, permisos, navegación y contexto de memoria.

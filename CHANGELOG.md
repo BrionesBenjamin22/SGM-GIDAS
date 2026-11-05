@@ -21,6 +21,18 @@ semántico cuando se publica una entrega.
 - Aceptación del usuario: 05/11/2026. Validación técnica: 42 pruebas backend,
   242 frontend, TypeScript y build de producción aprobados. Sin migraciones.
 
+### ISS-41: resumen legible del historial de becas
+
+- El detalle y el listado de Personal interpretan eventos de becas actuales,
+  texto JSON simple/doble, detalles serializados y colecciones históricas.
+- Presentan fechas y montos legibles, incluido cero; muestran valores anteriores
+  y nuevos cuando están disponibles. Los formatos inesperados reciben un resumen
+  seguro sin imprimir JSON crudo ni estructuras internas.
+- Se conserva la auditoría original, los contratos HTTP, permisos y paginación
+  del historial de tres elementos. No se requieren migraciones.
+- Aceptación del usuario: 05/11/2026. Validación técnica: 239 pruebas frontend,
+  12 backend, TypeScript y build de producción aprobados.
+
 ### ISS-40: becas precargadas y detalle del becario
 
 - El detalle backend del becario devuelve sus asignaciones de beca con fechas
