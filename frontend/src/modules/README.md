@@ -36,8 +36,11 @@ Los errores generales usan `getErrorMessage`, que conserva mensajes publicos
 seguros y descarta detalles tecnicos e identificadores de seguimiento. El ID
 permanece en el contrato HTTP y en `X-Request-ID` para logs y diagnostico interno,
 pero nunca se agrega al texto visible. Los mensajes de éxito,
-las reglas de validación y el momento de validación existentes se conservan.
-No se incorporan validaciones en tiempo real ni indicadores verdes.
+las reglas de validacion se conservan. ISS-33 incorpora validacion preventiva
+al escribir y al salir del campo, con la misma comprobacion conjunta al guardar.
+La utilidad pura `src/lib/liveValidation.ts` preserva errores ajenos y revalida
+dependencias sin persistir cambios. Personal usa su utilidad especifica
+`personalValidation.ts:updatePersonalErrors`. No se agregan indicadores verdes.
 
 ## Contrato transversal de fechas institucionales
 

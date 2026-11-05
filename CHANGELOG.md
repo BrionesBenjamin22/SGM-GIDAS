@@ -8,6 +8,30 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-33: validacion preventiva en formularios
+
+- Personal valida nombres, DNI, CUIL y horas durante la interaccion y muestra
+  todos los errores al guardar; revalida la coincidencia DNI/CUIL y el limite
+  conjunto de nombres cuando cambian sus dependencias.
+- Produccion incorpora el mismo criterio en sus siete formularios y en el alta
+  inline de autores; Proyectos y Participaciones revalidan codigo, datos,
+  periodos, relaciones y coordinador, y la prorroga valida su justificacion.
+- Becas, Equipamiento y Movimientos validan sus campos antes del envio; el
+  error local de cotizacion faltante se retira cuando llega la respuesta valida.
+- UCT, directivos y Visitas validan sus campos durante la carga; Memorias e
+  Informes revalidan periodos, contenido y selecciones vinculadas.
+- Transferencias, adoptantes y Catalogos muestran errores preventivos de nombre,
+  formato y demas reglas vigentes. Las relaciones siguen guardandose juntas.
+- Acceso, registro, contrasenas, perfil y Usuarios muestran feedback por campo;
+  cambiar una clave revalida su confirmacion y se conserva la proteccion de roles.
+- Una utilidad pura compartida conserva errores ajenos y actualiza dependencias
+  sin escrituras de dominio. Se mantienen contratos y validaciones backend,
+  permisos, borradores, navegacion, auditoria y mensajes de exito.
+- Aceptacion visual y funcional del usuario: 05/11/2026. Validacion tecnica:
+  226 pruebas frontend, 163 backend de la extension y 62 previas de Personal,
+  TypeScript y build de produccion aprobados.
+
+
 ### Moneda original en Equipamiento y Transferencias
 
 - Alta y edición permiten guardar el importe original en ARS o USD, sin
