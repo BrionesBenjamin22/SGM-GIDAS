@@ -1,5 +1,24 @@
 # Modulo frontend de proyectos
 
+## Validacion preventiva de formularios (ISS-33)
+
+`ProyectosForm` y `ParticipacionesForm` reutilizan sus comprobaciones al
+escribir, al salir del campo y al guardar. Se conservan codigo alfanumerico,
+nombre descriptivo, limites de logros, monto, duracion y seleccion de relaciones.
+Cambiar el inicio revalida el fin; quitar investigadores revalida el coordinador,
+considerando su limpieza automatica cuando deja de estar seleccionado.
+La justificacion de prorroga en `ProyectosDetalle` valida el minimo de diez
+caracteres durante la interaccion. Las relaciones y prorrogas se persisten solo
+al confirmar las acciones existentes.
+
+La actualizacion de errores usa `src/lib/liveValidation.ts`, que revalida el
+campo editado y las reglas cuyo resultado cambia por dependencia, preservando
+los demas errores. No agrega hooks compartidos ni modifica componentes globales.
+Las validaciones no disparan escrituras de dominio. Se conservan services,
+contratos, permisos, borradores, navegacion y feedback de exito.
+La etapa fue aceptada visual y funcionalmente por el usuario el 05/11/2026;
+la regresion transversal esta en `tests/liveValidation.test.ts`.
+
 ## Logros y acciones del detalle (ISS-94)
 
 `ProyectosForm` permite cargar `Logros obtenidos` mediante un textarea opcional
@@ -38,7 +57,7 @@ y enfocan el primer campo inválido. Los nombres locales de los controles se
 vinculan con las claves API, sin cambiar el payload del service ni los permisos.
 Los errores sin campo o con campos desconocidos conservan el aviso general;
 los errores inesperados muestran un mensaje publico seguro o un fallback accionable, sin identificadores internos.
-Se conservan las reglas y el momento de validación existentes. Véase el contrato
+Se conservan las reglas de validacion; ISS-33 incorpora feedback preventivo. Véase el contrato
 transversal en `../README.md`.
 
 ## Fechas
