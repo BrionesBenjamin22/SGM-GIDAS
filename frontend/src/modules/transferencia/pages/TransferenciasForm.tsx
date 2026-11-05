@@ -117,8 +117,8 @@ export default function TransferenciasForm() {
     }
 
     const monto = Number(data.monto);
-    if (!Number.isFinite(monto) || monto <= 0) {
-      newErrors.monto = "El monto debe ser mayor a 0";
+    if (!data.monto.trim() || !Number.isFinite(monto) || monto < 0) {
+      newErrors.monto = "Ingrese un monto mayor o igual a 0";
     }
 
     if (!data.fechaInicio) {

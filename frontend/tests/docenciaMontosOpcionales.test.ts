@@ -74,7 +74,7 @@ test("Docencia guarda fin abierto, elimina solo fecha_fin y evita PUT sin cambio
   assert.equal(invalid.h.calls.length, 0);
 });
 
-for (const equipment of [true]) {
+for (const equipment of [true, false]) {
   test(`${equipment ? "Equipamiento" : "Transferencias"}: cero válido, negativos y vacío rechazados`, async () => {
     const file = equipment ? "recursos/pages/EquipamientoForm.tsx" : "transferencia/pages/TransferenciasForm.tsx";
     const data = equipment

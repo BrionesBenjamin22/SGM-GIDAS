@@ -1,5 +1,19 @@
 # Transferencia frontend
 
+## Transferencias con monto cero (ISS-46)
+
+`TransferenciasForm` admite el monto explícito cero y distingue un campo vacío
+de ese valor antes de convertirlo a número. Mantiene el rechazo de negativos
+y valores no finitos. La moneda ARS/USD, la precarga de cero, los borradores,
+services, hooks, permisos, relaciones y navegación conservan sus contratos.
+Las ediciones envían solo diferencias y no realizan PUT si no hay cambios.
+Listado y detalle ya muestran cero con el formato monetario vigente.
+
+`tests/docenciaMontosOpcionales.test.ts` ejecuta el formulario real para cero,
+positivos, negativos, vacío, conservación de moneda y edición sin cambios.
+Aceptación funcional del usuario: 05/11/2026; 242 pruebas frontend, TypeScript
+y build de producción aprobados.
+
 ## Validacion preventiva de formularios (ISS-33)
 
 `TransferenciasForm` reutiliza sus reglas de denominacion, demandante,
@@ -21,7 +35,7 @@ la regresion transversal esta en `tests/liveValidation.test.ts`.
 
 `TransferenciasForm` permite elegir ARS o USD, con ARS inicial, precarga en
 edición y envío de diferencias reales. No convierte el importe ni solicita
-cotización; se mantienen validación de monto positivo, permisos y navegación.
+cotización; se mantienen validación de monto no negativo, permisos y navegación.
 Los errores de moneda se muestran junto al campo. Borradores anteriores sin
 moneda recuperan ARS; ese valor predeterminado no crea borradores vacíos.
 

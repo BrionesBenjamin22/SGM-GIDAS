@@ -19,7 +19,7 @@ class MontosCeroTest(unittest.TestCase):
     transferencia = fixtures.MonedaDomainTest.transferencia
 
     def test_cero_persiste_se_lista_y_se_audita_sin_perder_moneda(self):
-        for create, service, field in [(self.equipo, EquipamientoService, "monto_invertido")]:
+        for create, service, field in [(self.equipo, EquipamientoService, "monto_invertido"), (self.transferencia, Transferencias, "monto")]:
             for moneda in ("ARS", "USD"):
                 with self.subTest(field=field, moneda=moneda):
                     created = create(**{field: 0, "moneda": moneda})
@@ -32,7 +32,7 @@ class MontosCeroTest(unittest.TestCase):
                     self.assertTrue(any(item["campo"] == field and item["valor_nuevo"] == 0 for item in service.get_historial(created["id"])))
 
     def test_negativos_vacios_booleanos_y_no_finitos_se_rechazan(self):
-        for service in (EquipamientoService,):
+        for service in (EquipamientoService, Transferencias):
             for value in (-1, "-0.01", "", None, True, False, float("nan"), float("inf")):
                 with self.subTest(service=service, value=value), self.assertRaises(ValidationError):
                     service._validar_monto(value)
@@ -42,6 +42,7 @@ class MontosCeroTest(unittest.TestCase):
     def test_fotos_conservan_importe_cero_y_moneda(self):
         for create, service, model, field, path in [
             (self.equipo, EquipamientoService, Equipamiento, "monto_invertido", "modules.recursos.services.equipamiento_service"),
+            (self.transferencia, Transferencias, TransferenciaSocioProductiva, "monto", "modules.transferencia.services.transferencia_service"),
         ]:
             record = db.session.get(model, create(**{field: 0, "moneda": "USD"})["id"])
             with patch(f"{path}.consultar_entidades_memoria", return_value=[record]), patch(f"{path}.estuvo_activo_en_periodo_memoria", return_value=True):

@@ -8,6 +8,15 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-46: monto cero en Transferencias
+
+- Transferencias admite monto cero en alta y edición para convenios sin
+  inversión, conservando moneda ARS/USD, precarga, auditoría y snapshots.
+- El formulario distingue vacío de cero; frontend y API rechazan negativos
+  y valores no finitos, y la API rechaza también booleanos. Sin migraciones.
+- Aceptado el 05/11/2026; validación conjunta con Docencia y Equipamiento:
+  59 pruebas backend, 242 frontend, TypeScript y build aprobados.
+
 ### ISS-46: monto cero en Equipamiento
 
 - Equipamiento admite monto invertido cero en alta y edición, conservando ARS
@@ -103,7 +112,7 @@ semántico cuando se publica una entrega.
   muestra y los totales de transferencias se separan por moneda.
 - La moneda se audita. Equipos vinculados a movimientos conservan su moneda;
   el vínculo automático sigue limitado a ARS, con validación y bloqueo de fila.
-- ISS-46 admite monto no negativo en Equipamiento; Transferencias conserva por ahora su validación anterior.
+- ISS-46 amplía la validación a monto no negativo en ambos módulos.
 
 ### Horas de auditoría e historial en formato de 24 horas
 
