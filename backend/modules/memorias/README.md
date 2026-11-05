@@ -1,5 +1,16 @@
 # Memorias
 
+## Contrato consumido por la validacion preventiva (ISS-33)
+
+Creacion y correccion de periodo conservan validaciones de UCT, fechas, estado y diferencias, sin modificar versiones cerradas ni sus fotos.
+
+El frontend reutiliza sus comprobaciones durante la interaccion y muestra
+conjuntamente los errores al guardar. Los errores de campo de la API mantienen
+`error.details.fields`; los no asociados a un control conservan feedback general.
+La etapa no cambia endpoints, payloads, modelos, permisos ni eventos auditados.
+Escribir o corregir un campo no genera una mutacion de dominio; la autoridad
+definitiva sigue siendo el backend. Aceptado por el usuario el 05/11/2026.
+
 ## Moneda en Equipamiento y Transferencias
 
 Al cerrar una versión se copian importe original y `moneda` ARS/USD de cada
