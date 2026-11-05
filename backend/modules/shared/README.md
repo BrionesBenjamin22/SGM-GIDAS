@@ -1,5 +1,13 @@
 # Borradores de formularios
 
+## Validacion preventiva del cliente (ISS-33)
+
+La utilidad pura `frontend/src/lib/liveValidation.ts` actualiza errores locales
+sin solicitar validaciones nuevas ni escribir entidades. El contrato existente
+`error.details.fields` identifica los errores de campo al guardar; los errores
+generales mantienen su mensaje publico seguro. La validacion y los permisos del
+backend siguen siendo definitivos. No hay endpoints, modelos ni eventos nuevos.
+
 ## Paginacion compartida (ISS-89)
 
 `controllers/pagination.py` valida `page`, `per_page`, `activos` y `orden`, y

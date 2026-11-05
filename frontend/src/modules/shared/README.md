@@ -1,5 +1,17 @@
 # Funcionalidades compartidas
 
+## Validacion preventiva compartida (ISS-33)
+
+`src/lib/liveValidation.ts:updateLiveValidationErrors` recibe errores visibles,
+resultado anterior y siguiente de las comprobaciones y el campo editado.
+Reemplaza solo ese campo y las reglas cuyo resultado cambia por dependencia;
+conserva los demas mensajes y no muta el objeto recibido. Cada formulario pasa
+los valores siguientes explicitamente y reutiliza sus reglas al guardar.
+La utilidad es pura: no incorpora hooks, estado global ni solicitudes HTTP.
+Los controles nativos validan tambien al perder foco; Calendar conserva su
+feedback propio de formato y rango. Los errores del servidor siguen usando
+`error.details.fields` y el feedback general existente.
+
 ## Horas de auditoría e historial
 
 Las vistas que consumen `src/utils/dateTime.ts:formatFechaHora` muestran los
