@@ -1,5 +1,18 @@
 # Recursos
 
+## Monto cero en Equipamiento (ISS-46)
+
+`EquipamientoForm` admite un monto invertido explícito igual a cero, mantiene
+el rechazo de negativos, vacíos y valores no finitos, y conserva la moneda
+ARS/USD elegida. El borrador reconoce cero como contenido. Los services,
+hooks, permisos, mensajes, navegación y envío de diferencias siguen vigentes;
+listado y detalle ya presentan cero con su formato monetario habitual.
+
+`tests/docenciaMontosOpcionales.test.ts` verifica el formulario real: cero y
+positivos válidos, vacío y negativos rechazados, moneda conservada y edición
+sin diferencias sin PUT. Aceptado funcionalmente el 05/11/2026; la validación
+conjunta completó 242 pruebas frontend, TypeScript y build de producción.
+
 ## Retorno al becario desde becas (ISS-40)
 
 `BecasDetalle` y `BecasForm` preservan el estado `becarioReturnTo` generado por
@@ -41,7 +54,7 @@ la regresion transversal esta en `tests/liveValidation.test.ts`.
 `EquipamientoForm` permite elegir ARS o USD junto al monto invertido. El alta
 inicia en ARS y la edición precarga la moneda guardada; el monto se conserva en
 la moneda elegida, sin cotización ni conversión. La edición envía solo diferencias.
-Se mantienen la validación de monto positivo, los permisos y la navegación:
+Se mantienen la validación de monto no negativo, los permisos y la navegación:
 alta al home y edición al detalle con `successMessage`.
 
 `equipamientoServices.ts` tipa y transmite `moneda`; las respuestas heredadas
@@ -143,7 +156,7 @@ tipos explicitos. Las llamadas HTTP se concentran en services dedicados.
 
 - Las altas vuelven al home con `successMessage`.
 - Las ediciones vuelven al detalle y envian solo diferencias reales.
-- Equipamiento valida denominacion, descripcion, monto positivo finito y una fecha
+- Equipamiento valida denominacion, descripcion, monto no negativo finito y una fecha
   de incorporacion entre el `01/01/2010` y la fecha actual, ambos limites
   inclusive. El formulario informa el rango y lo aplica al selector de fecha; la
   funcion pura `utils/equipamientoValidation.ts` conserva la misma regla para el

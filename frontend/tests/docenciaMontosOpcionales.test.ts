@@ -73,3 +73,29 @@ test("Docencia guarda fin abierto, elimina solo fecha_fin y evita PUT sin cambio
   await invalid.submit();
   assert.equal(invalid.h.calls.length, 0);
 });
+
+for (const equipment of [true]) {
+  test(`${equipment ? "Equipamiento" : "Transferencias"}: cero válido, negativos y vacío rechazados`, async () => {
+    const file = equipment ? "recursos/pages/EquipamientoForm.tsx" : "transferencia/pages/TransferenciasForm.tsx";
+    const data = equipment
+      ? {denominacion: "Equipo", descripcion_breve: "Descripción", fecha_incorporacion: "2026-01-01", monto_invertido: 0, moneda: "USD"}
+      : {denominacion: "Convenio", demandante: "Universidad", descripcionActividad: "Actividad institucional", monto: "0", moneda: "USD", fechaInicio: "2026-01-01", fechaFin: "", tipoContratoId: "1"};
+    const field = equipment ? "monto_invertido" : "monto";
+    for (const amount of equipment ? [0, 10.50, -1, undefined] : ["0", "10.50", "-1", ""]) {
+      const values = equipment ? [{...data, [field]: amount}, {}, false, ""] : [{...data, [field]: amount}, [], {}, false, ""];
+      const form = harness(file, values);
+      await form.submit();
+      const valid = amount === 0 || amount === "0" || amount === 10.50 || amount === "10.50";
+      assert.equal(form.h.calls.length, valid ? 1 : 0);
+      if (valid) {
+        assert.equal(form.h.calls[0][0][field], Number(amount));
+        assert.equal(form.h.calls[0][0].moneda, "USD");
+      }
+    }
+    const initial = equipment ? {id: 1, grupo_utn_id: 1, ...data} : {id: 1, grupoUtnId: 1, ...data, monto: 0, fechaFin: undefined, tipoContratoId: 1, adoptantes: []};
+    const unchanged = harness(file, equipment ? [data, {}, false, ""] : [data, [], {}, false, ""], initial);
+    await unchanged.submit();
+    assert.equal(unchanged.h.calls.length, 0);
+    if (equipment) assert.equal(unchanged.h.draft.hasContent({...data, denominacion: "", descripcion_breve: "", fecha_incorporacion: "", moneda: "ARS"}), true);
+  });
+}

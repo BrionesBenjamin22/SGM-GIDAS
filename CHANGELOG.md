@@ -8,6 +8,15 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-46: monto cero en Equipamiento
+
+- Equipamiento admite monto invertido cero en alta y edición, conservando ARS
+  o USD, precarga, borradores, auditoría y fotos de memorias. Se siguen
+  rechazando vacíos, negativos, booleanos y números no finitos en la API.
+- Movimientos conserva sus reglas de monto positivo. Sin migración de montos.
+- Aceptado el 05/11/2026; validación conjunta con Docencia y Transferencias:
+  59 pruebas backend, 242 frontend, TypeScript y build aprobados.
+
 ### ISS-44: actividades de docencia en curso
 
 - Docencia admite fecha de fin vacía en alta y edición; listado y detalle
@@ -94,7 +103,7 @@ semántico cuando se publica una entrega.
   muestra y los totales de transferencias se separan por moneda.
 - La moneda se audita. Equipos vinculados a movimientos conservan su moneda;
   el vínculo automático sigue limitado a ARS, con validación y bloqueo de fila.
-- Se conserva el requisito de monto positivo en ambos módulos.
+- ISS-46 admite monto no negativo en Equipamiento; Transferencias conserva por ahora su validación anterior.
 
 ### Horas de auditoría e historial en formato de 24 horas
 

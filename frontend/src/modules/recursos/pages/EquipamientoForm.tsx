@@ -75,7 +75,7 @@ export default function EquipamientoForm() {
     value: data,
     ready: !isEdit || (!isLoading && Boolean(initial)),
     autosave: false,
-    hasContent: (draft) => Boolean(draft.denominacion || draft.descripcion_breve || draft.fecha_incorporacion || draft.monto_invertido || draft.moneda === "USD"),
+    hasContent: (draft) => Boolean(draft.denominacion || draft.descripcion_breve || draft.fecha_incorporacion || draft.monto_invertido !== undefined || draft.moneda === "USD"),
     onRestore: (draft) => setData({ ...draft, moneda: draft.moneda ?? "ARS" }),
   });
 
@@ -101,9 +101,9 @@ export default function EquipamientoForm() {
     if (
       data.monto_invertido === undefined ||
       !Number.isFinite(data.monto_invertido) ||
-      data.monto_invertido <= 0
+      data.monto_invertido < 0
     ) {
-      newErrors.monto = "El monto debe ser mayor a 0";
+      newErrors.monto = "Ingrese un monto mayor o igual a 0";
     }
 
     return newErrors;

@@ -2,6 +2,7 @@ from modules.memorias.services.memoria_periodo_service import (
     consultar_entidades_memoria,
 )
 import builtins
+import math
 from datetime import datetime, date
 from sqlalchemy import select
 
@@ -51,13 +52,15 @@ class EquipamientoService:
 
     @staticmethod
     def _validar_monto(monto):
+        if isinstance(monto, bool):
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"monto_invertido": "Ingrese un monto numérico válido."}})
         try:
             monto = float(monto)
         except (TypeError, builtins.ValueError):
             raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"monto_invertido": "Ingrese un monto numérico válido."}})
 
-        if monto <= 0:
-            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"monto_invertido": "Ingrese un monto mayor que cero."}})
+        if not math.isfinite(monto) or monto < 0:
+            raise ValueError("Revise los campos indicados e intente nuevamente.", details={"fields": {"monto_invertido": "Ingrese un monto mayor o igual a cero."}})
 
         return monto
 
