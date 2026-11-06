@@ -18,6 +18,7 @@ GROUP_COLUMNS = ("grupo_utn_id", "grupo_id", "id_grupo_utn")
 AUDIT_FKS = {"created_by", "updated_by", "deleted_by", "usuario_id"}
 REVERSE_SCOPED_TABLES = {"usuario", "persona"}
 GLOBAL_TABLES = {
+    "password_reset_request", "email_outbox",
     "auditoria_campo", "form_draft", "login_attempt", "refresh_token_session",
     "rol", "estado_memoria", "tipo_personal", "tipo_dedicacion",
     "tipo_formacion_becario", "categoria_utn", "fuente_financiamiento",

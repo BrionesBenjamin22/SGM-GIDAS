@@ -192,3 +192,46 @@ su contrato de URL. La persistencia validada se limita a la pestana y al usuario
 sin guardar filas ni acciones pendientes. Se mantienen services, permisos,
 validaciones y paginacion vigentes. Contrato y pruebas en `../shared/README.md`.
 Aceptado funcionalmente por el usuario el 06/11/2026.
+
+## Usuario recordado y recuperacion por correo (ISS-53)
+
+Aprobado por el usuario el 06/11/2026. Login ofrece `Recordar mi usuario`:
+`utils/rememberedUser.ts` guarda solo `{username}` tras autenticar con exito en
+`localStorage`, clave versionada `gidas:auth:remembered-user:v1`. El nombre se
+precarga en futuras visitas y permanece despues del logout; desmarcar elimina
+la preferencia inmediatamente. Storage ausente, bloqueado o corrupto no impide
+ingresar. No se guardan passwords ni tokens y la duracion de sesion no cambia.
+Los campos mantienen names estables y autocomplete username/current-password
+para el gestor de contrasenas del navegador; esa persistencia la decide el usuario.
+
+Login enlaza debajo del formulario a `/recuperar-password`. La vista publica
+`RecuperarPassword.tsx` valida y normaliza email, solicita el envio y muestra el
+mismo mensaje generico para cualquier cuenta. No revela existencia ni estado.
+Si el usuario perdio acceso al correo, debe contactar al administrador para
+verificar identidad y actualizarlo mediante el flujo de gestion existente.
+
+`RestablecerPassword.tsx`, publica en `/restablecer-password`, captura el token
+del fragmento en memoria y elimina ese fragmento mediante replaceState,
+conservando el estado del historial. No persiste el token. Valida nueva password
+de al menos 6 caracteres, maximo 72 bytes UTF-8 y confirmacion coincidente;
+permite mostrar/ocultar los campos y bloquea envios simultaneos. Un enlace
+invalido ofrece solicitar otro. El exito vuelve a login con `successMessage`,
+sin autenticar automaticamente. Ambas vistas se cargan mediante lazy routes.
+
+`services/passwordResetService.ts` tipa el payload y consume request/confirm
+publicos sin renovar sesion ante un 401; el envio ADMIN conserva el cliente
+autenticado. `hooks/usePasswordReset.ts` expone sus tres mutaciones.
+`utils/passwordReset.ts` centraliza validaciones, parseo del fragmento y mensajes.
+Los errores de campo usan `applyFieldErrors`, foco y `details.fields`; los errores
+generales se anuncian con `role=alert` y los exitos con `role=status`.
+
+En `UsuariosHome.tsx`, solo ADMIN puede solicitar un enlace al correo registrado
+de un usuario activo. La accion anuncia resultado y deshabilita envios durante
+la mutacion; el administrador no recibe token ni password. Backend aplica rol,
+alcance UCT y rate limits. No hay un cambio directo de password por ADMIN.
+
+`tests/passwordReset.test.ts` comprueba almacenamiento minimo, tolerancia a
+Storage bloqueado, validaciones, captura/limpieza del fragmento y logout real
+con transporte simulado: se borra el acceso y se conserva el nombre tanto con
+respuesta exitosa como ante una falla de conexion. Suite final: 257 pruebas,
+typecheck y build correctos; recuperacion y Recordarme aceptados por el usuario.

@@ -8,6 +8,23 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-53: usuario recordado y recuperacion de contrasena por correo
+
+- Login recuerda exclusivamente el nombre de usuario en el equipo despues de
+  autenticar; lo conserva al cerrar sesion y permite borrarlo al desmarcar la
+  opcion. No guarda passwords ni cambia la duracion de sesion.
+- Se incorporan solicitud publica, enlace de un solo uso, restablecimiento y
+  envio asistido por ADMIN al correo registrado. Confirmar revoca los refresh
+  anteriores y vuelve a login con mensaje de exito, sin autenticar automaticamente.
+- Backend normaliza correos y agrega solicitudes/outbox cifrada mediante la
+  migracion e5a7c9d1f3b6; worker SMTP con TLS, reintentos, mantenimiento y
+  healthcheck. Mailpit solo en desarrollo; produccion requiere configurar SMTP,
+  URL HTTPS y secretos independientes compartidos por API y worker.
+- Aceptado por el usuario el 06/11/2026. Validacion: 762 pruebas backend (36
+  omisiones por entorno), 31 enfocadas SQLite/PostgreSQL y dos adicionales de
+  rate limits/TLS; 257 frontend, typecheck y build correctos. Migracion reversible,
+  concurrencia y smoke con Mailpit comprobados; temporales de prueba eliminados.
+
 ### ISS-50: recuperar filtros al reingresar
 
 - Los 18 homes con controles locales recuperan texto, filtros, pagina y orden

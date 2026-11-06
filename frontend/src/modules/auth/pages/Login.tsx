@@ -7,6 +7,7 @@ import { AlertCircle, Eye, EyeOff, LoaderCircle, LogIn } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useSystemSetup } from "@/modules/auth/hooks/useSystemSetup";
 import RouteBreadcrumbs from "@/modules/shared/components/RouteBreadcrumbs";
+import { forgetRememberedUser, readRememberedUser, rememberUser } from "@/modules/auth/utils/rememberedUser";
 import {
   consumeSessionEnded,
   clearSessionReturn,
@@ -22,7 +23,7 @@ export default function LoginPage() {
   const { data: needsInitialAdmin, isFetching: setupFetching } = useSystemSetup();
   const nav = useNavigate();
   const location = useLocation() as {
-    state?: { from?: { pathname?: string; search?: string; hash?: string; state?: unknown } };
+    state?: { from?: { pathname?: string; search?: string; hash?: string; state?: unknown }; successMessage?: string };
   };
   const [from] = useState(() => {
     const saved = readSessionReturn();
@@ -36,13 +37,20 @@ export default function LoginPage() {
     return saved ?? { path: "/inicio" };
   });
 
-  const [usuario, setUsuario] = useState("");
+  const [rememberedUser] = useState(readRememberedUser);
+  const [usuario, setUsuario] = useState(rememberedUser);
+  const [remember, setRemember] = useState(Boolean(rememberedUser));
+  const [successMessage] = useState(location.state?.successMessage ?? "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [sessionEnded, setSessionEnded] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.successMessage) nav("/login", { replace: true, state: { ...location.state, successMessage: undefined } });
+  }, [location.state, nav]);
 
   useEffect(() => {
     if (!sessionLoading && user) {
@@ -82,6 +90,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const auth = await login(usuario, password);
+      if (remember) rememberUser(auth.user.nombre_usuario);
+      else forgetRememberedUser();
       const destination = resolveSessionReturn(from, auth.user.id);
       clearSessionReturn();
       nav(auth.user.primer_login ? "/cambiar-password" : destination.path, { replace: true, state: destination.state });
@@ -112,6 +122,7 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
+            {successMessage && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{successMessage}</p>}
             {sessionEnded && (
               <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                 Su sesión terminó. Inicie sesión nuevamente para continuar.
@@ -121,6 +132,7 @@ export default function LoginPage() {
 
               <input
                 id="usuario"
+                name="username"
                 className="w-full rounded-lg border border-slate-300 px-4 py-2.5 outline-none transition focus:border-transparent focus:ring-2 focus:ring-slate-900"
                 type="text"
                 required
@@ -136,6 +148,7 @@ export default function LoginPage() {
               <div className="relative">
                 <input
                   id="password"
+                  name="password"
                   className="w-full rounded-lg border border-slate-300 px-4 py-2.5 pr-11 outline-none transition focus:border-transparent focus:ring-2 focus:ring-slate-900"
                   type={showPassword ? "text" : "password"}
                   required
@@ -161,6 +174,13 @@ export default function LoginPage() {
               </div>
             </Field>
 
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input type="checkbox" checked={remember} disabled={loading || sessionLoading} aria-describedby="recordarme-help"
+                onChange={event => { setRemember(event.target.checked); if (!event.target.checked) forgetRememberedUser(); }} className="h-4 w-4 rounded border-slate-300" />
+              Recordar mi usuario
+            </label>
+            <p id="recordarme-help" className="text-xs text-slate-500">Conserva el nombre de usuario en este equipo incluso al cerrar sesión. Desmarque la opción para olvidarlo. No guarda la contraseña ni prolonga la sesión.</p>
+
             {error && (
               <div role="alert" className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
@@ -183,6 +203,8 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          <Link to="/recuperar-password" className="mt-5 block text-center text-sm font-medium text-slate-600 hover:text-slate-950">¿Olvidaste tu contraseña?</Link>
 
           {needsInitialAdmin === true && !setupFetching && (
             <p className="mt-7 text-center text-sm text-slate-600">
