@@ -299,3 +299,14 @@ distinciones y limita relaciones/columnas de participantes al contenido
 del listado, manteniendo los datos usados por las vistas.
 La mejora fue validada tecnicamente junto con el flujo de Memorias y
 aceptada por el usuario como parte de la etapa de rendimiento.
+
+
+## Recuperacion del contexto de consulta (ISS-50)
+
+ProyectosHome conserva texto, estado, tipo, fuente, orden y pagina; ParticipacionesHome conserva texto, filtros y pagina. El debounce de Proyectos no reinicia la pagina recuperada al montar.
+
+Los homes con estado local usan `shared/hooks/useHomeState.ts`; Busqueda conserva
+su contrato de URL. La persistencia validada se limita a la pestana y al usuario,
+sin guardar filas ni acciones pendientes. Se mantienen services, permisos,
+validaciones y paginacion vigentes. Contrato y pruebas en `../shared/README.md`.
+Aceptado funcionalmente por el usuario el 06/11/2026.

@@ -1,3 +1,4 @@
+import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -64,12 +65,12 @@ export default function RegistrosPropiedadLanding() {
   const [errorMessage, setErrorMessage] = useState("");
   const [pendingDelete, setPendingDelete] =
     useState<RegistroPropiedad | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useHomeState("searchQuery", "");
+  const [currentPage, setCurrentPage] = useHomeState("currentPage", 1);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
 
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useHomeState("filters", {
     estado: "",
     tipoRegistro: "",
     fechaRegistro: "",
@@ -160,10 +161,14 @@ export default function RegistrosPropiedadLanding() {
     staleTime: 5 * 60_000,
   });
 
-  useEffect(() => {
+  useHomeFilterEffect(() => {
     setCurrentPage(1);
     setExpandedRow(null);
   }, [filters, searchQuery]);
+
+  useEffect(() => {
+    if (!isLoading && !isError && currentPage > Math.max(1, totalPages)) setCurrentPage(Math.max(1, totalPages));
+  }, [currentPage, totalPages, isLoading, isError]);
 
   useEffect(() => {
     if (location.state?.successMessage) {

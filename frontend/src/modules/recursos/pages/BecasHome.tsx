@@ -1,3 +1,4 @@
+import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,10 +18,10 @@ export default function BecasHome() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const { canCreateRecords, canEditRecords, canDeleteRecords } = useAuth();
-  const [page, setPage] = useState(1);
-  const [estado, setEstado] = useState<"true" | "false" | "all">("true");
-  const [search, setSearch] = useState("");
-  const [query, setQuery] = useState("");
+  const [page, setPage] = useHomeState("page", 1);
+  const [estado, setEstado] = useHomeState<"true" | "false" | "all">("estado", "true", { allowed: ["true","false","all"] });
+  const [search, setSearch] = useHomeState("search", "");
+  const [query, setQuery] = useState(search.trim());
   const [pendingDelete, setPendingDelete] = useState<Beca | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -28,9 +29,11 @@ export default function BecasHome() {
   const rows = becas.data?.data ?? [];
 
   useEffect(() => {
-    const timer = window.setTimeout(() => { setQuery(search.trim()); setPage(1); }, 250);
+    const timer = window.setTimeout(() => { setQuery(search.trim()); }, 250);
     return () => window.clearTimeout(timer);
   }, [search]);
+
+  useHomeFilterEffect(() => { setPage(1); }, [query, estado]);
 
   useEffect(() => {
     if (becas.data && page > Math.max(1, becas.data.meta.total_pages)) setPage(Math.max(1, becas.data.meta.total_pages));

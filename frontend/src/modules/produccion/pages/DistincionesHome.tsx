@@ -1,3 +1,4 @@
+import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -62,11 +63,11 @@ export default function DistincionesHome() {
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Distincion | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useHomeState("searchQuery", "");
+  const [page, setPage] = useHomeState("page", 1);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
-  const [filters, setFilters] = useState({ estado: "", proyecto: "", anio: "" });
+  const [filters, setFilters] = useHomeState("filters", { estado: "", proyecto: "", anio: "" });
 
   const memoriaFilter = useMemo(
     () => getMemoriaSectionFilter(location.state, "distinciones"),
@@ -156,14 +157,14 @@ export default function DistincionesHome() {
     staleTime: 5 * 60_000,
   });
 
-  useEffect(() => {
+  useHomeFilterEffect(() => {
     setPage(1);
     setExpandedRow(null);
   }, [filters, searchQuery]);
 
   useEffect(() => {
-    if (page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1));
-  }, [page, totalPages]);
+    if (!distinciones.isLoading && !distinciones.isError && page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1));
+  }, [page, totalPages, distinciones.isLoading, distinciones.isError]);
 
   useEffect(() => {
     if (!location.state?.successMessage) return;

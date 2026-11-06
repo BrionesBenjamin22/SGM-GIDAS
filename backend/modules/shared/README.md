@@ -108,3 +108,15 @@ conservar opciones de otras paginas. Los errores son `VALIDATION_ERROR`
 (400); siguen disponibles las respuestas anteriores sin `view=table`.
 Las regresiones de aislamiento, lotes y tablas estan en
 `tests/test_tenant_scope.py`.
+
+
+## Contrato de recuperacion de listados (ISS-50)
+
+La persistencia de controles de los homes es responsabilidad del frontend y
+no incorpora endpoints ni tablas. Tras el reingreso, los clientes vuelven a
+consultar los listados con los filtros y paginacion recuperados. La API conserva
+la validacion de parametros, permisos de la cuenta autenticada y filtrado de
+datos vigentes; el contexto del navegador no concede acceso ni restaura filas
+de respuestas anteriores. El contrato de login/refresh y las cookies no cambian.
+Aceptacion funcional: 06/11/2026; regresion backend de autenticacion: 46 pruebas
+aprobadas. No se requieren migraciones ni nuevas variables de entorno.

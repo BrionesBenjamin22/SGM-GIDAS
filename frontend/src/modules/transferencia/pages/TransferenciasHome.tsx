@@ -1,3 +1,4 @@
+import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -26,12 +27,12 @@ export default function TransferenciasHome() {
   const location = useLocation();
   const qc = useQueryClient();
   const { canCreateRecords, canEditRecords, canDeleteRecords } = useAuth();
-  const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState({ estado: "", tipo: "", grupo: "", anio: "", moneda: "" });
-  const [page, setPage] = useState(1);
+  const [search, setSearch] = useHomeState("search", "");
+  const [filters, setFilters] = useHomeState("filters", { estado: "", tipo: "", grupo: "", anio: "", moneda: "" });
+  const [page, setPage] = useHomeState("page", 1);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
-  const [direction, setDirection] = useState<"asc" | "desc">("asc");
+  const [direction, setDirection] = useHomeState<"asc" | "desc">("direction", "asc", { allowed: ["asc","desc"] });
   const [pendingDelete, setPendingDelete] = useState<Transferencia | null>(null);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
@@ -52,7 +53,7 @@ export default function TransferenciasHome() {
   const rows = query.list;
   const expandedItem = scoped.find(item => item.id === expanded);
   const history = useQuery({ queryKey: ["transferencia-historial", expandedItem?.id], queryFn: () => getHistorialTransferenciaById(expandedItem!.id), enabled: Boolean(expandedItem) });
-  useEffect(() => { setPage(1); setExpanded(null); }, [search, filters, direction, memoriaFilter]);
+  useHomeFilterEffect(() => { setPage(1); setExpanded(null); }, [search, filters, direction, memoriaFilter]);
   useEffect(() => {
     if (result.data && page > Math.max(1, totalPages)) setPage(Math.max(1, totalPages));
   }, [page, totalPages, result.data]);

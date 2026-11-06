@@ -1,3 +1,4 @@
+import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -35,13 +36,13 @@ export default function PersonalLanding() {
   const initialType = requestedType && ["PERSONAL", "BECARIO", "INVESTIGADOR"].includes(requestedType) ? requestedType : "";
   const { canCreateRecords, canEditRecords, canDeleteRecords } = useAuth();
 
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [classFilter, setClassFilter] = useState<PersonalType | "">(initialType);
-  const [activeFilter, setActiveFilter] = useState<"true" | "false" | "all">("true");
-  const [sort, setSort] = useState<PersonalSort>("fecha_alta");
-  const [direction, setDirection] = useState<TableSortDirection>("desc");
+  const [page, setPage] = useHomeState("page", 1);
+  const [search, setSearch] = useHomeState("search", "");
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const [classFilter, setClassFilter] = useHomeState<PersonalType | "">("classFilter", initialType, { allowed: ["", "PERSONAL", "BECARIO", "INVESTIGADOR"] });
+  const [activeFilter, setActiveFilter] = useHomeState<"true" | "false" | "all">("activeFilter", "true", { allowed: ["true","false","all"] });
+  const [sort, setSort] = useHomeState<PersonalSort>("sort", "fecha_alta", { allowed: ["nombre","clase","clasificacion","grupo","horas","estado","fecha_alta"] });
+  const [direction, setDirection] = useHomeState<TableSortDirection>("direction", "desc", { allowed: ["asc", "desc"] });
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
   const [pendingDelete, setPendingDelete] = useState<PersonalItem | null>(null);
@@ -60,7 +61,7 @@ export default function PersonalLanding() {
     return () => window.clearTimeout(timeout);
   }, [search]);
 
-  useEffect(() => {
+  useHomeFilterEffect(() => {
     setPage(1);
     setExpandedRow(null);
   }, [debouncedSearch, classFilter, activeFilter, sort, direction, memoriaFilter]);
@@ -82,6 +83,12 @@ export default function PersonalLanding() {
     direction,
     ids: memoriaFilter?.ids,
   });
+
+  useEffect(() => {
+    if (personal.data && !personal.isFetching && !personal.isError && page > Math.max(1, personal.meta.total_pages)) {
+      setPage(Math.max(1, personal.meta.total_pages));
+    }
+  }, [page, personal.data, personal.isFetching, personal.isError, personal.meta.total_pages, setPage]);
 
   const expandedItem = expandedRow ? personal.list.find((item) => `${item.rol}-${item.id}` === expandedRow) : undefined;
   const history = useQuery({

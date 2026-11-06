@@ -1,3 +1,4 @@
+import { useHomeState } from "@/modules/shared/hooks/useHomeState";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -29,8 +30,8 @@ export default function InformesHome() {
   const navigate = useNavigate();
   const location = useLocation();
   const qc = useQueryClient();
-  const [page, setPage] = useState(1);
-  const [memoriaId, setMemoriaId] = useState(0);
+  const [page, setPage] = useHomeState("page", 1);
+  const [memoriaId, setMemoriaId] = useHomeState("memoriaId", 0);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [pendingDelete, setPendingDelete] = useState<InformeSummary | null>(null);
   const [message, setMessage] = useState("");

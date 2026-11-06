@@ -1,3 +1,4 @@
+import { loadHomeStateHooks } from "./helpers/homeStateHooks.ts";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -29,14 +30,17 @@ function renderHome(list: ReturnType<typeof memoria>[], detail: object | null = 
   runInNewContext(code, {
     module,
     exports: module.exports,
-    require: (name: string) => {
+    require: function dependency(name: string): any {
+      if (name === "@/modules/shared/hooks/useHomeState") return loadHomeStateHooks(dependency("react"), dependency("@/context/AuthContext"), dependency("react-router-dom"));
       if (name === "react") return {
         useState(initial: unknown) {
           const index = cursor++;
           if (!(index in state)) state[index] = typeof initial === "function" ? (initial as () => unknown)() : initial;
           return [state[index], (next: any) => { state[index] = typeof next === "function" ? next(state[index]) : next; }];
         },
-        useMemo: (factory: () => unknown) => factory(),
+        useRef(initial: any) { const index = cursor++; return state[index] ??= { current: initial }; },
+      useCallback: (fn: any) => fn,
+      useMemo: (factory: () => unknown) => factory(),
         useEffect: () => {},
       };
       if (name === "@tanstack/react-query") return {

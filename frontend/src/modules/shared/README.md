@@ -111,3 +111,31 @@ Los formularios de contraseñas y credenciales quedan excluidos. El backend
 revalida módulo, tamaño y claves sensibles, y mantiene el aislamiento por usuario.
 La versión recuperable después de perder la sesión es la última confirmada por el
 servidor; cambios aún pendientes de envío pueden perderse.
+
+
+## Estado de consulta de los homes (ISS-50)
+
+`hooks/useHomeState.ts` conserva controles de consulta en sessionStorage bajo
+`gidas:homes:v1:`, con aislamiento por usuario, ruta, query, Memoria/version/seccion
+y catalogo cuando aplica. `utils/homeState.ts` valida estructura, enumeraciones,
+IDs y paginas positivas, limita tamanios y tolera JSON invalido o storage bloqueado.
+La escritura ocurre al cambiar el control, antes de un eventual desmontaje por
+expiracion. No almacena filas de API, credenciales, borradores ni acciones pendientes.
+
+`useHomeFilterEffect` compara los filtros por valor y evita el reinicio inicial
+de pagina; cambios posteriores conservan el comportamiento de volver a pagina uno.
+Los limites de paginacion esperan datos antes de corregir una pagina fuera de rango.
+Al recuperar los controles se consultan resultados actuales con los services y
+permisos existentes, sin endpoints nuevos. Los callbacks del contexto anterior
+no escriben sobre el siguiente usuario o ruta.
+
+La persistencia corresponde a la pestana; F5 y una copia de pestana pueden
+recuperar el contexto. No sincroniza filtros en vivo entre pestanas ni garantiza
+conservarlos al cerrar el navegador. El cierre explicito de sesion limpia el
+destino de reingreso; los controles guardados permanecen aislados por cuenta.
+
+`tests/homeState.test.ts` ejecuta controles reales y los homes de Personal y
+Proyectos desde el primer render. Los harness de Memorias y Transferencias usan
+el hook compartido real; `tests/searchSessionNavigation.test.ts` comprueba
+pagina recuperada, renovacion del token y cambio real de UCT.
+Aceptacion visual y funcional del usuario: 06/11/2026.

@@ -1,3 +1,4 @@
+import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -71,12 +72,12 @@ export default function DocenciaLanding() {
   const queryClient = useQueryClient();
   const { canCreateRecords, canEditRecords, canDeleteRecords } = useAuth();
 
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState<"true" | "false" | "all">("true");
-  const [filters, setFilters] = useState<DocenciaFilters>({});
-  const [sort, setSort] = useState<DocenciaSort>("fecha_inicio");
-  const [direction, setDirection] = useState<TableSortDirection>("desc");
+  const [page, setPage] = useHomeState("page", 1);
+  const [search, setSearch] = useHomeState("search", "");
+  const [activeFilter, setActiveFilter] = useHomeState<"true" | "false" | "all">("activeFilter", "true", { allowed: ["true","false","all"] });
+  const [filters, setFilters] = useHomeState<DocenciaFilters>("filters", {}, { shape: { curso: "", institucion: "", investigador: "", grado: "", rol: "" } });
+  const [sort, setSort] = useHomeState<DocenciaSort>("sort", "fecha_inicio", { allowed: ["curso","investigador","institucion","rol","grado","fecha_inicio","fecha_fin","estado"] });
+  const [direction, setDirection] = useHomeState<TableSortDirection>("direction", "desc", { allowed: ["asc", "desc"] });
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
   const [pendingDelete, setPendingDelete] = useState<ActividadDocencia | null>(null);
@@ -108,7 +109,7 @@ export default function DocenciaLanding() {
     staleTime: 5 * 60_000,
   });
 
-  useEffect(() => { setPage(1); setExpandedRow(null); }, [activeFilter, direction, filters, memoriaFilter, search, sort]);
+  useHomeFilterEffect(() => { setPage(1); setExpandedRow(null); }, [activeFilter, direction, filters, memoriaFilter, search, sort]);
   useEffect(() => {
     if (totalPages > 0 && page > totalPages) setPage(totalPages);
   }, [page, totalPages]);

@@ -236,3 +236,14 @@ el prefijo `transferencias`, incluyendo las consultas nuevas.
 `getTransferencias` y `useTransferencias` conservan sus consumidores
 de formularios y detalle. Las regresiones del contrato y cambios de pagina
 estan en `tests/transferenciasTable.test.ts`.
+
+
+## Recuperacion del contexto de consulta (ISS-50)
+
+TransferenciasHome conserva texto, filtros de estado/tipo/grupo/anio/moneda, direccion y pagina. El contexto de Memoria permanece separado del listado general.
+
+Los homes con estado local usan `shared/hooks/useHomeState.ts`; Busqueda conserva
+su contrato de URL. La persistencia validada se limita a la pestana y al usuario,
+sin guardar filas ni acciones pendientes. Se mantienen services, permisos,
+validaciones y paginacion vigentes. Contrato y pruebas en `../shared/README.md`.
+Aceptado funcionalmente por el usuario el 06/11/2026.

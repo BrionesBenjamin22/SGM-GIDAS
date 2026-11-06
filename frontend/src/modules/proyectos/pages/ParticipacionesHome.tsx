@@ -1,3 +1,4 @@
+import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -52,9 +53,9 @@ export default function ParticipacionesHome() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const { canCreateRecords, canEditRecords, canDeleteRecords } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filters, setFilters] = useState({ estado: "", categoria: "", forma: "", anio: "" });
-  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useHomeState("searchQuery", "");
+  const [filters, setFilters] = useHomeState("filters", { estado: "", categoria: "", forma: "", anio: "" });
+  const [page, setPage] = useHomeState("page", 1);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
   const [pendingDelete, setPendingDelete] = useState<Participacion | null>(null);
@@ -119,8 +120,8 @@ export default function ParticipacionesHome() {
     staleTime: 5 * 60_000,
   });
 
-  useEffect(() => { setPage(1); setExpandedRow(null); }, [filters, searchQuery]);
-  useEffect(() => { if (page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1)); }, [page, totalPages]);
+  useHomeFilterEffect(() => { setPage(1); setExpandedRow(null); }, [filters, searchQuery]);
+  useEffect(() => { if (!participaciones.isLoading && !participaciones.isError && page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1)); }, [page, totalPages, participaciones.isLoading, participaciones.isError]);
   useEffect(() => {
     if (!location.state?.successMessage) return;
     setSuccessMessage(location.state.successMessage);

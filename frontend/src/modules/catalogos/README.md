@@ -170,3 +170,14 @@ espacios o puntuación, incluidos registros inactivos. Los errores se muestran
 en el flujo existente. Una opción retirada conserva su historial y referencias;
 la depuración no reasigna personas. Los permisos, nueve valores por página y
 tres eventos por página de historial mantienen sus contratos.
+
+
+## Recuperacion del contexto de consulta (ISS-50)
+
+CatalogosHome recupera el catalogo seleccionado; cada CatalogPanel conserva busqueda, estado y pagina por endpoint. Los borradores y las acciones de alta/edicion siguen su flujo propio.
+
+Los homes con estado local usan `shared/hooks/useHomeState.ts`; Busqueda conserva
+su contrato de URL. La persistencia validada se limita a la pestana y al usuario,
+sin guardar filas ni acciones pendientes. Se mantienen services, permisos,
+validaciones y paginacion vigentes. Contrato y pruebas en `../shared/README.md`.
+Aceptado funcionalmente por el usuario el 06/11/2026.

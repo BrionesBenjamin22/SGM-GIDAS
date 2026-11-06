@@ -276,3 +276,14 @@ definido. Los bloqueos por vínculos operativos se conservan en Personal.
 Los encabezados históricos usan Tipo de Personal, Nivel de Formación y Tipo de
 Dedicación, alineados con los catálogos de los formularios. Los valores guardados
 en cada foto conservan su contenido; corregir una etiqueta no reescribe versiones.
+
+
+## Recuperacion del contexto de consulta (ISS-50)
+
+MemoriasHome conserva estado de actividad, estado de version, texto y pagina. La carga inicial no reinicia la pagina recuperada.
+
+Los homes con estado local usan `shared/hooks/useHomeState.ts`; Busqueda conserva
+su contrato de URL. La persistencia validada se limita a la pestana y al usuario,
+sin guardar filas ni acciones pendientes. Se mantienen services, permisos,
+validaciones y paginacion vigentes. Contrato y pruebas en `../shared/README.md`.
+Aceptado funcionalmente por el usuario el 06/11/2026.

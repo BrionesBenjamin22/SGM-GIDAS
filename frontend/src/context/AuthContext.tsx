@@ -75,7 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearSession = useCallback((rememberPath = false) => {
     if (rememberPath) {
       rememberSessionPath(
-        `${window.location.pathname}${window.location.search}${window.location.hash}`
+        `${window.location.pathname}${window.location.search}${window.location.hash}`,
+        sessionStorage,
+        window.history.state?.usr,
+        currentUserId.current,
       );
     }
     clearAccessToken();
@@ -98,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(auth.token);
     setSessionTiming(auth.sessionTiming);
     writeSharedTiming(auth.user.id, auth.sessionTiming);
-    markSessionActive();
+    markSessionActive(sessionStorage, auth.user.id);
     return true;
   }, []);
 
@@ -126,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(stored?.user ?? null);
         setToken(stored?.token ?? null);
         setSessionTiming(stored?.sessionTiming ?? null);
-        if (stored) markSessionActive();
+        if (stored) markSessionActive(sessionStorage, stored.user.id);
         else markSessionEnded();
       } catch {
         if (!active) return;
@@ -203,7 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(auth.token);
     setSessionTiming(auth.sessionTiming);
     writeSharedTiming(auth.user.id, auth.sessionTiming);
-    markSessionActive();
+    markSessionActive(sessionStorage, auth.user.id);
     return auth;
   }
 
@@ -227,7 +230,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(auth.token);
     setSessionTiming(auth.sessionTiming);
     writeSharedTiming(auth.user.id, auth.sessionTiming);
-    markSessionActive();
+    markSessionActive(sessionStorage, auth.user.id);
   }
 
   async function logout() {

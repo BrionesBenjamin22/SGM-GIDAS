@@ -207,3 +207,12 @@ identificadores, claves API y valores persistidos.
 Los mensajes de carga, validación, éxito y error siguen el estilo del sistema.
 La revisión incluye estados menos frecuentes, como errores de métricas,
 confirmaciones de eliminación y avisos de exportación vacía.
+
+
+## Contexto de consulta despues del reingreso (ISS-50)
+
+Los 18 homes con controles locales recuperan filtros, texto, pagina y orden
+por usuario. Busqueda conserva su URL. El contrato comun de persistencia,
+aislacion, validaciones y pruebas se documenta en `shared/README.md`.
+Autenticacion valida el propietario del destino antes de restaurarlo.
+Aceptado por el usuario el 06/11/2026; sin cambios de contratos HTTP ni roles.

@@ -1,3 +1,4 @@
+import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -49,9 +50,9 @@ export default function ArticulosDivulgacionHome() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const { canCreateRecords, canEditRecords, canDeleteRecords } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filters, setFilters] = useState({ estado: "", grupo: "", anio: "" });
-  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useHomeState("searchQuery", "");
+  const [filters, setFilters] = useHomeState("filters", { estado: "", grupo: "", anio: "" });
+  const [page, setPage] = useHomeState("page", 1);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
   const [pendingDelete, setPendingDelete] = useState<ArticuloDivulgacion | null>(null);
@@ -126,13 +127,13 @@ export default function ArticulosDivulgacionHome() {
     staleTime: 5 * 60_000,
   });
 
-  useEffect(() => {
+  useHomeFilterEffect(() => {
     setPage(1);
     setExpandedRow(null);
   }, [filters, searchQuery]);
   useEffect(() => {
-    if (page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1));
-  }, [page, totalPages]);
+    if (!articulos.isLoading && !articulos.isError && page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1));
+  }, [page, totalPages, articulos.isLoading, articulos.isError]);
   useEffect(() => {
     if (!location.state?.successMessage) return;
     setSuccessMessage(location.state.successMessage);

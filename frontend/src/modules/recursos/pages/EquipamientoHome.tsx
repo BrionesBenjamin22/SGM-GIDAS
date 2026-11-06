@@ -1,3 +1,4 @@
+import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -54,11 +55,11 @@ export default function EquipamientoLanding() {
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Equipamiento | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useHomeState("searchQuery", "");
+  const [page, setPage] = useHomeState("page", 1);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
-  const [filters, setFilters] = useState({ estado: "", moneda: "", montoMin: "", montoMax: "", anio: "" });
+  const [filters, setFilters] = useHomeState("filters", { estado: "", moneda: "", montoMin: "", montoMax: "", anio: "" });
 
   const memoriaFilter = useMemo(() => getMemoriaSectionFilter(location.state, "equipamiento"), [location.state]);
   const filtroActivos: "true" | "false" | "all" = memoriaFilter || filters.estado === "todos"
@@ -93,8 +94,8 @@ export default function EquipamientoLanding() {
     staleTime: 5 * 60_000,
   });
 
-  useEffect(() => { setPage(1); setExpandedRow(null); }, [filters, searchQuery]);
-  useEffect(() => { if (page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1)); }, [page, totalPages]);
+  useHomeFilterEffect(() => { setPage(1); setExpandedRow(null); }, [filters, searchQuery]);
+  useEffect(() => { if (!equipamiento.isLoading && !equipamiento.isError && page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1)); }, [page, totalPages, equipamiento.isLoading, equipamiento.isError]);
   useEffect(() => {
     if (!location.state?.successMessage) return;
     setSuccessMessage(location.state.successMessage);

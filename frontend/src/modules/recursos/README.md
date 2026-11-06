@@ -249,3 +249,14 @@ e historial. El backend precarga fuentes, becarios y clasificaciones para
 reducir consultas de listado y dashboard anual. No cambia el contrato
 financiero ni la paginacion de nueve filas de Becas. Las pruebas de la
 etapa y su aceptacion funcional quedaron registradas en el CHANGELOG.
+
+
+## Recuperacion del contexto de consulta (ISS-50)
+
+BecasHome y EquipamientoHome recuperan texto, filtros y pagina. ErogacionesHome recupera ademas orden y fuente/pagina del panel financiero. El debounce de Becas conserva la pagina inicial.
+
+Los homes con estado local usan `shared/hooks/useHomeState.ts`; Busqueda conserva
+su contrato de URL. La persistencia validada se limita a la pestana y al usuario,
+sin guardar filas ni acciones pendientes. Se mantienen services, permisos,
+validaciones y paginacion vigentes. Contrato y pruebas en `../shared/README.md`.
+Aceptado funcionalmente por el usuario el 06/11/2026.

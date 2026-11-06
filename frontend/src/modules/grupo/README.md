@@ -216,3 +216,14 @@ El máximo de resultados por página conserva el contrato del módulo.
 En VisitantesDetalle, las etiquetas de datos y los encabezados de tarjetas
 usan peso seminegrita y color pizarra oscuro para distinguirse del contenido.
 La disposición, los textos, las acciones y el contrato permanecen iguales.
+
+
+## Recuperacion del contexto de consulta (ISS-50)
+
+VisitantesHome conserva texto, estado, tipo de visita, procedencia, anio y pagina. Los limites de pagina se ajustan despues de cargar los datos.
+
+Los homes con estado local usan `shared/hooks/useHomeState.ts`; Busqueda conserva
+su contrato de URL. La persistencia validada se limita a la pestana y al usuario,
+sin guardar filas ni acciones pendientes. Se mantienen services, permisos,
+validaciones y paginacion vigentes. Contrato y pruebas en `../shared/README.md`.
+Aceptado funcionalmente por el usuario el 06/11/2026.

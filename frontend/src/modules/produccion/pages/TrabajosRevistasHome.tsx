@@ -1,3 +1,4 @@
+import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -57,11 +58,11 @@ export default function TrabajosRevistasHome() {
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [pendingDelete, setPendingDelete] = useState<TrabajoRevista | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useHomeState("searchQuery", "");
+  const [page, setPage] = useHomeState("page", 1);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
-  const [filters, setFilters] = useState({ estado: "", tipo: "", pais: "", autor: "", anio: "" });
+  const [filters, setFilters] = useHomeState("filters", { estado: "", tipo: "", pais: "", autor: "", anio: "" });
 
   const memoriaFilter = useMemo(
     () => getMemoriaSectionFilter(location.state, "trabajos-revistas"),
@@ -126,13 +127,13 @@ export default function TrabajosRevistasHome() {
   });
   const tipoNames = useMemo(() => Object.fromEntries(tipos.map((tipo) => [tipo.id, tipo.nombre])), [tipos]);
 
-  useEffect(() => {
+  useHomeFilterEffect(() => {
     setPage(1);
     setExpandedRow(null);
   }, [filters, searchQuery]);
   useEffect(() => {
-    if (page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1));
-  }, [page, totalPages]);
+    if (!trabajos.isLoading && !trabajos.isError && page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1));
+  }, [page, totalPages, trabajos.isLoading, trabajos.isError]);
   useEffect(() => {
     if (!location.state?.successMessage) return;
     setSuccessMessage(location.state.successMessage);

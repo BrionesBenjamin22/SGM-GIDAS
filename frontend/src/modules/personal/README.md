@@ -490,3 +490,14 @@ cambian. Los rechazos de API se asocian a `tipo_personal_id` y se muestran junto
 al selector. `tests/personalCatalogForm.test.ts` verifica el formulario real,
 el filtrado, las funciones personalizadas y el bloqueo de un ID incompatible.
 Aceptación funcional del usuario: 05/11/2026.
+
+
+## Recuperacion del contexto de consulta (ISS-50)
+
+PersonalHome conserva texto, clase, estado, orden y pagina. La URL con tipo mantiene un ambito propio. El texto aplicado se inicializa con el recuperado para evitar que el debounce borre la pagina.
+
+Los homes con estado local usan `shared/hooks/useHomeState.ts`; Busqueda conserva
+su contrato de URL. La persistencia validada se limita a la pestana y al usuario,
+sin guardar filas ni acciones pendientes. Se mantienen services, permisos,
+validaciones y paginacion vigentes. Contrato y pruebas en `../shared/README.md`.
+Aceptado funcionalmente por el usuario el 06/11/2026.

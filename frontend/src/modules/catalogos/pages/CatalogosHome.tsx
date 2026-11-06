@@ -1,3 +1,4 @@
+import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCatalogDraft, type CatalogDraft } from "@/modules/catalogos/hooks/useCatalogDraft";
@@ -338,7 +339,7 @@ function CatalogPanel({
     : hasDescriptiveCatalogName(value);
 
   const [items, setItems] = useState<CatalogItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [pendingAction, setPendingAction] = useState<"create" | "update" | "delete" | null>(null);
   const actionInFlight = useRef(false);
   const [fkOptions, setFkOptions] = useState<CatalogItem[]>([]);
@@ -359,9 +360,9 @@ function CatalogPanel({
   const [editFkId, setEditFkId] = useState<number | "">(initialDraft?.mode === "edit" ? initialDraft.fkId : "");
 
   const [deleteTarget, setDeleteTarget] = useState<CatalogItem | null>(null);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useHomeState("search", "", { scope: def.endpoint });
+  const [statusFilter, setStatusFilter] = useHomeState<StatusFilter>("statusFilter", "active", { scope: def.endpoint, allowed: ["active", "inactive", "all"] });
+  const [currentPage, setCurrentPage] = useHomeState("currentPage", 1, { scope: def.endpoint });
   const [errorMessage, setErrorMessage] = useState("");
   const [newNameError, setNewNameError] = useState("");
   const [editNameError, setEditNameError] = useState("");
@@ -487,15 +488,15 @@ function CatalogPanel({
     return filteredItems.slice(start, start + CATALOG_ITEMS_PER_PAGE);
   }, [currentPage, filteredItems]);
 
-  useEffect(() => {
+  useHomeFilterEffect(() => {
     setCurrentPage(1);
   }, [search, statusFilter]);
 
   useEffect(() => {
-    if (currentPage > totalPages) {
+    if (!loading && !errorMessage && currentPage > totalPages) {
       setCurrentPage(totalPages);
     }
-  }, [currentPage, totalPages]);
+  }, [currentPage, totalPages, loading, errorMessage]);
 
   useEffect(() => {
     if (!initialDraft?.editId) return;
@@ -1122,7 +1123,7 @@ export default function CatalogosHome() {
   const [restoredDraft, setRestoredDraft] = useState<CatalogDraft | null>(null);
   const [draftVersion, setDraftVersion] = useState(0);
   const onDraftChange = useCallback((value: CatalogDraft | null) => draft.setValue(value), [draft.setValue]);
-  const [selectedEndpoint, setSelectedEndpoint] = useState(CATALOGS[0].endpoint);
+  const [selectedEndpoint, setSelectedEndpoint] = useHomeState("selectedEndpoint", CATALOGS[0].endpoint, { allowed: CATALOGS.map(item => item.endpoint) });
   const selectedCatalog = CATALOGS.find((catalog) => catalog.endpoint === selectedEndpoint) ?? CATALOGS[0];
 
   return (

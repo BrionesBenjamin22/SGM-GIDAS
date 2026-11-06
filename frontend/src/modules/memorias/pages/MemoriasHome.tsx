@@ -1,3 +1,4 @@
+import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -157,10 +158,10 @@ export default function MemoriasHome() {
   const puedeCrear = isAdmin() || isGestor();
   const puedeEliminar = isAdmin();
 
-  const [estado, setEstado] = useState<MemoriaActivosFilter>("true");
-  const [estadoVersion, setEstadoVersion] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(1);
+  const [estado, setEstado] = useHomeState<MemoriaActivosFilter>("estado", "true", { allowed: ["true", "false", "all"] });
+  const [estadoVersion, setEstadoVersion] = useHomeState("estadoVersion", "", { allowed: ["", "abierta", "en revision", "cerrada"] });
+  const [searchQuery, setSearchQuery] = useHomeState("searchQuery", "");
+  const [page, setPage] = useHomeState("page", 1);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(() => new Set());
   const [pendingDelete, setPendingDelete] = useState<Memoria | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -192,14 +193,14 @@ export default function MemoriasHome() {
   const totalPages = Math.ceil(filteredList.length / ITEMS_PER_PAGE);
   const paginatedItems = filteredList.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  useEffect(() => {
+  useHomeFilterEffect(() => {
     setPage(1);
     setExpandedRows(new Set());
   }, [estado, estadoVersion, searchQuery]);
 
   useEffect(() => {
-    if (page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1));
-  }, [page, totalPages]);
+    if (!memoriasQuery.isLoading && !memoriasQuery.isError && page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1));
+  }, [page, totalPages, memoriasQuery.isLoading, memoriasQuery.isError]);
 
   useEffect(() => {
     if (!location.state?.successMessage) return;

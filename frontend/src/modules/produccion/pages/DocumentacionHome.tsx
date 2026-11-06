@@ -1,3 +1,4 @@
+import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -28,12 +29,12 @@ export default function DocumentacionHome() {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Documentacion | null>(null);
-  const [search, setSearch] = useState("");
-  const [estado, setEstado] = useState<"true" | "false" | "all">("true");
-  const [autor, setAutor] = useState("");
-  const [anio, setAnio] = useState("");
-  const [direction, setDirection] = useState<"asc" | "desc">("asc");
-  const [page, setPage] = useState(1);
+  const [search, setSearch] = useHomeState("search", "");
+  const [estado, setEstado] = useHomeState<"true" | "false" | "all">("estado", "true", { allowed: ["true","false","all"] });
+  const [autor, setAutor] = useHomeState("autor", "");
+  const [anio, setAnio] = useHomeState("anio", "");
+  const [direction, setDirection] = useHomeState<"asc" | "desc">("direction", "asc", { allowed: ["asc","desc"] });
+  const [page, setPage] = useHomeState("page", 1);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
 
@@ -53,7 +54,7 @@ export default function DocumentacionHome() {
   const expandedItem = expanded === null ? undefined : scoped.find((item) => item.id === expanded);
   const history = useQuery({ queryKey: ["documentacion-historial", expandedItem?.id], queryFn: () => getHistorialDocumentacionById(expandedItem!.id), enabled: Boolean(expandedItem), staleTime: 5 * 60_000 });
 
-  useEffect(() => { setPage(1); setExpanded(null); }, [search, estado, autor, anio, direction, memoriaFilter]);
+  useHomeFilterEffect(() => { setPage(1); setExpanded(null); }, [search, estado, autor, anio, direction, memoriaFilter]);
   useEffect(() => { if (result.data && page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1)); }, [page, totalPages, result.data]);
   useEffect(() => {
     if (!location.state?.successMessage) return;

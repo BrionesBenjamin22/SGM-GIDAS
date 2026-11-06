@@ -513,3 +513,14 @@ listado; la selección y los mensajes mantienen las tildes. El detalle muestra
 Fecha de finalización. Registro de Propiedad utiliza Tipo de Registro de
 Propiedad en etiqueta, selector, detalle e historial, igual que Catálogos.
 Estas denominaciones no cambian las claves API, IDs ni validaciones de negocio.
+
+
+## Recuperacion del contexto de consulta (ISS-50)
+
+DocenciaHome, DocumentacionHome, ArticulosDivulgacionHome, DistincionesHome, RegistrosPropiedadHome, TrabajosReunionHome y TrabajosRevistasHome conservan sus controles de consulta, orden cuando existe y pagina por listado.
+
+Los homes con estado local usan `shared/hooks/useHomeState.ts`; Busqueda conserva
+su contrato de URL. La persistencia validada se limita a la pestana y al usuario,
+sin guardar filas ni acciones pendientes. Se mantienen services, permisos,
+validaciones y paginacion vigentes. Contrato y pruebas en `../shared/README.md`.
+Aceptado funcionalmente por el usuario el 06/11/2026.

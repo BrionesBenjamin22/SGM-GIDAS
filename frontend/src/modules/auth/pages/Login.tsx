@@ -9,7 +9,11 @@ import { useSystemSetup } from "@/modules/auth/hooks/useSystemSetup";
 import RouteBreadcrumbs from "@/modules/shared/components/RouteBreadcrumbs";
 import {
   consumeSessionEnded,
-  consumeSessionPath,
+  clearSessionReturn,
+  readSessionReturn,
+  readSessionOwner,
+  resolveSessionReturn,
+  sessionNavigationState,
   isSafeInternalPath,
 } from "@/modules/auth/utils/sessionNavigation";
 
@@ -18,14 +22,18 @@ export default function LoginPage() {
   const { data: needsInitialAdmin, isFetching: setupFetching } = useSystemSetup();
   const nav = useNavigate();
   const location = useLocation() as {
-    state?: { from?: { pathname?: string; search?: string; hash?: string } };
+    state?: { from?: { pathname?: string; search?: string; hash?: string; state?: unknown } };
   };
   const [from] = useState(() => {
+    const saved = readSessionReturn();
     const statePath = location.state?.from
       ? `${location.state.from.pathname ?? ""}${location.state.from.search ?? ""}${location.state.from.hash ?? ""}`
       : "";
-    if (statePath && isSafeInternalPath(statePath)) return statePath;
-    return consumeSessionPath() ?? "/inicio";
+    if (statePath && isSafeInternalPath(statePath)) return {
+      path: statePath, userId: saved?.userId ?? readSessionOwner(),
+      state: sessionNavigationState(location.state?.from?.state) ?? (saved?.path === statePath ? saved.state : undefined),
+    };
+    return saved ?? { path: "/inicio" };
   });
 
   const [usuario, setUsuario] = useState("");
@@ -38,7 +46,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!sessionLoading && user) {
-      nav(user.primer_login ? "/cambiar-password" : from, { replace: true });
+      const destination = resolveSessionReturn(from, user.id);
+      clearSessionReturn();
+      nav(user.primer_login ? "/cambiar-password" : destination.path, { replace: true, state: destination.state });
     } else if (!sessionLoading) {
       setSessionEnded(consumeSessionEnded());
     }
@@ -72,7 +82,9 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const auth = await login(usuario, password);
-      nav(auth.user.primer_login ? "/cambiar-password" : from, { replace: true });
+      const destination = resolveSessionReturn(from, auth.user.id);
+      clearSessionReturn();
+      nav(auth.user.primer_login ? "/cambiar-password" : destination.path, { replace: true, state: destination.state });
     } catch (err: unknown) {
       if (applyFieldErrors(err, setErrors, ["usuario","password"])) return;
       setError(

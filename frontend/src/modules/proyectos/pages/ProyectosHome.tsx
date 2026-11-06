@@ -1,3 +1,4 @@
+import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -33,14 +34,14 @@ export default function ProyectosLanding() {
   const tiposQuery = useTiposProyecto();
   const { fuentes } = useFuentesFinanciamiento();
 
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState<"true" | "false" | "all">("true");
-  const [typeFilter, setTypeFilter] = useState<number | undefined>();
-  const [sourceFilter, setSourceFilter] = useState<number | undefined>();
-  const [sort, setSort] = useState<ProyectoSort>("fecha_inicio");
-  const [direction, setDirection] = useState<TableSortDirection>("desc");
+  const [page, setPage] = useHomeState("page", 1);
+  const [search, setSearch] = useHomeState("search", "");
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const [activeFilter, setActiveFilter] = useHomeState<"true" | "false" | "all">("activeFilter", "true", { allowed: ["true","false","all"] });
+  const [typeFilter, setTypeFilter] = useHomeState<number | undefined>("typeFilter", undefined, { kind: "id" });
+  const [sourceFilter, setSourceFilter] = useHomeState<number | undefined>("sourceFilter", undefined, { kind: "id" });
+  const [sort, setSort] = useHomeState<ProyectoSort>("sort", "fecha_inicio", { allowed: ["codigo","nombre","tipo","fuente","fecha_inicio","fecha_fin","estado"] });
+  const [direction, setDirection] = useHomeState<TableSortDirection>("direction", "desc", { allowed: ["asc", "desc"] });
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
   const [pendingClose, setPendingClose] = useState<Proyecto | null>(null);
@@ -57,7 +58,7 @@ export default function ProyectosLanding() {
     return () => window.clearTimeout(timeout);
   }, [search]);
 
-  useEffect(() => {
+  useHomeFilterEffect(() => {
     setPage(1);
     setExpandedRow(null);
   }, [debouncedSearch, activeFilter, typeFilter, sourceFilter, sort, direction, memoriaFilter]);
@@ -79,6 +80,12 @@ export default function ProyectosLanding() {
     fuenteFinanciamientoId: sourceFilter,
     ids: memoriaFilter?.ids,
   });
+
+  useEffect(() => {
+    if (proyectos.data && !proyectos.isFetching && !proyectos.isError && page > Math.max(1, proyectos.meta.total_pages)) {
+      setPage(Math.max(1, proyectos.meta.total_pages));
+    }
+  }, [page, proyectos.data, proyectos.isFetching, proyectos.isError, proyectos.meta.total_pages, setPage]);
 
   const expandedProject = expandedRow ? proyectos.list.find((project) => String(project.id) === expandedRow) : undefined;
   const history = useQuery({

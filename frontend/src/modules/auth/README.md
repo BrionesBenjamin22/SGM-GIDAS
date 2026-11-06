@@ -181,3 +181,14 @@ En Mi perfil, nombre de usuario y correo muestran el indicador de campo obligato
 Registro y cambio de contraseña validan sus campos antes de enviar, conservan los valores y enfocan el primer control inválido. Las validaciones del servidor usan `error.details.fields`; los errores sin campo concreto se anuncian como aviso general. El envío permanece bloqueado mientras se procesa la solicitud.
 
 Usuarios aplica el mismo foco local, bloquea un segundo envío y anuncia los errores generales con `role="alert"`. Si todos los errores del backend tienen control conocido, solo se muestran junto a los campos.
+
+
+## Recuperacion del contexto de consulta (ISS-50)
+
+Login conserva el destino de reingreso con query/hash y contexto validado de Memoria, asociado a la cuenta anterior. Al autenticar otra cuenta se abre Inicio; el cierre explicito de sesion descarta el destino pendiente. No cambian endpoints, roles ni credenciales.
+
+Los homes con estado local usan `shared/hooks/useHomeState.ts`; Busqueda conserva
+su contrato de URL. La persistencia validada se limita a la pestana y al usuario,
+sin guardar filas ni acciones pendientes. Se mantienen services, permisos,
+validaciones y paginacion vigentes. Contrato y pruebas en `../shared/README.md`.
+Aceptado funcionalmente por el usuario el 06/11/2026.

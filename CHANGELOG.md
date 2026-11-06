@@ -8,6 +8,18 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-50: recuperar filtros al reingresar
+
+- Los 18 homes con controles locales recuperan texto, filtros, pagina y orden
+  por usuario y contexto. Catalogos separa sus endpoints; Informes, sus tipos.
+- Se conserva el contexto de Memoria y se consultan resultados actuales.
+  El montaje, debounce y carga inicial no borran la pagina recuperada.
+- El reingreso de otra cuenta descarta el destino anterior; Busqueda conserva
+  la pagina de su URL al cargar UCT o renovar el token.
+- Aceptado por el usuario el 06/11/2026. Validacion: suite frontend completa,
+  46 pruebas backend de autenticacion, TypeScript y build de produccion
+  aprobados. Sin cambios de endpoints, permisos o migraciones.
+
 ### Sesiones cortas para validación en desarrollo
 
 - `REFRESH_TOKEN_EXPIRATION_MINUTES` admite desde 2 minutos en entornos local,

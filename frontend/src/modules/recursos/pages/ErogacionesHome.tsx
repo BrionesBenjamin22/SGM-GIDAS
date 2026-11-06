@@ -1,3 +1,4 @@
+import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -36,13 +37,13 @@ export default function ErogacionesLanding() {
   const { uct, isLoading: uctLoading, isError: uctError } = useUct();
   const { fuentes } = useFuentesFinanciamiento();
   const { data: categorias = [] } = useCategoriasErogacion();
-  const [filters, setFilters] = useState(initialFilters);
-  const [fuenteDashboard, setFuenteDashboard] = useState<string | undefined>();
-  const [fuentesPage, setFuentesPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(1);
-  const [sortKey, setSortKey] = useState("fecha");
-  const [sortDirection, setSortDirection] = useState<TableSortDirection>("desc");
+  const [filters, setFilters] = useHomeState("filters", initialFilters);
+  const [fuenteDashboard, setFuenteDashboard] = useHomeState<string | undefined>("fuenteDashboard", undefined, { kind: "text" });
+  const [fuentesPage, setFuentesPage] = useHomeState("fuentesPage", 1);
+  const [searchQuery, setSearchQuery] = useHomeState("searchQuery", "");
+  const [page, setPage] = useHomeState("page", 1);
+  const [sortKey, setSortKey] = useHomeState("sortKey", "fecha", { allowed: ["fecha", "numero", "monto"] });
+  const [sortDirection, setSortDirection] = useHomeState<TableSortDirection>("sortDirection", "desc", { allowed: ["asc", "desc"] });
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
   const [pendingDelete, setPendingDelete] = useState<Erogacion | null>(null);
@@ -103,8 +104,8 @@ export default function ErogacionesLanding() {
     staleTime: 5 * 60_000,
   });
 
-  useEffect(() => { setPage(1); setExpandedRow(null); }, [filters, searchQuery]);
-  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
+  useHomeFilterEffect(() => { setPage(1); setExpandedRow(null); }, [filters, searchQuery]);
+  useEffect(() => { if (!movimientos.isLoading && !movimientos.isError && page > totalPages) setPage(totalPages); }, [page, totalPages, movimientos.isLoading, movimientos.isError]);
   useEffect(() => {
     if (!location.state?.successMessage) return;
     setSuccessMessage(location.state.successMessage);
