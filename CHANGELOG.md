@@ -8,6 +8,16 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-45: retorno y breadcrumb de Catálogos
+
+- Volver restaura la pantalla desde la que se abrió Gestionar Catálogos,
+  con query, hash y contexto. Sin origen válido vuelve a Inicio.
+- El breadcrumb incorpora las pantallas de origen y permite regresar con
+  su contexto; reingresar o recargar Catálogos conserva el origen inicial.
+- Se mantienen filtros, borradores, roles y contratos HTTP. Aceptado visual
+  y funcionalmente el 06/11/2026: 264 pruebas frontend, TypeScript y build
+  aprobados; 19 pruebas enfocadas de navegación confirmadas antes del commit.
+
 ### ISS-42: filas desplegables del menú
 
 - Texto, flecha y espacio libre de cada fila expanden o contraen el submenú,

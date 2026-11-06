@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { NavLink, type To } from "react-router-dom";
+import { NavLink, useLocation, type To } from "react-router-dom";
+import { buildCatalogNavigationState } from "@/modules/catalogos/utils/catalogNavigation";
 import { ChevronDown, Lock, LogOut, Menu, Shield, User, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -77,6 +78,7 @@ function keyFrom(label: string, to: To | undefined, idx: number, parentKey: stri
 }
 
 function MenuList({ nodes, parentKey = "root", level = 0, expanded, onToggle, close }: MenuListProps) {
+  const location = useLocation();
   return (
     <ul className={level === 0 ? "select-none" : "pl-5 border-l border-slate-200"}>
       {nodes.map((node, idx) => {
@@ -100,6 +102,7 @@ function MenuList({ nodes, parentKey = "root", level = 0, expanded, onToggle, cl
               ) : node.to ? (
                 <NavLink
                   to={node.to}
+                  state={node.to === "/catalogos" ? buildCatalogNavigationState(location) : undefined}
                   onClick={close}
                   end
                   className={({ isActive }) =>

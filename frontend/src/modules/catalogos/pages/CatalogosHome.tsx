@@ -1,6 +1,7 @@
 import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { getCatalogReturn } from "@/modules/catalogos/utils/catalogNavigation";
 import { useCatalogDraft, type CatalogDraft } from "@/modules/catalogos/hooks/useCatalogDraft";
 import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
@@ -1118,6 +1119,8 @@ function CatalogPanel({
 
 export default function CatalogosHome() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = getCatalogReturn(location.state);
   const { user, canCreateRecords, canEditRecords, canDeleteRecords } = useAuth();
   const draft = useCatalogDraft(user?.id, canCreateRecords() || canEditRecords());
   const [restoredDraft, setRestoredDraft] = useState<CatalogDraft | null>(null);
@@ -1147,7 +1150,7 @@ export default function CatalogosHome() {
             Consulte y administre las opciones que usan los formularios.
           </p>
         </div>
-        <Button type="button" variant="secondary" size="sm" onClick={() => navigate(-1)}>Volver</Button>
+        <Button type="button" variant="secondary" size="sm" onClick={() => navigate(returnTo, { state: returnTo.state, replace: true })}>Volver</Button>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">

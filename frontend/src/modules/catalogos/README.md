@@ -1,5 +1,29 @@
 # Catalogos frontend
 
+## Retorno al origen y breadcrumb (ISS-45)
+
+Al abrir Gestionar Catálogos desde `Sidebar`, el enlace guarda en el estado
+de navegación `catalogosReturnTo`, con `pathname`, `search`, `hash` y `state`
+del origen. `utils/catalogNavigation.ts` valida el destino interno y excluye
+mensajes de éxito y retornos anidados del contexto que se restaura.
+
+`CatalogosHome` resuelve el destino con `getCatalogReturn`. Volver restaura
+la URL y el estado del origen y reemplaza la entrada de Catálogos. Un acceso
+directo sin origen válido vuelve a Inicio. Reingresar al mismo enlace conserva
+el origen inicial y recargar la entrada mantiene su estado. Los filtros y
+borradores siguen usando sus mecanismos existentes; esta navegación no guarda
+valores nuevos de formularios ni ejecuta mutaciones de catálogo.
+
+El breadcrumb incorpora la jerarquía del origen, por ejemplo
+`Inicio > Proyectos > Detalle > Editar > Catálogos`. Su enlace al origen
+conserva query, hash y contexto. Sin origen válido muestra `Inicio > Catálogos`.
+La resolución compartida y las pruebas de enlaces están en `shared`.
+
+Se mantienen roles, validaciones, services y contratos HTTP existentes.
+Pruebas de retorno y componentes reales en `tests/catalogNavigation.test.ts`;
+breadcrumb en `tests/routeBreadcrumbs.test.ts`. Aceptado visual y funcionalmente
+el 06/11/2026: 264 pruebas frontend, TypeScript y build aprobados.
+
 ## Validacion preventiva de formularios (ISS-33)
 
 `CatalogosHome` muestra el error junto al nombre durante alta y edicion,

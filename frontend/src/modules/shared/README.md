@@ -1,5 +1,23 @@
 # Funcionalidades compartidas
 
+## Breadcrumb contextual de Catálogos (ISS-45)
+
+`getRouteBreadcrumbs` consume el origen validado por
+`catalogos/utils/catalogNavigation.ts` y reutiliza la jerarquía de esa ruta.
+Convierte su último elemento en un enlace al origen con query, hash y estado
+propios y agrega Catálogos como pantalla actual. Los enlaces ancestrales
+conservan su contexto; no heredan `catalogosReturnTo` desde la pantalla actual.
+Al volver, el resolvedor muestra el breadcrumb habitual de la ruta de destino.
+
+Sin origen válido o sin jerarquía reconocida se muestra `Inicio > Catálogos`.
+No se registran visitas globales ni se alteran rutas o permisos. La utilidad
+de retorno permanece en el módulo Catálogos y el componente compartido
+`RouteBreadcrumbs` conserva su contrato `BreadcrumbItem.state`.
+`tests/routeBreadcrumbs.test.ts` comprueba el resolvedor y el componente
+renderizado, incluidos enlaces con contexto, pantalla actual y regresiones de
+becario-beca. Aceptado el 06/11/2026; validación integrada de 264 pruebas,
+TypeScript y build aprobados.
+
 ## Filas desplegables del menú (ISS-42)
 
 `Sidebar` usa un único botón nativo de ancho completo por fila con submenú,

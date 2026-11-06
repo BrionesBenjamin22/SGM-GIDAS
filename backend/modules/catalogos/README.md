@@ -1,5 +1,14 @@
 # Modulo backend de catalogos
 
+## Navegación de retorno (ISS-45)
+
+El frontend conserva el origen de ingreso a Gestionar Catálogos y lo restaura
+desde Volver o el breadcrumb. `catalogosReturnTo` es estado del router del
+cliente: no forma parte de payloads ni se persiste en modelos o auditoría.
+Este ajuste no agrega endpoints, relaciones, estados o errores de API.
+Las consultas y mutaciones mantienen sus services, validaciones, permisos
+por rol e historial existentes. Aceptado el 06/11/2026.
+
 ## Contrato consumido por la validacion preventiva (ISS-33)
 
 Las reglas de nombres, normalizacion, longitud, duplicados, permisos y baja logica siguen comprobadas por cada service al guardar.

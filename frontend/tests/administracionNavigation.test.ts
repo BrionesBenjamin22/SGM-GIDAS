@@ -6,6 +6,7 @@ import { runInNewContext } from "node:vm";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import ts from "typescript";
+import * as catalogNavigation from "../src/modules/catalogos/utils/catalogNavigation.ts";
 
 const mainSource = await readFile(new URL("../src/main.tsx", import.meta.url), "utf8");
 const sidebarSource = await readFile(new URL("../src/components/Sidebar.tsx", import.meta.url), "utf8");
@@ -34,7 +35,11 @@ test("ADMIN conserva Inicio, Administración, Memorias y Búsqueda sin consultar
         user: { rol }, isAdmin: () => rol === "ADMIN", isGestor: () => rol === "GESTOR",
         logout: async () => {},
       }) };
-      if (name === "react-router-dom") return { NavLink: ({ to, children }: any) => createElement("a", { href: to }, children) };
+      if (name === "react-router-dom") return {
+        useLocation: () => ({ pathname: "/inicio", search: "", hash: "", state: null }),
+        NavLink: ({ to, children }: any) => createElement("a", { href: to }, children),
+      };
+      if (name === "@/modules/catalogos/utils/catalogNavigation") return catalogNavigation;
       // Cualquier dependencia de consultas o estados de memorias falla aquí.
       if (name.startsWith("@/")) throw new Error(`Dependencia inesperada: ${name}`);
       return require(name);
