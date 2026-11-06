@@ -84,6 +84,12 @@ transversal en `../README.md`.
 
 El módulo implementa la landing pública, inicio y cierre de sesión, recuperación de sesión, registro del primer administrador, cambio obligatorio de contraseña, perfil propio y administración de usuarios. El token de acceso se conserva únicamente en memoria; la renovación usa la cookie `HttpOnly` emitida por backend.
 
+Para validar vencimientos, el backend permite configurar una sesión renovable
+desde 2 minutos en entornos de desarrollo y pruebas. Producción y staging
+conservan un mínimo de 60 minutos. El frontend sigue usando los metadatos de
+vencimiento enviados por la API; no cambian sus hooks, vistas ni permisos.
+Este ajuste fue aprobado por el usuario el 05/11/2026.
+
 ## Estructura
 
 - `pages/Landing.tsx`: composición visual de la landing pública y coordinación de sesión/configuración.

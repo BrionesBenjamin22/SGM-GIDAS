@@ -8,6 +8,15 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### Sesiones cortas para validación en desarrollo
+
+- `REFRESH_TOKEN_EXPIRATION_MINUTES` admite desde 2 minutos en entornos local,
+  development, docker y testing para comprobar avisos y vencimientos.
+- Producción, staging y demás entornos conservan el mínimo de 60 minutos;
+  no cambian el valor predeterminado, los endpoints ni la seguridad de cookies.
+- Aprobado el 05/11/2026. Validación del 06/11/2026: 20 pruebas backend de
+  configuración de seguridad y expiración de tokens correctas.
+
 ### ISS-46: monto cero en Transferencias
 
 - Transferencias admite monto cero en alta y edición para convenios sin

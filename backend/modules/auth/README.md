@@ -115,6 +115,10 @@ El refresh token no aparece en el JSON. Una recarga conserva la sesión nueva.
 
 - `JWT_EXPIRATION_MINUTES` define la vigencia del access token (15 minutos por defecto).
 - `REFRESH_TOKEN_EXPIRATION_MINUTES` define la vigencia renovable de la sesion (10080 minutos, siete dias, por defecto).
+  Su mínimo es de 2 minutos con `APP_ENV=local`, `development`, `docker` o
+  `testing`, para probar vencimientos. En los demás entornos, incluidos
+  producción y staging, conserva el mínimo de 60 minutos. El máximo sigue
+  siendo 43200 minutos. Ajuste aprobado por el usuario el 05/11/2026.
 - `SESSION_WARNING_SECONDS` define con cuanta anticipacion el frontend muestra el aviso de vencimiento (300 segundos por defecto).
 - Login, registro y refresh devuelven `access_expires_at`, `session_expires_at` y
   `session_warning_seconds`. Son metadatos de temporizacion; los tokens siguen sin

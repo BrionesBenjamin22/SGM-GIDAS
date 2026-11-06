@@ -183,7 +183,7 @@ class Config:
     REFRESH_TOKEN_EXPIRATION_MINUTES = _parse_int_env_range(
         "REFRESH_TOKEN_EXPIRATION_MINUTES",
         default=10080,
-        min_value=60,
+        min_value=2 if APP_ENV in {"local", "development", "docker", "testing"} else 60,
         max_value=43200,
     )
     SESSION_WARNING_SECONDS = _parse_int_env_range(
