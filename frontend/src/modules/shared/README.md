@@ -1,5 +1,18 @@
 # Funcionalidades compartidas
 
+## Filas desplegables del menú (ISS-42)
+
+`Sidebar` usa un único botón nativo de ancho completo por fila con submenú,
+también en niveles anidados. Texto, espacio libre y flecha expanden o contraen
+la misma sección. El botón expone `aria-expanded`, conserva el foco al activarse
+con Enter o Espacio y oculta el icono decorativo a lectores de pantalla.
+Los submenús cerrados conservan `inert` y quedan fuera del recorrido de teclado.
+
+Escritorio y móvil comparten `MenuList`. Los destinos directos siguen siendo
+enlaces y mantienen el filtrado de permisos existente. No se agregan services,
+hooks ni contratos HTTP. Aceptado visual y funcionalmente el 06/11/2026;
+validación integrada: 264 pruebas frontend, TypeScript y build aprobados.
+
 ## Breadcrumb contextual de becas (ISS-40)
 
 `RouteBreadcrumbs` pasa ruta y estado de navegación a `getRouteBreadcrumbs`.

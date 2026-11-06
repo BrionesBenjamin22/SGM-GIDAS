@@ -1,5 +1,12 @@
 # Borradores de formularios
 
+## Interacción del menú (ISS-42)
+
+La ampliación del control desplegable a toda la fila pertenece a `Sidebar`
+en frontend. No agrega endpoints, payloads, modelos, historial ni escrituras
+backend. Las opciones conservan su filtrado por rol y cada endpoint mantiene
+la autorización definitiva del servidor. Aceptado el 06/11/2026.
+
 ## Validacion preventiva del cliente (ISS-33)
 
 La utilidad pura `frontend/src/lib/liveValidation.ts` actualiza errores locales

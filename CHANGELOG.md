@@ -8,6 +8,15 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-42: filas desplegables del menú
+
+- Texto, flecha y espacio libre de cada fila expanden o contraen el submenú,
+  tanto en escritorio como en móvil y en niveles anidados.
+- Un botón nativo expone el estado expandido y admite Enter y Espacio;
+  se conservan los enlaces directos, el foco y los permisos existentes.
+- Aceptado visual y funcionalmente el 06/11/2026. Validación integrada:
+  264 pruebas frontend, TypeScript y build aprobados. Sin cambios de API.
+
 ### ISS-30: distinciones sin proyecto
 
 - Alta y edicion permiten omitir o quitar el proyecto, conservando la UCT propia,
