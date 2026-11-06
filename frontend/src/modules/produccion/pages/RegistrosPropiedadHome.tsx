@@ -11,7 +11,6 @@ import SuccessToast from "@/components/SuccessToast";
 import Table, {
   TableActionButton,
   TableActions,
-  TableFilterChip,
   TableRowActionButton,
   TableSearch,
   TableToolbar,
@@ -468,30 +467,13 @@ export default function RegistrosPropiedadLanding() {
                   className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pb-1 whitespace-nowrap"
                   aria-label="Filtros de registros de propiedad"
                 >
-                  <span className="shrink-0 text-xs font-medium text-slate-500">
-                    Estado
-                  </span>
-                  <TableFilterChip
-                    className="shrink-0"
-                    active={quickEstadoActual === "activos"}
-                    onClick={() => setQuickEstado("")}
-                  >
-                    Activos
-                  </TableFilterChip>
-                  <TableFilterChip
-                    className="shrink-0"
-                    active={quickEstadoActual === "todos"}
-                    onClick={() => setQuickEstado("todos")}
-                  >
-                    Todos
-                  </TableFilterChip>
-                  <TableFilterChip
-                    className="shrink-0"
-                    active={quickEstadoActual === "inactivos"}
-                    onClick={() => setQuickEstado("inactivos")}
-                  >
-                    Inactivos
-                  </TableFilterChip>
+                  <TableFilterSelect
+                    label="Filtrar por estado"
+                    placeholder="Todos"
+                    value={quickEstadoActual === "todos" ? undefined : (quickEstadoActual || "activos")}
+                    onValueChange={(value) => setQuickEstado(value === "inactivos" ? "inactivos" : value === "activos" ? "" : "todos")}
+                    options={[{ value: "activos", label: "Activos" }, { value: "inactivos", label: "Inactivos" }]}
+                  />
                   <TableFilterSelect
                     label="Filtrar por tipo de registro"
                     placeholder="Todos los tipos"

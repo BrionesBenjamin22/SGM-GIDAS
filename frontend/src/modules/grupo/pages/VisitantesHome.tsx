@@ -11,7 +11,6 @@ import SuccessToast from "@/components/SuccessToast";
 import Table, {
   TableActionButton,
   TableActions,
-  TableFilterChip,
   TableRowActionButton,
   TableSearch,
   TableToolbar,
@@ -461,30 +460,13 @@ export default function VisitantesHome() {
                   className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-1 whitespace-nowrap [scrollbar-color:rgb(203_213_225)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-track]:bg-transparent"
                   aria-label="Filtros de visitas"
                 >
-                  <span className="shrink-0 text-xs font-medium text-slate-500">
-                    Estado
-                  </span>
-                  <TableFilterChip
-                    className="shrink-0"
-                    active={stateFilter === "activos"}
-                    onClick={() => setFilter("estado", "")}
-                  >
-                    Activos
-                  </TableFilterChip>
-                  <TableFilterChip
-                    className="shrink-0"
-                    active={stateFilter === "todos"}
-                    onClick={() => setFilter("estado", "todos")}
-                  >
-                    Todos
-                  </TableFilterChip>
-                  <TableFilterChip
-                    className="shrink-0"
-                    active={stateFilter === "inactivos"}
-                    onClick={() => setFilter("estado", "inactivos")}
-                  >
-                    Inactivos
-                  </TableFilterChip>
+                  <TableFilterSelect
+                    label="Filtrar por estado"
+                    placeholder="Todos"
+                    value={stateFilter === "todos" ? undefined : (stateFilter || "activos")}
+                    onValueChange={(value) => setFilter("estado", value === "activos" ? "" : value ?? "todos")}
+                    options={[{ value: "activos", label: "Activos" }, { value: "inactivos", label: "Inactivos" }]}
+                  />
                   <TableFilterSelect
                     label="Filtrar por tipo de visita"
                     placeholder="Todos los tipos"

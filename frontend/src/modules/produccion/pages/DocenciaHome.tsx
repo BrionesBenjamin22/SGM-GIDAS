@@ -10,7 +10,6 @@ import SuccessToast from "@/components/SuccessToast";
 import Table, {
   TableActionButton,
   TableActions,
-  TableFilterChip,
   TableRowActionButton,
   TableSearch,
   TableToolbar,
@@ -197,10 +196,13 @@ export default function DocenciaLanding() {
       toolbar={<TableToolbar><div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center">
         <TableSearch label="Buscar actividades en docencia" placeholder="Buscar por curso, institución o investigador" value={search} onChange={(event) => setSearch(event.target.value)} />
         <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-1 whitespace-nowrap [scrollbar-color:rgb(203_213_225)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-track]:bg-transparent" aria-label="Filtros de actividades en docencia">
-          <span className="shrink-0 text-xs font-medium text-slate-500">Estado</span>
-          <TableFilterChip className="shrink-0" active={activeFilter === "true"} onClick={() => setActiveFilter("true")}>Activas</TableFilterChip>
-          <TableFilterChip className="shrink-0" active={activeFilter === "all"} onClick={() => setActiveFilter("all")}>Todas</TableFilterChip>
-          <TableFilterChip className="shrink-0" active={activeFilter === "false"} onClick={() => setActiveFilter("false")}>Inactivas</TableFilterChip>
+          <TableFilterSelect
+            label="Filtrar por estado"
+            placeholder="Todas"
+            value={activeFilter === "all" ? undefined : activeFilter}
+            onValueChange={(value) => setActiveFilter((value ?? "all") as typeof activeFilter)}
+            options={[{ value: "true", label: "Activas" }, { value: "false", label: "Inactivas" }]}
+          />
           <TableFilterSelect label="Filtrar por curso" placeholder="Todos los cursos" value={filters.curso} onValueChange={(value) => setFilter("curso", value)} options={filterOptions.cursos} />
           <TableFilterSelect label="Filtrar por institución" placeholder="Todas las instituciones" value={filters.institucion} onValueChange={(value) => setFilter("institucion", value)} options={filterOptions.instituciones} />
           <TableFilterSelect label="Filtrar por investigador" placeholder="Todos los investigadores" value={filters.investigador} onValueChange={(value) => setFilter("investigador", value)} options={filterOptions.investigadores} />

@@ -1,5 +1,21 @@
 # Funcionalidades compartidas
 
+## Patrón de filtros de homes (ISS-47)
+
+Los 18 homes con criterios de selección reutilizan `TableFilterSelect`, sin
+cambios del componente global. Se sustituyeron chips de estado y clase,
+los botones de estado de Catálogos y el selector de período de Informes.
+El valor `undefined` del control representa Todos/Todas y cada pantalla lo
+adapta a su contrato previo: `all`, `todos`, cadena vacía o 0 para el período.
+Los valores predeterminados y las consultas no cambian. Los buscadores de
+texto y los campos de formularios conservan sus mecanismos existentes.
+
+Se mantienen roles, filtros específicos, persistencia por usuario de ISS-50,
+contexto de Memoria, paginación e historial. No hay hooks ni servicios nuevos.
+Las barras conservan su disposición responsive y desplazamiento horizontal.
+Aceptado el 06/11/2026: 269 pruebas, TypeScript y build aprobados. Pruebas de
+interacción de las páginas reales en `tests/homeFilterSelect.test.ts`.
+
 ## Breadcrumb contextual de Catálogos (ISS-45)
 
 `getRouteBreadcrumbs` consume el origen validado por

@@ -8,7 +8,7 @@ import Button from "@/components/Button";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import SuccessToast from "@/components/SuccessToast";
-import Table, { TableActionButton, TableActions, TableFilterChip, TableRowActionButton, TableSearch, TableToolbar } from "@/components/Table";
+import Table, { TableActionButton, TableActions, TableRowActionButton, TableSearch, TableToolbar } from "@/components/Table";
 import type { TableColumn } from "@/components/Table";
 import TableFilterSelect from "@/components/TableFilterSelect";
 import { useAuth } from "@/context/AuthContext";
@@ -185,10 +185,13 @@ export default function EquipamientoLanding() {
         toolbar={<TableToolbar><div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center">
           <TableSearch label="Buscar equipamiento" placeholder="Buscar por denominación o descripción" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} />
           <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-1 whitespace-nowrap [scrollbar-color:rgb(203_213_225)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-track]:bg-transparent" aria-label="Filtros de equipamiento">
-            <span className="shrink-0 text-xs font-medium text-slate-500">Estado</span>
-            <TableFilterChip className="shrink-0" active={quickEstadoActual === "activos"} onClick={() => setFilter("estado", "")}>Activos</TableFilterChip>
-            <TableFilterChip className="shrink-0" active={quickEstadoActual === "todos"} onClick={() => setFilter("estado", "todos")}>Todos</TableFilterChip>
-            <TableFilterChip className="shrink-0" active={quickEstadoActual === "inactivos"} onClick={() => setFilter("estado", "inactivos")}>Inactivos</TableFilterChip>
+            <TableFilterSelect
+              label="Filtrar por estado"
+              placeholder="Todos"
+              value={quickEstadoActual === "todos" ? undefined : (quickEstadoActual || "activos")}
+              onValueChange={(value) => setFilter("estado", value === "activos" ? "" : value ?? "todos")}
+              options={[{ value: "activos", label: "Activos" }, { value: "inactivos", label: "Inactivos" }]}
+            />
             <TableFilterSelect label="Filtrar por año de incorporación" placeholder="Todos los años" value={filters.anio || undefined} onValueChange={(value) => setFilter("anio", value)} options={years} />
             <TableFilterSelect label="Filtrar por moneda" placeholder="Todas las monedas" value={filters.moneda || undefined} onValueChange={(value) => setFilter("moneda", value)} options={[{ value: "ARS", label: "ARS" }, { value: "USD", label: "USD" }]} />
             <label className="flex shrink-0 items-center gap-1 text-xs text-slate-600">Monto original desde<input type="number" min="0" step="0.01" className="h-8 w-28 rounded-lg border border-slate-300 bg-white px-2 outline-none focus-visible:ring-2 focus-visible:ring-slate-500" placeholder="Mínimo" value={filters.montoMin} onChange={(event) => setFilter("montoMin", event.target.value)} /></label>

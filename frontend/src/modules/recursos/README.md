@@ -1,5 +1,19 @@
 # Recursos
 
+## Filtros desplegables (ISS-47)
+
+BecasHome, EquipamientoHome y ErogacionesHome: estado.
+Los filtros del listado utilizan `TableFilterSelect`, con nombre accesible y
+selección mediante teclado. Todos/Todas elimina la restricción del criterio.
+La adaptación del selector conserva valores, setters y opciones de consulta;
+se mantienen services, permisos, nueve filas por página, contexto de Memoria
+y persistencia de filtros de ISS-50. No se modifican campos de formularios.
+
+Aceptado visual y funcionalmente el 06/11/2026. Validación integrada:
+269 pruebas frontend, TypeScript y build de producción aprobados.
+`tests/homeFilterSelect.test.ts` comprueba selección y limpieza en las cuatro
+pantallas principales y ausencia de chips de filtrado en los homes.
+
 ## Monto cero en Equipamiento (ISS-46)
 
 `EquipamientoForm` admite un monto invertido explícito igual a cero, mantiene

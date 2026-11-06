@@ -1,3 +1,4 @@
+import TableFilterSelect from "@/components/TableFilterSelect";
 import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
@@ -7,7 +8,7 @@ import Button from "@/components/Button";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import SuccessToast from "@/components/SuccessToast";
-import Table, { TableActionButton, TableActions, TableFilterChip, TableRowActionButton, TableSearch, TableToolbar } from "@/components/Table";
+import Table, { TableActionButton, TableActions, TableRowActionButton, TableSearch, TableToolbar } from "@/components/Table";
 import type { TableColumn, TableSortDirection } from "@/components/Table";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/lib/httpError";
@@ -201,16 +202,21 @@ export default function PersonalLanding() {
           <div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center">
             <TableSearch label="Buscar personal" placeholder="Buscar por nombre, clase, función o grupo" value={search} onChange={(event) => setSearch(event.target.value)} />
             <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pb-1 whitespace-nowrap" aria-label="Filtros de personal">
-              <span className="shrink-0 text-xs font-medium text-slate-500">Clase</span>
-              <TableFilterChip className="shrink-0" active={!classFilter} onClick={() => setClassFilter("")}>Todas</TableFilterChip>
-              <TableFilterChip className="shrink-0" active={classFilter === "PERSONAL"} onClick={() => setClassFilter("PERSONAL")}>Personal</TableFilterChip>
-              <TableFilterChip className="shrink-0" active={classFilter === "BECARIO"} onClick={() => setClassFilter("BECARIO")}>Becarios</TableFilterChip>
-              <TableFilterChip className="shrink-0" active={classFilter === "INVESTIGADOR"} onClick={() => setClassFilter("INVESTIGADOR")}>Investigadores</TableFilterChip>
-              <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-slate-200" />
-              <span className="shrink-0 text-xs font-medium text-slate-500">Estado</span>
-              <TableFilterChip className="shrink-0" active={activeFilter === "true"} onClick={() => setActiveFilter("true")}>Activos</TableFilterChip>
-              <TableFilterChip className="shrink-0" active={activeFilter === "all"} onClick={() => setActiveFilter("all")}>Todos</TableFilterChip>
-              <TableFilterChip className="shrink-0" active={activeFilter === "false"} onClick={() => setActiveFilter("false")}>Inactivos</TableFilterChip>
+              <TableFilterSelect
+                label="Filtrar por clase de personal"
+                placeholder="Todas las clases"
+                value={classFilter || undefined}
+                onValueChange={(value) => setClassFilter((value ?? "") as typeof classFilter)}
+                options={[{ value: "PERSONAL", label: "Personal" }, { value: "BECARIO", label: "Becarios" }, { value: "INVESTIGADOR", label: "Investigadores" }]}
+              />
+
+              <TableFilterSelect
+                label="Filtrar por estado"
+                placeholder="Todos"
+                value={activeFilter === "all" ? undefined : activeFilter}
+                onValueChange={(value) => setActiveFilter((value ?? "all") as typeof activeFilter)}
+                options={[{ value: "true", label: "Activos" }, { value: "false", label: "Inactivos" }]}
+              />
             </div>
           </div>
         </TableToolbar>

@@ -11,7 +11,6 @@ import SuccessToast from "@/components/SuccessToast";
 import Table, {
   TableActionButton,
   TableActions,
-  TableFilterChip,
   TableRowActionButton,
   TableSearch,
   TableToolbar,
@@ -336,10 +335,13 @@ export default function MemoriasHome() {
                   className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-1 whitespace-nowrap [scrollbar-color:rgb(203_213_225)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-track]:bg-transparent"
                   aria-label="Filtros de memorias"
                 >
-                  <span className="shrink-0 text-xs font-medium text-slate-500">Estado</span>
-                  <TableFilterChip className="shrink-0" active={estado === "true"} onClick={() => setEstado("true")}>Activas</TableFilterChip>
-                  <TableFilterChip className="shrink-0" active={estado === "all"} onClick={() => setEstado("all")}>Todas</TableFilterChip>
-                  <TableFilterChip className="shrink-0" active={estado === "false"} onClick={() => setEstado("false")}>Inactivas</TableFilterChip>
+                  <TableFilterSelect
+                    label="Filtrar por estado"
+                    placeholder="Todas"
+                    value={estado === "all" ? undefined : estado}
+                    onValueChange={(value) => setEstado((value ?? "all") as typeof estado)}
+                    options={[{ value: "true", label: "Activas" }, { value: "false", label: "Inactivas" }]}
+                  />
                   <TableFilterSelect
                     label="Filtrar por estado de versión"
                     placeholder="Todos los estados de versión"

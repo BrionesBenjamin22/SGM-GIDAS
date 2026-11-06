@@ -15,7 +15,7 @@ test("Distinciones recibidas usa la grilla visual común", () => {
   const home = readFileSync(homePath, "utf8");
   assert.match(home, /<Table/);
   assert.match(home, /<TableSearch/);
-  assert.match(home, /<TableFilterChip/);
+  assert.match(home, /<TableFilterSelect/);
   assert.match(home, /<TableFilterSelect/);
   assert.match(home, /<TableRowActionButton\s+action="view"/);
   assert.match(home, /<TableRowActionButton\s+action="edit"/);

@@ -9,7 +9,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import Field from "@/components/Field";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import SuccessToast from "@/components/SuccessToast";
-import Table, { TableActionButton, TableActions, TableFilterChip, TableRowActionButton, TableSearch, TableToolbar } from "@/components/Table";
+import Table, { TableActionButton, TableActions, TableRowActionButton, TableSearch, TableToolbar } from "@/components/Table";
 import type { TableColumn, TableSortDirection } from "@/components/Table";
 import TableFilterSelect from "@/components/TableFilterSelect";
 import { useAuth } from "@/context/AuthContext";
@@ -195,10 +195,13 @@ export default function ProyectosLanding() {
       toolbar={<TableToolbar><div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center">
         <TableSearch label="Buscar proyectos" placeholder="Buscar por código, nombre, tipo o integrante" value={search} onChange={(event) => setSearch(event.target.value)} />
         <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pb-1 whitespace-nowrap" aria-label="Filtros de proyectos">
-          <span className="shrink-0 text-xs font-medium text-slate-500">Estado</span>
-          <TableFilterChip className="shrink-0" active={activeFilter === "true"} onClick={() => setActiveFilter("true")}>Activos</TableFilterChip>
-          <TableFilterChip className="shrink-0" active={activeFilter === "all"} onClick={() => setActiveFilter("all")}>Todos</TableFilterChip>
-          <TableFilterChip className="shrink-0" active={activeFilter === "false"} onClick={() => setActiveFilter("false")}>Cerrados e inactivos</TableFilterChip>
+          <TableFilterSelect
+            label="Filtrar por estado"
+            placeholder="Todos"
+            value={activeFilter === "all" ? undefined : activeFilter}
+            onValueChange={(value) => setActiveFilter((value ?? "all") as typeof activeFilter)}
+            options={[{ value: "true", label: "Activos" }, { value: "false", label: "Cerrados e inactivos" }]}
+          />
           <TableFilterSelect label="Filtrar por tipo de proyecto" placeholder="Todos los tipos" value={typeFilter === undefined ? undefined : String(typeFilter)} onValueChange={(value) => setTypeFilter(value === undefined ? undefined : Number(value))} options={(tiposQuery.data ?? []).map((type) => ({ value: String(type.id), label: type.nombre }))} />
           <TableFilterSelect label="Filtrar por fuente de financiamiento" placeholder="Todas las fuentes" value={sourceFilter === undefined ? undefined : String(sourceFilter)} onValueChange={(value) => setSourceFilter(value === undefined ? undefined : Number(value))} className="min-w-52" options={fuentes.map((source) => ({ value: String(source.id), label: source.nombre }))} />
         </div>

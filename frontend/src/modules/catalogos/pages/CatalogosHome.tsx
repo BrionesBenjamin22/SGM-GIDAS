@@ -24,6 +24,7 @@ import {
   type CatalogItem,
 } from "@/modules/catalogos/services/catalogoServices";
 import Button from "@/components/Button";
+import TableFilterSelect from "@/components/TableFilterSelect";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import ErrorText from "@/components/ErrorText";
 import Field from "@/components/Field";
@@ -676,23 +677,16 @@ function CatalogPanel({
           />
         </div>
 
-        <div className="flex gap-2" role="group" aria-label="Estado de valores">
-          {(["all", "active", "inactive"] as StatusFilter[]).map((filter) => (
-            <button
-              key={filter}
-              type="button"
-              disabled={filter !== "all" && !hasAnyStatusData}
-              onClick={() => setStatusFilter(filter)}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-                statusFilter === filter
-                  ? "border-sky-200 bg-sky-50 text-sky-700"
-                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-              } disabled:cursor-not-allowed disabled:opacity-40`}
-            >
-              {filter === "all" ? "Todos" : filter === "active" ? "Activos" : "Inactivos"}
-            </button>
-          ))}
-        </div>
+        <TableFilterSelect
+          label="Filtrar por estado de valores"
+          placeholder="Todos"
+          value={statusFilter === "all" ? undefined : statusFilter}
+          onValueChange={(value) => setStatusFilter((value ?? "all") as StatusFilter)}
+          options={[
+            { value: "active", label: "Activos", disabled: !hasAnyStatusData },
+            { value: "inactive", label: "Inactivos", disabled: !hasAnyStatusData },
+          ]}
+        />
       </div>
 
       {loading && <LoadingSkeleton variant="table" label="Cargando catálogo…" />}

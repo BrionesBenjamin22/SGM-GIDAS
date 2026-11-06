@@ -1,5 +1,14 @@
 # Borradores de formularios
 
+## Filtros del cliente (ISS-47)
+
+La unificación de controles desplegables en los homes es de presentación
+frontend. No cambia endpoints, payloads, modelos, auditoría, permisos ni
+consultas backend. Cada pantalla convierte Todos/Todas y las opciones de
+estado a los valores que ya consume su service. El servidor conserva las
+validaciones, el alcance por UCT y la autorización definitiva.
+Aceptado visual y funcionalmente el 06/11/2026.
+
 ## Interacción del menú (ISS-42)
 
 La ampliación del control desplegable a toda la fila pertenece a `Sidebar`

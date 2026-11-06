@@ -8,6 +8,15 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-47: filtros desplegables coherentes en los homes
+
+- Se unifican 18 homes con TableFilterSelect: estado, clase de Personal y
+  período de Informes. Se conservan opciones, consultas, permisos y paginación.
+- Todos/Todas elimina el criterio y la persistencia de ISS-50 se mantiene.
+  Catálogos conserva las opciones deshabilitadas cuando no informa estado.
+- Aceptado visual y funcionalmente el 06/11/2026; 269 pruebas frontend,
+  TypeScript y build de producción aprobados. Sin cambios de API.
+
 ### ISS-45: retorno y breadcrumb de Catálogos
 
 - Volver restaura la pantalla desde la que se abrió Gestionar Catálogos,
