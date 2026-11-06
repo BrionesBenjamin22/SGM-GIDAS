@@ -524,3 +524,22 @@ su contrato de URL. La persistencia validada se limita a la pestana y al usuario
 sin guardar filas ni acciones pendientes. Se mantienen services, permisos,
 validaciones y paginacion vigentes. Contrato y pruebas en `../shared/README.md`.
 Aceptado funcionalmente por el usuario el 06/11/2026.
+
+
+## ISS-30: proyecto opcional en Distinciones
+
+El formulario permite crear distinciones sin proyecto y agregar o quitar la
+asociacion al guardar una edicion. El service tipa
+`proyecto_investigacion_id?: number | null`: omitirlo conserva la relacion en
+edicion; enviar `null` la elimina. Se envian solo diferencias reales y se
+mantienen los destinos y mensajes de exito vigentes.
+
+El detalle muestra `Sin proyecto asociado`; el home admite registros sin
+proyecto. El historial muestra vinculaciones y desvinculaciones con etiquetas
+legibles y mantiene tres eventos por pagina. Se conservan permisos, validacion
+de fecha/descripcion y errores asociados al control de proyecto.
+
+Aceptado funcionalmente por el usuario el 06/11/2026. Validacion: 252 pruebas
+frontend, typecheck y build de produccion correctos; 51 pruebas backend de
+Distinciones, auditoria y aislamiento UCT aprobadas. La revision transversal de
+textos extensos en tablas y titulos de detalle queda en ISS-96.

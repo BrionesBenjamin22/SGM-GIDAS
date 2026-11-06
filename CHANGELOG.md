@@ -8,6 +8,17 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-30: distinciones sin proyecto
+
+- Alta y edicion permiten omitir o quitar el proyecto, conservando la UCT propia,
+  el acceso al detalle, los permisos y la auditoria de asociaciones.
+- Migracion a6c8e0f2b4d6 agrega pertenencia UCT e indice y recupera registros
+  desvinculados desde su historial sin asignaciones arbitrarias.
+- Aceptado por el usuario el 06/11/2026: 252 pruebas frontend, tipos y build
+  correctos; 51 pruebas backend de Distinciones, auditoria y aislamiento aprobadas.
+- Textos extensos en tablas y descripciones usadas como titulos de detalle se
+  revisaran transversalmente en ISS-96.
+
 ### ISS-53: usuario recordado y recuperacion de contrasena por correo
 
 - Login recuerda exclusivamente el nombre de usuario en el equipo despues de

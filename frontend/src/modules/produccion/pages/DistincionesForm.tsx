@@ -77,7 +77,7 @@ export default function DistincionesForm() {
 
   const validationValues = { fecha, descripcion, proyectoId };
   const getValidationErrors = (changes: Partial<typeof validationValues> = {}) => {
-    const { fecha, descripcion, proyectoId } = { ...validationValues, ...changes };
+    const { fecha, descripcion } = { ...validationValues, ...changes };
     const newErrors: Record<string, string> = {};
 
     if (!fecha) {
@@ -86,10 +86,6 @@ export default function DistincionesForm() {
 
     if (!descripcion.trim()) {
       newErrors.descripcion = "Debe ingresar descripción";
-    }
-
-    if (!proyectoId) {
-      newErrors.proyecto = "Debe seleccionar un proyecto de investigación";
     }
 
     return newErrors;
@@ -149,7 +145,7 @@ export default function DistincionesForm() {
     const payload = {
       fecha: toCivilDateString(fecha)!,
       descripcion: descripcion.trim(),
-      proyecto_investigacion_id: proyectoId!,
+      proyecto_investigacion_id: proyectoId,
     };
 
     if (!isEdit) {
@@ -236,7 +232,7 @@ export default function DistincionesForm() {
           />
         </Field>
 
-        <Field required label="Proyecto de investigación" name="proyecto" error={errors.proyecto}>
+        <Field label="Proyecto de investigación (opcional)" name="proyecto" error={errors.proyecto}>
           <select
             className={`${inputClass("proyecto")} ${
               !proyectoId ? "text-slate-400" : "text-slate-900"
@@ -248,8 +244,8 @@ export default function DistincionesForm() {
               validateChangedField("proyecto", { proyectoId: value });
             }} onBlur={() => validateChangedField("proyecto")}
           >
-            <option value="" disabled>
-              Seleccionar proyecto
+            <option value="">
+              Sin proyecto asociado
             </option>
             {proyectos.map((p: Proyecto) => (
               <option key={p.id} value={p.id}>

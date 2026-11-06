@@ -59,7 +59,7 @@ test("el historial omite acciones, inicializaciones y valores sin cambios", () =
       valor_anterior: null,
       valor_nuevo: 4,
     }),
-    false
+    true
   );
   assert.equal(
     isVisibleDistincionHistoryItem({

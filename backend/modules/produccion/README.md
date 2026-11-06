@@ -378,3 +378,31 @@ con `tests/test_produccion_list_sql_pagination.py`.
 Los errores de consulta, duplicación, edición y baja muestran Grado Académico
 con tildes. Conservan los códigos de error, estados HTTP y reglas de validación;
 las claves del contrato API permanecen iguales.
+
+
+## ISS-30: Distinciones con pertenencia propia a UCT
+
+Las rutas existentes de `/api/v1/produccion/distinciones/` conservan sus roles:
+ADMIN/GESTOR para mutaciones y ADMIN/GESTOR/LECTURA para consultas.
+POST admite proyecto omitido o `proyecto_investigacion_id: null`.
+PUT conserva el proyecto si se omite el campo y permite desvincularlo con null;
+los IDs enviados deben corresponder a proyectos disponibles en la UCT.
+Fecha y descripcion siguen siendo obligatorias; se mantienen las validaciones,
+el control de duplicados y la baja logica. GET de detalle serializa `proyecto`
+como objeto o null. El historial registra cambios reales de asociacion.
+
+`DistincionRecibida.grupo_utn_id` es obligatorio, con FK e indice propios. La
+politica ORM vigente asigna la UCT del contexto al crear y conserva el aislamiento
+al desvincular un proyecto; la pertenencia no se toma del payload. Esto evita
+ObjectDeletedError despues del commit y 404 posteriores en registros sin proyecto.
+
+La migracion `a6c8e0f2b4d6` depende de `e5a7c9d1f3b6`: recupera pertenencia desde
+proyecto, auditoria de desvinculacion o pertenencia unica del creador. Si no puede
+resolverla, aborta sin adjudicar una UCT arbitraria. Aplicar con el usuario de
+migraciones antes de servir el nuevo modelo. No agrega variables de entorno.
+Las memorias mantienen su seleccion existente por proyecto/UCT.
+
+Aceptado por el usuario el 06/11/2026. Validacion: 51 pruebas backend aprobadas,
+incluida persistencia con desvinculacion, consulta en nueva sesion, historial,
+revinculacion, alta sin proyecto y denegacion desde otra UCT. La migracion local
+recupero el acceso al registro afectado sin revertir su desvinculacion.
