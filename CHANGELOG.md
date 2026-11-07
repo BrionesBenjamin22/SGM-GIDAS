@@ -8,6 +8,14 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-99: correccion de pruebas y seed de Memoria
+
+- La seed de validacion asigna la UCT obligatoria a las distinciones y verifica
+  su pertenencia. Las pruebas Excel usan Fecha de presentacion y fechas nativas
+  con formato dd/mm/yyyy; la prueba CLI cierra SQLite antes de limpiar temporales.
+- Aceptado el 07/11/2026. Suite completa Linux: 777 pruebas, sin fallos,
+  con 40 omisiones por PostgreSQL dedicado. Sin cambios de API ni UI.
+
 ### ISS-100: reapertura y descarga desde el listado de memorias
 
 - La fila principal permite reabrir memorias activas cerradas para ADMIN/GESTOR.

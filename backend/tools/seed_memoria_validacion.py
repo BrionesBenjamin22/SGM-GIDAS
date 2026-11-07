@@ -403,7 +403,7 @@ def populate(group_id, user_id, *, replace=False, dry_run=False):
                 add(RegistrosPropiedad, grupo_utn_id=group_id, tipo_registro_id=catalog(TipoRegistroPropiedad, kind).id,
                     nombre_articulo=f"{topic[1]}: {kind.lower()} ({day.year})", organismo_registrante="Instituto Nacional de la Propiedad Industrial" if kind != "Propiedad intelectual" else "Dirección Nacional del Derecho de Autor", fecha_registro=day)
             active_project = next(project for project in projects if project.fecha_inicio <= day <= project.fecha_fin)
-            add(DistincionRecibida, fecha=day, proyecto_investigacion_id=active_project.id,
+            add(DistincionRecibida, grupo_utn_id=group_id, fecha=day, proyecto_investigacion_id=active_project.id,
                 descripcion=f"Reconocimiento académico a {topic[1].lower()}, otorgado por su contribución a la investigación aplicada y la formación de recursos humanos.")
             add(VisitaAcademica, grupo_utn_id=group_id, fecha=day, tipo_visita_id=catalog(TipoVisita, "Cooperación científica").id,
                 procedencia=f"Universidad del Litoral, equipo de {topic[0].lower()}", razon=paragraph(topic_index))

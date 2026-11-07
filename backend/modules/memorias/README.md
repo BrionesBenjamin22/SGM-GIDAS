@@ -312,3 +312,21 @@ proyectos, autorías o antecedentes continúan bloqueando el traslado y no se
 eliminan. La migración y sus condiciones de reversión se detallan en Personal.
 Las pruebas comparan fotos y celdas Excel de seis correcciones sucesivas, con
 aislamiento UCT y conservación de contenido durante la migración.
+
+## Regresiones de CI y datos de validacion (ISS-99)
+
+La carga `tools/seed_memoria_validacion.py` asigna `grupo_utn_id` a cada
+distincion, ademas del proyecto relacionado. La prueba comprueba las ocho
+distinciones del escenario y su pertenencia a la UCT seleccionada.
+
+La exportacion de reuniones usa el encabezado `Fecha de presentación`.
+`tests/test_trabajo_fecha_presentacion.py` verifica ese encabezado y la fecha
+del snapshot en Detalle academico como fecha nativa Excel con formato
+`dd/mm/yyyy`. No se cambia el generador ni el contrato de exportacion.
+La prueba CLI de la carga 2025 cierra explicitamente su conexion SQLite antes
+de eliminar el directorio temporal, para permitir su ejecucion en Windows.
+
+Aceptado el 07/11/2026. La suite completa Linux ejecuto 777 pruebas sin fallos,
+con 40 omisiones que requieren PostgreSQL dedicado; incluye las pruebas locales
+de Busqueda pendientes de versionar. No se modifican endpoints, payloads,
+permisos ni vistas frontend.

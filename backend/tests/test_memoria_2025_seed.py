@@ -1,4 +1,5 @@
 import os
+from contextlib import closing
 from pathlib import Path
 import sqlite3
 import subprocess
@@ -137,7 +138,7 @@ class Memoria2025SeedTest(unittest.TestCase):
                 env=environment, capture_output=True, text=True, timeout=90)
             self.assertEqual(completed.returncode, 0, completed.stderr)
             self.assertTrue(output.is_file())
-            with sqlite3.connect(database) as connection:
+            with closing(sqlite3.connect(database)) as connection:
                 self.assertEqual(connection.execute("SELECT COUNT(*) FROM usuario_grupo_utn").fetchone()[0], 3)
                 self.assertEqual(connection.execute("SELECT COUNT(*) FROM memoria_version WHERE estado='cerrada'").fetchone()[0], 1)
                 self.assertEqual(connection.execute("SELECT COUNT(*) FROM movimiento_financiero").fetchone()[0], 12)
