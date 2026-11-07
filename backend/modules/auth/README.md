@@ -198,3 +198,16 @@ con `PASSWORD_RESET_PG_TEST=1`, usan exclusivamente la base dedicada
 `gidas_reset_validation` derivada de la URL configurada y schemas temporales;
 requieren permiso para crear schemas y la extension `pg_trgm` del metadata global.
 Incluyen confirmacion concurrente, claims disjuntos y upgrade/downgrade/upgrade.
+
+## Fixture de recuperacion administrativa (ISS-99)
+
+La prueba de las rutas versionadas crea una UCT y una pertenencia activa real
+del destinatario. Ejecuta la politica ORM de aislamiento sin simular la UCT
+permitida: ADMIN obtiene 202 para el usuario de su UCT y 404 para un usuario
+ajeno; GESTOR conserva 403 y una peticion sin autenticacion conserva 401.
+
+El ajuste corrige los datos de prueba; no modifica autenticacion, endpoints,
+payloads, permisos, envio de correo ni el contrato consumido por frontend.
+Aceptado el 07/11/2026. Regresion dirigida de esta etapa: 55 pruebas, OK,
+19 omitidas por PostgreSQL dedicado. Suite Linux completa: 777 pruebas, OK,
+40 omitidas por PostgreSQL dedicado, incluidas las pruebas locales de Busqueda.

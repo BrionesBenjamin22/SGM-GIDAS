@@ -219,25 +219,39 @@ class PasswordResetTests(unittest.TestCase):
 
     def test_versioned_routes_allow_public_flow_and_enforce_admin_role(self):
         from extension import limiter
+        from modules.auth.models.usuario_grupo_utn import UsuarioGrupoUtn
         from modules.auth.routes.auth_rutas import auth_bp
+        from modules.grupo.models.grupo import GrupoInvestigacionUtn
         from modules.shared.services.tenant_request import register_tenant_request_scope
+        from modules.shared.services.tenant_scope import register_tenant_orm_policy
+        group = GrupoInvestigacionUtn(nombre_sigla_grupo="UCT recuperacion", nombre_unidad_academica="UTN",
+            mail="uct@example.com", objetivo_desarrollo="Investigacion", created_by=self.user_id)
+        db.session.add(group); db.session.flush()
+        db.session.add(UsuarioGrupoUtn(usuario_id=self.user_id, grupo_utn_id=group.id, created_by=self.user_id))
+        db.session.commit()
         self.app.config["RATELIMIT_ENABLED"] = False
         limiter.init_app(self.app)
         self.app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
         register_tenant_request_scope(self.app)
+        register_tenant_orm_policy()
         client = self.app.test_client()
         self.assertEqual(client.post("/api/v1/auth/password-reset/request", json={"email": "reset@example.com"}).status_code, 202)
         self.assertEqual(client.post("/api/v1/auth/password-reset/confirm", json={"token": "bad", "password_nueva": "123456", "password_confirmacion": "123456"}).status_code, 400)
         admin_path = f"/api/v1/auth/usuarios/{self.user_id}/password-reset"
         self.assertEqual(client.post(admin_path).status_code, 401)
-        with patch.object(AuthService, "verify_token", return_value={"sub": str(self.user_id), "rol": "GESTOR"}), patch("modules.shared.services.tenant_request.single_allowed_uct_id", return_value=1):
+        with patch.object(AuthService, "verify_token", return_value={"sub": str(self.user_id), "rol": "GESTOR"}):
             self.assertEqual(client.post(admin_path, headers={"Authorization": "Bearer mocked"}).status_code, 403)
         role = RolUsuario(nombre="ADMIN"); db.session.add(role); db.session.flush()
         db.session.get(Usuario, self.user_id).id_rol = role.id; db.session.commit()
-        with patch.object(AuthService, "verify_token", return_value={"sub": str(self.user_id), "rol": "ADMIN"}), patch("modules.shared.services.tenant_request.single_allowed_uct_id", return_value=1):
+        outsider = Usuario(nombre_usuario="other.reset", mail="other@example.com", id_rol=role.id)
+        outsider.set_password("other-password"); db.session.add(outsider); db.session.commit()
+        outsider_id = outsider.id
+        with patch.object(AuthService, "verify_token", return_value={"sub": str(self.user_id), "rol": "ADMIN"}):
             response = client.post(admin_path, headers={"Authorization": "Bearer mocked"})
             self.assertEqual(response.status_code, 202)
             self.assertNotIn("token", response.get_data(as_text=True))
+            response = client.post(f"/api/v1/auth/usuarios/{outsider_id}/password-reset", headers={"Authorization": "Bearer mocked"})
+            self.assertEqual(response.status_code, 404)
 
     def test_request_limits_email_across_ips_and_ip_across_emails(self):
         from extension import limiter

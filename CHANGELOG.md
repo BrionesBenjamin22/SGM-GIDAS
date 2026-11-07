@@ -8,6 +8,13 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-99: fixture de recuperacion administrativa por UCT
+
+- La prueba crea una pertenencia real y aplica el aislamiento ORM: ADMIN puede
+  solicitar el enlace para su UCT; usuarios ajenos conservan 404, GESTOR 403 y
+  peticiones sin autenticacion 401. Sin cambios en autenticacion productiva.
+- Aceptado el 07/11/2026. Regresion dirigida y suite completa Linux aprobadas.
+
 ### ISS-99: correccion de pruebas y seed de Memoria
 
 - La seed de validacion asigna la UCT obligatoria a las distinciones y verifica
