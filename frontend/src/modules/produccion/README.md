@@ -557,3 +557,30 @@ Aceptado funcionalmente por el usuario el 06/11/2026. Validacion: 252 pruebas
 frontend, typecheck y build de produccion correctos; 51 pruebas backend de
 Distinciones, auditoria y aislamiento UCT aprobadas. La revision transversal de
 textos extensos en tablas y titulos de detalle queda en ISS-96.
+
+## ISS-25: referato y alcance de trabajos
+
+Los formularios de reuniones y revistas ofrecen Referato con Sí, No y Sin
+informar (`boolean | null`). Reuniones agrega Alcance Nacional, Internacional o
+Sin informar; revistas reutiliza `TipoRevista` y no incorpora otro alcance.
+`procedencia` se presenta como Ciudad para reuniones nacionales y País para
+internacionales; sin alcance conserva Procedencia. Al clasificar un registro
+histórico debe revisarse ese dato. Revistas conserva su campo `pais`.
+
+Los services `trabajosReunionServices.ts` y `trabajosRevistasServices.ts`
+normalizan los atributos sin perder false. En edición, omitirlos conserva el
+valor y null lo limpia. Los formularios consolidan borradores y envían únicamente
+diferencias; una edición sin cambios no llama al backend. Altas vuelven al home y
+ediciones al detalle con `successMessage`. Se mantienen permisos y errores por
+campo. No cambian los componentes ni hooks compartidos.
+
+Homes y detalles muestran la clasificación; los homes permiten buscarla por
+texto y mantienen nueve registros por página. `clasificacionTrabajo.ts`
+centraliza etiquetas y conversión del selector. Ambos presentadores de historial
+muestran Sí/No/Sin informar y Nacional/Internacional; la primera clasificación de
+un histórico se conserva como evento visible. El historial mantiene tres eventos
+por página. Autores y relaciones siguen consolidándose al guardar.
+
+Aceptado visual y funcionalmente por el usuario el 07/11/2026. Validación:
+274 pruebas frontend, TypeScript y build de producción aprobados; cobertura de
+guardado diferencial, false/null/omisión, geografía e historial.

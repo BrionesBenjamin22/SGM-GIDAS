@@ -406,3 +406,38 @@ Aceptado por el usuario el 06/11/2026. Validacion: 51 pruebas backend aprobadas,
 incluida persistencia con desvinculacion, consulta en nueva sesion, historial,
 revinculacion, alta sin proyecto y denegacion desde otra UCT. La migracion local
 recupero el acceso al registro afectado sin revertir su desvinculacion.
+
+## ISS-25: clasificación de trabajos para la memoria
+
+`TrabajoReunionCientifica` y `TrabajosRevistasReferato`, junto con sus modelos
+de snapshot, incorporan `referato` booleano nullable. Solo reuniones incorpora
+`alcance` nullable con valores `nacional` o `internacional`, restringidos también
+en base de datos. Revistas conserva `tipo_revista_id` (Nacional/Internacional) y
+`pais`; reuniones conserva `procedencia` para Ciudad/País. No se crean catálogos
+ni campos geográficos duplicados.
+
+POST/PUT de `/api/v1/trabajos-reunion-cientifica` y
+`/api/v1/trabajos-revistas` aceptan `referato: true | false | null`; reuniones
+acepta además `alcance: "nacional" | "internacional" | null`. Ejemplo parcial
+de edición: `{"referato": false}`; para limpiar, `{"referato": null}`. Omitir un
+atributo en PUT conserva su valor y en POST deja el dato sin informar. GET de
+listado/detalle y snapshots devuelve estos atributos. Las rutas de actualización
+conservan su identificador final `/<id>`.
+
+`clasificacion_trabajo.py` valida tipos estrictos: rechaza strings booleanos,
+números y alcances desconocidos con 400 y `error.details.fields`. Se mantienen
+autenticación, aislamiento UCT, consultas ADMIN/GESTOR/LECTURA, escrituras
+ADMIN/GESTOR y baja lógica. Los services auditan diferencias reales, incluidos
+cambios desde/hacia null; las actualizaciones idénticas no duplican eventos.
+El cierre de memoria copia los valores en snapshots inmutables y no completa
+versiones anteriores desde las fichas actuales.
+
+La migración reversible `e8c2a4f6b0d1`, descendiente de `a6c8e0f2b4d6`, añade
+columnas nullable y restricciones sin clasificar históricos. Aplicarla con el
+usuario de migraciones antes de servir los nuevos modelos; no requiere variables
+de entorno, cambios de Docker ni semillas de clasificación. Su downgrade retira
+los atributos nuevos y conserva las filas. Las uniones con ramas locales
+pendientes deben versionarse junto con esas ramas, no con este ajuste aislado.
+
+Aceptado por el usuario el 07/11/2026. Regresión backend: 43 pruebas aprobadas
+de API, validación, auditoría, permisos, snapshots, migración y exportaciones.

@@ -1,3 +1,4 @@
+import { referatoValue } from "@/modules/produccion/utils/clasificacionTrabajo";
 import { updateLiveValidationErrors } from "@/lib/liveValidation";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { errorEnlace, MAX_ENLACE } from "@/modules/produccion/utils/trabajoEnlace";
@@ -56,6 +57,7 @@ export default function TrabajosRevistasForm() {
     enabled: isEdit,
   });
 
+  const [referato, setReferato] = useState<boolean | null>(null);
   const [enlace, setEnlace] = useState("");
   const [titulo, setTitulo] = useState("");
   const [nombreRevista, setNombreRevista] = useState("");
@@ -74,6 +76,7 @@ export default function TrabajosRevistasForm() {
     if (!initialData || datosCargadosId.current === initialData.id) return;
     datosCargadosId.current = initialData.id;
 
+    setReferato(initialData.referato ?? null);
     setEnlace(initialData.enlace ?? "");
     setTitulo(initialData.titulo_trabajo ?? "");
     setNombreRevista(initialData.nombre_revista ?? "");
@@ -89,11 +92,11 @@ export default function TrabajosRevistasForm() {
     userId: user?.id,
     module: "produccion-revistas",
     recordId: id,
-    value: { enlace, titulo, nombreRevista, editorial, issn, pais, fecha: toCivilDateString(fecha), tipoId, autores },
+    value: { referato, enlace, titulo, nombreRevista, editorial, issn, pais, fecha: toCivilDateString(fecha), tipoId, autores },
     ready: !isEdit || (!isLoading && Boolean(initialData)),
     autosave: false,
-    hasContent: (draft) => Boolean(draft.enlace || draft.titulo || draft.nombreRevista || draft.editorial || draft.issn || draft.pais || draft.fecha || draft.tipoId || draft.autores.length),
-    onRestore: (draft) => { setEnlace(draft.enlace); setTitulo(draft.titulo); setNombreRevista(draft.nombreRevista); setEditorial(draft.editorial); setIssn(draft.issn); setPais(draft.pais); setFecha(draft.fecha ? new Date(`${draft.fecha}T00:00:00`) : null); setTipoId(draft.tipoId); setAutores(draft.autores); },
+    hasContent: (draft) => Boolean(draft.referato != null || draft.enlace || draft.titulo || draft.nombreRevista || draft.editorial || draft.issn || draft.pais || draft.fecha || draft.tipoId || draft.autores.length),
+    onRestore: (draft) => { setReferato(draft.referato ?? null); setEnlace(draft.enlace); setTitulo(draft.titulo); setNombreRevista(draft.nombreRevista); setEditorial(draft.editorial); setIssn(draft.issn); setPais(draft.pais); setFecha(draft.fecha ? new Date(`${draft.fecha}T00:00:00`) : null); setTipoId(draft.tipoId); setAutores(draft.autores); },
   });
 
   const validationValues = { enlace, titulo, nombreRevista, editorial, issn, pais, fecha, tipoId, autores };
@@ -178,7 +181,7 @@ export default function TrabajosRevistasForm() {
       });
     },
     onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["enlace","titulo","nombreRevista","editorial","issn","pais","tipoId","fecha","autores"])) return;
+      if (applyFieldErrors(error, setErrors, ["referato","enlace","titulo","nombreRevista","editorial","issn","pais","tipoId","fecha","autores"])) return;
       const backendMessage = getErrorMessage(
         error,
         isEdit
@@ -200,6 +203,7 @@ export default function TrabajosRevistasForm() {
     if (!validate()) return;
 
     const payload = {
+      referato,
       enlace: enlace.trim() || null,
       autores: autores.map(({ id, rol }) => ({ id, rol })),
       titulo_trabajo: toTitleCase(titulo.trim()),
@@ -218,6 +222,7 @@ export default function TrabajosRevistasForm() {
     }
 
     const initialPayload = {
+      referato: initialData?.referato ?? null,
       enlace: initialData?.enlace ?? null,
       autores: initialData?.autores ?? [],
       titulo_trabajo: initialData?.titulo_trabajo ?? "",
@@ -277,6 +282,14 @@ export default function TrabajosRevistasForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
+        <Field label="Referato" name="referato" error={errors.referato}>
+          <select id="referato" className={inputClass("referato")} value={referato == null ? "" : String(referato)} onChange={(e) => { setReferato(referatoValue(e.target.value)); setErrors((previous) => ({ ...previous, referato: "" })); }}>
+            <option value="">Sin informar</option>
+            <option value="true">Sí</option>
+            <option value="false">No</option>
+          </select>
+        </Field>
+
         <Field required label="Título del trabajo" name="titulo" error={errors.titulo}>
           <>
             <input

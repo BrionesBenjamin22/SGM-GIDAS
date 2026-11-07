@@ -1,3 +1,4 @@
+import { referatoLabel } from "@/modules/produccion/utils/clasificacionTrabajo";
 import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
@@ -102,7 +103,7 @@ export default function TrabajosRevistasHome() {
     return scopedList.filter((trabajo) => {
       const tipo = formatTrabajoRevistaContractValue(trabajo.tipo_revista);
       const pais = formatTrabajoRevistaContractValue(trabajo.pais);
-      const searchable = [trabajo.titulo_trabajo, trabajo.nombre_revista, trabajo.editorial, trabajo.issn, pais, tipo, ...trabajo.autores.map(autorEtiqueta)];
+      const searchable = [referatoLabel(trabajo.referato), trabajo.titulo_trabajo, trabajo.nombre_revista, trabajo.editorial, trabajo.issn, pais, tipo, ...trabajo.autores.map(autorEtiqueta)];
       const matchesSearch = !query || searchable.some((value) => value.toLocaleLowerCase("es").includes(query));
       const matchesTipo = !filters.tipo || String(trabajo.tipo_revista?.id ?? "") === filters.tipo;
       const matchesPais = !filters.pais || toTitleCase(pais) === filters.pais;
@@ -185,6 +186,7 @@ export default function TrabajosRevistasHome() {
   const columns: TableColumn<TrabajoRevista>[] = [
     { id: "titulo", header: "Trabajo", render: (trabajo) => <div><span className="block font-medium text-slate-900">{formatTrabajoRevistaContractValue(trabajo.titulo_trabajo) || "—"}</span><span className="mt-0.5 block text-xs text-slate-500">{trabajo.autores.length ? trabajo.autores.map(autorEtiqueta).join(", ") : "Sin autores informados"}</span></div> },
     { id: "revista", header: "Revista", priority: "secondary", render: (trabajo) => <div><span className="block text-slate-800">{toTitleCase(formatTrabajoRevistaContractValue(trabajo.nombre_revista)) || "—"}</span><span className="mt-0.5 block text-xs text-slate-500">{toTitleCase(formatTrabajoRevistaContractValue(trabajo.editorial)) || "Sin editorial"}</span></div> },
+    { id: "referato", header: "Referato", priority: "tertiary", render: (trabajo) => referatoLabel(trabajo.referato) },
     { id: "tipo", header: "Tipo", priority: "tertiary", render: (trabajo) => toTitleCase(formatTrabajoRevistaContractValue(trabajo.tipo_revista)) || "—" },
     { id: "pais", header: "País", priority: "tertiary", render: (trabajo) => toTitleCase(formatTrabajoRevistaContractValue(trabajo.pais)) || "—" },
     { id: "fecha", header: "Fecha de publicación", priority: "tertiary", render: (trabajo) => formatFecha(trabajo.fecha_publicacion) },

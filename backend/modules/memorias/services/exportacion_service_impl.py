@@ -1,3 +1,4 @@
+from modules.memorias.services.memoria_excel_template import meeting_category, publication_category
 from modules.personal.services.nombre_service import nombre_para_memoria
 from types import SimpleNamespace
 from copy import copy
@@ -1140,15 +1141,44 @@ class ExportService:
         row = cls._write_table(ws, row, "6.2.- Participaciones institucionales y academicas relevantes", ["Nro.", "Evento o actividad", "Forma de participacion", "Fecha", "Participante", "Categoria"], participaciones_rows, merge_span=8, date_cols={4})
         visitas_rows = [[idx, visita.razon, visita.procedencia, visita.tipo_visita.nombre if visita.tipo_visita else "-", visita.fecha] for idx, visita in enumerate(visitas, start=1)]
         row = cls._write_table(ws, row, "6.3.- Visitantes del pais y del extranjero", ["Nro.", "Motivo o razon de la visita", "Procedencia", "Tipo de visita", "Fecha"], visitas_rows, merge_span=8, date_cols={5})
-        reuniones_grouped = {}
-        for trabajo in trabajos_reunion:
-            tipo = trabajo.tipo_reunion_cientifica.nombre if trabajo.tipo_reunion_cientifica else "Sin tipo definido"
-            reuniones_grouped.setdefault(tipo, []).append([len(reuniones_grouped.get(tipo, [])) + 1, trabajo.titulo_trabajo + ("\nEnlace: " + trabajo.enlace if trabajo.enlace else ""), trabajo.nombre_reunion, trabajo.procedencia, trabajo.fecha_presentacion, cls._autores_texto([a.serialize() for a in trabajo.autorias])])
-        row = cls._write_grouped_tables(ws, row, "7", "TRABAJOS PRESENTADOS EN CONGRESOS Y REUNIONES CIENTIFICAS CON REFERATO", list(reuniones_grouped.items()), ["Nro.", "Titulo del trabajo", "Reunion cientifica", "Institucion de procedencia", "Fecha de presentacion", "Autores"], merge_span=10, date_cols={5})
+        row = cls._write_section(ws, row, "7.- TRABAJOS PRESENTADOS EN CONGRESOS Y REUNIONES CIENTIFICAS", span=10)
+        for category, title, location in (
+            ("nacional", "7.1.- Reunión Científica Nacional con Referato", "Ciudad"),
+            ("internacional", "7.2.- Reunión Científica Internacional", "País"),
+            ("sin clasificar", "Trabajos en reuniones sin clasificar para la memoria", "Procedencia"),
+        ):
+            items = [trabajo for trabajo in trabajos_reunion if meeting_category({
+                "alcance": trabajo.alcance, "referato": trabajo.referato,
+                "tipo_reunion_nombre": trabajo.tipo_reunion_cientifica.nombre if trabajo.tipo_reunion_cientifica else None,
+            }) == category]
+            if category == "sin clasificar" and not items:
+                continue
+            rows = [[idx, trabajo.nombre_reunion, trabajo.procedencia, trabajo.fecha_presentacion,
+                     cls._autores_texto([a.serialize() for a in trabajo.autorias]),
+                     trabajo.titulo_trabajo + ("\nEnlace: " + trabajo.enlace if trabajo.enlace else "")]
+                    for idx, trabajo in enumerate(items, 1)]
+            row = cls._write_table(ws, row, title, ["Nro.", "Nombre reunión", location,
+                "Fecha de presentación", "Autores", "Título trabajo"], rows, merge_span=10, date_cols={4})
         articulos_rows = [[idx, articulo.titulo, articulo.descripcion, articulo.fecha_publicacion] for idx, articulo in enumerate(articulos, start=1)]
         row = cls._write_table(ws, row, "8.- TRABAJOS REALIZADOS Y PUBLICADOS", ["Nro.", "Titulo del articulo", "Descripcion o sintesis", "Fecha de publicacion"], articulos_rows, merge_span=8, date_cols={4})
-        revistas_rows = [[idx, trabajo.titulo_trabajo + ("\nEnlace: " + trabajo.enlace if trabajo.enlace else ""), trabajo.nombre_revista, trabajo.editorial, trabajo.issn, trabajo.pais, trabajo.tipo_revista.nombre if trabajo.tipo_revista else "-", trabajo.fecha_publicacion, cls._autores_texto([a.serialize() for a in trabajo.autorias])] for idx, trabajo in enumerate(trabajos_revista, start=1)]
-        row = cls._write_table(ws, row, "8.1.- Trabajos en revistas con referato", ["Nro.", "Titulo del trabajo", "Revista", "Editorial", "ISSN", "Pais", "Tipo de revista", "Fecha de publicacion", "Autores"], revistas_rows, merge_span=10, date_cols={8})
+        for category, title in (
+            ("revista", "8.1.- Trabajos publicados en revistas con referato"),
+            ("libro", "8.3.- Libros o capítulos de libros"),
+            ("sin clasificar", "Publicaciones sin clasificar para la memoria"),
+        ):
+            items = [trabajo for trabajo in trabajos_revista if publication_category({
+                "referato": trabajo.referato, "issn": trabajo.issn,
+                "tipo_revista_nombre": trabajo.tipo_revista.nombre if trabajo.tipo_revista else None,
+            }) == category]
+            if category != "revista" and not items:
+                continue
+            rows = [[idx, trabajo.nombre_revista, trabajo.pais, trabajo.editorial, trabajo.issn,
+                     trabajo.titulo_trabajo + "\nAutores: " + cls._autores_texto([a.serialize() for a in trabajo.autorias]) +
+                     "\nFecha: " + cls._format_date(trabajo.fecha_publicacion) +
+                     ("\nEnlace: " + trabajo.enlace if trabajo.enlace else "")]
+                    for idx, trabajo in enumerate(items, 1)]
+            row = cls._write_table(ws, row, title, ["Nro.", "Nombre de la revista", "País", "Editorial", "ISSN", "Título trabajo"], rows, merge_span=10)
+
         registros_grouped = {}
         for registro in registros:
             tipo = registro.tipo_registro.nombre if registro.tipo_registro else "Sin tipo definido"

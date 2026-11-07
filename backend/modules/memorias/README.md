@@ -330,3 +330,29 @@ Aceptado el 07/11/2026. La suite completa Linux ejecuto 777 pruebas sin fallos,
 con 40 omisiones que requieren PostgreSQL dedicado; incluye las pruebas locales
 de Busqueda pendientes de versionar. No se modifican endpoints, payloads,
 permisos ni vistas frontend.
+
+## ISS-25: referato y alcance en exportaciones
+
+Los snapshots de reuniones y revistas conservan el referato; reuniones conserva
+además el alcance. La plantilla institucional mantiene las tablas 7.1 Reunión
+Científica Nacional con Referato (Ciudad), 7.2 Reunión Científica Internacional
+(País) y 8.1 Trabajos publicados en revistas con referato. Se reutilizan
+`procedencia` de reuniones y `pais` de revistas, sin duplicar datos.
+
+Los clasificadores existentes `meeting_category` y `publication_category`
+se reutilizan también en la exportación por grupo. 7.1 requiere alcance nacional
+y referato positivo; 7.2 requiere alcance internacional; 8.1 requiere referato
+positivo. Los valores explícitos prevalecen sobre las etiquetas de catálogo.
+Para datos heredados null se conserva la compatibilidad de la plantilla con
+catálogos que indican expresamente Nacional/Internacional y Con referato.
+Congreso o Jornada por sí solos no determinan alcance ni referato.
+
+La clasificación de libros mantiene su precedencia y sección 8.3. Los registros
+sin clasificación suficiente no se incluyen en las tablas anteriores: permanecen
+en Detalle académico del Excel institucional y en secciones separadas del Excel
+de grupo. Ninguna exportación modifica la ficha original. Las versiones cerradas
+usan exclusivamente sus snapshots, sin tomar una clasificación posterior.
+
+Aceptado visual y funcionalmente el 07/11/2026. Las pruebas verifican ubicación
+de Ciudad/País, inclusión sin duplicados, conservación de registros sin clasificar,
+estilos y estructura institucional, así como inmutabilidad de snapshots.

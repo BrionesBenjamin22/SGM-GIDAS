@@ -1,3 +1,4 @@
+import { referatoLabel, alcanceLabel } from "@/modules/produccion/utils/clasificacionTrabajo";
 import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
@@ -112,7 +113,7 @@ export default function TrabajosReunionLanding() {
     return scopedList.filter((trabajo) => {
       const tipo = formatTrabajoReunionContractValue(trabajo.tipo_reunion);
       const procedencia = formatTrabajoReunionContractValue(trabajo.procedencia);
-      const searchable = [trabajo.titulo_trabajo, trabajo.nombre_reunion, procedencia, tipo, ...trabajo.autores.map(autorEtiqueta)];
+      const searchable = [referatoLabel(trabajo.referato), alcanceLabel(trabajo.alcance), trabajo.titulo_trabajo, trabajo.nombre_reunion, procedencia, tipo, ...trabajo.autores.map(autorEtiqueta)];
       const matchesSearch = !query || searchable.some((value) => value.toLocaleLowerCase("es").includes(query));
       const matchesTipo = !filters.tipo || String(trabajo.tipo_reunion?.id ?? "") === filters.tipo;
       const matchesProcedencia = !filters.procedencia || toTitleCase(procedencia) === filters.procedencia;
@@ -195,6 +196,8 @@ export default function TrabajosReunionLanding() {
   const columns: TableColumn<TrabajoReunion>[] = [
     { id: "titulo", header: "Trabajo", render: (trabajo) => <div><span className="block font-medium text-slate-900">{formatTrabajoReunionContractValue(trabajo.titulo_trabajo) || "—"}</span><span className="mt-0.5 block text-xs text-slate-500">{trabajo.autores.length ? trabajo.autores.map(autorEtiqueta).join(", ") : "Sin autores informados"}</span></div> },
     { id: "reunion", header: "Reunión", priority: "secondary", render: (trabajo) => <div><span className="block text-slate-800">{toTitleCase(formatTrabajoReunionContractValue(trabajo.nombre_reunion)) || "—"}</span><span className="mt-0.5 block text-xs text-slate-500">{toTitleCase(formatTrabajoReunionContractValue(trabajo.procedencia)) || "Sin procedencia"}</span></div> },
+    { id: "referato", header: "Referato", priority: "tertiary", render: (trabajo) => referatoLabel(trabajo.referato) },
+    { id: "alcance", header: "Alcance", priority: "secondary", render: (trabajo) => alcanceLabel(trabajo.alcance) },
     { id: "tipo", header: "Tipo", priority: "tertiary", render: (trabajo) => toTitleCase(formatTrabajoReunionContractValue(trabajo.tipo_reunion)) || "—" },
     { id: "fecha", header: "Fecha de presentación", priority: "tertiary", render: (trabajo) => formatFecha(trabajo.fecha_presentacion) },
     { id: "estado", header: "Estado", render: (trabajo) => { const activo = !trabajo.deleted_at && trabajo.activo !== false; return <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${activo ? "text-emerald-700" : "text-rose-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${activo ? "bg-emerald-500" : "bg-rose-500"}`} />{activo ? "Activo" : "Inactivo"}</span>; } },

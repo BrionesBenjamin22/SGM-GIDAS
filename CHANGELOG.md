@@ -8,6 +8,19 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-25: referato y alcance de trabajos científicos
+
+- Reuniones y revistas permiten indicar referato Sí/No/Sin informar. Reuniones
+  incorpora alcance Nacional/Internacional; revistas reutiliza TipoRevista.
+  Ciudad/País reutiliza los campos actuales sin duplicar información.
+- Formularios, listados, detalles e historiales conservan false/null y envían
+  diferencias reales. Migración reversible, validación estricta y snapshots
+  inmutables, sin clasificar históricos automáticamente.
+- Exportación por grupo alineada con las secciones 7.1, 7.2 y 8.1 de la memoria,
+  reutilizando los clasificadores institucionales y conservando sin clasificar.
+- Aceptado visual y funcionalmente el 07/11/2026: 274 pruebas frontend,
+  43 backend, TypeScript y build de producción aprobados.
+
 ### ISS-99: fixture de recuperacion administrativa por UCT
 
 - La prueba crea una pertenencia real y aplica el aislamiento ORM: ADMIN puede
