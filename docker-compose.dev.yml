@@ -28,6 +28,7 @@ services:
       - ./backend:/app
 
   backend:
+    cpus: "${DEV_BACKEND_CPUS:-2.0}"
     build:
       context: ./backend
       target: development
@@ -36,6 +37,7 @@ services:
     environment:
       APP_ENV: ${APP_ENV:-docker}
       FLASK_DEBUG: ${FLASK_DEBUG:-1}
+      FLASK_RUN_EXCLUDE_PATTERNS: /app/tests/*:/app/tools/*:/app/migrations/*
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       FRONTEND_URLS: ${FRONTEND_URLS:-http://localhost:5173,http://localhost:8080,http://localhost}
       RATELIMIT_STORAGE_URI: ${RATELIMIT_STORAGE_URI:-redis://redis:6379/0}
@@ -113,6 +115,8 @@ services:
       retries: 5
 
   frontend:
+    mem_limit: ${DEV_FRONTEND_MEMORY:-1g}
+    cpus: "${DEV_FRONTEND_CPUS:-2.0}"
     build:
       context: ./frontend
       target: development

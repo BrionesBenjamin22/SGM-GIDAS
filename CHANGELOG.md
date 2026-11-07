@@ -8,6 +8,18 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-97: estabilidad y recursos del entorno de desarrollo
+
+- Backend y Vite disponen de 2 CPU por defecto en el override de desarrollo;
+  Vite dispone de 1 GiB de memoria. Los límites son configurables por entorno.
+- Flask evita recargas por edición de pruebas, herramientas y migraciones,
+  conservando la recarga del código de aplicación.
+- Los errores históricos por columnas inexistentes se clasificaron y no se
+  reprodujeron en los endpoints vigentes. No se modificó el esquema de datos.
+- Aceptado por el usuario el 07/11/2026: 25 pruebas backend y 72 GET posteriores
+  aprobados. Las medianas HTTP locales mejoraron; no se midió el renderizado
+  del navegador. Interfaz y API disponibles para validación.
+
 ### ISS-98: integridad y formato de la memoria Excel
 
 - La plantilla aporta estructura y presentación; el contenido proviene de los
