@@ -51,8 +51,8 @@ para serializar intentos concurrentes en PostgreSQL. El evento de bloqueo regist
 solo un prefijo del HMAC, sin credenciales ni tokens. El límite de frecuencia por
 IP existente sigue aplicándose.
 
-El cambio de contraseña autenticado no levanta un bloqueo de login activo. La
-recuperación de contraseña futura deberá definir su propia regla de desbloqueo.
+El cambio de contraseña autenticado y la recuperación por correo no levantan un
+bloqueo de login activo; conserva su vencimiento original.
 Antes de desplegar, ejecutar la migración `f0a8c1d2e3b4`.
 
 ## Errores de autenticación (ISS-09)
@@ -191,6 +191,12 @@ de cambiar datos, normaliza correos y crea ambas tablas e indices. Ante duplicad
 aborta sin fusionar cuentas. El downgrade retira tablas e indice funcional; no
 restaura mayusculas ni espacios eliminados. El transporte y operacion estan
 documentados en [notifications](../notifications/README.md).
+
+La funcionalidad está implementada; la entrega en producción requiere provisionar
+SMTP institucional, secretos y URL HTTPS autorizada, además de mantener activo
+`email-worker`. El 202 de solicitud pública no confirma entrega de correo, y el
+health de la API no prueba SMTP. El procedimiento de configuración y aceptación
+del servidor está en la [guía de despliegue](../../../docs/despliegue_produccion.md#recuperación-de-contraseña-en-producción).
 
 `tests/test_auth_password_reset.py` cubre estados, cifrado, permisos, limites,
 revocacion, SMTP/TLS, retries y retencion. Las pruebas PostgreSQL se habilitan

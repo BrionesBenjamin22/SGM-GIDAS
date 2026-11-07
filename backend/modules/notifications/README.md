@@ -59,6 +59,12 @@ Docker Compose ejecuta `email-worker` con la misma imagen del backend y
 ENTRYPOINT_MODE=email-worker despues del migrador. Conserva usuario no root,
 filesystem de solo lectura, tmpfs, capacidades reducidas y limites de recursos.
 El heartbeat `/tmp/gidas-email-worker-heartbeat` debe tener menos de 120 segundos.
+Ese healthcheck verifica actividad reciente del proceso, no conectividad SMTP
+ni entrega al destinatario. La configuración se valida al iniciar Flask; `sent`
+indica aceptación por SMTP y no garantiza llegada a bandeja de entrada. Las
+alertas de cola se escriben en logs: integrarlas con monitoreo externo corresponde
+al despliegue. Véase la [guía productiva](../../../docs/despliegue_produccion.md#recuperación-de-contraseña-en-producción)
+para verificar parámetros y efectuar la aceptación con correo controlado.
 Es compatible con varios workers por los claims disjuntos; los logs solo
 contienen IDs operativos, numero de intento y clase de error.
 
