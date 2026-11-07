@@ -1,5 +1,26 @@
 # Memorias
 
+## Acciones del listado y confirmaciones (ISS-100)
+
+La fila principal de `MemoriasHome` permite reabrir una memoria activa cuya
+versión actual está cerrada, para ADMIN/GESTOR. La confirmación explica que se
+crea una nueva versión y que los datos de las versiones cerradas son inmutables.
+El cierre también advierte que cualquier modificación requiere una reapertura.
+Home y detalle comparten estos textos en `utils/confirmacionesMemoria.ts`, con
+opciones Continuar y Volver. Cancelar no persiste cambios; confirmar bloquea
+duplicados y actualiza las consultas de listado, detalle e historial.
+
+En el panel desplegable, cada versión cerrada ofrece descarga con icono
+`Download`, incluidas las históricas, sin repetir la reapertura. Se reutiliza
+`exportarExcelMemoria(memoriaId, versionId)` y sus permisos ADMIN/GESTOR.
+Mientras genera el archivo muestra un indicador accesible y bloquea descargas
+duplicadas; informa el nombre del archivo al terminar o un error accionable.
+Las versiones abiertas y en revisión conservan sus acciones de gestión.
+
+Aceptado visual y funcionalmente el 07/11/2026. Validación: 271 pruebas frontend,
+TypeScript, build de producción y regresiones backend de estados, inmutabilidad,
+formato Excel y permisos aprobados. Sin cambios de contratos HTTP.
+
 ## Filtros desplegables (ISS-47)
 
 MemoriasHome: estado del registro; conserva el filtro independiente de estado de versión.
@@ -144,10 +165,10 @@ detalle `GET /api/v1/memorias/{id}`, con caché independiente por ID. La carga,
 el error con reintento y la ausencia de versiones se muestran dentro del panel.
 
 La fila y la acción Ver abren el detalle de la Memoria. El panel de versiones
-presenta cuatro iconos: ver detalle (`Eye`), reabrir (`RotateCcw`), cerrar
-(`LockKeyhole`) y enviar a revisión (`Send`). El detalle abre los snapshots de
+presenta ver detalle (`Eye`), descargar Excel (`Download`) para versiones
+cerradas, cerrar (`LockKeyhole`) y enviar a revisión (`Send`). El detalle abre los snapshots de
 una versión cerrada o la gestión de la versión vigente abierta/en revisión.
-ADMIN y GESTOR pueden reabrir solo la versión vigente cerrada, cerrar una versión
+ADMIN y GESTOR pueden reabrir desde la fila principal solo la versión vigente cerrada, cerrar una versión
 abierta/en revisión y enviar a revisión una versión abierta. Las acciones de
 estado se deshabilitan para versiones históricas y roles sin permiso.
 Reapertura, cierre y revisión requieren confirmación; el diálogo queda bloqueado

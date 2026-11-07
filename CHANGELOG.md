@@ -8,6 +8,17 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-100: reapertura y descarga desde el listado de memorias
+
+- La fila principal permite reabrir memorias activas cerradas para ADMIN/GESTOR.
+- Cierre y reapertura explican la inmutabilidad de las versiones cerradas y la
+  creación de una nueva versión, con opciones Continuar y Volver.
+- El panel de versiones sustituye la reapertura por descarga Excel para cada
+  versión cerrada, incluidas las históricas, con progreso y bloqueo de duplicados.
+- Aceptado visual y funcionalmente el 07/11/2026: 271 pruebas frontend,
+  TypeScript, build y 38 pruebas backend de memorias y exportaciones aprobados.
+  Sin cambios de API.
+
 ### ISS-97: estabilidad y recursos del entorno de desarrollo
 
 - Backend y Vite disponen de 2 CPU por defecto en el override de desarrollo;

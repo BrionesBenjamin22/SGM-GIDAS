@@ -1,5 +1,19 @@
 # Memorias
 
+## Consumo desde el home (ISS-100)
+
+El frontend reutiliza `PUT /api/v1/memorias/{id}/reabrir` desde la fila
+principal y `GET /api/v1/memorias/{id}/versiones/{version_id}/exportar-excel`
+desde cada versión cerrada del panel desplegable, incluidas las históricas.
+Ambas operaciones requieren ADMIN/GESTOR y conservan las validaciones existentes.
+Reabrir genera una versión abierta sin modificar la cerrada; exportar lee los
+snapshots de la versión solicitada. Las confirmaciones de cierre y reapertura
+explican esta inmutabilidad antes de ejecutar la operación.
+
+Aceptado el 07/11/2026. No se modifican endpoints, payloads, modelos, auditoría
+ni reglas de negocio. Regresiones de estados y períodos: 23 pruebas aprobadas;
+formato Excel y seguridad de exportaciones: 15 pruebas aprobadas.
+
 ## Contrato consumido por la validacion preventiva (ISS-33)
 
 Creacion y correccion de periodo conservan validaciones de UCT, fechas, estado y diferencias, sin modificar versiones cerradas ni sus fotos.
