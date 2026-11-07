@@ -8,6 +8,22 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-98: integridad y formato de la memoria Excel
+
+- La plantilla aporta estructura y presentación; el contenido proviene de los
+  snapshots y del contexto de la versión cerrada. Se retiran ejemplos y notas
+  heredadas y se señalan los datos institucionales ausentes.
+- Se corrigen bordes, filas de apoyo y tesinas, espaciado, textos extensos,
+  combinaciones, fechas nativas y formatos monetarios. Se separan libros y revistas
+  sin duplicaciones; los registros ambiguos quedan sin clasificar.
+- El archivo incorpora Detalle académico con los 16 conjuntos completos,
+  autoridades y vigencias, datos complementarios y movimientos financieros.
+  Los importes sin equivalencia ARS o clasificación contable se conservan con
+  advertencias y no se agregan silenciosamente al resumen.
+- Aceptado por el usuario el 07/11/2026. Pruebas de formato, autores, enlaces,
+  finanzas e inmutabilidad histórica aprobadas; conciliación de 245 registros,
+  ingresos ARS 9.600.000 y egresos ARS 2.400.000. Sin migraciones ni cambios HTTP.
+
 ### ISS-47: filtros desplegables coherentes en los homes
 
 - Se unifican 18 homes con TableFilterSelect: estado, clase de Personal y

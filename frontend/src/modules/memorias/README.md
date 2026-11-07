@@ -61,6 +61,28 @@ Durante la descarga, el botón `Generar Excel` muestra exclusivamente
 envíos duplicados. Al terminar se muestra éxito o un error que permite reintentar.
 El indicador de progreso no introduce porcentajes ni mensajes externos al botón.
 
+## Archivo académico de la versión (ISS-98)
+
+`MemoriaVersionDetalle` y `exportarExcelMemoria` mantienen el flujo de descarga,
+el endpoint, los permisos ADMIN/GESTOR y el requisito de versión cerrada. No se
+modifican componentes, hooks, tipos, formularios ni validaciones del frontend.
+
+El archivo descargado contiene el formulario institucional en `Hoja1` y los datos
+complementarios en `Detalle académico`, incluido el detalle financiero y los
+registros sin clasificación suficiente. Ambos usan exclusivamente la información
+conservada por esa versión. Los campos institucionales ausentes se indican como
+sin información; no se completan con ejemplos del laboratorio ni con fichas actuales.
+
+El backend corrige bordes, ajuste de texto, reservas vacías, fechas, importes y
+separación de libros/revistas. El enlace de la cabecera del formulario conduce al
+detalle del mismo archivo. El operador puede revisar allí fechas, roles, vigencias
+y advertencias por movimientos excluidos del resumen. Se mantienen el feedback
+de generación y la posibilidad de reintentar ante errores.
+
+Aceptado visual y funcionalmente por el usuario el 07/11/2026. La validación del
+archivo y su procedencia está cubierta por las regresiones backend; no hay cambios
+de contrato HTTP ni de navegación.
+
 ## Error del programa de actividades (ISS-74)
 
 La etiqueta de descripción se asocia al `textarea`. Cuando falta el texto, el

@@ -72,7 +72,7 @@ class Memoria2025SeedTest(unittest.TestCase):
         MemoriaService.change_status(memoria.id, {"estado": "cerrada"}, self.admin.id)
         exported = ExportService.generar_excel_memoria(memoria.id, memoria.version_actual_id)
         workbook = load_workbook(exported)
-        self.assertEqual(workbook.sheetnames, ["Hoja1", "Hoja2"])
+        self.assertEqual(workbook.sheetnames, ["Hoja1", "Detalle académico"])
         cells = list(workbook["Hoja1"].values)
         texts = [str(value) for row in cells for value in row if value is not None]
         self.assertIn("MEMORIAS 2025", texts[0])
@@ -118,7 +118,7 @@ class Memoria2025SeedTest(unittest.TestCase):
         sources["articulos"] = [{"titulo": "Contenido", "descripcion": "=1+1"}]
         with patch.object(ExportService, "_build_memoria_snapshot_sources", return_value=sources):
             workbook = load_workbook(ExportService.generar_excel_memoria(memoria.id, memoria.version_actual_id))
-        cells = [cell for row in workbook["Hoja1"] for cell in row]
+        cells = [cell for sheet in workbook for row in sheet for cell in row]
         values = [cell.value for cell in cells]
         for index in range(25):
             self.assertIn(f"Investigador {index}", values)

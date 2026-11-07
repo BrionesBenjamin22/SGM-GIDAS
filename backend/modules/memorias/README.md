@@ -51,11 +51,11 @@ memoria abierta o en revisión en la UCT.
 ADMIN o GESTOR y una versión cerrada con contexto institucional válido. El
 exportador lee únicamente snapshots y completa
 `backend/assets/Memorias 2025 - GIDAS.xlsx` mediante `memoria_excel_template.py`.
-Conserva las dos hojas, encabezados, combinaciones, dimensiones, bordes y
-configuración de impresión. Cuando una tabla excede sus filas disponibles,
-inserta filas copiando su formato y desplaza las secciones siguientes. Los datos
-usan Calibri 11 negro; los títulos mantienen su diseño institucional. Los textos
-largos ajustan su altura y las celdas se escriben como datos, sin ejecutar fórmulas.
+Conserva la estructura y los encabezados institucionales, sus colores, márgenes
+y anchos de columnas. Cuando una tabla excede sus filas disponibles, inserta
+filas y desplaza las secciones siguientes. Los bordes y prototipos de datos se
+uniforman; los textos ajustan su altura y se escriben como datos, sin ejecutar
+fórmulas. El archivo contiene `Hoja1` y `Detalle académico`, según ISS-98.
 
 El cierre congela identificación, autoridades, planificación del año siguiente
 y resultados de informes PID asociados. Las horas y relaciones corresponden al
@@ -85,6 +85,56 @@ y valida el flujo desde la interfaz. Los datos ficticios tienen redacción forma
 Pruebas: `test_memoria_excel_formato`, `test_memoria_2025_seed` y
 `test_memoria_seed_validacion` verifican desbordes, estilos, filtros, idempotencia,
 protección de datos existentes e inmutabilidad histórica.
+
+## Integridad y presentación del Excel académico (ISS-98)
+
+El endpoint de exportación de versión mantiene ruta, permisos ADMIN/GESTOR,
+validación de pertenencia UCT, estado cerrado y requisito de contexto histórico.
+No cambia el payload ni se agregan migraciones. Una versión sin contexto válido
+continúa devolviendo el conflicto existente; no se reconstruye con datos actuales.
+
+`memoria_excel_template.py` utiliza la plantilla exclusivamente como formato:
+conserva una lista explícita de filas estructurales y elimina ejemplos, notas,
+hipervínculos y hojas ajenas. La identificación y los valores proceden de los
+snapshots/contexto. El organigrama, disciplinas y campos de aplicación sin fuente
+histórica se señalan como sin información. Se presentan las autoridades al cierre;
+las autoridades del período y sus vigencias permanecen en el detalle.
+
+`memoria_excel_detail.py` define los campos académicos de las 16 colecciones y
+construye `Detalle académico`. Incluye fechas, participantes/autores, roles docentes,
+relaciones con proyectos, montos, monedas y movimientos individuales que no tienen
+columna en el formulario. Conserva referencias históricas, sin exportar campos de
+auditoría ni datos personales ajenos al informe. Los campos ausentes se identifican
+expresamente. La planificación utiliza el año conservado en el contexto.
+
+La clasificación usa atributos explícitos, cuando existen, y denominaciones del
+catálogo: reunión nacional exige referato positivo o un tipo que lo indique;
+internacional exige ese alcance. Libros/capítulos e identificadores ISBN se separan
+de revistas con referato. Una negación explícita de referato prevalece sobre la
+etiqueta del tipo. Tipos ambiguos de formación, personal, transferencias, reuniones,
+publicaciones o registros quedan sin clasificar en el detalle, sin asignación por
+defecto a una sección. No se reintroducen los campos revertidos de ISS-25.
+
+Las fechas tabulares se almacenan como fechas Excel con formato `dd/mm/yyyy`.
+Equipamiento y transferencias conservan importes originales y moneda. El resumen
+financiero usa equivalentes ARS o el importe original si es ARS; no suma USD como
+pesos cuando falta conversión. Un movimiento sin clasificación contable o
+equivalencia se excluye del resumen, se conserva en el detalle y genera una
+advertencia visible. Los ingresos no se duplican entre corriente y capital.
+
+El generador completa bordes faltantes, usa filas de datos coherentes para apoyo
+y tesinas, elimina rotación/apilado y formatos de edición de los ejemplos, ajusta
+texto y oculta reservas vacías. Respeta las dimensiones implícitas K/L al medir
+celdas combinadas y configura impresión A:L, una página de ancho y altura libre.
+Los textos extensos se distribuyen en filas/fragmentos para respetar los límites
+de Excel; si una celda tabular supera su capacidad, remite al texto completo del
+detalle. Los strings se guardan como texto incluso si comienzan con `=`.
+
+Aceptado visual y funcionalmente por el usuario el 07/11/2026. Regresiones en
+`test_memoria_excel_formato`, `test_trabajo_enlace`, `test_trabajo_autores`,
+`test_memoria_periodos_uct`, exportación de `test_movimiento_financiero_alta` y
+`test_memoria_2025_seed`. Se conciliaron 245 registros de 16 conjuntos de la memoria
+2026 v3: ingresos ARS 9.600.000 y egresos ARS 2.400.000, sin escrituras en la base.
 
 ## Listado y snapshots paginados (ISS-89)
 
