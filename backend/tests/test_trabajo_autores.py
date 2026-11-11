@@ -81,6 +81,7 @@ class TrabajoAutoresTest(unittest.TestCase):
     def payload(self, tipo):
         comun = {"titulo_trabajo": "Estudio de sistemas", "grupo_utn_id": 1, "autores": self.autores}
         if tipo == "reuniones":
+            comun["expositores"] = comun.pop("autores")
             return {**comun, "referato": True, "alcance": "nacional", "tipo_reunion_id": 1, "nombre_reunion": "Congreso UTN", "procedencia": "Argentina", "fecha_presentacion": "2026-03-20"}
         return {**comun, "tipo_revista_id": 1, "nombre_revista": "Revista UTN", "editorial": "UTN", "issn": "1234-5678", "pais": "Argentina", "fecha_publicacion": "2026-03-20"}
 
@@ -90,7 +91,7 @@ class TrabajoAutoresTest(unittest.TestCase):
         return respuesta.get_json()["id"]
 
     def test_alta_edicion_historial_filtros_y_consulta_ambos_trabajos(self):
-        for tipo, entidad in (("reuniones", "trabajo_reunion_cientifica"), ("revistas", "trabajo_revista_referato")):
+        for tipo, entidad in (("revistas", "trabajo_revista_referato"),):
             with self.subTest(tipo=tipo):
                 identificador = self.crear(tipo)
                 detalle = self.client.get(f"/{tipo}/{identificador}", headers=self.headers).get_json()
@@ -114,7 +115,7 @@ class TrabajoAutoresTest(unittest.TestCase):
                 self.assertEqual(len(self.client.get(f"/{tipo}/{identificador}", headers=self.headers).get_json()["autores"]), 1)
 
     def test_solo_investigador_solo_becario_y_ambos(self):
-        for tipo in ("reuniones", "revistas"):
+        for tipo in ("revistas",):
             for indice, autores in enumerate(([self.autores[0]], [self.autores[1]], self.autores[:2])):
                 payload = self.payload(tipo)
                 payload.update(autores=autores, titulo_trabajo=f"Estudio de sistemas {indice}")
@@ -123,12 +124,11 @@ class TrabajoAutoresTest(unittest.TestCase):
                 self.assertEqual(len(respuesta.get_json()["autores"]), len(autores))
 
     def test_busqueda_global_por_investigador_y_becario(self):
-        self.crear("reuniones")
         self.crear("revistas")
         for nombre in ("Luis Becario", "Ana Investigadora"):
             resultados = SearchService.search(nombre)
             trabajos = [r for r in resultados if r["tipo"].startswith("Trabajo en")]
-            self.assertEqual(len(trabajos), 2)
+            self.assertEqual(len(trabajos), 1)
             for trabajo in trabajos:
                 self.assertEqual(len(trabajo["extra"]["autores"]), 2)
                 self.assertNotIn("investigadores", trabajo["extra"])
@@ -137,7 +137,7 @@ class TrabajoAutoresTest(unittest.TestCase):
         invalidos = (None, {}, [], [self.autores[0]] * 2, [{"id": 99, "rol": "becario"}],
                      [{"id": True, "rol": "investigador"}], [{"id": 1, "rol": "externo"}], [{"id": 1, "rol": "personal"}], [{"id": 1, "rol": []}],
                      [{"id": 2, "rol": "investigador"}], [{"id": 3, "rol": "investigador"}])
-        for tipo in ("reuniones", "revistas"):
+        for tipo in ("revistas",):
             identificador = self.crear(tipo)
             for autores in invalidos:
                 with self.subTest(tipo=tipo, autores=autores):
@@ -169,7 +169,7 @@ class TrabajoAutoresTest(unittest.TestCase):
     def test_rechaza_personal_existente_activo_en_alta_edicion_baja_y_filtro(self):
         # Personal existe y está activo; su categoría, no su estado, lo excluye.
         personal = {"id": 1, "rol": "personal"}
-        for tipo in ("reuniones", "revistas"):
+        for tipo in ("revistas",):
             identificador = self.crear(tipo)
             for autores in ([personal], [*self.autores, personal]):
                 payload = self.payload(tipo)
@@ -183,28 +183,28 @@ class TrabajoAutoresTest(unittest.TestCase):
             self.assertEqual({a["rol"] for a in detalle["autores"]}, {"investigador", "becario"})
 
     def test_conserva_y_permite_quitar_asociaciones_historicas_inactivas(self):
-        identificador = self.crear("reuniones")
+        identificador = self.crear("revistas")
         becario = db.session.get(Becario, 1)
         becario.soft_delete(7)
         db.session.commit()
-        detalle = self.client.put(f"/reuniones/{identificador}", json={"autores": self.autores}, headers=self.headers)
+        detalle = self.client.put(f"/revistas/{identificador}", json={"autores": self.autores}, headers=self.headers)
         self.assertEqual(detalle.status_code, 200)
         self.assertFalse(next(a for a in detalle.get_json()["autores"] if a["rol"] == "becario")["activo"])
-        baja = self.client.put(f"/reuniones/{identificador}", json={"autores": [self.autores[0]]}, headers=self.headers)
+        baja = self.client.put(f"/revistas/{identificador}", json={"autores": [self.autores[0]]}, headers=self.headers)
         self.assertEqual(baja.status_code, 200)
 
     def test_permisos_y_baja_del_trabajo(self):
-        identificador = self.crear("reuniones")
+        identificador = self.crear("revistas")
         with patch("modules.shared.services.middleware.AuthService.verify_token", return_value={"sub": "7", "rol": "LECTURA"}):
-            self.assertEqual(self.client.get(f"/reuniones/{identificador}", headers=self.headers).status_code, 200)
-            for metodo, url, body in (("post", "/reuniones", self.payload("reuniones")), ("put", f"/reuniones/{identificador}", {"autores": []}), ("delete", f"/reuniones/{identificador}/autores", {"autores": self.autores})):
+            self.assertEqual(self.client.get(f"/revistas/{identificador}", headers=self.headers).status_code, 200)
+            for metodo, url, body in (("post", "/revistas", self.payload("revistas")), ("put", f"/revistas/{identificador}", {"autores": []}), ("delete", f"/revistas/{identificador}/autores", {"autores": self.autores})):
                 self.assertEqual(getattr(self.client, metodo)(url, json=body, headers=self.headers).status_code, 403)
-        self.assertEqual(self.client.put(f"/reuniones/{identificador}", json={"autores": []}).status_code, 401)
-        self.client.delete(f"/reuniones/{identificador}", headers=self.headers)
-        self.assertEqual(self.client.put(f"/reuniones/{identificador}", json={"autores": []}, headers=self.headers).status_code, 409)
+        self.assertEqual(self.client.put(f"/revistas/{identificador}", json={"autores": []}).status_code, 401)
+        self.client.delete(f"/revistas/{identificador}", headers=self.headers)
+        self.assertEqual(self.client.put(f"/revistas/{identificador}", json={"autores": []}, headers=self.headers).status_code, 409)
 
     def test_rollback_si_falla_auditoria(self):
-        for tipo in ("reuniones", "revistas"):
+        for tipo in ("revistas",):
             identificador = self.crear(tipo)
             with patch("modules.produccion.services.trabajo_autores_service.AuditoriaService.registrar_evento_relacion", side_effect=RuntimeError("fallo de prueba")):
                 respuesta = self.client.put(f"/{tipo}/{identificador}", json={"autores": [self.autores[0]], "titulo_trabajo": "Cambio transaccional"}, headers=self.headers)
@@ -214,7 +214,7 @@ class TrabajoAutoresTest(unittest.TestCase):
             self.assertEqual(len(detalle["autores"]), 2)
 
     def test_constraints_integridad_referencial_y_duplicados(self):
-        for tipo, modelo in (("reuniones", TrabajoReunionAutor), ("revistas", TrabajoRevistaAutor)):
+        for tipo, modelo in (("revistas", TrabajoRevistaAutor),):
             identificador = self.crear(tipo)
             for campos in ({}, {"becario_id": 1, "investigador_id": 1}, {"becario_id": 99}, {"becario_id": 1}):
                 db.session.add(modelo(trabajo_id=identificador, **campos))
@@ -223,7 +223,6 @@ class TrabajoAutoresTest(unittest.TestCase):
                 db.session.rollback()
 
     def test_snapshot_y_excel_con_autores_inmutables(self):
-        self.crear("reuniones")
         self.crear("revistas")
         memoria = Memoria(grupo_utn_id=1, periodo_inicio=date(2026, 1, 1), periodo_fin=date(2026, 12, 31), created_by=7)
         db.session.add(memoria)
@@ -249,7 +248,7 @@ class TrabajoAutoresTest(unittest.TestCase):
             contenido = ExportService.generar_excel_memoria(memoria.id, version.id)
         workbook = load_workbook(BytesIO(contenido.getvalue()))
         textos = [str(celda.value) for hoja in workbook for fila in hoja for celda in fila if celda.value is not None]
-        self.assertGreaterEqual(sum("Luis Becario (Becario)" in texto for texto in textos), 2)
+        self.assertGreaterEqual(sum("Luis Becario (Becario)" in texto for texto in textos), 1)
         self.assertFalse(any("Eva Profesional" in texto for texto in textos))
         self.assertFalse(any("Nombre posterior" in texto for texto in textos))
 

@@ -8,10 +8,10 @@ from datetime import datetime
 from sqlalchemy import or_
 
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
-from modules.produccion.models.trabajo_autor import TrabajoReunionAutor
-from modules.produccion.services.trabajo_autores_service import (
-    validar_autores, validar_referencias, sincronizar_autores, filtrar_por_autor,
+from modules.produccion.services.trabajo_expositores_service import (
+    validar_expositores, sincronizar_expositores, error_expositores,
 )
+from modules.produccion.models.trabajo_expositor import TrabajoReunionExpositor
 from modules.produccion.models.trabajo_reunion import (
     TrabajoReunionCientifica,
     TipoReunion,
@@ -29,6 +29,8 @@ class TrabajoReunionCientificaService:
 
     @staticmethod
     def _validar_payload(data: dict):
+        if isinstance(data, dict) and "autores" in data:
+            error_expositores("Use expositores para informar quién presentó el trabajo.")
         if not isinstance(data, dict) or not data:
             raise ValidationError("Los datos no pueden estar vacios")
 
@@ -51,7 +53,7 @@ class TrabajoReunionCientificaService:
 
         if not isinstance(valor, int) or valor <= 0:
             if campo == "tipo_reunion_id":
-                raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: "Seleccione un tipo de reunión disponible."}})
+                raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: "Seleccione un tipo de evento científico disponible."}})
             raise ValidationError("No pudimos procesar la solicitud. Intente nuevamente.")
 
         return valor
@@ -132,7 +134,7 @@ class TrabajoReunionCientificaService:
         )
         tipo_reunion = db.session.get(TipoReunion, tipo_reunion_id)
         if not tipo_reunion:
-            raise NotFoundError("El tipo de reunión ya no está disponible. Elija otro e intente nuevamente.", details={"fields": {"tipo_reunion_id": "Seleccione un tipo de reunión disponible."}})
+            raise NotFoundError("El tipo de evento científico ya no está disponible. Elija otro e intente nuevamente.", details={"fields": {"tipo_reunion_id": "Seleccione un tipo de evento científico disponible."}})
         return tipo_reunion.id
 
     @staticmethod
@@ -179,7 +181,20 @@ class TrabajoReunionCientificaService:
     @staticmethod
     def _list_query(filters: dict = None):
         filters = filters or {}
-        query = filtrar_por_autor(TrabajoReunionCientifica.query, TrabajoReunionCientifica, TrabajoReunionAutor, filters)
+        query = TrabajoReunionCientifica.query
+        rol, identificador = filters.get("expositor_rol"), filters.get("expositor_id")
+        nombre = filters.get("expositor_nombre")
+        if rol is not None or identificador is not None or nombre is not None:
+            if rol == "externo" and nombre is not None and identificador is None:
+                from modules.produccion.services.trabajo_expositores_service import nombre_clave
+                query = query.filter(TrabajoReunionCientifica.expositores.any(TrabajoReunionExpositor.nombre_clave == nombre_clave(" ".join(nombre.split()))))
+            else:
+                if rol not in ("investigador", "becario", "personal") or nombre is not None:
+                    error_expositores("Seleccione un filtro de expositor válido.")
+                identificador = TrabajoReunionCientificaService._parse_int_filter(identificador, "expositor_id")
+                if identificador is None:
+                    error_expositores("Seleccione un filtro de expositor válido.")
+                query = query.filter(TrabajoReunionCientifica.expositores.any(getattr(TrabajoReunionExpositor, f"{rol}_id") == identificador))
 
         activos = TrabajoReunionCientificaService._normalizar_activos(
             filters.get("activos")
@@ -274,7 +289,7 @@ class TrabajoReunionCientificaService:
 
         clasificacion = validar_clasificacion(data, reunion=True)
         enlace = validar_enlace(data.get("enlace"))
-        autores = validar_autores(data.get("autores", []))
+        expositores = validar_expositores(data.get("expositores"), grupo_utn_id)
 
         trabajo = TrabajoReunionCientifica(
             titulo_trabajo=titulo,
@@ -291,7 +306,7 @@ class TrabajoReunionCientificaService:
         try:
             db.session.add(trabajo)
             db.session.flush()
-            sincronizar_autores(trabajo, autores, TrabajoReunionAutor, "trabajo_reunion_cientifica", user_id)
+            sincronizar_expositores(trabajo, expositores, user_id)
             db.session.commit()
         except Exception:
             db.session.rollback()
@@ -305,7 +320,6 @@ class TrabajoReunionCientificaService:
         data = TrabajoReunionCientificaService._normalizar_fecha_payload(data)
         TrabajoReunionCientificaService._validar_user_id(user_id)
         trabajo = TrabajoReunionCientificaService._get_activo_or_404(trabajo_id)
-        autores = validar_autores(data["autores"], trabajo.autorias) if "autores" in data else None
         enlace = validar_enlace(data["enlace"]) if "enlace" in data else trabajo.enlace
         clasificacion = validar_clasificacion(data, reunion=True, actual=trabajo)
         cambios = {}
@@ -353,6 +367,12 @@ class TrabajoReunionCientificaService:
             fecha_presentacion,
             trabajo.id,
         )
+        expositores = None
+        if "expositores" in data:
+            expositores = validar_expositores(data["expositores"], grupo_utn_id, trabajo.expositores)
+        elif grupo_utn_id != trabajo.grupo_utn_id and trabajo.expositores:
+            validar_expositores([a.serialize() for a in trabajo.expositores], grupo_utn_id, trabajo.expositores)
+
 
         try:
             cambio = AuditoriaService.construir_cambio(
@@ -423,8 +443,8 @@ class TrabajoReunionCientificaService:
                     user_id=user_id
                 )
 
-            if autores is not None:
-                sincronizar_autores(trabajo, autores, TrabajoReunionAutor, "trabajo_reunion_cientifica", user_id)
+            if expositores is not None:
+                sincronizar_expositores(trabajo, expositores, user_id)
             db.session.commit()
         except Exception:
             db.session.rollback()
@@ -465,15 +485,6 @@ class TrabajoReunionCientificaService:
         return trabajo.serialize()
 
     @staticmethod
-    def desvincular_autores(trabajo_id, autores, user_id):
-        TrabajoReunionCientificaService._validar_user_id(user_id)
-        trabajo = TrabajoReunionCientificaService._get_activo_or_404(trabajo_id)
-        claves = set(validar_referencias(autores))
-        restantes = [{"rol": a.rol, "id": a.integrante.id} for a in trabajo.autorias
-                     if (a.rol, a.integrante.id) not in claves]
-        return TrabajoReunionCientificaService.update(trabajo_id, {"autores": restantes}, user_id)
-
-    @staticmethod
     def snapshot_para_memoria_version(memoria_version, user_id):
         trabajos = consultar_entidades_memoria(TrabajoReunionCientifica, memoria_version)
 
@@ -504,6 +515,7 @@ class TrabajoReunionCientificaService:
                     if trabajo.grupo_utn else None
                 ),
                 autores=autores,
+                expositores=[a.serialize() for a in trabajo.expositores],
                 created_by=user_id
             )
             db.session.add(snapshot)

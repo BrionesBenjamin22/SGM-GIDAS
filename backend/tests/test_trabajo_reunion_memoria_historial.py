@@ -1,4 +1,5 @@
-﻿import unittest
+﻿from modules import models_registry  # noqa: F401
+import unittest
 from datetime import date, datetime
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -51,6 +52,7 @@ class TrabajoReunionMemoriaHistorialTestCase(unittest.TestCase):
             tipo_reunion_cientifica=SimpleNamespace(nombre="Congreso"),
             grupo_utn_id=4,
             grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS"),
+            expositores=[],
             autorias=[
                 SimpleNamespace(serialize=lambda: {"id": 1, "rol": "investigador", "tipo": "Investigador", "nombre_apellido": "Ana Perez"}),
                 SimpleNamespace(serialize=lambda: {"id": 1, "rol": "becario", "tipo": "Becario", "nombre_apellido": "Luis Diaz"})

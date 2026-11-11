@@ -1,5 +1,37 @@
 # Produccion
 
+## ISS-26: expositores y tipo de evento científico
+
+TrabajosReunionForm, Home y Detalle consumen `expositores`; revistas conserva
+`autores`. El service `trabajoExpositoresServices.ts` define referencias internas
+por categoría/ID y externos por nombre, normalización, comparación sin orden y
+validación. `useIntegrantesExpositores` consulta personal activo de la UCT e incluye
+investigadores, becarios y todas las categorías de Personal. La selección y los
+borradores guardan únicamente los datos necesarios, sin datos de legajo.
+
+`ExpositoresField` busca integrantes, añade externos y prepara bajas localmente;
+pagina opciones y seleccionados de a cinco. Conserva vinculaciones históricas
+inactivas y no realiza escrituras hasta guardar. `ExpositoresQueryFeedback`
+ofrece carga, error y reintento; un error de consulta permite seguir con externos
+y selecciones existentes. Las validaciones rechazan vacíos requeridos y duplicados
+por referencia, identidad o nombre externo normalizado.
+
+El alta exige un expositor y vuelve al home con `successMessage`. La edición
+envía solo diferencias, evita PUT sin cambios y vuelve al detalle. Los legados
+sin expositores muestran Sin informar y permiten editar otros campos; una
+colección modificada debe conservar al menos uno. Se mantienen permisos,
+auditoría, nueve filas por home y tres eventos por página de historial.
+
+Tipo de evento científico identifica la clase de evento; Nombre de la reunión
+contiene su denominación completa. La ayuda utiliza ejemplos de la memoria 2025:
+Congreso (CICE/COSAPRO) y Jornada (Investigación y Vinculación de FCM-UNLP).
+Alcance y Referato se informan por separado. Las opciones se administran en el
+catálogo del mismo nombre, conservando endpoints e IDs actuales.
+
+Aceptado por el usuario el 11/11/2026. Verificación: 279 pruebas frontend,
+TypeScript, build de producción y módulos servidos por Vite. Los contratos de
+autorías anteriores de este documento quedan superados para reuniones.
+
 ## Filtros desplegables (ISS-47)
 
 DocenciaHome, ArticulosDivulgacionHome, DistincionesHome, DocumentacionHome, RegistrosPropiedadHome, TrabajosReunionHome y TrabajosRevistasHome: estado.

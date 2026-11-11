@@ -116,9 +116,9 @@ const CATALOGS: CatalogDef[] = [
     description: "Clasifica el rol ocupado en actividades docentes.",
   },
   {
-    label: "Tipo de Reunión Científica",
+    label: "Tipo de Evento Científico",
     endpoint: "/tipos-reunion-cientifica/",
-    description: "Clasifica reuniones científicas para trabajos presentados.",
+    description: "Define la clase de evento: por ejemplo, Congreso (CICE o COSAPRO) o Jornada (Investigación y Vinculación de FCM-UNLP). La denominación completa, el alcance (Nacional/Internacional) y el referato se indican por separado en el trabajo.",
   },
   {
     label: "Tipo de Visita",

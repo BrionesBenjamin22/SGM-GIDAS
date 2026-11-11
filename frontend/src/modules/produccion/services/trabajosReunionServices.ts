@@ -1,5 +1,5 @@
 import type { AlcanceTrabajo } from "@/modules/produccion/utils/clasificacionTrabajo";
-import type { AutorReferencia, IntegranteAutor } from "@/modules/produccion/services/trabajoAutoresServices";
+import type { ExpositorReferencia, Expositor } from "@/modules/produccion/services/trabajoExpositoresServices";
 import { http } from "@/lib/http";
 
 export interface TipoReunion {
@@ -27,7 +27,7 @@ export interface TrabajoReunion {
   procedencia: string;
   fecha_presentacion: string;
   tipo_reunion: TipoReunion | null;
-  autores: IntegranteAutor[];
+  expositores: Expositor[];
   grupo_utn: string | null;
 }
 
@@ -42,7 +42,7 @@ export interface HistorialTrabajoReunionItem {
 }
 
 export interface TrabajoReunionPayload {
-  autores: AutorReferencia[];
+  expositores: ExpositorReferencia[];
   enlace?: string | null;
   referato?: boolean | null;
   alcance?: AlcanceTrabajo | null;
@@ -82,7 +82,7 @@ const normalizeTrabajoReunion = (item: TrabajoReunionBackend): TrabajoReunion =>
   procedencia: item.procedencia ?? "",
   fecha_presentacion: item.fecha_presentacion ?? item.fecha_inicio ?? "",
   tipo_reunion: item.tipo_reunion ?? null,
-  autores: Array.isArray(item.autores) ? item.autores : [],
+  expositores: Array.isArray(item.expositores) ? item.expositores : [],
   grupo_utn: item.grupo_utn ?? null,
 });
 
@@ -161,7 +161,7 @@ export const updateTrabajoReunion = async (
   data: Partial<TrabajoReunionPayload>
 ): Promise<TrabajoReunion> => {
   const body: Record<string, unknown> = {};
-  if ("autores" in data) body.autores = data.autores;
+  if ("expositores" in data) body.expositores = data.expositores;
 
   if ("referato" in data) body.referato = data.referato;
   if ("alcance" in data) body.alcance = data.alcance;

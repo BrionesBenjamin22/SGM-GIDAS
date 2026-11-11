@@ -10,7 +10,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
-import IntegrantesAutoresField from "@/modules/produccion/components/IntegrantesAutoresField";
+import ExpositoresField from "@/modules/produccion/components/ExpositoresField";
 import Field from "@/components/Field";
 import SuccessToast from "@/components/SuccessToast";
 
@@ -26,9 +26,9 @@ import {
 } from "@/modules/produccion/services/trabajosReunionServices";
 
 import { useTiposReunion } from "@/modules/produccion/hooks/useTiposReunion";
-import AutoresQueryFeedback from "@/modules/produccion/components/AutoresQueryFeedback";
-import { useIntegrantesAutores } from "@/modules/produccion/hooks/useIntegrantesAutores";
-import { mismasAutorias, type IntegranteAutor } from "@/modules/produccion/services/trabajoAutoresServices";
+import ExpositoresQueryFeedback from "@/modules/produccion/components/ExpositoresQueryFeedback";
+import { useIntegrantesExpositores } from "@/modules/produccion/hooks/useIntegrantesExpositores";
+import { mismosExpositores, expositorReferencia, errorExpositores, type Expositor } from "@/modules/produccion/services/trabajoExpositoresServices";
 import { useAuth } from "@/context/AuthContext";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
 import { toCivilDateString } from "@/utils/dateTime";
@@ -46,9 +46,8 @@ export default function TrabajoReunionForm() {
   const { tipos = [] } = useTiposReunion();
   const { canCreateRecords, canEditRecords, user } = useAuth();
   const puedeGuardar = isEdit ? canEditRecords() : canCreateRecords();
-  const autoresQuery = useIntegrantesAutores();
-  const integrantes = autoresQuery.data ?? [];
-  const autoresNoDisponibles = autoresQuery.data === undefined;
+  const expositoresQuery = useIntegrantesExpositores(uct?.id);
+  const integrantes = expositoresQuery.data ?? [];
 
   const { data: initialData, isLoading, refetch } = useQuery({
     queryKey: ["trabajo-reunion", Number(id)],
@@ -64,7 +63,7 @@ export default function TrabajoReunionForm() {
   const [procedencia, setProcedencia] = useState("");
   const [fechaPresentacion, setFechaPresentacion] = useState<Date | null>(null);
   const [tipoId, setTipoId] = useState<number | null>(null);
-  const [autores, setAutores] = useState<IntegranteAutor[]>([]);
+  const [expositores, setExpositores] = useState<Expositor[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showError, setShowError] = useState(false);
@@ -84,18 +83,18 @@ export default function TrabajoReunionForm() {
       initialData.fecha_presentacion ? new Date(`${initialData.fecha_presentacion}T00:00:00`) : null
     );
     setTipoId(initialData.tipo_reunion?.id ?? null);
-    setAutores(initialData.autores ?? []);
+    setExpositores(initialData.expositores ?? []);
   }, [initialData]);
 
   const { availableDraft, sourceChanged, restoreDraft, discardDraft, clearDraft, saveStatus, blocker, requestLeave, keepAndLeave, discardAndLeave } = useFormDraft({
     userId: user?.id,
     module: "produccion-reuniones",
     recordId: id,
-    value: { referato, alcance, enlace, titulo, nombreReunion, procedencia, fechaPresentacion: toCivilDateString(fechaPresentacion), tipoId, autores },
+    value: { referato, alcance, enlace, titulo, nombreReunion, procedencia, fechaPresentacion: toCivilDateString(fechaPresentacion), tipoId, expositores },
     ready: !isEdit || (!isLoading && Boolean(initialData)),
     autosave: false,
-    hasContent: (draft) => Boolean(draft.referato != null || draft.alcance || draft.enlace || draft.titulo || draft.nombreReunion || draft.procedencia || draft.fechaPresentacion || draft.tipoId || draft.autores.length),
-    onRestore: (draft) => { setReferato(draft.referato ?? null); setAlcance(draft.alcance ?? null); setEnlace(draft.enlace); setTitulo(draft.titulo); setNombreReunion(draft.nombreReunion); setProcedencia(draft.procedencia); setFechaPresentacion(draft.fechaPresentacion ? new Date(`${draft.fechaPresentacion}T00:00:00`) : null); setTipoId(draft.tipoId); setAutores(draft.autores); },
+    hasContent: (draft) => Boolean(draft.referato != null || draft.alcance || draft.enlace || draft.titulo || draft.nombreReunion || draft.procedencia || draft.fechaPresentacion || draft.tipoId || (draft.expositores ?? []).length),
+    onRestore: (draft) => { setReferato(draft.referato ?? null); setAlcance(draft.alcance ?? null); setEnlace(draft.enlace); setTitulo(draft.titulo); setNombreReunion(draft.nombreReunion); setProcedencia(draft.procedencia); setFechaPresentacion(draft.fechaPresentacion ? new Date(`${draft.fechaPresentacion}T00:00:00`) : null); setTipoId(draft.tipoId); setExpositores(draft.expositores ?? []); },
   });
 
   const formatDateStr = (date: Date | null) => {
@@ -106,9 +105,9 @@ export default function TrabajoReunionForm() {
     return `${y}-${m}-${d}`;
   };
 
-  const validationValues = { referato, alcance, enlace, titulo, nombreReunion, procedencia, fechaPresentacion, tipoId, autores };
+  const validationValues = { referato, alcance, enlace, titulo, nombreReunion, procedencia, fechaPresentacion, tipoId, expositores };
   const getValidationErrors = (changes: Partial<typeof validationValues> = {}) => {
-    const { referato, alcance, enlace, titulo, nombreReunion, procedencia, fechaPresentacion, tipoId, autores } = { ...validationValues, ...changes };
+    const { referato, alcance, enlace, titulo, nombreReunion, procedencia, fechaPresentacion, tipoId, expositores } = { ...validationValues, ...changes };
     const newErrors: Record<string, string> = {};
 
     if (referato == null) newErrors.referato = "Seleccione Sí o No.";
@@ -129,16 +128,15 @@ export default function TrabajoReunionForm() {
     }
 
     if (!tipoId) {
-      newErrors.tipoId = "Debe seleccionar tipo de reunión";
+      newErrors.tipoId = "Seleccione el tipo de evento científico.";
     }
 
     if (!fechaPresentacion) {
       newErrors.fechaPresentacion = "Debe seleccionar la fecha de presentación";
     }
 
-    if (autores.length === 0) {
-      newErrors.autores = "Debe agregar al menos un autor";
-    }
+    const errorSeleccion = errorExpositores(expositores, !isEdit || !mismosExpositores(expositores, initialData?.expositores ?? []));
+    if (errorSeleccion) newErrors.expositores = errorSeleccion;
 
     const enlaceError = errorEnlace(enlace);
     if (enlaceError) newErrors.enlace = enlaceError;
@@ -177,7 +175,7 @@ export default function TrabajoReunionForm() {
       });
     },
     onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["referato","alcance","enlace","titulo","nombreReunion","procedencia","tipoId","fechaPresentacion","autores"])) return;
+      if (applyFieldErrors(error, setErrors, ["referato","alcance","enlace","titulo","nombreReunion","procedencia","tipoId","fechaPresentacion","expositores"])) return;
       const backendMessage = getErrorMessage(
         error,
         isEdit
@@ -189,7 +187,7 @@ export default function TrabajoReunionForm() {
     },
   });
 
-  const guardadoBloqueado = mutation.isPending || autoresNoDisponibles || !puedeGuardar || (isEdit && (!initialData || initialData.activo === false || !!initialData.deleted_at)) || !uct;
+  const guardadoBloqueado = mutation.isPending || !puedeGuardar || (isEdit && (!initialData || initialData.activo === false || !!initialData.deleted_at)) || !uct;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,7 +199,7 @@ export default function TrabajoReunionForm() {
       referato,
       alcance,
       enlace: enlace.trim() || null,
-      autores: autores.map(({ id, rol }) => ({ id, rol })),
+      expositores: expositores.map(expositorReferencia),
       titulo_trabajo: toTitleCase(titulo.trim()),
       nombre_reunion: toTitleCase(nombreReunion.trim()),
       procedencia: toTitleCase(procedencia.trim()),
@@ -219,7 +217,7 @@ export default function TrabajoReunionForm() {
       referato: initialData?.referato ?? null,
       alcance: initialData?.alcance ?? null,
       enlace: initialData?.enlace ?? null,
-      autores: initialData?.autores ?? [],
+      expositores: initialData?.expositores ?? [],
       titulo_trabajo: initialData?.titulo_trabajo ?? "",
       nombre_reunion: initialData?.nombre_reunion ?? "",
       procedencia: initialData?.procedencia ?? "",
@@ -230,7 +228,7 @@ export default function TrabajoReunionForm() {
 
     const changedPayload = Object.fromEntries(
       Object.entries(payload).filter(([key, value]) => {
-        if (key === "autores") return !mismasAutorias(payload.autores, initialPayload.autores);
+        if (key === "expositores") return !mismosExpositores(expositores, initialPayload.expositores);
         return initialPayload[key as keyof typeof initialPayload] !== value;
       })
     );
@@ -357,7 +355,7 @@ export default function TrabajoReunionForm() {
           </>
         </Field>
 
-        <Field required label="Tipo de reunión" name="tipoId" error={errors.tipoId}>
+        <Field required label="Tipo de evento científico" name="tipoId" error={errors.tipoId}>
           <>
             <select
               className={`${inputClass("tipoId")} ${
@@ -371,7 +369,7 @@ export default function TrabajoReunionForm() {
               }} onBlur={() => validateChangedField("tipoId")}
             >
               <option value="" disabled>
-                Seleccionar tipo
+                Seleccionar tipo de evento
               </option>
               {tipos.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -379,6 +377,7 @@ export default function TrabajoReunionForm() {
                 </option>
               ))}
             </select>
+            <p className="mt-1 text-sm text-slate-500">Indique la clase de evento: por ejemplo, Congreso (CICE o COSAPRO) o Jornada (Investigación y Vinculación de FCM-UNLP). Escriba su denominación completa en «Nombre de la reunión». El alcance y el referato se informan por separado. Estas opciones se administran en Gestionar Catálogos, en Tipo de evento científico.</p>
             {errors.tipoId && (
               <p className="mt-1 text-sm text-red-500">{errors.tipoId}</p>
             )}
@@ -394,14 +393,14 @@ export default function TrabajoReunionForm() {
             }} onBlur={() => validateChangedField("enlace")} />
         </Field>
 
-        <Field required label="Autores" name="autores" error={errors.autores}>
+        <Field required={!isEdit || expositores.length > 0} label="Expositores" name="expositores" error={errors.expositores}>
           <>
-            <AutoresQueryFeedback query={autoresQuery} />
-            <IntegrantesAutoresField value={autores} options={integrantes}
+            <ExpositoresQueryFeedback query={expositoresQuery} />
+            <ExpositoresField value={expositores} options={integrantes}
               disabled={guardadoBloqueado}
               onChange={value => {
-                setAutores(value);
-                validateChangedField("autores", { autores: value });
+                setExpositores(value);
+                validateChangedField("expositores", { expositores: value });
               }} />
           </>
         </Field>

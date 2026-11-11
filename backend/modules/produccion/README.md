@@ -1,5 +1,45 @@
 # Producción
 
+## ISS-26: expositores de reuniones científicas
+
+Reuniones usa `expositores`, separado de las autorías de revistas. Cada elemento
+es `{rol: "investigador" | "becario" | "personal", id: number}` o
+`{rol: "externo", nombre_apellido: string}`. POST requiere al menos uno; PUT
+admite omitir la colección para conservarla, incluso en registros legados vacíos.
+Si se envía la colección, debe conservar al menos un expositor. Las reglas
+vigentes de referato y alcance siguen aplicándose.
+
+`trabajo_expositores_service.py` valida referencias del grupo del trabajo,
+integrantes activos para nuevas asociaciones, duplicados por referencia o
+identidad, y nombres externos de 2 a 120 caracteres. Normaliza espacios y compara
+externos sin distinguir mayúsculas ni tildes. Las asociaciones históricas
+inactivas pueden conservarse o quitarse. Los errores identifican `expositores`
+en `error.details.fields`; las relaciones y otros campos se guardan en una
+transacción con rollback, auditoría de usuario y eventos de vinculación/baja.
+
+GET/POST/PUT mantienen `/trabajos-reunion-cientifica`. Los listados aceptan
+`expositor_rol` con `expositor_id`, o `expositor_rol=externo` con
+`expositor_nombre`. GET `/<id>/historial` incluye eventos de expositores.
+Se retira DELETE `/<id>/autores`; los cambios consolidados se envían por PUT.
+Lecturas: ADMIN/GESTOR/LECTURA; escrituras: ADMIN/GESTOR, con aislamiento UCT y
+baja lógica del trabajo. No se crean legajos al agregar externos.
+
+`TrabajoReunionExpositor` conserva FK e identidad exclusiva por asociación.
+La migración reversible `c2e6a8b0d4f9`, descendiente de `a9d2f7c4b1e6`, agrega
+esta tabla y JSON nullable de expositores al snapshot. No convierte ni borra
+autorías anteriores. Las respuestas de reuniones omiten esas autorías legadas;
+revistas conserva `autores`. Los snapshots nuevos congelan categoría, ID,
+identidad y nombre; los anteriores pueden seguir sin expositores.
+
+Tipo de evento científico conserva `tipo_reunion_id` y su catálogo existente.
+Representa Congreso o Jornada, por ejemplo CICE/COSAPRO y Jornadas de FCM-UNLP;
+alcance y referato son atributos independientes. Las semillas futuras respetan
+esa separación; los datos existentes no se reclasifican por inferencia.
+
+Aceptado visual y funcionalmente el 11/11/2026. Pruebas: API, permisos,
+validaciones, rollback, historial, conservación de legados y snapshots.
+Las secciones anteriores de autorías compartidas quedan superadas para reuniones.
+
 ## Docencia en curso sin fecha de fin (ISS-44)
 
 Las altas y ediciones de Actividades en Docencia admiten `fecha_fin` ausente,

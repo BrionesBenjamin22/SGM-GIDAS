@@ -29,6 +29,7 @@ function load(file: string, mocks: Record<string, unknown> = {}) {
 }
 const walk = (node: any): any[] => !node ? [] : Array.isArray(node) ? node.flatMap(walk)
   : typeof node === "object" && node.props ? [node, ...walk(node.props.children)] : [];
+const expositoresContrato = load("src/modules/produccion/services/trabajoExpositoresServices.ts");
 const contratos = load("src/modules/produccion/services/trabajoAutoresServices.ts");
 const investigador = { id: 1, rol: "investigador", tipo: "Investigador", nombre_apellido: "Ana", activo: true };
 const becario = { id: 1, rol: "becario", tipo: "Becario", nombre_apellido: "Luis", activo: true };
@@ -57,6 +58,8 @@ function selectorHarness(initialValue: any[], options: any[]) {
       return [states[index], (next: any) => { states[index] = typeof next === "function" ? next(states[index]) : next; }];
     } },
     "@/modules/produccion/services/trabajoAutoresServices": contratos,
+      "@/modules/produccion/services/trabajoExpositoresServices": expositoresContrato,
+      "@/modules/produccion/hooks/useIntegrantesExpositores": { useIntegrantesExpositores: () => ({ data: [investigador, becario] }) },
   }).default;
   const render = (disabled = false) => { cursor = 0; return walk(Field({ value, options, disabled, onChange: (next: any) => { value = next; } })); };
   return { render, value: () => value };
@@ -129,9 +132,11 @@ for (const [page, route] of [
       "react-router-dom": { useParams: () => ({ id: "8" }), useLocation: () => ({ state: null }),
         useNavigate: () => (path: string) => navigations.push(path) },
       "@tanstack/react-query": { useQuery: (options: any) => ({ data: options.queryKey[0].includes("historial") ? [] : {
-        id: 8, titulo_trabajo: "Estudio", enlace: "https://doi.org/10.1234/test", autores: [investigador, becario], activo: true,
+        id: 8, titulo_trabajo: "Estudio", enlace: "https://doi.org/10.1234/test", autores: [investigador, becario], expositores: [investigador, becario], activo: true,
       }, isLoading: false, isError: false }) },
       "@/modules/produccion/services/trabajoAutoresServices": contratos,
+      "@/modules/produccion/services/trabajoExpositoresServices": expositoresContrato,
+      "@/modules/produccion/hooks/useIntegrantesExpositores": { useIntegrantesExpositores: () => ({ data: [investigador, becario] }) },
       "@/context/AuthContext": { useAuth: () => ({ canEditRecords: () => true }) },
       "@/modules/produccion/hooks/useTiposReunion": { useTiposReunion: () => ({ tipos: [] }) },
       "@/modules/produccion/hooks/useTiposRevista": { useTiposRevista: () => ({ tipos: [] }) },
@@ -149,7 +154,7 @@ for (const [page, route] of [
     assert.equal(link.props.href, "https://doi.org/10.1234/test");
     assert.equal(link.props.rel, "noopener noreferrer");
     assert.match(JSON.stringify(link.props.children), /pestaña nueva/);
-    assert.match(text, /Autores/);
+    assert.match(text, page === "TrabajosReunionDetalle" ? /Expositores/ : /Autores/);
     if (page === "TrabajosReunionDetalle") assert.match(text, /Fecha de presentación/);
     assert.match(text, /Ana \(Investigador\), Luis \(Becario\)/);
     const edit = nodes.find(node => node.type === "Button" && node.props.children === "Editar");
@@ -169,7 +174,7 @@ for (const [page, serviceFile, getName, updateName, createName, route] of [
     let initialData: any = { id: 8, referato: true, alcance: "internacional", titulo_trabajo: "Estudio", nombre_reunion: "Congreso", nombre_revista: "Revista",
       procedencia: "Argentina", editorial: "Editorial", issn: "1234-5678", pais: "Argentina",
       fecha_presentacion: "2026-03-20", fecha_publicacion: "2026-03-20",
-      tipo_reunion: { id: 1 }, tipo_revista: { id: 1 }, autores: [investigador], activo: true };
+      tipo_reunion: { id: 1 }, tipo_revista: { id: 1 }, autores: [investigador], expositores: [investigador], activo: true };
     let params: any = { id: "8" };
     let mutation: any;
     let calls = 0;
@@ -191,6 +196,8 @@ for (const [page, serviceFile, getName, updateName, createName, route] of [
         [updateName]: async (_id: number, body: any) => { calls++; saved = body; return { id: 8 }; },
         [createName]: async (body: any) => { calls++; saved = body; return { id: 9 }; } },
       "@/modules/produccion/services/trabajoAutoresServices": contratos,
+      "@/modules/produccion/services/trabajoExpositoresServices": expositoresContrato,
+      "@/modules/produccion/hooks/useIntegrantesExpositores": { useIntegrantesExpositores: () => ({ data: [investigador, becario] }) },
       "@/modules/produccion/hooks/useIntegrantesAutores": { useIntegrantesAutores: () => ({ data: [investigador, becario] }) },
       "@/modules/produccion/hooks/useTiposReunion": { useTiposReunion: () => ({ tipos: [] }) },
       "@/modules/produccion/hooks/useTiposRevista": { useTiposRevista: () => ({ tipos: [] }) },
@@ -199,7 +206,7 @@ for (const [page, serviceFile, getName, updateName, createName, route] of [
       "@/utils/format": { toTitleCase: (text: string) => text },
     }).default;
     const render = () => { cursor = 0; effects.length = 0; const nodes = walk(Form()); effects.splice(0).forEach(effect => effect()); return nodes; };
-    const selector = () => render().find(node => node.type === "IntegrantesAutoresField");
+    const selector = () => render().find(node => node.type === (page === "TrabajosReunionForm" ? "ExpositoresField" : "IntegrantesAutoresField"));
     const submit = () => render().find(node => node.type === "form").props.onSubmit({ preventDefault() {} });
     render(); render();
     if (page === "TrabajosReunionForm") assert.ok(render().some(node => node.props.label === "Fecha de presentación"));
@@ -212,20 +219,20 @@ for (const [page, serviceFile, getName, updateName, createName, route] of [
     assert.equal(selector().props.value[1].rol, "becario");
     await submit();
     assert.equal(calls, 1);
-    assert.equal(JSON.stringify(saved), '{"autores":[{"id":1,"rol":"investigador"},{"id":1,"rol":"becario"}]}');
+    assert.deepEqual(JSON.parse(JSON.stringify(saved)), page === "TrabajosReunionForm" ? {expositores: [{rol:"investigador",id:1},{rol:"becario",id:1}]} : {autores: [{id:1,rol:"investigador"},{id:1,rol:"becario"}]});
     assert.equal(navigations.at(-1)[0], `${route}/8`);
     assert.match(navigations.at(-1)[1].state.successMessage, /actualizado con éxito/);
     selector().props.onChange([becario]);
     assert.equal(calls, 1);
     await submit();
     assert.equal(calls, 2);
-    assert.equal(JSON.stringify(saved), '{"autores":[{"id":1,"rol":"becario"}]}');
+    assert.deepEqual(JSON.parse(JSON.stringify(saved)), page === "TrabajosReunionForm" ? {expositores: [{rol:"becario",id:1}]} : {autores: [{id:1,rol:"becario"}]});
     // Creation uses the same endpoint payload and returns to Home.
     params = {};
     render();
     await submit();
     assert.equal(navigations.at(-1)[0], route);
-    assert.equal(saved.autores[0].rol, "becario");
+    assert.equal((saved.expositores ?? saved.autores)[0].rol, "becario");
     const inputEnlace = () => render().find(node => node.type === "input" && node.props.type === "url");
     inputEnlace().props.onChange({ target: { value: "javascript:alert(1)" } });
     const before = calls;
@@ -242,7 +249,7 @@ for (const [page, serviceFile, getName, updateName, createName, route] of [
     assert.equal(saved.enlace, null);
 
     // Classification stays local and sends false/null without converting them to omission.
-    initialData = { ...initialData, autores: [becario], enlace: null };
+    initialData = { ...initialData, autores: [becario], expositores: [becario], enlace: null };
     const referatoSelect = () => render().find(node => node.type === "select" && node.props.id === "referato");
     const beforeClasificacion = calls;
     referatoSelect().props.onChange({ target: { value: "false" } });

@@ -24,7 +24,7 @@ import { applyMemoriaSectionFilter, getMemoriaSectionFilter } from "@/lib/memori
 import { buildMemoriaDetailState } from "@/lib/memoriaNavigation";
 import { useTiposReunion } from "@/modules/produccion/hooks/useTiposReunion";
 import { useTrabajosReunion } from "@/modules/produccion/hooks/useTrabajosReunion";
-import { autorClave, autorEtiqueta } from "@/modules/produccion/services/trabajoAutoresServices";
+import { expositorClave, expositorEtiqueta } from "@/modules/produccion/services/trabajoExpositoresServices";
 import {
   deleteTrabajoReunion,
   getHistorialTrabajoReunionById,
@@ -67,7 +67,7 @@ export default function TrabajosReunionLanding() {
     estado: "",
     tipo: "",
     procedencia: "",
-    autor: "",
+    expositor: "",
     anio: "",
   });
 
@@ -90,20 +90,20 @@ export default function TrabajosReunionLanding() {
 
   const filterOptions = useMemo(() => {
     const procedencias = new Set<string>();
-    const autores = new Map<string, TrabajoReunion["autores"][number]>();
+    const expositores = new Map<string, TrabajoReunion["expositores"][number]>();
     const anios = new Set<number>();
 
     scopedList.forEach((trabajo) => {
       const procedencia = formatTrabajoReunionContractValue(trabajo.procedencia);
       if (procedencia) procedencias.add(toTitleCase(procedencia));
-      trabajo.autores.forEach((autor) => autores.set(autorClave(autor), autor));
+      trabajo.expositores.forEach((autor) => expositores.set(expositorClave(autor), autor));
       const anio = getCivilYear(trabajo.fecha_presentacion);
       if (anio) anios.add(anio);
     });
 
     return {
       procedencias: Array.from(procedencias).sort((a, b) => a.localeCompare(b, "es")).map((value) => ({ value, label: value })),
-      autores: Array.from(autores.values()).sort((a, b) => autorEtiqueta(a).localeCompare(autorEtiqueta(b), "es")).map((autor) => ({ value: autorClave(autor), label: autorEtiqueta(autor) })),
+      expositores: Array.from(expositores.values()).sort((a, b) => expositorEtiqueta(a).localeCompare(expositorEtiqueta(b), "es")).map((autor) => ({ value: expositorClave(autor), label: expositorEtiqueta(autor) })),
       anios: Array.from(anios).sort((a, b) => b - a).map((value) => ({ value: String(value), label: String(value) })),
     };
   }, [scopedList]);
@@ -113,11 +113,11 @@ export default function TrabajosReunionLanding() {
     return scopedList.filter((trabajo) => {
       const tipo = formatTrabajoReunionContractValue(trabajo.tipo_reunion);
       const procedencia = formatTrabajoReunionContractValue(trabajo.procedencia);
-      const searchable = [referatoLabel(trabajo.referato), alcanceLabel(trabajo.alcance), trabajo.titulo_trabajo, trabajo.nombre_reunion, procedencia, tipo, ...trabajo.autores.map(autorEtiqueta)];
+      const searchable = [referatoLabel(trabajo.referato), alcanceLabel(trabajo.alcance), trabajo.titulo_trabajo, trabajo.nombre_reunion, procedencia, tipo, ...trabajo.expositores.map(expositorEtiqueta)];
       const matchesSearch = !query || searchable.some((value) => value.toLocaleLowerCase("es").includes(query));
       const matchesTipo = !filters.tipo || String(trabajo.tipo_reunion?.id ?? "") === filters.tipo;
       const matchesProcedencia = !filters.procedencia || toTitleCase(procedencia) === filters.procedencia;
-      const matchesAutor = !filters.autor || trabajo.autores.some((autor) => autorClave(autor) === filters.autor);
+      const matchesAutor = !filters.expositor || trabajo.expositores.some((autor) => expositorClave(autor) === filters.expositor);
       const matchesAnio = !filters.anio || getCivilYear(trabajo.fecha_presentacion) === Number(filters.anio);
       return matchesSearch && matchesTipo && matchesProcedencia && matchesAutor && matchesAnio;
     });
@@ -194,11 +194,11 @@ export default function TrabajosReunionLanding() {
   };
 
   const columns: TableColumn<TrabajoReunion>[] = [
-    { id: "titulo", header: "Trabajo", render: (trabajo) => <div><span className="block font-medium text-slate-900">{formatTrabajoReunionContractValue(trabajo.titulo_trabajo) || "—"}</span><span className="mt-0.5 block text-xs text-slate-500">{trabajo.autores.length ? trabajo.autores.map(autorEtiqueta).join(", ") : "Sin autores informados"}</span></div> },
+    { id: "titulo", header: "Trabajo", render: (trabajo) => <div><span className="block font-medium text-slate-900">{formatTrabajoReunionContractValue(trabajo.titulo_trabajo) || "—"}</span><span className="mt-0.5 block text-xs text-slate-500">{trabajo.expositores.length ? trabajo.expositores.map(expositorEtiqueta).join(", ") : "Sin informar"}</span></div> },
     { id: "reunion", header: "Reunión", priority: "secondary", render: (trabajo) => <div><span className="block text-slate-800">{toTitleCase(formatTrabajoReunionContractValue(trabajo.nombre_reunion)) || "—"}</span><span className="mt-0.5 block text-xs text-slate-500">{toTitleCase(formatTrabajoReunionContractValue(trabajo.procedencia)) || "Sin procedencia"}</span></div> },
     { id: "referato", header: "Referato", priority: "tertiary", render: (trabajo) => referatoLabel(trabajo.referato) },
     { id: "alcance", header: "Alcance", priority: "secondary", render: (trabajo) => alcanceLabel(trabajo.alcance) },
-    { id: "tipo", header: "Tipo", priority: "tertiary", render: (trabajo) => toTitleCase(formatTrabajoReunionContractValue(trabajo.tipo_reunion)) || "—" },
+    { id: "tipo", header: "Tipo de evento", priority: "tertiary", render: (trabajo) => toTitleCase(formatTrabajoReunionContractValue(trabajo.tipo_reunion)) || "—" },
     { id: "fecha", header: "Fecha de presentación", priority: "tertiary", render: (trabajo) => formatFecha(trabajo.fecha_presentacion) },
     { id: "estado", header: "Estado", render: (trabajo) => { const activo = !trabajo.deleted_at && trabajo.activo !== false; return <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${activo ? "text-emerald-700" : "text-rose-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${activo ? "bg-emerald-500" : "bg-rose-500"}`} />{activo ? "Activo" : "Inactivo"}</span>; } },
     { id: "acciones", header: "Acciones", align: "right", render: (trabajo) => { const activo = !trabajo.deleted_at && trabajo.activo !== false; const titulo = formatTrabajoReunionContractValue(trabajo.titulo_trabajo) || "trabajo"; return <TableActions><TableRowActionButton action="view" aria-label={`Ver detalle de ${titulo}`} onClick={() => navigate(`/trabajos-reunion/${trabajo.id}`, { state: buildMemoriaDetailState(location) })} />{activo && canEditRecords() && <TableRowActionButton action="edit" aria-label={`Editar ${titulo}`} onClick={() => navigate(`/trabajos-reunion/${trabajo.id}/editar`)} />}{activo && canDeleteRecords() && <TableRowActionButton action="delete" aria-label={`Eliminar ${titulo}`} onClick={() => setPendingDelete(trabajo)} />}</TableActions>; } },
@@ -210,7 +210,7 @@ export default function TrabajosReunionLanding() {
     <>
       <section className="min-h-[calc(100vh-120px)] w-full px-4 py-4">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div><h2 className="text-2xl font-semibold md:text-3xl">Trabajos presentados en Congresos</h2><p className="mt-1 text-sm text-slate-500">Gestione los trabajos, sus reuniones, autores y estados.</p></div>
+          <div><h2 className="text-2xl font-semibold md:text-3xl">Trabajos presentados en Congresos</h2><p className="mt-1 text-sm text-slate-500">Gestione los trabajos, sus reuniones, expositores y estados.</p></div>
           {canCreateRecords() && <Button size="sm" onClick={() => navigate("/trabajos-reunion/nuevo")}>Agregar nuevo</Button>}
         </div>
         {memoriaFilter && <div className="mb-4"><MemoriaFilterBanner filter={memoriaFilter} /></div>}
@@ -242,7 +242,7 @@ export default function TrabajosReunionLanding() {
               value={quickEstadoActual === "todos" ? undefined : (quickEstadoActual || "activos")}
               onValueChange={(value) => setFilter("estado", value === "activos" ? "" : value ?? "todos")}
               options={[{ value: "activos", label: "Activos" }, { value: "inactivos", label: "Inactivos" }]}
-            /><TableFilterSelect label="Filtrar por tipo de reunión" placeholder="Todos los tipos" value={filters.tipo || undefined} onValueChange={(value) => setFilter("tipo", value)} options={tipos.map((tipo) => ({ value: String(tipo.id), label: toTitleCase(tipo.nombre) }))} /><TableFilterSelect label="Filtrar por procedencia" placeholder="Todas las procedencias" value={filters.procedencia || undefined} onValueChange={(value) => setFilter("procedencia", value)} options={filterOptions.procedencias} /><TableFilterSelect label="Filtrar por autor" placeholder="Todos los autores" value={filters.autor || undefined} onValueChange={(value) => setFilter("autor", value)} options={filterOptions.autores} /><TableFilterSelect label="Filtrar por año" placeholder="Todos los años" value={filters.anio || undefined} onValueChange={(value) => setFilter("anio", value)} options={filterOptions.anios} /></div></div></TableToolbar>}
+            /><TableFilterSelect label="Filtrar por tipo de evento científico" placeholder="Todos los tipos de evento" value={filters.tipo || undefined} onValueChange={(value) => setFilter("tipo", value)} options={tipos.map((tipo) => ({ value: String(tipo.id), label: toTitleCase(tipo.nombre) }))} /><TableFilterSelect label="Filtrar por procedencia" placeholder="Todas las procedencias" value={filters.procedencia || undefined} onValueChange={(value) => setFilter("procedencia", value)} options={filterOptions.procedencias} /><TableFilterSelect label="Filtrar por expositor" placeholder="Todos los expositores" value={filters.expositor || undefined} onValueChange={(value) => setFilter("expositor", value)} options={filterOptions.expositores} /><TableFilterSelect label="Filtrar por año" placeholder="Todos los años" value={filters.anio || undefined} onValueChange={(value) => setFilter("anio", value)} options={filterOptions.anios} /></div></div></TableToolbar>}
         />
 
         <ConfirmDialog open={Boolean(pendingDelete)} title="Eliminar trabajo en reunión" message={`¿Está seguro de eliminar ${formatTrabajoReunionContractValue(pendingDelete?.titulo_trabajo) || "este trabajo"}?`} onCancel={() => setPendingDelete(null)} onConfirm={confirmDelete} loadingText="Eliminando..." />

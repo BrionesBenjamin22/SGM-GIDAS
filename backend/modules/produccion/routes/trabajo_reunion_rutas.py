@@ -49,13 +49,6 @@ def delete(trabajo_id):
     return TrabajoReunionCientificaController.delete(trabajo_id)
 
 @trabajo_reunion_cientifica_bp.route(
-    "/<int:trabajo_id>/autores/", methods=["DELETE"], strict_slashes=False
-)
-@requiere_rol("ADMIN", "GESTOR")
-def remove_autores(trabajo_id):
-    return TrabajoReunionCientificaController.remove_autores(trabajo_id)
-
-@trabajo_reunion_cientifica_bp.route(
     "/<int:trabajo_id>/restore", methods=["PUT"], strict_slashes=False
 )
 @requiere_rol("ADMIN", "GESTOR")

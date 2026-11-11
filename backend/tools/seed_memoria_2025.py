@@ -24,6 +24,7 @@ def name_key(value):
 def seed_memoria_2025(user_id, dataset=None):
     """Carga entidades vivas. Nunca borra datos ni escribe snapshots manualmente."""
     from flask import current_app
+    from modules.produccion.services.trabajo_expositores_service import validar_expositores, sincronizar_expositores
     from extension import db
     from modules.auth.models.usuario import Usuario
     from modules.auth.models.usuario_grupo_utn import UsuarioGrupoUtn
@@ -46,7 +47,7 @@ def seed_memoria_2025(user_id, dataset=None):
     from modules.produccion.models.articulo_divulgacion import ArticuloDivulgacion
     from modules.produccion.models.trabajo_reunion import TrabajoReunionCientifica, TipoReunion
     from modules.produccion.models.trabajo_revista import TrabajosRevistasReferato, TipoRevista
-    from modules.produccion.models.trabajo_autor import TrabajoReunionAutor, TrabajoRevistaAutor
+    from modules.produccion.models.trabajo_autor import TrabajoRevistaAutor
     from modules.recursos.models.equipamiento import Equipamiento
     from modules.recursos.models.becas import Beca, Beca_Becario
     from modules.recursos.models.movimiento_financiero import CategoriaErogacion, MovimientoFinanciero
@@ -172,15 +173,18 @@ def seed_memoria_2025(user_id, dataset=None):
             work = add(TrabajoReunionCientifica, titulo_trabajo=text(item["titulo"]), nombre_reunion=text(item["nombre_reunion"]),
                 procedencia=text(item["procedencia"]), fecha_presentacion=first_date(item["fecha"]), grupo_utn_id=grupo.id,
                 tipo_reunion_id=catalog(TipoReunion, item["tipo"]).id)
-            # Autores externos también necesitan un integrante para cumplir el contrato actual.
-            names = re.split(r";|\n", text(item["expositores"]))
-            for name in names:
-                if name.strip():
-                    key = name_key(name)
-                    becario = scholars.get(key)
-                    inv = None if becario else investigator(name)
-                    if not TrabajoReunionAutor.query.filter_by(trabajo_id=work.id, **({"becario_id": becario.id} if becario else {"investigador_id": inv.id})).first():
-                        db.session.add(TrabajoReunionAutor(trabajo_id=work.id, becario_id=becario.id if becario else None, investigador_id=inv.id if inv else None))
+            referencias = []
+            for name in re.split(r";|\n", text(item["expositores"])):
+                if not name.strip():
+                    continue
+                key = name_key(name)
+                persona = scholars.get(key) or investigators.get(key)
+                rol = "becario" if key in scholars else "investigador"
+                referencia = {"rol": rol, "id": persona.id} if persona else {"rol": "externo", "nombre_apellido": name.strip()}
+                if referencia not in referencias:
+                    referencias.append(referencia)
+            if referencias:
+                sincronizar_expositores(work, validar_expositores(referencias, grupo.id, work.expositores), user_id)
         for item in data["revistas"]:
             work = add(TrabajosRevistasReferato, titulo_trabajo=text(item["titulo"]), nombre_revista=text(item["nombre_revista"]),
                 editorial=text(item["editorial"]), issn=text(item["issn"]), pais=text(item["pais"]), fecha_publicacion=date(2025, 12, 1),

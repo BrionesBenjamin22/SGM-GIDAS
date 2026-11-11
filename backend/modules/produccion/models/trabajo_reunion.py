@@ -1,4 +1,5 @@
 from extension import db
+from modules.produccion.models.trabajo_expositor import TrabajoReunionExpositor
 from modules.produccion.models.trabajo_autor import TrabajoReunionAutor
 from modules.shared.models.audit_mixin import AuditMixin
 
@@ -33,6 +34,8 @@ class TrabajoReunionCientifica(db.Model, AuditMixin):
         "TrabajoReunionAutor", back_populates="trabajo", cascade="all, delete-orphan", lazy="selectin"
     )
 
+    expositores = db.relationship("TrabajoReunionExpositor", back_populates="trabajo", cascade="all, delete-orphan", lazy="selectin", order_by="TrabajoReunionExpositor.id")
+
     grupo_utn_id = db.Column(
         db.Integer,
         db.ForeignKey('grupo_utn.id')
@@ -61,7 +64,7 @@ class TrabajoReunionCientifica(db.Model, AuditMixin):
                 "nombre": self.tipo_reunion_cientifica.nombre
             } if self.tipo_reunion_cientifica else None,
 
-            "autores": [autor.serialize() for autor in self.autorias],
+            "expositores": [expositor.serialize() for expositor in self.expositores],
 
             "grupo_utn": (
                 self.grupo_utn.nombre_unidad_academica
@@ -110,6 +113,7 @@ class TrabajoReunionCientificaMemoriaVersion(db.Model, AuditMixin):
     )
     grupo_utn_nombre = db.Column(db.String(255), nullable=True)
     autores = db.Column(db.JSON, nullable=False, default=list)
+    expositores = db.Column(db.JSON, nullable=True)
 
     memoria_version = db.relationship("MemoriaVersion", lazy="joined")
     trabajo_reunion = db.relationship("TrabajoReunionCientifica", lazy="joined")
@@ -127,7 +131,8 @@ class TrabajoReunionCientificaMemoriaVersion(db.Model, AuditMixin):
 
     def serialize(self):
         data = self.to_dict()
-        data["autores"] = self.autores or []
+        data.pop("autores", None)
+        data["expositores"] = self.expositores or []
         return data
     
     

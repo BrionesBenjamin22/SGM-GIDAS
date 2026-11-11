@@ -9,6 +9,7 @@ from modules.memorias.services.memoria_service import MemoriaService
 from modules.memorias.services.exportacion_service_impl import ExportService
 from modules.proyectos.models.proyecto_investigacion import ProyectoInvestigacion
 from modules.produccion.models.distinciones import DistincionRecibida
+from modules.produccion.models.trabajo_reunion import TrabajoReunionCientifica
 from modules.proyectos.services.proyecto_investigacion_service import ProyectoInvestigacionService
 from tests import test_memoria_2025_seed as seed_fixtures
 from tools.seed_memoria_validacion import populate, DATES
@@ -40,6 +41,10 @@ class MemoriaSeedValidacionTest(unittest.TestCase):
         self.assertEqual(result["creados"]["personal"], 10)
         self.assertEqual(result["creados"]["transferencia_socio_productiva"], 48)
         self.assertEqual(result["creados"]["trabajo_reunion_cientifica"], 16)
+        reuniones = TrabajoReunionCientifica.query.all()
+        self.assertTrue(all(trabajo.tipo_reunion_cientifica.nombre == "Congreso" for trabajo in reuniones))
+        self.assertEqual({trabajo.alcance for trabajo in reuniones}, {"nacional", "internacional"})
+        self.assertTrue(all(trabajo.referato is True for trabajo in reuniones))
         self.assertEqual(result["creados"]["trabajos_revista"], 16)
         distinciones = DistincionRecibida.query.all()
         self.assertEqual(len(distinciones), 8)

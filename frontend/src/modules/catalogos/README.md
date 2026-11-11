@@ -1,5 +1,15 @@
 # Catalogos frontend
 
+## ISS-26: tipo de evento científico
+
+El catálogo anteriormente rotulado Tipo de Reunión Científica se presenta como
+Tipo de evento científico. Conserva `/tipos-reunion-cientifica/`, auditoría,
+permisos y validaciones. Su descripción utiliza Congreso (CICE/COSAPRO) y Jornada
+(Investigación y Vinculación de FCM-UNLP), tomados de la memoria original de 2025.
+La denominación completa, alcance Nacional/Internacional y referato se informan
+en sus campos del trabajo. Los valores existentes no se convierten automáticamente.
+Aceptado por el usuario el 11/11/2026; 279 pruebas frontend, tipos y build aprobados.
+
 ## Filtros desplegables (ISS-47)
 
 CatalogosHome: estado de valores; las opciones de estado siguen deshabilitadas cuando el catálogo no informa estado.

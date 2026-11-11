@@ -1,7 +1,7 @@
 import { referatoLabel, alcanceLabel, procedenciaLabel } from "@/modules/produccion/utils/clasificacionTrabajo";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { enlaceSeguro } from "@/modules/produccion/utils/trabajoEnlace";
-import { autorEtiqueta } from "@/modules/produccion/services/trabajoAutoresServices";
+import { expositorEtiqueta } from "@/modules/produccion/services/trabajoExpositoresServices";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState, useMemo } from "react";
@@ -98,7 +98,7 @@ export default function TrabajoReunionDetalle() {
       return tipos.find((tipo) => tipo.id === asNumber)?.nombre ?? String(value);
     }
 
-    if (item.campo === "autores" && typeof value === "object" && value !== null) {
+    if (item.campo === "expositores" && typeof value === "object" && value !== null) {
       const payload = value as {
         accion?: string;
         detalle?: { nombre_apellido?: string; tipo?: string };
@@ -121,7 +121,7 @@ export default function TrabajoReunionDetalle() {
     return String(value);
   };
 
-  const autores = data.autores?.length ? data.autores.map(autorEtiqueta).join(", ") : "-";
+  const expositores = data.expositores?.length ? data.expositores.map(expositorEtiqueta).join(", ") : "Sin informar";
 
   return (
     <>
@@ -160,7 +160,7 @@ export default function TrabajoReunionDetalle() {
             </p>
 
             <p>
-              <span className="font-semibold text-slate-800">Tipo de reunión:</span>{" "}
+              <span className="font-semibold text-slate-800">Tipo de evento científico:</span>{" "}
               {toTitleCase(data.tipo_reunion?.nombre) || "-"}
             </p>
 
@@ -183,8 +183,8 @@ export default function TrabajoReunionDetalle() {
             </p>}
 
             <p>
-              <span className="font-semibold text-slate-800">Autores:</span>{" "}
-              {autores}
+              <span className="font-semibold text-slate-800">Expositores:</span>{" "}
+              {expositores}
             </p>
           </div>
         </article>

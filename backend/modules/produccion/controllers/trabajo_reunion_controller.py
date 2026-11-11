@@ -5,7 +5,6 @@ from modules.produccion.services.trabajo_reunion_service import (
 )
 from modules.shared.controllers.responses import exception_response
 from modules.shared.controllers.pagination import pagination_requested, filtered_page_response
-from modules.shared.exceptions import ValidationError
 
 
 class TrabajoReunionCientificaController:
@@ -14,8 +13,9 @@ class TrabajoReunionCientificaController:
     def get_all():
         try:
             filtros = {
-                "autor_id": request.args.get("autor_id"),
-                "autor_rol": request.args.get("autor_rol"),
+                "expositor_id": request.args.get("expositor_id"),
+                "expositor_nombre": request.args.get("expositor_nombre"),
+                "expositor_rol": request.args.get("expositor_rol"),
                 "grupo_utn_id": request.args.get("grupo_utn_id", type=int),
                 "orden": request.args.get("orden"),
                 "activos": request.args.get("activos", "true"),
@@ -73,15 +73,3 @@ class TrabajoReunionCientificaController:
             return jsonify(TrabajoReunionCientificaService.restore(trabajo_id)), 200
         except Exception as error:
             return exception_response(error, operation="restaurar trabajo en reunion")
-
-    @staticmethod
-    def remove_autores(trabajo_id):
-        try:
-            data = request.get_json()
-            if not isinstance(data, dict):
-                raise ValidationError("Body requerido")
-            return jsonify(TrabajoReunionCientificaService.desvincular_autores(
-                trabajo_id, data.get("autores"), g.current_user_id,
-            )), 200
-        except Exception as error:
-            return exception_response(error, operation="desvincular autores de trabajo")

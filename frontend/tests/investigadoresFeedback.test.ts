@@ -53,7 +53,7 @@ test("Feedback distingue carga, vacio y fallo; reintenta y conserva contenido du
   assert.equal(html(), "");
 });
 
-for (const page of ["TrabajosReunionForm", "TrabajosRevistasForm"]) {
+for (const page of ["TrabajosRevistasForm"]) {
   test(`${page}: bloqueo inicial y selecciones conservadas ante fallo y recuperacion`, async () => {
     let cursor = 0;
     const state: any[] = [];

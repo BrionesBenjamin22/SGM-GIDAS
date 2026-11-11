@@ -11,7 +11,7 @@ const FIELD_LABELS: Record<string, string> = {
   procedencia: "Procedencia",
   fecha_inicio: "Fecha de presentación",
   fecha_presentacion: "Fecha de presentación",
-  tipo_reunion_id: "Tipo de reunión",
+  tipo_reunion_id: "Tipo de evento científico",
   grupo_utn_id: "UCT",
   enlace: "Enlace al trabajo o DOI",
 };
@@ -40,7 +40,7 @@ function areEquivalentHistoryValues(previous: unknown, next: unknown) {
 }
 
 function getAutorEvent(item: HistorialTrabajoReunionItem) {
-  if (item.campo?.trim().toLocaleLowerCase("es") !== "autores") return null;
+  if (!["autores", "expositores"].includes(item.campo?.trim().toLocaleLowerCase("es") ?? "")) return null;
   const source = typeof item.valor_nuevo === "object" && item.valor_nuevo !== null
     ? item.valor_nuevo as Record<string, unknown>
     : null;
@@ -105,7 +105,7 @@ export function formatTrabajoReunionAuthorHistoryEntry(
 
   const unlinked = autorEvent.action.toLocaleLowerCase("es") === "desvincular";
   return {
-    title: unlinked ? "Autor desvinculado" : "Autor vinculado",
+    title: item.campo === "expositores" ? (unlinked ? "Expositor desvinculado" : "Expositor vinculado") : (unlinked ? "Autor desvinculado" : "Autor vinculado"),
     description: autorEvent.name
       ? `${autorEvent.name}${autorEvent.type ? ` (${autorEvent.type})` : ""}`
       : "Autor actualizado",
