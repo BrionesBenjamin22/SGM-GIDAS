@@ -98,8 +98,8 @@ class MemoriaFormatoTest(unittest.TestCase):
                 {"titulo_trabajo": "REVISTA SIN CLASIFICAR", "tipo_revista_nombre": "Nacional"}],
             trabajos_reunion=[
                 {"titulo_trabajo": "CONGRESO DESCONOCIDO", "tipo_reunion_nombre": "Congreso"},
-                {"titulo_trabajo": "NACIONAL VERIFICADO", "tipo_reunion_nombre": "Nacional con referato"},
-                {"titulo_trabajo": "INTERNACIONAL VERIFICADO", "tipo_reunion_nombre": "Internacional con referato"}],
+                {"titulo_trabajo": "NACIONAL VERIFICADO", "referato": True, "alcance": "nacional", "tipo_reunion_nombre": "Nacional con referato"},
+                {"titulo_trabajo": "INTERNACIONAL VERIFICADO", "referato": True, "alcance": "internacional", "tipo_reunion_nombre": "Internacional con referato"}],
             becarios=[{"nombre_apellido": "FORMACIÓN DESCONOCIDA", "tipo_formacion_nombre": "Lic"}],
             transferencias=[{"denominacion": "CONTRATO DESCONOCIDO", "tipo_contrato_nombre": "Convenio TEST"}],
             registros=[{"nombre_articulo": "REGISTRO DESCONOCIDO", "tipo_registro_nombre": "Otro"}],

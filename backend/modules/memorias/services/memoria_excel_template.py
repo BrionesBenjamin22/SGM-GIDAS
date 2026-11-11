@@ -327,13 +327,9 @@ def publication_category(item):
 
 
 def meeting_category(item):
-    kind = normalized(item.get("tipo_reunion_nombre"))
-    scope = item.get("alcance")
-    if scope == "internacional" or (scope is None and "internacional" in kind):
-        return "internacional"
-    national = scope == "nacional" or (scope is None and "nacional" in kind)
-    reviewed = item.get("referato") is True or (item.get("referato") is None and "con referato" in kind)
-    return "nacional" if national and reviewed else "sin clasificar"
+    if item.get("referato") is True and item.get("alcance") in ("nacional", "internacional"):
+        return item["alcance"]
+    return "sin clasificar"
 
 
 def transfer_category(item):

@@ -10,16 +10,16 @@ semántico cuando se publica una entrega.
 
 ### ISS-25: referato y alcance de trabajos científicos
 
-- Reuniones y revistas permiten indicar referato Sí/No/Sin informar. Reuniones
-  incorpora alcance Nacional/Internacional; revistas reutiliza TipoRevista.
-  Ciudad/País reutiliza los campos actuales sin duplicar información.
-- Formularios, listados, detalles e historiales conservan false/null y envían
-  diferencias reales. Migración reversible, validación estricta y snapshots
-  inmutables, sin clasificar históricos automáticamente.
-- Exportación por grupo alineada con las secciones 7.1, 7.2 y 8.1 de la memoria,
-  reutilizando los clasificadores institucionales y conservando sin clasificar.
-- Aceptado visual y funcionalmente el 07/11/2026: 274 pruebas frontend,
-  43 backend, TypeScript y build de producción aprobados.
+- El alta y la edición de reuniones requieren referato Sí/No y alcance
+  Nacional/Internacional. Revistas permite indicar Sí/No/Sin informar y
+  reutiliza TipoRevista. Los formularios envían diferencias reales.
+- Ambas exportaciones reservan la sección 7 para reuniones con referato y
+  alcance explícitos. La tabla 7.1 usa Ciudad y la 7.2 usa País, ambas a partir
+  de Procedencia. Las reuniones excluidas se muestran en Detalle académico.
+- Las versiones cerradas se exportan a partir de sus snapshots. Los registros
+  históricos con clasificación incompleta requieren completarla al editarlos.
+- Ajuste aceptado visualmente el 10/11/2026. Pasaron 274 pruebas frontend,
+  59 backend, TypeScript y el build de producción.
 
 ### ISS-99: fixture de recuperacion administrativa por UCT
 

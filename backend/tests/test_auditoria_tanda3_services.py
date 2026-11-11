@@ -264,6 +264,8 @@ class AuditoriaTanda3ServicesTestCase(unittest.TestCase):
     def test_update_trabajo_reunion_registra_auditoria(self):
         trabajo = TrabajoReunionCientifica(
             id=5,
+            referato=True,
+            alcance="nacional",
             titulo_trabajo="Trabajo inicial",
             nombre_reunion="Reunion inicial",
             procedencia="Nacional",

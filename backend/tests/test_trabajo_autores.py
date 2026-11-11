@@ -81,7 +81,7 @@ class TrabajoAutoresTest(unittest.TestCase):
     def payload(self, tipo):
         comun = {"titulo_trabajo": "Estudio de sistemas", "grupo_utn_id": 1, "autores": self.autores}
         if tipo == "reuniones":
-            return {**comun, "tipo_reunion_id": 1, "nombre_reunion": "Congreso UTN", "procedencia": "Argentina", "fecha_presentacion": "2026-03-20"}
+            return {**comun, "referato": True, "alcance": "nacional", "tipo_reunion_id": 1, "nombre_reunion": "Congreso UTN", "procedencia": "Argentina", "fecha_presentacion": "2026-03-20"}
         return {**comun, "tipo_revista_id": 1, "nombre_revista": "Revista UTN", "editorial": "UTN", "issn": "1234-5678", "pais": "Argentina", "fecha_publicacion": "2026-03-20"}
 
     def crear(self, tipo):

@@ -387,10 +387,10 @@ def populate(group_id, user_id, *, replace=False, dry_run=False):
                 add(ParticipacionRelevante, investigador_id=inv.id, fecha=day,
                     nombre_evento=f"{section} sobre {topic[0].lower()} ({day.year})",
                     forma_participacion=paragraph(topic_index))
-            for kind in ("Nacional con referato", "Internacional con referato"):
+            for kind, alcance, procedencia in (("Nacional con referato", "nacional", "La Plata"), ("Internacional con referato", "internacional", "Uruguay")):
                 work = add(TrabajoReunionCientifica, grupo_utn_id=group_id, tipo_reunion_id=catalog(TipoReunion, kind).id,
                     titulo_trabajo=topic[1], nombre_reunion=f"Congreso de {topic[0].lower()} {day.year}",
-                    procedencia="La Plata, Argentina" if kind.startswith("Nacional") else "Montevideo, Uruguay",
+                    referato=True, alcance=alcance, procedencia=procedencia,
                     fecha_presentacion=day)
                 add(TrabajoReunionAutor, trabajo_id=work.id, investigador_id=inv.id)
             for kind in ("Revista con referato", "Libro o capítulo de libro"):

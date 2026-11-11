@@ -416,13 +416,16 @@ en base de datos. Revistas conserva `tipo_revista_id` (Nacional/Internacional) y
 `pais`; reuniones conserva `procedencia` para Ciudad/País. No se crean catálogos
 ni campos geográficos duplicados.
 
-POST/PUT de `/api/v1/trabajos-reunion-cientifica` y
-`/api/v1/trabajos-revistas` aceptan `referato: true | false | null`; reuniones
-acepta además `alcance: "nacional" | "internacional" | null`. Ejemplo parcial
-de edición: `{"referato": false}`; para limpiar, `{"referato": null}`. Omitir un
-atributo en PUT conserva su valor y en POST deja el dato sin informar. GET de
-listado/detalle y snapshots devuelve estos atributos. Las rutas de actualización
-conservan su identificador final `/<id>`.
+POST de `/api/v1/trabajos-reunion-cientifica` requiere `referato: true | false`
+y `alcance: "nacional" | "internacional"`. PUT `/<id>` valida el estado
+resultante antes de persistir. Los atributos omitidos conservan su valor,
+un `null` explícito se rechaza y un registro incompleto requiere completar
+ambos atributos según corresponda. Por ejemplo, `{"referato": false}` es una
+actualización válida cuando la reunión ya tiene alcance.
+
+En `/api/v1/trabajos-revistas`, POST permite omitir referato y PUT `/<id>`
+permite limpiarlo con `{"referato": null}`. GET de listado y detalle, y los
+snapshots, devuelven la clasificación almacenada.
 
 `clasificacion_trabajo.py` valida tipos estrictos: rechaza strings booleanos,
 números y alcances desconocidos con 400 y `error.details.fields`. Se mantienen
@@ -439,5 +442,5 @@ de entorno, cambios de Docker ni semillas de clasificación. Su downgrade retira
 los atributos nuevos y conserva las filas. Las uniones con ramas locales
 pendientes deben versionarse junto con esas ramas, no con este ajuste aislado.
 
-Aceptado por el usuario el 07/11/2026. Regresión backend: 43 pruebas aprobadas
-de API, validación, auditoría, permisos, snapshots, migración y exportaciones.
+Ajuste aceptado por el usuario el 10/11/2026. Pasaron 59 pruebas backend de
+API, validación, auditoría, permisos, snapshots, migración y exportaciones.

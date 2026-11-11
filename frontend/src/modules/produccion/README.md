@@ -560,19 +560,19 @@ textos extensos en tablas y titulos de detalle queda en ISS-96.
 
 ## ISS-25: referato y alcance de trabajos
 
-Los formularios de reuniones y revistas ofrecen Referato con Sí, No y Sin
-informar (`boolean | null`). Reuniones agrega Alcance Nacional, Internacional o
-Sin informar; revistas reutiliza `TipoRevista` y no incorpora otro alcance.
-`procedencia` se presenta como Ciudad para reuniones nacionales y País para
-internacionales; sin alcance conserva Procedencia. Al clasificar un registro
-histórico debe revisarse ese dato. Revistas conserva su campo `pais`.
+El formulario de reuniones exige elegir Referato (Sí o No) y Alcance
+(Nacional o Internacional), también al editar registros incompletos. Sin
+informar es el estado inicial del selector. La ayuda de Referato explica
+el criterio de inclusión en la sección 7. `procedencia` se presenta como
+Ciudad para reuniones nacionales y País para internacionales. Revistas
+permite dejar el referato sin informar y reutiliza `TipoRevista` y `pais`.
 
 Los services `trabajosReunionServices.ts` y `trabajosRevistasServices.ts`
-normalizan los atributos sin perder false. En edición, omitirlos conserva el
-valor y null lo limpia. Los formularios consolidan borradores y envían únicamente
-diferencias; una edición sin cambios no llama al backend. Altas vuelven al home y
-ediciones al detalle con `successMessage`. Se mantienen permisos y errores por
-campo. No cambian los componentes ni hooks compartidos.
+normalizan los atributos y conservan `false` como valor explícito. En edición,
+omitirlos conserva el valor. En revistas, `null` limpia el referato. Los
+formularios consolidan borradores y envían únicamente diferencias. Altas vuelven
+al home y ediciones al detalle con `successMessage`. Los errores de validación
+se muestran junto a los selectores.
 
 Homes y detalles muestran la clasificación; los homes permiten buscarla por
 texto y mantienen nueve registros por página. `clasificacionTrabajo.ts`
@@ -581,6 +581,7 @@ muestran Sí/No/Sin informar y Nacional/Internacional; la primera clasificación
 un histórico se conserva como evento visible. El historial mantiene tres eventos
 por página. Autores y relaciones siguen consolidándose al guardar.
 
-Aceptado visual y funcionalmente por el usuario el 07/11/2026. Validación:
-274 pruebas frontend, TypeScript y build de producción aprobados; cobertura de
-guardado diferencial, false/null/omisión, geografía e historial.
+Ajuste aceptado visualmente por el usuario el 10/11/2026. Pasaron 274 pruebas
+frontend, TypeScript y el build de producción. Las pruebas cubren guardado
+diferencial, campos obligatorios al editar registros incompletos, geografía e
+historial.

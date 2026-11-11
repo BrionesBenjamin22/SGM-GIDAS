@@ -907,13 +907,6 @@ class ExportService:
         return "apoyo"
 
     @staticmethod
-    def _clasificar_trabajo_reunion(tipo_reunion_nombre: str | None):
-        tipo = (tipo_reunion_nombre or "").strip().lower()
-        if "intern" in tipo:
-            return "internacional"
-        return "nacional"
-
-    @staticmethod
     def _clasificar_transferencia(tipo_contrato_nombre: str | None):
         tipo = (tipo_contrato_nombre or "").strip().lower()
         if "tecnolog" in tipo:
@@ -1141,24 +1134,37 @@ class ExportService:
         row = cls._write_table(ws, row, "6.2.- Participaciones institucionales y academicas relevantes", ["Nro.", "Evento o actividad", "Forma de participacion", "Fecha", "Participante", "Categoria"], participaciones_rows, merge_span=8, date_cols={4})
         visitas_rows = [[idx, visita.razon, visita.procedencia, visita.tipo_visita.nombre if visita.tipo_visita else "-", visita.fecha] for idx, visita in enumerate(visitas, start=1)]
         row = cls._write_table(ws, row, "6.3.- Visitantes del pais y del extranjero", ["Nro.", "Motivo o razon de la visita", "Procedencia", "Tipo de visita", "Fecha"], visitas_rows, merge_span=8, date_cols={5})
-        row = cls._write_section(ws, row, "7.- TRABAJOS PRESENTADOS EN CONGRESOS Y REUNIONES CIENTIFICAS", span=10)
+        row = cls._write_section(ws, row, "7.- TRABAJOS PRESENTADOS EN CONGRESOS Y REUNIONES CIENTIFICAS CON REFERATO", span=10)
         for category, title, location in (
             ("nacional", "7.1.- Reunión Científica Nacional con Referato", "Ciudad"),
             ("internacional", "7.2.- Reunión Científica Internacional", "País"),
-            ("sin clasificar", "Trabajos en reuniones sin clasificar para la memoria", "Procedencia"),
         ):
             items = [trabajo for trabajo in trabajos_reunion if meeting_category({
                 "alcance": trabajo.alcance, "referato": trabajo.referato,
-                "tipo_reunion_nombre": trabajo.tipo_reunion_cientifica.nombre if trabajo.tipo_reunion_cientifica else None,
             }) == category]
-            if category == "sin clasificar" and not items:
-                continue
             rows = [[idx, trabajo.nombre_reunion, trabajo.procedencia, trabajo.fecha_presentacion,
                      cls._autores_texto([a.serialize() for a in trabajo.autorias]),
                      trabajo.titulo_trabajo + ("\nEnlace: " + trabajo.enlace if trabajo.enlace else "")]
                     for idx, trabajo in enumerate(items, 1)]
             row = cls._write_table(ws, row, title, ["Nro.", "Nombre reunión", location,
                 "Fecha de presentación", "Autores", "Título trabajo"], rows, merge_span=10, date_cols={4})
+        excluidos = [trabajo for trabajo in trabajos_reunion if meeting_category({
+            "alcance": trabajo.alcance, "referato": trabajo.referato,
+        }) == "sin clasificar"]
+        if excluidos:
+            detalle = wb.create_sheet("Detalle académico")
+            detalle.freeze_panes = "A3"
+            for column in "ABCDEFGH":
+                detalle.column_dimensions[column].width = 28
+            cls._write_table(detalle, 1, "Trabajos en reuniones fuera de la sección 7",
+                ["Nro.", "Nombre reunión", "Procedencia", "Fecha de presentación", "Autores",
+                 "Título trabajo", "Referato", "Alcance"],
+                [[idx, trabajo.nombre_reunion, trabajo.procedencia, trabajo.fecha_presentacion,
+                  cls._autores_texto([a.serialize() for a in trabajo.autorias]),
+                  trabajo.titulo_trabajo + ("\nEnlace: " + trabajo.enlace if trabajo.enlace else ""),
+                  "Sí" if trabajo.referato is True else "No" if trabajo.referato is False else "Sin informar",
+                  {"nacional": "Nacional", "internacional": "Internacional"}.get(trabajo.alcance, "Sin informar")]
+                 for idx, trabajo in enumerate(excluidos, 1)], merge_span=8, date_cols={4})
         articulos_rows = [[idx, articulo.titulo, articulo.descripcion, articulo.fecha_publicacion] for idx, articulo in enumerate(articulos, start=1)]
         row = cls._write_table(ws, row, "8.- TRABAJOS REALIZADOS Y PUBLICADOS", ["Nro.", "Titulo del articulo", "Descripcion o sintesis", "Fecha de publicacion"], articulos_rows, merge_span=8, date_cols={4})
         for category, title in (

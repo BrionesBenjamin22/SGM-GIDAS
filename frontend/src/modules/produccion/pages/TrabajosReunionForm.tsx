@@ -106,10 +106,13 @@ export default function TrabajoReunionForm() {
     return `${y}-${m}-${d}`;
   };
 
-  const validationValues = { enlace, titulo, nombreReunion, procedencia, fechaPresentacion, tipoId, autores };
+  const validationValues = { referato, alcance, enlace, titulo, nombreReunion, procedencia, fechaPresentacion, tipoId, autores };
   const getValidationErrors = (changes: Partial<typeof validationValues> = {}) => {
-    const { enlace, titulo, nombreReunion, procedencia, fechaPresentacion, tipoId, autores } = { ...validationValues, ...changes };
+    const { referato, alcance, enlace, titulo, nombreReunion, procedencia, fechaPresentacion, tipoId, autores } = { ...validationValues, ...changes };
     const newErrors: Record<string, string> = {};
+
+    if (referato == null) newErrors.referato = "Seleccione Sí o No.";
+    if (!alcance) newErrors.alcance = "Seleccione Nacional o Internacional.";
 
     if (!titulo.trim()) {
       newErrors.titulo = "Debe ingresar título";
@@ -272,16 +275,17 @@ export default function TrabajoReunionForm() {
         onSubmit={submit}
         className="mt-6 space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <Field label="Referato" name="referato" error={errors.referato}>
-          <select id="referato" className={inputClass("referato")} value={referato == null ? "" : String(referato)} onChange={(e) => { setReferato(referatoValue(e.target.value)); setErrors((previous) => ({ ...previous, referato: "" })); }}>
+        <Field required label="Referato" name="referato" error={errors.referato}>
+          <select id="referato" onBlur={() => validateChangedField("referato")} className={inputClass("referato")} value={referato == null ? "" : String(referato)} onChange={(e) => { const value = referatoValue(e.target.value); setReferato(value); validateChangedField("referato", { referato: value }); }}>
             <option value="">Sin informar</option>
             <option value="true">Sí</option>
             <option value="false">No</option>
           </select>
+          <p className="mt-1 text-sm text-slate-500">Un trabajo con referato fue evaluado por un jurado experto antes de su aceptación. Solo los trabajos con referato se incluyen en la sección 7 de la memoria.</p>
         </Field>
 
-        <Field label="Alcance" name="alcance" error={errors.alcance}>
-          <select id="alcance" className={inputClass("alcance")} value={alcance ?? ""} onChange={(e) => { setAlcance(e.target.value === "nacional" || e.target.value === "internacional" ? e.target.value : null); setErrors((previous) => ({ ...previous, alcance: "" })); }}>
+        <Field required label="Alcance" name="alcance" error={errors.alcance}>
+          <select id="alcance" onBlur={() => validateChangedField("alcance")} className={inputClass("alcance")} value={alcance ?? ""} onChange={(e) => { const value = e.target.value === "nacional" || e.target.value === "internacional" ? e.target.value : null; setAlcance(value); validateChangedField("alcance", { alcance: value }); }}>
             <option value="">Sin informar</option>
             <option value="nacional">Nacional</option>
             <option value="internacional">Internacional</option>

@@ -121,13 +121,10 @@ columna en el formulario. Conserva referencias históricas, sin exportar campos 
 auditoría ni datos personales ajenos al informe. Los campos ausentes se identifican
 expresamente. La planificación utiliza el año conservado en el contexto.
 
-La clasificación usa atributos explícitos, cuando existen, y denominaciones del
-catálogo: reunión nacional exige referato positivo o un tipo que lo indique;
-internacional exige ese alcance. Libros/capítulos e identificadores ISBN se separan
-de revistas con referato. Una negación explícita de referato prevalece sobre la
-etiqueta del tipo. Tipos ambiguos de formación, personal, transferencias, reuniones,
-publicaciones o registros quedan sin clasificar en el detalle, sin asignación por
-defecto a una sección. No se reintroducen los campos revertidos de ISS-25.
+Para reuniones, la sección 7 exige referato positivo y alcance explícitos
+según ISS-25. Libros, capítulos e identificadores ISBN se separan de revistas
+con referato. Las reuniones y otros registros cuya clasificación es insuficiente
+quedan en Detalle académico.
 
 Las fechas tabulares se almacenan como fechas Excel con formato `dd/mm/yyyy`.
 Equipamiento y transferencias conservan importes originales y moneda. El resumen
@@ -339,20 +336,19 @@ Científica Nacional con Referato (Ciudad), 7.2 Reunión Científica Internacion
 (País) y 8.1 Trabajos publicados en revistas con referato. Se reutilizan
 `procedencia` de reuniones y `pais` de revistas, sin duplicar datos.
 
-Los clasificadores existentes `meeting_category` y `publication_category`
-se reutilizan también en la exportación por grupo. 7.1 requiere alcance nacional
-y referato positivo; 7.2 requiere alcance internacional; 8.1 requiere referato
-positivo. Los valores explícitos prevalecen sobre las etiquetas de catálogo.
-Para datos heredados null se conserva la compatibilidad de la plantilla con
-catálogos que indican expresamente Nacional/Internacional y Con referato.
-Congreso o Jornada por sí solos no determinan alcance ni referato.
+La plantilla institucional y la exportación por grupo comparten
+`meeting_category`. Toda la sección 7 exige `referato: true`. El campo
+`alcance` determina la tabla: `nacional` va a 7.1 y `internacional` a 7.2.
+La clasificación de reuniones se basa exclusivamente en esos dos atributos.
 
-La clasificación de libros mantiene su precedencia y sección 8.3. Los registros
-sin clasificación suficiente no se incluyen en las tablas anteriores: permanecen
-en Detalle académico del Excel institucional y en secciones separadas del Excel
-de grupo. Ninguna exportación modifica la ficha original. Las versiones cerradas
-usan exclusivamente sus snapshots, sin tomar una clasificación posterior.
+Las reuniones sin referato o con clasificación incompleta figuran en la hoja
+Detalle académico de ambos Excel, fuera de la sección 7. Las versiones cerradas
+aplican la regla a sus snapshots originales al descargar.
 
-Aceptado visual y funcionalmente el 07/11/2026. Las pruebas verifican ubicación
-de Ciudad/País, inclusión sin duplicados, conservación de registros sin clasificar,
-estilos y estructura institucional, así como inmutabilidad de snapshots.
+`publication_category` conserva la precedencia de libros en 8.3 y la
+clasificación de revistas con referato en 8.1. Para revistas con referato sin
+informar sigue admitiendo la etiqueta de catálogo que lo indica expresamente.
+
+Ajuste aceptado visualmente el 10/11/2026. Las pruebas verifican Ciudad/País,
+exclusión de reuniones sin referato, ausencia de duplicados en la sección 7,
+estructura institucional y clasificación a partir de snapshots inmutables.

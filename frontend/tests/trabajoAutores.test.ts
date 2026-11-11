@@ -166,7 +166,7 @@ for (const [page, serviceFile, getName, updateName, createName, route] of [
   test(`${page}: guardado único de diferencias, eliminación diferida y edición sin cambios`, async () => {
     let cursor = 0;
     const states: any[] = [], refs: any[] = [], effects: Array<() => void> = [];
-    let initialData: any = { id: 8, titulo_trabajo: "Estudio", nombre_reunion: "Congreso", nombre_revista: "Revista",
+    let initialData: any = { id: 8, referato: true, alcance: "internacional", titulo_trabajo: "Estudio", nombre_reunion: "Congreso", nombre_revista: "Revista",
       procedencia: "Argentina", editorial: "Editorial", issn: "1234-5678", pais: "Argentina",
       fecha_presentacion: "2026-03-20", fecha_publicacion: "2026-03-20",
       tipo_reunion: { id: 1 }, tipo_revista: { id: 1 }, autores: [investigador], activo: true };
@@ -254,10 +254,20 @@ for (const [page, serviceFile, getName, updateName, createName, route] of [
     assert.equal(calls, beforeClasificacion + 1);
     referatoSelect().props.onChange({ target: { value: "" } });
     await submit();
-    assert.equal(JSON.stringify(saved), '{"referato":null}');
-    initialData = { ...initialData, referato: null };
+    if (page === "TrabajosRevistasForm") {
+      assert.equal(JSON.stringify(saved), '{"referato":null}');
+      initialData = { ...initialData, referato: null };
+    } else {
+      assert.equal(calls, beforeClasificacion + 1);
+      assert.ok(render().find(node => node.props.name === "referato").props.error);
+      referatoSelect().props.onChange({ target: { value: "false" } });
+    }
     if (page === "TrabajosReunionForm") {
       const alcanceSelect = () => render().find(node => node.type === "select" && node.props.id === "alcance");
+      alcanceSelect().props.onChange({ target: { value: "" } });
+      await submit();
+      assert.equal(calls, beforeClasificacion + 1);
+      assert.ok(render().find(node => node.props.name === "alcance").props.error);
       alcanceSelect().props.onChange({ target: { value: "nacional" } });
       assert.ok(render().some(node => node.props.name === "procedencia" && node.props.label === "Ciudad"));
       await submit();
@@ -267,6 +277,20 @@ for (const [page, serviceFile, getName, updateName, createName, route] of [
       assert.ok(render().some(node => node.props.name === "procedencia" && node.props.label === "País"));
       await submit();
       assert.equal(JSON.stringify(saved), '{"alcance":"internacional"}');
+      // Editing an unclassified persisted record requires both explicit values.
+      initialData = { ...initialData, id: 18, referato: null, alcance: null };
+      params = { id: "18" };
+      render();
+      const beforeIncomplete = calls;
+      await submit();
+      assert.equal(calls, beforeIncomplete);
+      assert.ok(render().find(node => node.props.name === "referato").props.error);
+      assert.ok(render().find(node => node.props.name === "alcance").props.error);
+      referatoSelect().props.onChange({ target: { value: "false" } });
+      alcanceSelect().props.onChange({ target: { value: "internacional" } });
+      await submit();
+      assert.equal(calls, beforeIncomplete + 1);
+      assert.equal(JSON.stringify(saved), '{"referato":false,"alcance":"internacional"}');
     }
 
   });

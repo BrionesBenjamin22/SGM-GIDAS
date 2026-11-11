@@ -307,7 +307,7 @@ class TrabajoReunionCientificaService:
         trabajo = TrabajoReunionCientificaService._get_activo_or_404(trabajo_id)
         autores = validar_autores(data["autores"], trabajo.autorias) if "autores" in data else None
         enlace = validar_enlace(data["enlace"]) if "enlace" in data else trabajo.enlace
-        clasificacion = validar_clasificacion(data, reunion=True)
+        clasificacion = validar_clasificacion(data, reunion=True, actual=trabajo)
         cambios = {}
 
         fecha_presentacion = trabajo.fecha_presentacion
