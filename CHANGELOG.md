@@ -8,6 +8,17 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-28: vínculo del personal profesional
+
+- Personal permite informar Interno o Externo en alta, edición y reclasificación,
+  valida la función efectiva y muestra los cambios en el historial.
+- Las fichas anteriores pueden conservar Sin informar. Los borradores recuperan
+  el vínculo y la edición envía diferencias reales.
+- La migración reversible agrega el vínculo a la ficha y su snapshot, con
+  protección frente a renombrados incompatibles y conservación de permisos/UCT.
+- Aceptado por el usuario el 11/11/2026. Opciones sujetas a revisión posterior
+  para la entrega institucional en ISS-101.
+
 ### ISS-25: referato y alcance de trabajos científicos
 
 - El alta y la edición de reuniones requieren referato Sí/No y alcance

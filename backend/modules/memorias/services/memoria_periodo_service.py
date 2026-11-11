@@ -101,7 +101,7 @@ def fin_vigencia(entidad):
     return min((fecha for fecha in fechas if fecha is not None), default=None)
 
 
-def consultar_entidades_memoria(modelo, memoria_version, campo_grupo="grupo_utn_id", relacion=None):
+def consultar_entidades_memoria(modelo, memoria_version, campo_grupo="grupo_utn_id", relacion=None, *, opciones=()):
     memoria = getattr(memoria_version, "memoria", None)
     grupo_id = getattr(memoria, "grupo_utn_id", None)
     filtros = []
@@ -115,7 +115,10 @@ def consultar_entidades_memoria(modelo, memoria_version, campo_grupo="grupo_utn_
             filtros.append(atributo.has(getattr(modelo_relacion, campo_grupo) == grupo_id))
         else:
             filtros.append(getattr(modelo, campo_grupo) == grupo_id)
-    return modelo.query.filter(*filtros).all()
+    query = modelo.query.filter(*filtros)
+    if opciones:
+        query = query.options(*opciones).populate_existing()
+    return query.all()
 
 
 def registro_puntual_en_memoria(memoria_version, entidad, fecha):

@@ -14,6 +14,11 @@ def normalizar_nombre_tipo(nombre):
     return " ".join("".join(char if char.isalnum() else " " for char in base).split())
 
 
+def es_funcion_profesional(nombre):
+    # Conserva el criterio de clasificación de la sección 2.2 de la Memoria.
+    return "profesional" in normalizar_nombre_tipo(nombre or "")
+
+
 def compatible_con_personal(nombre):
     palabras = normalizar_nombre_tipo(nombre).split()
     if palabras[:1] == ["personal"]:

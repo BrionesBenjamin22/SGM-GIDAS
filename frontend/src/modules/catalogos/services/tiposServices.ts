@@ -4,6 +4,7 @@ export interface Tipo {
   id: number;
   nombre: string;
   compatible_con_personal?: boolean;
+  es_profesional?: boolean;
 }
 
 export const getTiposPersonal = () =>

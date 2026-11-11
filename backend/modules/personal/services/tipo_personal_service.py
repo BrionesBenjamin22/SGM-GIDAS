@@ -1,8 +1,9 @@
 from sqlalchemy import text
-from modules.personal.services.tipo_personal_compatibilidad import normalizar_nombre_tipo, compatible_con_personal
+from modules.personal.services.tipo_personal_compatibilidad import normalizar_nombre_tipo, compatible_con_personal, es_funcion_profesional
 
 from modules.shared.services.catalog_name_validation import validar_nombre_descriptivo
 from extension import db
+from modules.personal.models.personal import Personal
 from modules.personal.models.tipo_personal import TipoPersonal
 from modules.shared.services.catalogo_auditoria_service import CatalogoAuditoriaService
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
@@ -52,7 +53,7 @@ def crear_tipo_personal(data, user_id=None):
 def actualizar_tipo_personal(id, data, user_id=None):
     try:
         _bloquear_catalogo()
-        tipo_personal = TipoPersonal.query.get(id)
+        tipo_personal = db.session.get(TipoPersonal, id, with_for_update={"of": TipoPersonal}, populate_existing=True)
         if not tipo_personal:
             raise NotFoundError("Tipo de personal no encontrado.")
 
@@ -67,6 +68,15 @@ def actualizar_tipo_personal(id, data, user_id=None):
 
         if tipo_personal.deleted_at is not None:
             raise ConflictError("No se puede editar un tipo de personal inactivo.")
+
+        if not es_funcion_profesional(nombre):
+            # El catálogo es global. La comprobación incluye fichas de todas las UCT.
+            personal = Personal.__table__
+            vinculo_asignado = db.select(personal.c.id).where(
+                personal.c.tipo_personal_id == id, personal.c.vinculo_profesional.is_not(None)
+            ).exists()
+            if db.session.scalar(db.select(vinculo_asignado)):
+                raise ConflictError("Hay fichas con un vínculo profesional informado. Mantenga una denominación profesional para esta función.")
 
         if not compatible_con_personal(nombre) and tipo_personal.personal.count():
             raise ConflictError("Esta función está asignada a Personal. No puede cambiarse por una clase de Docente, Investigador o Becario. Revise las asignaciones antes de modificar el catálogo.")

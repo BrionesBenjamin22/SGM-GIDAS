@@ -107,7 +107,7 @@ export default function PersonalForm() {
   const sourceTipo = inferredRol === "profesional" || inferredRol === "ptaa" ? "PERSONAL" : inferredRol?.toUpperCase();
   const isReclassifying = isEdit && tipo !== sourceTipo;
   const formData = useMemo(() => isReclassifying && initialData ? {
-    ...initialData, relaciones: undefined, becas: [], tipo_personal_id: undefined,
+    ...initialData, relaciones: undefined, becas: [], tipo_personal_id: undefined, vinculo_profesional: null,
     tipo_formacion_id: undefined, tipo_dedicacion_id: undefined,
     categoria_utn_id: null, programa_incentivos_id: null,
   } : initialData, [initialData, isReclassifying]);
@@ -158,7 +158,7 @@ export default function PersonalForm() {
             </legend>
             <div className="grid gap-3 md:grid-cols-3">
               {([
-                ["PERSONAL", "Personal de apoyo, técnico o administrativo", "Funciones de apoyo y gestión institucional."],
+                ["PERSONAL", "Personal profesional, de apoyo, técnico o administrativo", "Funciones profesionales, de apoyo y gestión institucional."],
                 ["BECARIO", "Becario", "Integrantes con formación y becas asociadas."],
                 ["INVESTIGADOR", "Investigador", "Integrantes con dedicación y antecedentes de investigación."],
               ] as const).map(([value, label, description]) => (

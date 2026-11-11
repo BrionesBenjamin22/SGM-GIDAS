@@ -14,6 +14,7 @@ test("formulario real muestra catálogo arbitrario, envía su ID y bloquea 220 h
       { id: 43, nombre: "Becario", compatible_con_personal: false },
     ],
     errors: [] as unknown[], focused: 0,
+    draft: undefined as any,
   };
   const globals = globalThis as typeof globalThis & { __personalHarness?: typeof harness; __personalJsx?: (...args: any[]) => Element };
   globals.__personalHarness = harness;
@@ -31,7 +32,7 @@ test("formulario real muestra catálogo arbitrario, envía su ID y bloquea 220 h
     export const useTiposPersonal = () => ({data: h.catalog, isLoading: false, isError: false, refetch: async () => {}});
     export const useQueryClient = () => ({invalidateQueries: async () => {}});
     export const useAuth = () => ({user: {id: 1}});
-    export const useFormDraft = () => ({availableDraft: null, clearDraft() {}, saveStatus: 'idle', blocker: {state: 'unblocked'}});
+    export const useFormDraft = options => {h.draft = options; return {availableDraft: null, clearDraft() {}, saveStatus: 'idle', blocker: {state: 'unblocked'}};};
     export const toCivilDateString = date => date ? date.toISOString().slice(0, 10) : '';
     export const upsertPersonal = async payload => { h.calls.push({payload}); return {id: 1}; };
     export const actualizarPersonal = async () => {};
@@ -91,6 +92,22 @@ test("formulario real muestra catálogo arbitrario, envía su ID y bloquea 220 h
     await tree.props.onSubmit({preventDefault() {}});
     assert.equal(harness.calls.length, 0);
     assert.ok(harness.values[8].tipoPersonal);
+
+    harness.catalog = [{ id: 50, nombre: "Profesional", compatible_con_personal: true, es_profesional: true }];
+    harness.values[5] = 50;
+    const vinculo = () => walk(render()).find(node => node.props.id === "personal-vinculoProfesional");
+    assert.equal(vinculo()?.props.required, true);
+    await render().props.onSubmit({preventDefault() {}});
+    assert.equal(harness.calls.length, 0);
+    assert.match(harness.values[8].vinculoProfesional, /Interno o Externo/);
+    vinculo()?.props.onChange({target: {value: "externo"}});
+    assert.equal(vinculo()?.props.value, "externo");
+    const savedDraft = harness.draft.value;
+    vinculo()?.props.onChange({target: {value: "interno"}});
+    harness.draft.onRestore(savedDraft);
+    assert.equal(vinculo()?.props.value, "externo");
+    await render().props.onSubmit({preventDefault() {}});
+    assert.equal(harness.calls[0].payload.vinculo_profesional, "externo");
   } finally {
     globalThis.document = previousDocument;
     globalThis.requestAnimationFrame = previousFrame;

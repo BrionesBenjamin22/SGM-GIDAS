@@ -1,5 +1,29 @@
 # Modulo frontend de personal
 
+## Vínculo con el grupo (ISS-28)
+
+`FormPTAAProfesional` consume `es_profesional` del catálogo mediante
+`useTiposPersonal` y muestra Interno/Externo para la función profesional.
+La selección es obligatoria en alta, al cambiar desde otra función y en una
+reclasificación. Las fichas profesionales anteriores pueden conservar
+Sin informar hasta completarlo. El formulario conserva el valor en el borrador,
+restaura borradores anteriores y envía únicamente diferencias al editar.
+
+Los contratos de `personalServices` y `personalCompletoServices` incluyen
+`vinculo_profesional`; el detalle también informa `es_profesional`.
+`personalFieldErrors` adapta errores del campo y `personalHistory` centraliza
+etiquetas y presentación del cambio. `PersonalDetalle` muestra una sola vez el
+vínculo legible y pagina el historial de tres en tres. Tras guardar, el alta
+vuelve a Personal y la edición al detalle con el mensaje de éxito.
+
+La edición usa la UCT de la ficha cargada durante la consulta de datos del grupo.
+Se conservan los controles de permisos y las validaciones definitivas del backend.
+Las consultas de detalle, formulario e historial se invalidan tras una edición.
+
+Aceptado el 11/11/2026. Pruebas de borradores, campo obligatorio, historial,
+TypeScript, build y flujo real en Chrome aprobados. ISS-101 conserva la revisión
+posterior de las opciones de vínculo para la entrega.
+
 ## Filtros desplegables (ISS-47)
 
 PersonalHome: clase y estado.

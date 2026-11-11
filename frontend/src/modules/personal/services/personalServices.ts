@@ -1,5 +1,7 @@
 import { http } from "@/lib/http";
 
+export type VinculoProfesional = "interno" | "externo";
+
 export type PersonalType =
   | "PERSONAL"
   | "PTAA"
@@ -52,6 +54,7 @@ export interface PersonalPayload {
   fecha_alta_grupo: string;
   grupo_utn_id: number;
   tipo_personal_id: number;
+  vinculo_profesional?: VinculoProfesional | null;
   activo: boolean;
 }
 

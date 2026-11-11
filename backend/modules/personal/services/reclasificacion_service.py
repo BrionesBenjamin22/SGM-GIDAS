@@ -27,7 +27,8 @@ CLASES = {
 ETIQUETAS = {"personal": "Personal de apoyo, técnico o administrativo",
              "becario": "Becario", "investigador": "Investigador"}
 CAMPOS_CLASE = {
-    "personal": {"tipo_personal_id": reglas._validar_tipo_personal},
+    "personal": {"tipo_personal_id": reglas._validar_tipo_personal,
+                 "vinculo_profesional": None},
     "becario": {"tipo_formacion_id": reglas._validar_tipo_formacion},
     "investigador": {"tipo_dedicacion_id": reglas._validar_tipo_dedicacion,
                      "categoria_utn_id": reglas._validar_categoria_utn,
@@ -94,9 +95,13 @@ def reclasificar_personal(rol, registro_id, data, user_id):
         valores["horas_semanales"] = reglas._validar_horas(valores["horas_semanales"])
         valores["grupo_utn_id"] = reglas._validar_grupo_utn(valores["grupo_utn_id"], obligatorio=True)
         valores["fecha_alta_grupo"] = reglas.validar_fecha_alta_grupo(valores["fecha_alta_grupo"].isoformat() if hasattr(valores["fecha_alta_grupo"], "isoformat") else valores["fecha_alta_grupo"])
-        especificos = {}
-        for campo, validar in CAMPOS_CLASE[destino_rol].items():
-            especificos[campo] = validar(data.get(campo))
+        if destino_rol == "personal":
+            tipo = reglas._validar_tipo_personal(data.get("tipo_personal_id"))
+            especificos = {"tipo_personal_id": tipo.id,
+                           "vinculo_profesional": reglas._resolver_vinculo_profesional(data, tipo)}
+        else:
+            especificos = {campo: validar(data.get(campo))
+                           for campo, validar in CAMPOS_CLASE[destino_rol].items()}
         # Las referencias de destino deben estar disponibles también al reclasificar.
         for campo in ("tipo_formacion_id", "tipo_dedicacion_id", "categoria_utn_id", "programa_incentivos_id"):
             if especificos.get(campo):

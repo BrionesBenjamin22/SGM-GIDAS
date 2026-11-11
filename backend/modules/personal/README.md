@@ -1,5 +1,36 @@
 # Modulo backend de personal
 
+## Vínculo profesional (ISS-28)
+
+`POST /api/v1/personal`, `PUT /api/v1/personal/personal/{id}` y la
+reclasificación hacia Personal admiten `vinculo_profesional` con `interno`,
+`externo` o `null`. El detalle publica ese campo y `es_profesional`; el catálogo
+TipoPersonal también publica `es_profesional`. El criterio compartido reconoce
+«profesional» en el nombre normalizado de la función, como la sección 2.2.
+
+El vínculo es obligatorio al crear un profesional o cambiar desde una función
+no profesional, incluida la reclasificación de Becario o Investigador. Una ficha
+profesional anterior con `null` puede guardar otros cambios. Después de informar
+el vínculo, solo se admite cambiar entre Interno y Externo. Al elegir una función
+no profesional se limpia el vínculo y se audita la diferencia. Un valor informado
+para una función incompatible o fuera del dominio produce error de validación
+con `error.details.fields.vinculo_profesional`.
+
+Los bloqueos de la ficha y del catálogo serializan cambios y renombrados.
+Un nombre que deje de ser profesional se rechaza con conflicto cuando existen
+vínculos informados en cualquier UCT. Los endpoints conservan ADMIN/GESTOR para
+escritura, LECTURA para consulta y el aislamiento por UCT. La auditoría registra
+cambios efectivos con usuario y fecha.
+
+La migración reversible `a9d2f7c4b1e6` agrega columnas y restricciones en
+`personal` y `personal_memoria_version`, dejando los registros previos en `null`.
+Cada cierre guarda el vínculo y lee su función en la misma consulta. El snapshot
+expone `es_profesional` a partir del nombre congelado.
+
+Aceptado el 11/11/2026. Regresiones de altas, edición heredada, transiciones,
+reclasificación, permisos, UCT y versiones aprobadas. Queda pendiente en ISS-101
+revisar las opciones del vínculo para la entrega institucional.
+
 ## Contrato histórico de becas y presentación (ISS-41)
 
 `GET /api/v1/personal/becario/<id>/historial` mantiene el contrato de auditoría

@@ -1,4 +1,19 @@
 import type { HistorialCambioItem } from "@/modules/personal/services/personalCompletoServices";
+import type { VinculoProfesional } from "@/modules/personal/services/personalServices";
+
+export const VINCULOS_PROFESIONALES = {
+  interno: "Interno",
+  externo: "Externo",
+} satisfies Record<VinculoProfesional, string>;
+
+export function parseVinculoProfesional(value: unknown): VinculoProfesional | null {
+  return value === "interno" || value === "externo" ? value : null;
+}
+
+export function formatVinculoProfesional(value: unknown) {
+  const vinculo = parseVinculoProfesional(value);
+  return vinculo ? VINCULOS_PROFESIONALES[vinculo] : "Sin informar";
+}
 
 type HistoryPresentation = {
   title: string;
@@ -101,6 +116,12 @@ function formatScholarshipSnapshot(value: unknown): string | null {
 }
 
 export function formatPersonalHistoryEntry(entry: HistorialCambioItem): HistoryPresentation {
+  if (entry.campo === "vinculo_profesional") {
+    return {
+      title: "Vínculo con el grupo",
+      description: `${formatVinculoProfesional(entry.valor_anterior)} → ${formatVinculoProfesional(entry.valor_nuevo)}`,
+    };
+  }
   if (entry.campo === "becas") {
     const scholarship = formatScholarshipEvent(entry.valor_nuevo);
     if (scholarship) return scholarship;

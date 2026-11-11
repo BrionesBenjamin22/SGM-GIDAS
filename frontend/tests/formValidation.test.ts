@@ -45,7 +45,7 @@ test("personal separa clase de registro de tipo real de catálogo", () => {
   const professionalForm = readFileSync(join(pages, "FormPTAAProfesional.tsx"), "utf8");
 
   assert.match(selector, /Clase de registro/);
-  assert.match(selector, /\["PERSONAL", "Personal de apoyo, técnico o administrativo"/);
+  assert.match(selector, /\["PERSONAL", "Personal profesional, de apoyo, técnico o administrativo"/);
   assert.match(selector, /aria-pressed=\{tipo === value\}/);
   assert.doesNotMatch(selector, />PTAA</);
   assert.doesNotMatch(selector, /<option value="PROFESIONAL"/);

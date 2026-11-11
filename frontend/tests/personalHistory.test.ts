@@ -113,3 +113,9 @@ test("tarjeta real pagina historiales actuales e históricos sin imprimir JSON c
     assert.ok(html.includes(page === 1 ? "Beca actualizada" : "Se registró un cambio en las becas asignadas."));
   }
 });
+
+test("el historial muestra valores legibles cuando cambia el vínculo profesional", () => {
+  assert.deepEqual(formatPersonalHistoryEntry({
+    id: 8, campo: "vinculo_profesional", valor_anterior: "externo", valor_nuevo: null,
+  }), { title: "Vínculo con el grupo", description: "Externo → Sin informar" });
+});

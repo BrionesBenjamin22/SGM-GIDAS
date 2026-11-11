@@ -242,7 +242,7 @@ class PersonalAltaPTAATest(unittest.TestCase):
         self.assertEqual(PersonalHorasHistorial.query.count(), 0)
 
     def test_regresion_profesional_becario_investigador(self):
-        self.assertEqual(self.post(self.payload(tipo_personal_id=2)).status_code, 201)
+        self.assertEqual(self.post(self.payload(tipo_personal_id=2, vinculo_profesional="externo")).status_code, 201)
         base = self.payload()
         del base["tipo_personal_id"]
         self.assertIsNotNone(crear_becario({**base, "dni": "12345679", "cuil": "20-12345679-4", "tipo_formacion_id": 1}, 1).id)

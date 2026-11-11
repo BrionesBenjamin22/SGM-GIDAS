@@ -8,7 +8,7 @@ from datetime import date
 
 from extension import db
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 from modules.personal.services.identidad_service import asignar_identidad, conflicto_identidad_por_integridad
 from modules.shared.services.text_validation import has_only_letters_and_spaces
 from modules.personal.services.horas_validation import validar_horas_semanales as _validar_horas
@@ -27,7 +27,7 @@ from modules.personal.models.personal import (
     InvestigadorHorasHistorial,
 )
 from modules.personal.models.tipo_personal import TipoPersonal
-from modules.personal.services.tipo_personal_compatibilidad import compatible_con_personal
+from modules.personal.services.tipo_personal_compatibilidad import compatible_con_personal, es_funcion_profesional
 from modules.grupo.models.grupo import GrupoInvestigacionUtn
 from modules.personal.models.personal import TipoFormacion, TipoDedicacion
 from modules.catalogos.models.categoria_utn import CategoriaUtn
@@ -109,11 +109,14 @@ def _resolver_horas_activas(entidad):
     )
 
 
-def _resolver_entidad_por_rol(id, rol):
+def _resolver_entidad_por_rol(id, rol, *, bloquear=False):
     _validar_id_positivo(id, "id")
 
     if rol == "personal":
-        entidad = Personal.query.get(id)
+        query = Personal.query.filter_by(id=id)
+        if bloquear:
+            query = query.with_for_update(of=Personal).populate_existing()
+        entidad = query.first()
         historial_model = PersonalHorasHistorial
         fk_field = "personal_id"
     elif rol == "becario":
@@ -130,17 +133,42 @@ def _resolver_entidad_por_rol(id, rol):
     return entidad, historial_model, fk_field
 
 
+def _bloquear_tipo_personal(tipo_personal_id):
+    # FOR SHARE permite guardar fichas concurrentes y serializa con el renombrado.
+    return db.session.get(TipoPersonal, tipo_personal_id, with_for_update={"of": TipoPersonal, "read": True},
+                          populate_existing=True)
+
+
 def _validar_tipo_personal(tipo_personal_id):
     tipo_personal_id = _validar_id_positivo(tipo_personal_id, "tipo_personal_id")
 
-    tipo = db.session.get(TipoPersonal, tipo_personal_id)
+    tipo = _bloquear_tipo_personal(tipo_personal_id)
     if not tipo or tipo.deleted_at is not None or not tipo.activo:
         message = "El tipo de personal seleccionado no existe o está inactivo. Seleccione otro tipo."
         raise ValueError(message, details={"fields": {"tipo_personal_id": message}})
 
     _validar_compatibilidad_tipo(tipo)
 
-    return tipo_personal_id
+    return tipo
+
+
+def _resolver_vinculo_profesional(data, tipo, tipo_anterior=None, vinculo_anterior=None):
+    campo = "vinculo_profesional"
+    profesional = tipo is not None and es_funcion_profesional(tipo.nombre)
+    solicitado = data.get(campo)
+    if solicitado is not None and solicitado not in ("interno", "externo"):
+        mensaje = "Seleccione Interno o Externo."
+    elif not profesional:
+        if solicitado is None:
+            return None
+        mensaje = "El vínculo con el grupo solo se informa para una función profesional."
+    else:
+        vinculo = data.get(campo, vinculo_anterior)
+        era_profesional = tipo_anterior is not None and es_funcion_profesional(tipo_anterior.nombre)
+        if vinculo is not None or (era_profesional and vinculo_anterior is None):
+            return vinculo
+        mensaje = "Seleccione Interno o Externo para informar el vínculo con el grupo."
+    raise ValueError(mensaje, details={"fields": {campo: mensaje}})
 
 
 def _validar_compatibilidad_tipo(tipo):
@@ -218,7 +246,8 @@ def crear_personal(data, user_id):
     data = preparar_nombre(data)
     nombre = _validar_nombre(data.get("nombre_apellido"))
     horas = _validar_horas(data.get("horas_semanales"))
-    tipo_personal_id = _validar_tipo_personal(data.get("tipo_personal_id"))
+    tipo = _validar_tipo_personal(data.get("tipo_personal_id"))
+    vinculo = _resolver_vinculo_profesional(data, tipo)
     grupo_utn_id = _validar_grupo_utn(data.get("grupo_utn_id"), obligatorio=True)
 
     try:
@@ -231,7 +260,8 @@ def crear_personal(data, user_id):
         nombre_apellido=nombre,
         horas_semanales=horas,
         fecha_alta_grupo=fecha_alta,
-        tipo_personal_id=tipo_personal_id,
+        tipo_personal_id=tipo.id,
+        vinculo_profesional=vinculo,
         grupo_utn_id=grupo_utn_id,
         activo=True,
         created_by=user_id
@@ -271,7 +301,7 @@ def actualizar_personal(id, data, rol, user_id: int):
     if "horas_semanales" in data:
         _validar_horas(data["horas_semanales"])
 
-    entidad, historial_model, fk_field = _resolver_entidad_por_rol(id, rol)
+    entidad, historial_model, fk_field = _resolver_entidad_por_rol(id, rol, bloquear=True)
     cambios = {}
 
     if not entidad:
@@ -280,11 +310,16 @@ def actualizar_personal(id, data, rol, user_id: int):
     if entidad.deleted_at is not None:
         raise ConflictError("No se puede modificar un registro eliminado.")
 
+    tipo_anterior = tipo = None
     if rol == "personal":
+        tipo_anterior = _bloquear_tipo_personal(entidad.tipo_personal_id)
         if "tipo_personal_id" in data:
-            _validar_tipo_personal(data["tipo_personal_id"])
+            tipo = _validar_tipo_personal(data["tipo_personal_id"])
         else:
-            _validar_compatibilidad_tipo(entidad.tipo_personal)
+            tipo = tipo_anterior
+            _validar_compatibilidad_tipo(tipo)
+    vinculo_anterior = getattr(entidad, "vinculo_profesional", None)
+    vinculo = _resolver_vinculo_profesional(data, tipo, tipo_anterior, vinculo_anterior)
 
     data = preparar_nombre(data, entidad)
     cambios.update(asignar_nombre(entidad, data))
@@ -423,15 +458,13 @@ def actualizar_personal(id, data, rol, user_id: int):
                 entidad.grupo_utn_id = nuevo_valor
 
     if rol == "personal":
-        if "tipo_personal_id" in data:
-            nuevo_valor = _validar_tipo_personal(data["tipo_personal_id"])
-            cambio = AuditoriaService.construir_cambio(
-                entidad.tipo_personal_id,
-                nuevo_valor
-            )
-            if cambio:
-                cambios["tipo_personal_id"] = cambio
-                entidad.tipo_personal_id = nuevo_valor
+        if "tipo_personal_id" in data and entidad.tipo_personal_id != tipo.id:
+            cambios["tipo_personal_id"] = AuditoriaService.construir_cambio(entidad.tipo_personal_id, tipo.id)
+            entidad.tipo_personal = tipo
+
+        if vinculo_anterior != vinculo:
+            cambios["vinculo_profesional"] = AuditoriaService.construir_cambio(vinculo_anterior, vinculo)
+            entidad.vinculo_profesional = vinculo
 
         if "grupo_utn_id" in data:
             nuevo_valor = _validar_grupo_utn(
@@ -606,7 +639,10 @@ def obtener_historial_personal_por_rol(id, rol):
 
 
 def snapshot_personal_para_memoria_version(memoria_version, user_id):
-    personales = consultar_entidades_memoria(Personal, memoria_version)
+    # Lee el vínculo y la denominación de la función en la misma consulta.
+    personales = consultar_entidades_memoria(
+        Personal, memoria_version, opciones=(joinedload(Personal.tipo_personal),)
+    )
 
     snapshots = []
     for personal in personales:
@@ -624,6 +660,7 @@ def snapshot_personal_para_memoria_version(memoria_version, user_id):
             fecha_alta_grupo=personal.fecha_alta_grupo,
             horas_semanales=resolver_horas_al_fin(personal, memoria_version),
             tipo_personal_id=personal.tipo_personal_id,
+            vinculo_profesional=personal.vinculo_profesional,
             tipo_personal_nombre=(
                 personal.tipo_personal.nombre
                 if personal.tipo_personal else None

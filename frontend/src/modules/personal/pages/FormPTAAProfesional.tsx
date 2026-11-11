@@ -26,6 +26,8 @@ import { personalFieldErrors } from "@/modules/personal/utils/personalFieldError
 import { validateDni, validateCuil } from "@/modules/personal/utils/identidadValidation";
 import IdentidadFields from "@/modules/personal/components/IdentidadFields";
 import { MAX_HORAS_SEMANALES, validWeeklyHours, WEEKLY_HOURS_ERROR } from "@/modules/personal/utils/weeklyHours";
+import { parseVinculoProfesional, VINCULOS_PROFESIONALES } from "@/modules/personal/utils/personalHistory";
+import type { VinculoProfesional } from "@/modules/personal/services/personalServices";
 
 interface Props {
   onReclassify?: ReclasificarFormulario;
@@ -44,6 +46,7 @@ export default function FormPTAAProfesional({
 }: Props) {
   const navigate = useNavigate();
   const { uct } = useUct();
+  const grupoUtnId = initialData?.grupo_utn_id ?? uct?.id;
   const { data: catalogoPersonal = [], isLoading: tiposLoading, isFetching: tiposFetching, isError: tiposError, refetch: refetchTipos } = useTiposPersonal();
   const tiposPersonal = catalogoPersonal.filter((tipo) => tipo.compatible_con_personal !== false);
   const qc = useQueryClient();
@@ -62,6 +65,14 @@ export default function FormPTAAProfesional({
   const [isSaving, setIsSaving] = useState(false);
   useEffect(() => { onSavingChange?.(isSaving); }, [isSaving, onSavingChange]);
   const [hydrated, setHydrated] = useState(!isEdit);
+  const [vinculoProfesional, setVinculoProfesional] = useState<VinculoProfesional | null>(null);
+  const tipoSeleccionado = tiposPersonal.find((tipo) => tipo.id === tipoPersonalId);
+  const esProfesional = tipoSeleccionado?.es_profesional === true;
+  const vinculoOriginal = initialData?.vinculo_profesional ?? null;
+  const requiereVinculo = esProfesional && (
+    !initialData?.es_profesional || Boolean(onReclassify) || vinculoOriginal !== null
+  );
+  const vinculoEfectivo = esProfesional ? vinculoProfesional : null;
 
   useEffect(() => {
     if (!initialData) {
@@ -71,6 +82,7 @@ export default function FormPTAAProfesional({
       setCuil("");
       setHoras("");
       setTipoPersonalId("");
+      setVinculoProfesional(null);
       setFechaAltaGrupo(null);
       setActivo(true);
       return;
@@ -82,6 +94,7 @@ export default function FormPTAAProfesional({
     setCuil(initialData.cuil ?? "");
     setHoras(initialData.horas_semanales ?? "");
     setActivo(initialData.activo ?? true);
+    setVinculoProfesional(initialData.vinculo_profesional ?? null);
     setFechaAltaGrupo(
       initialData.fecha_alta_grupo
         ? new Date(`${initialData.fecha_alta_grupo}T00:00:00`)
@@ -99,12 +112,13 @@ export default function FormPTAAProfesional({
     userId: user?.id,
     module: onReclassify ? `personal-reclasificar-${initialData?.rol}-personal` : "personal-personal",
     recordId: initialData?.id,
-    value: { nombreApellido, apellido, dni, cuil, horasSemanales, tipoPersonalId, fechaAltaGrupo: toCivilDateString(fechaAltaGrupo), activo },
+    value: { nombreApellido, apellido, dni, cuil, horasSemanales, tipoPersonalId, vinculoProfesional, fechaAltaGrupo: toCivilDateString(fechaAltaGrupo), activo },
     ready: hydrated,
     autosave: false,
     hasContent: (draft) => Boolean(draft.nombreApellido || draft.apellido || draft.dni || draft.cuil || draft.horasSemanales || draft.tipoPersonalId || draft.fechaAltaGrupo),
     onRestore: (draft) => {
       setNombre(draft.nombreApellido); setApellido(draft.apellido ?? ""); setDni(draft.dni ?? ""); setCuil(draft.cuil ?? ""); setHoras(draft.horasSemanales); setTipoPersonalId(draft.tipoPersonalId);
+      setVinculoProfesional(draft.vinculoProfesional !== undefined ? parseVinculoProfesional(draft.vinculoProfesional) : vinculoOriginal);
       setFechaAltaGrupo(draft.fechaAltaGrupo ? new Date(`${draft.fechaAltaGrupo}T00:00:00`) : null); setActivo(draft.activo);
     },
   });
@@ -116,6 +130,7 @@ export default function FormPTAAProfesional({
       dni !== (initialData.dni ?? "") || cuil !== (initialData.cuil ?? "") ||
       Number(horasSemanales) !== Number(initialData.horas_semanales) ||
       Number(tipoPersonalId) !== Number(initialData.relaciones?.tipo_personal?.id ?? initialData.tipo_personal_id) ||
+      vinculoEfectivo !== vinculoOriginal ||
       toCivilDateString(fechaAltaGrupo) !== (initialData.fecha_alta_grupo ?? "") ||
       activo !== (initialData.activo ?? true);
   };
@@ -143,15 +158,18 @@ export default function FormPTAAProfesional({
       newErrors.horas = WEEKLY_HOURS_ERROR;
     }
 
-    if (!tipoPersonalId || !tiposPersonal.some((t) => t.id === tipoPersonalId)) {
+    if (!tipoSeleccionado) {
       newErrors.tipoPersonal = "Debe seleccionar tipo de personal";
+    }
+    if (requiereVinculo && vinculoEfectivo === null) {
+      newErrors.vinculoProfesional = "Seleccione Interno o Externo.";
     }
 
     if (!fechaAltaGrupo) {
       newErrors.fechaAltaGrupo = "Debe ingresar la fecha de alta en el grupo";
     }
 
-    if (!uct?.id) {
+    if (!grupoUtnId) {
       newErrors.grupo = "Lo sentimos, no pudimos recuperar el grupo. Intente nuevamente.";
     }
     const dateError = validatePersonalStartDate(fechaAltaGrupo);
@@ -186,7 +204,7 @@ export default function FormPTAAProfesional({
       return true;
     } catch (error) {
       onError(error);
-      if (applyFieldErrors(error, setErrors, ["nombre","apellido","dni","cuil","horas","tipoPersonal","fechaAltaGrupo","grupo"])) return false;
+      if (applyFieldErrors(error, setErrors, ["nombre","apellido","dni","cuil","horas","tipoPersonal","vinculoProfesional","fechaAltaGrupo","grupo"])) return false;
       const fieldErrors = personalFieldErrors(error);
       if (Object.keys(fieldErrors).length) {
         setErrors(fieldErrors);
@@ -213,8 +231,9 @@ export default function FormPTAAProfesional({
         cuil,
         horas_semanales: Number(horasSemanales),
         tipo_personal_id: Number(tipoPersonalId),
+        vinculo_profesional: vinculoEfectivo,
         fecha_alta_grupo: formatDateStr(fechaAltaGrupo),
-        grupo_utn_id: uct!.id,
+        grupo_utn_id: grupoUtnId!,
         activo,
       };
 
@@ -237,8 +256,9 @@ export default function FormPTAAProfesional({
           cuil: initialData.cuil ?? "",
           horas_semanales: Number(initialData.horas_semanales),
           tipo_personal_id: Number(initialData.relaciones?.tipo_personal?.id ?? initialData.tipo_personal_id),
+          vinculo_profesional: vinculoOriginal,
           fecha_alta_grupo: initialData.fecha_alta_grupo,
-          grupo_utn_id: Number(initialData.grupo_utn_id ?? uct!.id),
+          grupo_utn_id: Number(initialData.grupo_utn_id ?? grupoUtnId),
           activo: initialData.activo ?? true,
         };
         const changedPayload = Object.fromEntries(
@@ -255,11 +275,10 @@ export default function FormPTAAProfesional({
             )
           );
           if (!updated) return;
+          await Promise.all(["personal", "personal-edit", "personal-detalle", "personal-historial"].map(
+            (key) => qc.invalidateQueries({ queryKey: [key], refetchType: "none" })
+          ));
         }
-
-        await qc.invalidateQueries({
-          queryKey: ["personal"],
-        });
 
         clearDraft();
         navigate(
@@ -383,6 +402,7 @@ export default function FormPTAAProfesional({
             onChange={(e) => {
               const value = e.target.value ? +e.target.value : "";
               setTipoPersonalId(value);
+              clearError("vinculoProfesional");
               if (value) clearError("tipoPersonal");
             }}
           >
@@ -400,6 +420,28 @@ export default function FormPTAAProfesional({
           </select>
         </Field>
       </div>
+
+      {esProfesional && (
+        <Field label="Vínculo con el grupo" required={requiereVinculo} error={errors.vinculoProfesional} name="vinculoProfesional">
+          <select
+            id="personal-vinculoProfesional"
+            className="input"
+            value={vinculoProfesional ?? ""}
+            required={requiereVinculo}
+            onChange={(event) => {
+              setVinculoProfesional(parseVinculoProfesional(event.target.value));
+              clearError("vinculoProfesional");
+            }}
+          >
+            <option value="" disabled={requiereVinculo}>
+              {requiereVinculo ? "Seleccionar vínculo con el grupo" : "Sin informar"}
+            </option>
+            {Object.entries(VINCULOS_PROFESIONALES).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </Field>
+      )}
 
       <div className="flex justify-between pt-6">
         <Button

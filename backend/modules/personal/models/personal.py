@@ -2,12 +2,16 @@ from extension import db
 from datetime import date
 from modules.shared.models.audit_mixin import AuditMixin
 from modules.personal.models.identidad import IdentidadPersonal
+from modules.personal.services.tipo_personal_compatibilidad import es_funcion_profesional
 
 # =====================================================
 # PERSONAL
 # =====================================================
 class Personal(db.Model, AuditMixin):
     __tablename__ = 'personal'
+    __table_args__ = (
+        db.CheckConstraint("vinculo_profesional IN ('interno', 'externo')", name="ck_personal_vinculo_profesional"),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(60), nullable=True)
@@ -20,6 +24,7 @@ class Personal(db.Model, AuditMixin):
     fecha_alta_grupo = db.Column(db.Date, nullable=True)
 
     tipo_personal_id = db.Column(db.Integer, db.ForeignKey('tipo_personal.id'), nullable=False)
+    vinculo_profesional = db.Column(db.String(7), nullable=True)
     grupo_utn_id = db.Column(db.Integer, db.ForeignKey('grupo_utn.id'), nullable=False)
 
     tipo_personal = db.relationship('TipoPersonal', back_populates='personal')
@@ -48,6 +53,7 @@ class Personal(db.Model, AuditMixin):
                 if self.fecha_alta_grupo else None
             ),
             "tipo_personal": self.tipo_personal.nombre if self.tipo_personal else None,
+            "es_profesional": es_funcion_profesional(self.tipo_personal.nombre if self.tipo_personal else None),
             "grupo": self.grupo_utn.nombre_sigla_grupo if self.grupo_utn else None,
             "historial_horas": [
                 {
@@ -89,6 +95,7 @@ class PersonalMemoriaVersion(db.Model, AuditMixin):
         nullable=False
     )
     tipo_personal_nombre = db.Column(db.String(100), nullable=True)
+    vinculo_profesional = db.Column(db.String(7), nullable=True)
 
     grupo_utn_id = db.Column(
         db.Integer,
@@ -103,6 +110,7 @@ class PersonalMemoriaVersion(db.Model, AuditMixin):
     grupo_utn = db.relationship("GrupoInvestigacionUtn", lazy="joined")
 
     __table_args__ = (
+        db.CheckConstraint("vinculo_profesional IN ('interno', 'externo')", name="ck_personal_memoria_version_vinculo_profesional"),
         db.UniqueConstraint("memoria_version_id", "identidad_id", name="uq_personal_memoria_identidad"),
         db.UniqueConstraint(
             "memoria_version_id",
@@ -112,7 +120,7 @@ class PersonalMemoriaVersion(db.Model, AuditMixin):
     )
 
     def serialize(self):
-        return self.to_dict()
+        return {**self.to_dict(), "es_profesional": es_funcion_profesional(self.tipo_personal_nombre)}
 
 
 # =====================================================

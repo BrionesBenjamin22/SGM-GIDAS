@@ -48,22 +48,16 @@ class PersonalMemoriaHistorialTestCase(unittest.TestCase):
             horas_semanales=20,
             fecha_alta_grupo=date(2026, 1, 15),
             tipo_personal_id=2,
+            vinculo_profesional=None,
             grupo_utn_id=4,
             tipo_personal=SimpleNamespace(nombre="Administrativo"),
             grupo_utn=SimpleNamespace(nombre_sigla_grupo="GIDAS"),
             historial_horas=[SimpleNamespace(id=1, horas_semanales=25, fecha_inicio=date(2020, 1, 1), fecha_fin=None)]
         )
 
-        fake_query = SimpleNamespace(
-            filter=lambda *args, **kwargs: SimpleNamespace(all=lambda: [personal])
-        )
-
         with patch(
-            "modules.personal.services.personal_service.Personal",
-            new=SimpleNamespace(
-                query=fake_query,
-                deleted_at=SimpleNamespace(is_=lambda *_: None)
-            )
+            "modules.personal.services.personal_service.consultar_entidades_memoria",
+            return_value=[personal],
         ):
             snapshots = snapshot_personal_para_memoria_version(version, user_id=31)
 
@@ -71,6 +65,7 @@ class PersonalMemoriaHistorialTestCase(unittest.TestCase):
         self.assertEqual(snapshots[0].personal_id, 3)
         self.assertEqual(snapshots[0].horas_semanales, 25)
         self.assertEqual(snapshots[0].tipo_personal_nombre, "Administrativo")
+        self.assertIsNone(snapshots[0].vinculo_profesional)
         self.assertEqual(snapshots[0].created_by, 31)
         self.mock_add.assert_called()
 

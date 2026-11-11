@@ -3,6 +3,7 @@ import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
+import { formatVinculoProfesional } from "@/modules/personal/utils/personalHistory";
 import { ChevronDown, ShieldCheck } from "lucide-react";
 import BecarioDatosSection from "@/modules/personal/components/BecarioDatosSection";
 import Button from "@/components/Button";
@@ -83,6 +84,7 @@ export default function PersonalDetalle() {
   }
 
   const relaciones = data.relaciones || {};
+  const tipoPersonal = relaciones.tipo_personal?.nombre ?? data.tipo_personal;
   const isInactive = !!data.deleted_at || data.activo === false;
   const nombreActualizador =
     typeof data.updated_by_nombre === "string" && data.updated_by_nombre.trim()
@@ -112,8 +114,8 @@ export default function PersonalDetalle() {
   };
 
   const getRolLabel = () => {
+    if (data.es_profesional || rol === "profesional") return "Profesional";
     if (rol === "personal") return "PTAA";
-    if (rol === "profesional") return "Profesional";
     if (rol === "investigador") return "Investigador";
     if (rol === "becario") return "Becario";
     return rol ?? "-";
@@ -179,12 +181,17 @@ export default function PersonalDetalle() {
           <div className="space-y-2 text-sm text-slate-500 md:text-base">
             <p><span className="font-semibold text-slate-800">DNI:</span> {data.dni || "Sin registrar"}</p>
             <p><span className="font-semibold text-slate-800">CUIL:</span> {data.cuil || "Sin registrar"}</p>
-            {relaciones.tipo_personal?.nombre && (
+            {tipoPersonal && (
               <p>
                 <span className="font-semibold text-slate-800">
                   Tipo de Personal:
                 </span>{" "}
-                {relaciones.tipo_personal.nombre}
+                {tipoPersonal}
+              </p>
+            )}
+            {data.es_profesional && (
+              <p><span className="font-semibold text-slate-800">Vínculo con el grupo:</span>{" "}
+                {formatVinculoProfesional(data.vinculo_profesional)}
               </p>
             )}
 
@@ -356,6 +363,10 @@ export default function PersonalDetalle() {
                     "deleted_at",
                     "historial_horas",
                     "horas_semanales",
+                    "tipo_personal",
+                    "tipo_personal_id",
+                    "es_profesional",
+                    "vinculo_profesional",
                     "becas",
                   ].includes(key) &&
                   value !== null &&

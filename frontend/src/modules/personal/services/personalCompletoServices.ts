@@ -1,4 +1,5 @@
 import { http } from "@/lib/http";
+import type { VinculoProfesional } from "./personalServices";
 
 export interface HistorialHorasItem {
   id: number;
@@ -55,6 +56,9 @@ export interface PersonalCompleto {
   historial_horas?: HistorialHorasItem[];
   activo: boolean;
   tipo_personal_id?: number;
+  tipo_personal?: string | null;
+  es_profesional?: boolean;
+  vinculo_profesional?: VinculoProfesional | null;
   tipo_formacion_id?: number;
   tipo_formacion?: string | null;
   tipo_dedicacion_id?: number;

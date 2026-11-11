@@ -6,6 +6,7 @@ const fieldNames: Record<string, string> = {
   cuil: "cuil",
   horas_semanales: "horas",
   tipo_personal_id: "tipoPersonal",
+  vinculo_profesional: "vinculoProfesional",
   fecha_alta_grupo: "fechaAltaGrupo",
   grupo_utn_id: "grupo",
 };
