@@ -20,7 +20,7 @@ LABELS = {
     "curso": "Curso / cátedra", "institucion": "Institución", "investigador_nombre": "Investigador",
     "becario_nombre": "Becario", "rol_actividad_nombre": "Rol docente", "grado_academico_nombre": "Grado académico del investigador",
     "historial_grados": "Grados y vigencias", "nombre_evento": "Evento", "forma_participacion": "Participación",
-    "fecha": "Fecha", "titulo": "Título", "editorial": "Editorial", "anio": "Año", "autores": "Autores",
+    "fecha": "Fecha", "titulo": "Título", "editorial": "Editorial", "anio": "Año", "autores": "Autores", "expositores": "Expositores",
     "denominacion": "Denominación", "descripcion_breve": "Descripción", "fecha_incorporacion": "Incorporación",
     "monto_invertido": "Inversión", "moneda": "Moneda", "numero_movimiento": "Número de movimiento", "tipo_movimiento": "Movimiento",
     "monto": "Importe original", "tipo_cambio_aplicado": "Tipo de cambio a ARS", "monto_equivalente_ars": "Equivalente ARS",
@@ -29,7 +29,7 @@ LABELS = {
     "numero_transferencia": "Número de transferencia", "demandante": "Demandante", "descripcion_actividad": "Actividad",
     "tipo_contrato_nombre": "Tipo de contrato", "adoptantes": "Adoptantes", "enlace": "Enlace",
     "titulo_trabajo": "Título del trabajo", "nombre_reunion": "Reunión científica", "procedencia": "Procedencia",
-    "fecha_presentacion": "Presentación", "tipo_reunion_nombre": "Tipo de reunión", "alcance": "Alcance", "referato": "Referato",
+    "fecha_presentacion": "Presentación", "tipo_reunion_nombre": "Tipo de evento científico", "alcance": "Alcance", "referato": "Referato",
     "nombre_revista": "Revista / libro", "issn": "ISSN / ISBN", "pais": "País", "fecha_publicacion": "Publicación",
     "tipo_revista_nombre": "Tipo de publicación", "descripcion": "Descripción", "proyecto_codigo": "Código del proyecto",
     "proyecto_nombre": "Proyecto", "nombre_articulo": "Denominación", "organismo_registrante": "Organismo registrante",
@@ -47,7 +47,7 @@ DETAIL_SECTIONS = (
     ("equipamiento", "Equipamiento", "denominacion descripcion_breve fecha_incorporacion monto_invertido moneda"),
     ("erogaciones", "Movimientos financieros", "numero_movimiento fecha tipo_movimiento monto moneda tipo_cambio_aplicado monto_equivalente_ars fecha_cotizacion serie_bcra fuente_financiamiento_nombre categoria_erogacion_codigo categoria_erogacion_nombre equipamiento_denominacion"),
     ("transferencias", "Transferencias", "numero_transferencia denominacion tipo_contrato_nombre fecha_inicio fecha_fin demandante adoptantes descripcion_actividad monto moneda"),
-    ("trabajos_reunion", "Trabajos en reuniones científicas", "titulo_trabajo nombre_reunion tipo_reunion_nombre alcance referato procedencia fecha_presentacion autores enlace"),
+    ("trabajos_reunion", "Trabajos en reuniones científicas", "titulo_trabajo nombre_reunion tipo_reunion_nombre alcance referato procedencia fecha_presentacion expositores enlace"),
     ("trabajos_revista", "Publicaciones", "titulo_trabajo nombre_revista tipo_revista_nombre referato editorial pais issn fecha_publicacion autores enlace"),
     ("distinciones", "Distinciones", "descripcion fecha proyecto_codigo proyecto_nombre"),
     ("registros", "Registros y patentes", "nombre_articulo tipo_registro_nombre organismo_registrante fecha_registro"),
@@ -77,7 +77,7 @@ def display(value):
 
 
 def describe(item, fields):
-    return "\n".join(f"{LABELS[field]}: {display(item.get(field))}" for field in fields)
+    return "\n".join(f"{LABELS[field]}: {display(item.get(field) if field != 'expositores' else item.get(field) or 'Sin informar')}" for field in fields)
 
 
 def write_academic_detail(writer, sources, context, helpers, classifiers):

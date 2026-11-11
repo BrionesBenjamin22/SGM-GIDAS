@@ -431,13 +431,17 @@ class ExportService:
         )
 
     @staticmethod
+    def _expositores_texto(expositores):
+        return ", ".join(f"{a['nombre_apellido']} ({a['tipo']})" for a in (expositores or [])) or "Sin informar"
+
+    @staticmethod
     def _autores_texto(autores):
         return ", ".join(f"{a['nombre_apellido']} ({a['tipo']})" for a in autores) or "-"
 
     @staticmethod
     def _get_trabajos_reunion(grupo_id: int):
         return (
-            TrabajoReunionCientifica.query.options(joinedload(TrabajoReunionCientifica.tipo_reunion_cientifica), selectinload(TrabajoReunionCientifica.autorias))
+            TrabajoReunionCientifica.query.options(joinedload(TrabajoReunionCientifica.tipo_reunion_cientifica), selectinload(TrabajoReunionCientifica.expositores))
             .filter(TrabajoReunionCientifica.grupo_utn_id == grupo_id, TrabajoReunionCientifica.deleted_at.is_(None))
             .order_by(TrabajoReunionCientifica.fecha_presentacion.desc(), TrabajoReunionCientifica.id.desc())
             .all()
@@ -1143,11 +1147,11 @@ class ExportService:
                 "alcance": trabajo.alcance, "referato": trabajo.referato,
             }) == category]
             rows = [[idx, trabajo.nombre_reunion, trabajo.procedencia, trabajo.fecha_presentacion,
-                     cls._autores_texto([a.serialize() for a in trabajo.autorias]),
+                     cls._expositores_texto([a.serialize() for a in trabajo.expositores]),
                      trabajo.titulo_trabajo + ("\nEnlace: " + trabajo.enlace if trabajo.enlace else "")]
                     for idx, trabajo in enumerate(items, 1)]
             row = cls._write_table(ws, row, title, ["Nro.", "Nombre reunión", location,
-                "Fecha de presentación", "Autores", "Título trabajo"], rows, merge_span=10, date_cols={4})
+                "Fecha de presentación", "Expositores", "Título trabajo"], rows, merge_span=10, date_cols={4})
         excluidos = [trabajo for trabajo in trabajos_reunion if meeting_category({
             "alcance": trabajo.alcance, "referato": trabajo.referato,
         }) == "sin clasificar"]
@@ -1157,10 +1161,10 @@ class ExportService:
             for column in "ABCDEFGH":
                 detalle.column_dimensions[column].width = 28
             cls._write_table(detalle, 1, "Trabajos en reuniones fuera de la sección 7",
-                ["Nro.", "Nombre reunión", "Procedencia", "Fecha de presentación", "Autores",
+                ["Nro.", "Nombre reunión", "Procedencia", "Fecha de presentación", "Expositores",
                  "Título trabajo", "Referato", "Alcance"],
                 [[idx, trabajo.nombre_reunion, trabajo.procedencia, trabajo.fecha_presentacion,
-                  cls._autores_texto([a.serialize() for a in trabajo.autorias]),
+                  cls._expositores_texto([a.serialize() for a in trabajo.expositores]),
                   trabajo.titulo_trabajo + ("\nEnlace: " + trabajo.enlace if trabajo.enlace else ""),
                   "Sí" if trabajo.referato is True else "No" if trabajo.referato is False else "Sin informar",
                   {"nacional": "Nacional", "internacional": "Internacional"}.get(trabajo.alcance, "Sin informar")]

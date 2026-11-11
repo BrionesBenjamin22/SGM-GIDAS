@@ -1,5 +1,23 @@
 # Memorias
 
+## ISS-26: expositores congelados y exportaciones
+
+Los nuevos snapshots de reuniones guardan `expositores` con nombre, categoría,
+referencia e identidad al cierre. La API serializa esa colección sin consultar
+nombres actuales; modificaciones posteriores del personal o del trabajo no
+alteran la versión. Los snapshots previos sin ese atributo muestran Sin informar,
+sin reinterpretar las autorías legadas como expositores.
+
+Excel de grupo y Excel de versión presentan Expositores en 7.1 y 7.2; el detalle
+académico comparte esa colección y la etiqueta Tipo de evento científico.
+Se mantienen las reglas de inclusión por alcance y referato. Revistas conserva
+sus autores. La seed 2025 usa los expositores originales y no inventa legajos
+para nombres externos; sus ejecuciones idempotentes no convierten cargas previas.
+
+Aceptado el 11/11/2026. Probados snapshots inmutables, ausencia de conversiones
+históricas, ambas exportaciones, permisos y seed 2025. La integración FTS local
+permanece vinculada a la etapa de búsqueda ISS-95, sin activar ese motor.
+
 ## Vínculo profesional congelado (ISS-28)
 
 Al cerrar una versión, `snapshot_personal_para_memoria_version` guarda

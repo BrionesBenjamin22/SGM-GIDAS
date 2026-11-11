@@ -453,12 +453,12 @@ def render_memoria(workbook, sources, context, helpers):
     for start, end, category in ((212, 217, "nacional"), (221, 222, "internacional")):
         items = [item for item in sources["trabajos_reunion"] if meeting_category(item) == category]
         w.table(start, end, ["A", "B", "C", "D", "E", "F"], [[i, item.get("nombre_reunion"), item.get("procedencia"),
-            civil_date(item.get("fecha_presentacion")), helpers._autores_texto(item.get("autores", [])),
+            civil_date(item.get("fecha_presentacion")), helpers._expositores_texto(item.get("expositores")),
             (item.get("titulo_trabajo") or "-") + ("\nEnlace: " + item["enlace"] if item.get("enlace") else "")]
             for i, item in enumerate(items, 1)])
     for header in (211, 220):
         w.set(header, "D", "Fecha de presentación", content=False)
-        w.set(header, "E", "Autores", content=False)
+        w.set(header, "E", "Expositores", content=False)
     revistas = [item for item in sources["trabajos_revista"] if publication_category(item) == "revista"]
     w.table(227, 229, ["A", "B", "C", "D", "E", "F"], [[i, item.get("nombre_revista"), item.get("pais"), item.get("editorial"), item.get("issn"),
         (item.get("titulo_trabajo") or "-") + "\nAutores: " + helpers._autores_texto(item.get("autores", [])) +

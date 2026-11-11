@@ -530,6 +530,19 @@ export default function MemoriaVersionDetalle() {
                   </div>
                 </div>
 
+                {section.key === "trabajos-reunion-cientifica" && section.items.length > 0 && (
+                  <div className="mt-3 space-y-2 text-sm">
+                    <p className="font-medium">Expositores al cierre</p>
+                    <ul className="space-y-2">
+                      {section.items.map((entry, index) => <li key={String(entry.id ?? index)}>
+                        <span className="font-medium">{String(entry.titulo_trabajo ?? "Trabajo")}: </span>
+                        {Array.isArray(entry.expositores) && entry.expositores.length
+                          ? entry.expositores.map((persona: { nombre_apellido?: string }) => persona.nombre_apellido).join(", ") : "Sin informar"}
+                      </li>)}
+                    </ul>
+                  </div>
+                )}
+
                 {section.items.length > 0 && section.homePath && (
                   <button
                     type="button"

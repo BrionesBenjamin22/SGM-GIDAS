@@ -1,5 +1,15 @@
 # Memorias
 
+## ISS-26: expositores al cierre
+
+MemoriaVersionDetalle muestra los nombres congelados de los expositores de cada
+trabajo en la sección de reuniones científicas. Consume `entry.expositores` del
+snapshot; una colección ausente o vacía presenta Sin informar. No utiliza las
+autorías legadas ni completa datos con el personal actual. Las exportaciones
+7.1 y 7.2 usan la misma colección; las publicaciones de revistas mantienen autores.
+Se conservan navegación contextual, permisos y estados de consulta existentes.
+Aceptado por el usuario el 11/11/2026; verificados tests frontend, tipos y build.
+
 ## Consulta del vínculo profesional por versión (ISS-28)
 
 `PersonalSnapshotDialog` incorpora Vínculo con el grupo cuando el snapshot
