@@ -1,5 +1,21 @@
 # Memorias
 
+## Consulta del vínculo profesional por versión (ISS-28)
+
+`PersonalSnapshotDialog` incorpora Vínculo con el grupo cuando el snapshot
+contiene profesionales. Presenta Interno, Externo o Sin informar a partir de los
+datos de la versión solicitada. Para otras funciones muestra un guion.
+La tabla conserva nueve filas por página, etiquetas accesibles y controles de
+cierre y navegación. Reutiliza `formatVinculoProfesional` del módulo Personal.
+
+El endpoint de snapshots de Personal entrega `vinculo_profesional` y
+`es_profesional`, calculado en backend sobre la función congelada. La vista utiliza
+solo esos datos, incluidos los valores vacíos de versiones anteriores.
+
+Aceptado el 11/11/2026. Pruebas SSR de versiones antiguas y ambos valores,
+paginación y consulta real de dos versiones cerradas en Chrome aprobadas.
+El Excel institucional conserva sus columnas y la ubicación en 2.2.
+
 ## Acciones del listado y confirmaciones (ISS-100)
 
 La fila principal de `MemoriasHome` permite reabrir una memoria activa cuya

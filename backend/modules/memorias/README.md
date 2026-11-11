@@ -1,5 +1,24 @@
 # Memorias
 
+## Vínculo profesional congelado (ISS-28)
+
+Al cerrar una versión, `snapshot_personal_para_memoria_version` guarda
+`vinculo_profesional` y la denominación de su función. La consulta conjunta evita
+mezclar el vínculo con un renombrado concurrente del catálogo. La columna admite
+`interno`, `externo` y `null`, con migración reversible `a9d2f7c4b1e6`.
+
+`GET /api/v1/memorias/{id}/versiones/{version_id}/personal` entrega el vínculo y
+`es_profesional` derivado del nombre congelado. Las versiones anteriores conservan
+`null`; los cambios posteriores de la ficha no reescriben el snapshot. Se mantienen
+la validación de pertenencia de la versión, los roles y el aislamiento por UCT.
+
+El Excel institucional usa el mismo criterio de función profesional y agrupa
+internos y externos en 2.2. Personal Profesional. La plantilla conserva sus
+columnas de número, nombre y horas semanales. El vínculo se consulta en la web.
+
+Aceptado el 11/11/2026. Cierre de dos versiones, modificación intermedia del
+vínculo, inmutabilidad y ubicación en Excel verificados con PostgreSQL y Chrome.
+
 ## Consumo desde el home (ISS-100)
 
 El frontend reutiliza `PUT /api/v1/memorias/{id}/reabrir` desde la fila

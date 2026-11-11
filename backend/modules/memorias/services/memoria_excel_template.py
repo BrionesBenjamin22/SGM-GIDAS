@@ -16,6 +16,7 @@ from openpyxl.worksheet.cell_range import CellRange, MultiCellRange
 from modules.memorias.services.memoria_excel_detail import (
     MISSING, civil_date, describe, write_academic_detail,
 )
+from modules.personal.services.tipo_personal_compatibilidad import es_funcion_profesional
 
 EMPTY = "No registra datos en este período."
 # Sólo títulos, instrucciones y nombres de columnas. Nunca ejemplos ni valores.
@@ -344,7 +345,7 @@ def transfer_category(item):
 
 def personal_category(item):
     kind = normalized(item.get("tipo_personal_nombre"))
-    if "profesional" in kind:
+    if es_funcion_profesional(item.get("tipo_personal_nombre")):
         return "profesional"
     if "apoyo" in kind or "tecnico" in kind or "administrativ" in kind:
         return "apoyo"

@@ -19,6 +19,15 @@ semántico cuando se publica una entrega.
 - Aceptado por el usuario el 11/11/2026. Opciones sujetas a revisión posterior
   para la entrega institucional en ISS-101.
 
+### ISS-28: vínculo profesional en las versiones de Memorias
+
+- Cada versión cerrada conserva su vínculo. La consulta web muestra Interno,
+  Externo o Sin informar con los datos congelados.
+- La clasificación profesional del Excel comparte el criterio de Personal.
+  Internos y externos se ubican en 2.2 con las columnas institucionales actuales.
+- Aceptado el 11/11/2026. Verificados 52 tests backend, 276 frontend, TypeScript,
+  build de producción, migración reversible en PostgreSQL y flujo en Chrome.
+
 ### ISS-25: referato y alcance de trabajos científicos
 
 - El alta y la edición de reuniones requieren referato Sí/No y alcance

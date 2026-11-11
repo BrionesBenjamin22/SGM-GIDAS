@@ -3,6 +3,7 @@ import Button from "@/components/Button";
 import Table, { type TableColumn } from "@/components/Table";
 import { formatFecha } from "@/utils/dateTime";
 import type { MemoriaSnapshotEntry } from "@/modules/memorias/services/memoriasService";
+import { formatVinculoProfesional } from "@/modules/personal/utils/personalHistory";
 
 interface Props {
   sectionKey: string;
@@ -49,6 +50,13 @@ export default function PersonalSnapshotDialog({ sectionKey, title, versionLabel
     { id: "becas", header: "Becas", render: row => text(row.becas_percibidas) },
     { id: "fuentes", header: "Financiamiento", render: row => text(row.fuentes_financiamiento_beca) },
   );
+  if (sectionKey === "personal" && items.some(row => row.es_profesional === true)) {
+    columns.splice(2, 0, {
+      id: "vinculo_profesional",
+      header: "Vínculo con el grupo",
+      render: row => row.es_profesional === true ? formatVinculoProfesional(row.vinculo_profesional) : "—",
+    });
+  }
 
   return <dialog ref={dialogRef} aria-labelledby={titleId} aria-describedby={descriptionId}
     onCancel={event => { event.preventDefault(); onClose(); }}

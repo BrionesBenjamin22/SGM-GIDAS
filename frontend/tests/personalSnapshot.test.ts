@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { runInNewContext } from "node:vm";
 import test from "node:test";
 import ts from "typescript";
+import { formatVinculoProfesional } from "../src/modules/personal/utils/personalHistory.ts";
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -18,6 +19,7 @@ function load(file: string, page = 1): any {
     if (name === "@/components/Button") return { default: "button" };
     if (name === "@/components/LoadingSkeleton") return { default: "div" };
     if (name === "@/components/Table") return load("src/components/Table.tsx");
+    if (name === "@/modules/personal/utils/personalHistory") return { formatVinculoProfesional };
     if (name === "@/utils/dateTime") return { formatFecha: (value: string) => value.split("-").reverse().join("/") };
     return require(name);
   } });
@@ -49,5 +51,21 @@ test("consulta histórica pagina a nueve y no completa datos ausentes con valore
     assert.match(html, /Sin dato/);
     assert.equal((html.match(/Histórico /g) || []).length, page === 1 ? 9 : 2);
     assert.equal(html.includes("Histórico 10"), page === 2);
+  }
+});
+
+test("consulta la relación profesional guardada y admite versiones antiguas", () => {
+  const Dialog = load("src/modules/memorias/components/PersonalSnapshotDialog.tsx").default;
+  const html = renderToStaticMarkup(React.createElement(Dialog, {
+    sectionKey: "personal", title: "Personal", versionLabel: "Versión 1", onClose() {},
+    items: [
+      { id: 1, nombre_apellido: "Profesional histórico", es_profesional: true },
+      { id: 2, nombre_apellido: "Profesional externo", es_profesional: true, vinculo_profesional: "externo" },
+      { id: 3, nombre_apellido: "Profesional interno", es_profesional: true, vinculo_profesional: "interno" },
+      { id: 4, nombre_apellido: "Personal de apoyo", es_profesional: false },
+    ],
+  }));
+  for (const value of ["Vínculo con el grupo", "Sin informar", "Externo", "Interno", "—"]) {
+    assert.ok(html.includes(value), value);
   }
 });
