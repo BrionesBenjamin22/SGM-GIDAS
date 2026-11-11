@@ -1,5 +1,13 @@
 # Busqueda global
 
+## ISS-26: presentación de expositores
+
+Los resultados de reuniones muestran Expositores desde `extra.expositores`.
+Los resultados de revistas siguen mostrando Autores desde `extra.autores`.
+Se conservan destinos, filtros, paginación y permisos. Esta adaptación no incluye
+la activación ni el refactor pendiente del motor FTS de ISS-95.
+Aceptado por el usuario el 11/11/2026.
+
 Los movimientos financieros recuperados enlazan a `/movimientos/:id`. El detalle
 conserva el contexto de retorno a Búsqueda; el listado financiero muestra los
 registros de la UCT activa.

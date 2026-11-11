@@ -8,6 +8,21 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-26: expositores de trabajos en reuniones científicas
+
+- Las reuniones permiten varios expositores del grupo, de todas las categorías,
+  y externos por nombre, con guardado consolidado, validaciones e historial.
+- Altas requieren un expositor; ediciones envían diferencias y permiten conservar
+  registros legados sin información. Las autorías de revistas mantienen su significado.
+- Nuevos snapshots congelan expositores; ambos Excel los muestran en 7.1/7.2.
+  Los datos anteriores permanecen sin convertir y muestran Sin informar.
+- La búsqueda distingue Expositores de Autores. El refactor FTS de ISS-95 queda
+  pendiente de aceptación y se excluye de estos commits.
+- Tipo de evento científico aclara la clase de evento con ejemplos de la memoria
+  original: Congreso (CICE/COSAPRO) y Jornada (FCM-UNLP), separado de alcance y referato.
+- Aceptado visual y funcionalmente el 11/11/2026. Verificados 124 tests backend,
+  279 frontend, tipos, build y triggers PostgreSQL con rollback de las pruebas.
+
 ### ISS-28: vínculo del personal profesional
 
 - Personal permite informar Interno o Externo en alta, edición y reclasificación,

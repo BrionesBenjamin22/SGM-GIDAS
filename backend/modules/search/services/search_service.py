@@ -982,7 +982,7 @@ class SearchService:
             db.session.query(TrabajoReunionCientifica)
             .options(
                 joinedload(TrabajoReunionCientifica.tipo_reunion_cientifica),
-                selectinload(TrabajoReunionCientifica.autorias),
+                selectinload(TrabajoReunionCientifica.expositores),
                 joinedload(TrabajoReunionCientifica.grupo_utn)
             ),
             TrabajoReunionCientifica,
@@ -997,16 +997,16 @@ class SearchService:
             titulo_norm = SearchService.normalize_text(tr.titulo_trabajo)
             reunion_norm = SearchService.normalize_text(tr.nombre_reunion)
             procedencia_norm = SearchService.normalize_text(tr.procedencia)
-            autores_norm = [
-                SearchService.normalize_text(autor.integrante.nombre_apellido)
-                for autor in tr.autorias
+            expositores_norm = [
+                SearchService.normalize_text(autor.serialize()["nombre_apellido"])
+                for autor in tr.expositores
             ]
             
             if (
                 query_normalized in titulo_norm
                 or query_normalized in reunion_norm
                 or query_normalized in procedencia_norm
-                or any(query_normalized in inv for inv in autores_norm)
+                or any(query_normalized in inv for inv in expositores_norm)
             ):
 
                 resultados.append(SearchService.with_status(tr, {
@@ -1026,7 +1026,7 @@ class SearchService:
                             tr.grupo_utn.nombre_unidad_academica
                             if tr.grupo_utn else None
                         ),
-                        "autores": [autor.serialize() for autor in tr.autorias]
+                        "expositores": [autor.serialize() for autor in tr.expositores]
                     }
                 }))
                 

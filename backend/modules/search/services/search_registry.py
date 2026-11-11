@@ -307,7 +307,7 @@ SEARCH_ENTITIES = [
             "title": t.titulo_trabajo,
             "description": f"{t.nombre_reunion} – {t.tipo_reunion_cientifica}",
             "extra": {
-                "autores": [a.serialize() for a in t.autorias],
+                "expositores": [a.serialize() for a in t.expositores],
                 "procedencia": t.procedencia,
                 "fecha": (
                     t.fecha_presentacion.isoformat()

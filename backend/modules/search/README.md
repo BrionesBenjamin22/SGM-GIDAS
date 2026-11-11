@@ -1,5 +1,23 @@
 # Modulo backend de busqueda
 
+## ISS-26: expositores de reuniones
+
+La búsqueda de reuniones utiliza los nombres de `TrabajoReunionExpositor`, tanto
+internos de todas las categorías como externos. El resultado entrega
+`extra.expositores` con referencia, categoría, nombre e identidad; las autorías
+legadas no se presentan bajo este encabezado. Revistas conserva `extra.autores`.
+El registro de serialización y la consulta mantienen sus contratos generales,
+permisos, filtros y límites existentes.
+
+La adaptación se versiona sobre el buscador vigente. El refactor FTS, sus
+proveedores, proyecciones, herramientas y migraciones locales de integración
+permanecen en ISS-95 y requieren su aceptación independiente. La migración local
+`d6a0c4e8b2f7` y `search_expositores_v1.sql` se versionarán junto a esas dependencias,
+sin repetirlas sobre la base de desarrollo donde ya están instaladas.
+
+Aceptado el 11/11/2026; pruebas de recuperación por personal y externos, separación
+de autorías de revistas y ausencia de expositores deducidos de datos legados.
+
 Los resultados de movimientos consultan `MovimientoFinanciero`, presentan número,
 tipo y estado, y enlazan a `/movimientos/:id`. La búsqueda es global entre grupos;
 la semilla de pruebas registra movimientos en la UCT activa para que también

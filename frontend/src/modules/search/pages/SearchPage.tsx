@@ -205,6 +205,9 @@ export default function SearchPage() {
         break;
 
       case "Trabajo en Reunión Científica":
+        items = getExtraNames(extra, "expositores");
+        label = "Expositores";
+        break;
       case "Trabajo en Revista con Referato":
         items = getExtraNames(extra, "autores");
         label = "Autores";
