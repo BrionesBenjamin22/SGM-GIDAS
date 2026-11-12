@@ -8,6 +8,24 @@ semántico cuando se publica una entrega.
 
 ## [Sin publicar]
 
+### ISS-27: múltiples jornadas en reuniones científicas
+
+- Los trabajos en reuniones admiten una jornada, rangos y fechas separadas,
+  con validación civil, compatibilidad de fecha única y guardado consolidado.
+- Calendario compacto con rango por dos clics, vista previa, entrada manual y
+  selección pendiente cancelable. El panel queda dentro de la ventana y mantiene
+  seis filas al navegar por meses para evitar cambios de altura y posición.
+- Listado, detalle e historial muestran las fechas completas; el filtro de año
+  considera todas las jornadas. Se mantienen paginaciones de nueve y tres.
+- Memorias incluye cada reunión una vez cuando alguna jornada coincide con el
+  período y congela el conjunto completo. Excel de grupo, formulario institucional
+  y detalle representan rangos y días separados sin completar huecos.
+- Migración aditiva con jornadas por trabajo y backfill desde la fecha propia
+  de cada snapshot. Se conservan permisos, auditoría, baja lógica y aislamiento UCT.
+- Aceptado el 12/11/2026. Verificados 288 tests frontend, 60 backend relacionados,
+  34 de aislamiento UCT, TypeScript y build. La integración local con ISS-95 queda
+  junto a esa etapa pendiente y no implica aceptar ni activar búsqueda FTS.
+
 ### ISS-26: expositores de trabajos en reuniones científicas
 
 - Las reuniones permiten varios expositores del grupo, de todas las categorías,

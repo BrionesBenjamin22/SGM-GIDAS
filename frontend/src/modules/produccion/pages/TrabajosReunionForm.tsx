@@ -1,3 +1,4 @@
+import { eventDates, draftEventDates, sameDates, dateKey, civilDate, errorEventDates } from "@/utils/eventDates";
 import { referatoValue, procedenciaLabel, type AlcanceTrabajo } from "@/modules/produccion/utils/clasificacionTrabajo";
 import { updateLiveValidationErrors } from "@/lib/liveValidation";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
@@ -31,7 +32,6 @@ import { useIntegrantesExpositores } from "@/modules/produccion/hooks/useIntegra
 import { mismosExpositores, expositorReferencia, errorExpositores, type Expositor } from "@/modules/produccion/services/trabajoExpositoresServices";
 import { useAuth } from "@/context/AuthContext";
 import { useUctGuard } from "@/modules/grupo/hooks/useUctGuard";
-import { toCivilDateString } from "@/utils/dateTime";
 import { useFormDraft } from "@/modules/shared/hooks/useFormDraft";
 import DraftRecoveryNotice from "@/modules/shared/components/DraftRecoveryNotice";
 import DraftLeaveControls from "@/modules/shared/components/DraftLeaveControls";
@@ -61,7 +61,7 @@ export default function TrabajoReunionForm() {
   const [titulo, setTitulo] = useState("");
   const [nombreReunion, setNombreReunion] = useState("");
   const [procedencia, setProcedencia] = useState("");
-  const [fechaPresentacion, setFechaPresentacion] = useState<Date | null>(null);
+  const [fechasPresentacion, setFechasPresentacion] = useState<Date[]>([]);
   const [tipoId, setTipoId] = useState<number | null>(null);
   const [expositores, setExpositores] = useState<Expositor[]>([]);
 
@@ -79,8 +79,8 @@ export default function TrabajoReunionForm() {
     setTitulo(initialData.titulo_trabajo ?? "");
     setNombreReunion(initialData.nombre_reunion ?? "");
     setProcedencia(initialData.procedencia ?? "");
-    setFechaPresentacion(
-      initialData.fecha_presentacion ? new Date(`${initialData.fecha_presentacion}T00:00:00`) : null
+    setFechasPresentacion(
+      eventDates(initialData).map(civilDate)
     );
     setTipoId(initialData.tipo_reunion?.id ?? null);
     setExpositores(initialData.expositores ?? []);
@@ -90,24 +90,16 @@ export default function TrabajoReunionForm() {
     userId: user?.id,
     module: "produccion-reuniones",
     recordId: id,
-    value: { referato, alcance, enlace, titulo, nombreReunion, procedencia, fechaPresentacion: toCivilDateString(fechaPresentacion), tipoId, expositores },
+    value: { referato, alcance, enlace, titulo, nombreReunion, procedencia, fechasPresentacion: fechasPresentacion.map(dateKey), tipoId, expositores },
     ready: !isEdit || (!isLoading && Boolean(initialData)),
     autosave: false,
-    hasContent: (draft) => Boolean(draft.referato != null || draft.alcance || draft.enlace || draft.titulo || draft.nombreReunion || draft.procedencia || draft.fechaPresentacion || draft.tipoId || (draft.expositores ?? []).length),
-    onRestore: (draft) => { setReferato(draft.referato ?? null); setAlcance(draft.alcance ?? null); setEnlace(draft.enlace); setTitulo(draft.titulo); setNombreReunion(draft.nombreReunion); setProcedencia(draft.procedencia); setFechaPresentacion(draft.fechaPresentacion ? new Date(`${draft.fechaPresentacion}T00:00:00`) : null); setTipoId(draft.tipoId); setExpositores(draft.expositores ?? []); },
+    hasContent: (draft) => Boolean(draft.referato != null || draft.alcance || draft.enlace || draft.titulo || draft.nombreReunion || draft.procedencia || draft.fechasPresentacion?.length || draft.tipoId || (draft.expositores ?? []).length),
+    onRestore: (draft) => { setReferato(draft.referato ?? null); setAlcance(draft.alcance ?? null); setEnlace(draft.enlace); setTitulo(draft.titulo); setNombreReunion(draft.nombreReunion); setProcedencia(draft.procedencia); setFechasPresentacion(draftEventDates(draft).map(civilDate)); setTipoId(draft.tipoId); setExpositores(draft.expositores ?? []); },
   });
 
-  const formatDateStr = (date: Date | null) => {
-    if (!date) return null;
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  };
-
-  const validationValues = { referato, alcance, enlace, titulo, nombreReunion, procedencia, fechaPresentacion, tipoId, expositores };
+  const validationValues = { referato, alcance, enlace, titulo, nombreReunion, procedencia, fechasPresentacion, tipoId, expositores };
   const getValidationErrors = (changes: Partial<typeof validationValues> = {}) => {
-    const { referato, alcance, enlace, titulo, nombreReunion, procedencia, fechaPresentacion, tipoId, expositores } = { ...validationValues, ...changes };
+    const { referato, alcance, enlace, titulo, nombreReunion, procedencia, fechasPresentacion, tipoId, expositores } = { ...validationValues, ...changes };
     const newErrors: Record<string, string> = {};
 
     if (referato == null) newErrors.referato = "Seleccione Sí o No.";
@@ -131,9 +123,8 @@ export default function TrabajoReunionForm() {
       newErrors.tipoId = "Seleccione el tipo de evento científico.";
     }
 
-    if (!fechaPresentacion) {
-      newErrors.fechaPresentacion = "Debe seleccionar la fecha de presentación";
-    }
+    const fechasError = errorEventDates(fechasPresentacion);
+    if (fechasError) newErrors.fechasPresentacion = fechasError;
 
     const errorSeleccion = errorExpositores(expositores, !isEdit || !mismosExpositores(expositores, initialData?.expositores ?? []));
     if (errorSeleccion) newErrors.expositores = errorSeleccion;
@@ -175,7 +166,7 @@ export default function TrabajoReunionForm() {
       });
     },
     onError: (error) => {
-      if (applyFieldErrors(error, setErrors, ["referato","alcance","enlace","titulo","nombreReunion","procedencia","tipoId","fechaPresentacion","expositores"])) return;
+      if (applyFieldErrors(error, setErrors, ["referato","alcance","enlace","titulo","nombreReunion","procedencia","tipoId","fechasPresentacion","expositores"])) return;
       const backendMessage = getErrorMessage(
         error,
         isEdit
@@ -203,7 +194,7 @@ export default function TrabajoReunionForm() {
       titulo_trabajo: toTitleCase(titulo.trim()),
       nombre_reunion: toTitleCase(nombreReunion.trim()),
       procedencia: toTitleCase(procedencia.trim()),
-      fecha_presentacion: formatDateStr(fechaPresentacion)!,
+      fechas_presentacion: fechasPresentacion.map(dateKey).sort(),
       tipo_reunion_id: tipoId!,
       grupo_utn_id: uct.id,
     };
@@ -221,13 +212,14 @@ export default function TrabajoReunionForm() {
       titulo_trabajo: initialData?.titulo_trabajo ?? "",
       nombre_reunion: initialData?.nombre_reunion ?? "",
       procedencia: initialData?.procedencia ?? "",
-      fecha_presentacion: initialData?.fecha_presentacion ?? null,
+      fechas_presentacion: initialData ? eventDates(initialData) : [],
       tipo_reunion_id: initialData?.tipo_reunion?.id ?? null,
       grupo_utn_id: uct.id,
     };
 
     const changedPayload = Object.fromEntries(
       Object.entries(payload).filter(([key, value]) => {
+        if (key === "fechas_presentacion") return !sameDates(payload.fechas_presentacion, initialPayload.fechas_presentacion);
         if (key === "expositores") return !mismosExpositores(expositores, initialPayload.expositores);
         return initialPayload[key as keyof typeof initialPayload] !== value;
       })
@@ -405,14 +397,15 @@ export default function TrabajoReunionForm() {
           </>
         </Field>
 
-        <Field required label="Fecha de presentación" name="fechaPresentacion" error={errors.fechaPresentacion}>
+        <Field required label="Fechas del evento" name="fechasPresentacion" error={errors.fechasPresentacion}>
           <Calendar
-            value={fechaPresentacion}
+            mode="multiple"
+            value={fechasPresentacion}
             onChange={(date) => {
-              setFechaPresentacion(date);
-              validateChangedField("fechaPresentacion", { fechaPresentacion: date });
+              setFechasPresentacion(date);
+              validateChangedField("fechasPresentacion", { fechasPresentacion: date });
             }}
-            className={inputClass("fechaPresentacion")}
+            className={inputClass("fechasPresentacion")}
             helperText="Desde 01/01/2010. Puede indicar una presentación programada."
           />
         </Field>

@@ -1021,6 +1021,7 @@ class SearchService:
                             tr.tipo_reunion_cientifica.nombre
                             if tr.tipo_reunion_cientifica else None
                         ),
+                        "fechas_presentacion": [j.fecha.isoformat() for j in tr.jornadas] or [tr.fecha_presentacion.isoformat()],
                         "procedencia": tr.procedencia,
                         "grupo": (
                             tr.grupo_utn.nombre_unidad_academica

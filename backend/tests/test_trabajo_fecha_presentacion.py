@@ -40,7 +40,7 @@ class FechaPresentacionTest(unittest.TestCase):
         for fecha in ("2009-12-31", "2026-02-30"):
             self.assertEqual(self.client.put(ruta, json={"fecha_presentacion": fecha}, headers=self.headers).status_code, 400)
         historial = self.client.get(ruta + "/historial", headers=self.headers).get_json()
-        self.assertEqual([i["campo"] for i in historial].count("fecha_presentacion"), 1)
+        self.assertEqual([i["campo"] for i in historial].count("fechas_presentacion"), 1)
         payload["titulo_trabajo"] = "Solicitud de consumidor anterior"
         payload["fecha_inicio"] = payload.pop("fecha_presentacion")
         self.assertEqual(self.client.post("/reuniones", json=payload, headers=self.headers).status_code, 201)

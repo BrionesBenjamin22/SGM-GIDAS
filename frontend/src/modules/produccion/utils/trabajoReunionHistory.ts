@@ -1,3 +1,5 @@
+// @ts-expect-error Native Node tests require the TypeScript extension.
+import { formatEventDates, sameDates } from "../../../utils/eventDates.ts";
 // @ts-expect-error Las pruebas nativas de Node requieren la extensión TypeScript.
 import { referatoLabel, alcanceLabel } from "./clasificacionTrabajo.ts";
 import type { HistorialTrabajoReunionItem } from "@/modules/produccion/services/trabajosReunionServices";
@@ -9,6 +11,7 @@ const FIELD_LABELS: Record<string, string> = {
   titulo_trabajo: "Título del trabajo",
   nombre_reunion: "Nombre de la reunión",
   procedencia: "Procedencia",
+  fechas_presentacion: "Fechas del evento",
   fecha_inicio: "Fecha de presentación",
   fecha_presentacion: "Fecha de presentación",
   tipo_reunion_id: "Tipo de evento científico",
@@ -59,6 +62,7 @@ export function isVisibleTrabajoReunionHistoryItem(item: HistorialTrabajoReunion
   const field = item.campo?.trim().toLocaleLowerCase("es") ?? "";
   if (!field || HIDDEN_FIELDS.has(field)) return false;
   if (getAutorEvent(item)) return true;
+  if (field === "fechas_presentacion" && Array.isArray(item.valor_anterior) && Array.isArray(item.valor_nuevo) && sameDates(item.valor_anterior, item.valor_nuevo)) return false;
   if (areEquivalentHistoryValues(item.valor_anterior, item.valor_nuevo)) return false;
   if (["referato", "alcance"].includes(field)) return true;
   return !(isEmptyHistoryValue(item.valor_anterior) && !isEmptyHistoryValue(item.valor_nuevo));
@@ -70,6 +74,7 @@ function formatDate(value: unknown) {
 }
 
 function formatHistoryValue(value: unknown, field: string, tipoNames: Record<number, string>) {
+  if (field === "fechas_presentacion" && Array.isArray(value)) return formatEventDates(value);
   if (field === "referato") return referatoLabel(value);
   if (field === "alcance") return alcanceLabel(value);
   if (isEmptyHistoryValue(value)) return "Sin dato";

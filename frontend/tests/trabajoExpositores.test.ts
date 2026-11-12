@@ -11,6 +11,7 @@ function load(file: string, mocks: Record<string, unknown> = {}) {
   const code = ts.transpileModule(readFileSync(file, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   runInNewContext(code, { URL, module, exports: module.exports, require: (name: string) => {
     if (name in mocks) return mocks[name];
+    if (name === "@/utils/eventDates") return require("../src/utils/eventDates.ts");
     if (name === "@/lib/liveValidation") return require("../src/lib/liveValidation.ts");
     if (name === "../../../lib/textValidation") return require("../src/lib/textValidation.ts");
     if (name === "@/utils/dateTime") return { toCivilDateString: (date: Date | null) => date?.toISOString().slice(0, 10) ?? "" };

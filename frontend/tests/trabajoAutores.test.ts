@@ -14,6 +14,8 @@ function load(file: string, mocks: Record<string, unknown> = {}) {
     module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX,
   } }).outputText;
   runInNewContext(code, { URL, module, exports: module.exports, require: (name: string) => {
+    if (name === "@/utils/eventDates") return require("../src/utils/eventDates.ts");
+    if (name === "@/modules/produccion/utils/trabajoReunionHistory") return require("../src/modules/produccion/utils/trabajoReunionHistory.ts");
     if (name === "@/lib/liveValidation") return require("../src/lib/liveValidation.ts");
     if (name in mocks) return mocks[name];
     if (name === "@/utils/dateTime") return { toCivilDateString: (date: Date | null) => date ? date.toISOString().slice(0, 10) : "" };
@@ -155,7 +157,7 @@ for (const [page, route] of [
     assert.equal(link.props.rel, "noopener noreferrer");
     assert.match(JSON.stringify(link.props.children), /pestaña nueva/);
     assert.match(text, page === "TrabajosReunionDetalle" ? /Expositores/ : /Autores/);
-    if (page === "TrabajosReunionDetalle") assert.match(text, /Fecha de presentación/);
+    if (page === "TrabajosReunionDetalle") assert.match(text, /Fechas del evento/);
     assert.match(text, /Ana \(Investigador\), Luis \(Becario\)/);
     const edit = nodes.find(node => node.type === "Button" && node.props.children === "Editar");
     assert.ok(edit);
@@ -209,7 +211,7 @@ for (const [page, serviceFile, getName, updateName, createName, route] of [
     const selector = () => render().find(node => node.type === (page === "TrabajosReunionForm" ? "ExpositoresField" : "IntegrantesAutoresField"));
     const submit = () => render().find(node => node.type === "form").props.onSubmit({ preventDefault() {} });
     render(); render();
-    if (page === "TrabajosReunionForm") assert.ok(render().some(node => node.props.label === "Fecha de presentación"));
+    if (page === "TrabajosReunionForm") assert.ok(render().some(node => node.props.label === "Fechas del evento"));
     await submit();
     assert.equal(calls, 0);
     assert.equal(navigations.at(-1)[0], `${route}/8`);

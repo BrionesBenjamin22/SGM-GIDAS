@@ -1,12 +1,13 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { calendarPosition } from "@/utils/calendarPosition";
+import { dateKey, dateRange, civilDate, formatEventDates } from "@/utils/eventDates";
+import { useEffect, useLayoutEffect, useId, useMemo, useRef, useState } from "react";
 import { getInstitutionalMinDate } from "@/utils/dateTime";
 import { calendarValidationMessage } from "@/utils/calendarValidation";
 import { formatDateInput, replaceDateDigit } from "@/utils/dateInput";
 
-type DatePickerProps = {
+type CommonDatePickerProps = {
   label?: string;
-  value: Date | null;
-  onChange: (date: Date | null) => void;
   minDate?: Date;
   maxDate?: Date;
   placeholder?: string;
@@ -15,6 +16,22 @@ type DatePickerProps = {
   disabled?: boolean;
   institutionalRange?: boolean;
 };
+
+type SingleDatePickerProps = CommonDatePickerProps & {
+  mode?: "single";
+  value: Date | null;
+  onChange: (date: Date | null) => void;
+};
+type MultipleDatePickerProps = CommonDatePickerProps & {
+  mode: "multiple";
+  value: Date[];
+  onChange: (dates: Date[]) => void;
+};
+type DatePickerProps = SingleDatePickerProps | MultipleDatePickerProps;
+
+export default function DatePicker(props: DatePickerProps) {
+  return props.mode === "multiple" ? <MultipleDatePicker {...props} /> : <SingleDatePicker {...props} />;
+}
 
 const MONTHS_ES = [
   "Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic",
@@ -65,7 +82,7 @@ function isSameDay(a: Date | null, b: Date | null) {
   );
 }
 
-export default function DatePicker({
+function SingleDatePicker({
   label,
   value,
   onChange,
@@ -76,7 +93,7 @@ export default function DatePicker({
   helperText,
   disabled = false,
   institutionalRange = true,
-}: DatePickerProps) {
+}: SingleDatePickerProps) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<Date>(() => value ?? new Date());
   const [temp, setTemp] = useState<Date | null>(value ?? null);
@@ -328,4 +345,191 @@ export default function DatePicker({
       )}
     </div>
   );
+}
+
+function MultipleDatePicker({ value, onChange, label, disabled, className, helperText,
+  minDate, maxDate, institutionalRange = true }: MultipleDatePickerProps) {
+  const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState<Date[]>([]);
+  const [base, setBase] = useState<Date[]>([]);
+  const [anchor, setAnchor] = useState<Date | null>(null);
+  const [hovered, setHovered] = useState<Date | null>(null);
+  const [appendNext, setAppendNext] = useState(false);
+  const [startInput, setStartInput] = useState("");
+  const [endInput, setEndInput] = useState("");
+  const [manualDirty, setManualDirty] = useState(false);
+  const [inputError, setInputError] = useState("");
+  const [view, setView] = useState<Date>(value[0] ?? new Date());
+  const [position, setPosition] = useState({ top: 8, left: 8, width: 320, maxHeight: 480 });
+  const trigger = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  const id = useId();
+  const minimum = institutionalRange && (!minDate || minDate < getInstitutionalMinDate()) ? getInstitutionalMinDate() : minDate;
+  const invalid = (day: Date) => Boolean((minimum && dateKey(day) < dateKey(minimum)) || (maxDate && dateKey(day) > dateKey(maxDate)));
+  const unique = (dates: Date[]) => [...new Set(dates.map(dateKey))].sort().map(civilDate);
+  const close = () => { setOpen(false); trigger.current?.focus(); };
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const place = () => {
+      if (!trigger.current || !panel.current) return;
+      const next = calendarPosition(trigger.current.getBoundingClientRect(), panel.current.scrollHeight,
+        document.documentElement.clientWidth, window.innerHeight);
+      setPosition(previous => previous.top === next.top && previous.left === next.left &&
+        previous.width === next.width && previous.maxHeight === next.maxHeight ? previous : next);
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    if (panel.current) observer.observe(panel.current);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    panel.current?.focus({ preventScroll: true });
+    const outside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (!trigger.current?.contains(target) && !panel.current?.contains(target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", outside);
+    return () => document.removeEventListener("mousedown", outside);
+  }, [open]);
+
+  function selectDay(day: Date) {
+    if (invalid(day)) return;
+    setView(day); setHovered(null); setInputError(""); setManualDirty(false);
+    if (!anchor) {
+      const previous = appendNext ? pending : [];
+      setBase(previous); setAppendNext(false);
+      setPending(unique([...previous, day])); setAnchor(day);
+      setStartInput(fmt(day)); setEndInput("");
+    } else {
+      setPending(unique([...base, ...dateRange(anchor, day)]));
+      setStartInput(fmt(anchor < day ? anchor : day)); setEndInput(fmt(anchor < day ? day : anchor));
+      setAnchor(null);
+    }
+  }
+
+  function applyManual() {
+    if (!manualDirty) return;
+    const start = parseDateInput(startInput);
+    const end = endInput ? parseDateInput(endInput) : null;
+    const message = !startInput ? "Ingrese la fecha de inicio." :
+      calendarValidationMessage(startInput, start, minimum, maxDate) ||
+      (endInput ? calendarValidationMessage(endInput, end, minimum, maxDate) : "");
+    setInputError(message);
+    if (!start || message) return;
+    setPending(unique([...base, ...(end ? dateRange(start, end) : [start])]));
+    setAnchor(end ? null : start); setView(start); setHovered(null); setAppendNext(false);
+    setStartInput(fmt(end && end < start ? end : start));
+    setEndInput(end ? fmt(end < start ? start : end) : "");
+    setManualDirty(false);
+  }
+
+  const padding = (new Date(view.getFullYear(), view.getMonth(), 1).getDay() + 6) % 7;
+  const preview = anchor && hovered ? new Set(dateRange(anchor, hovered).map(dateKey)) : new Set<string>();
+  const selectedKeys = new Set(pending.map(dateKey));
+  const summary = formatEventDates(pending.map(dateKey));
+  const dialog = <div ref={panel} tabIndex={-1} id={`${id}-panel`} role="dialog" aria-label="Fechas del evento"
+    style={position}
+    className="fixed z-50 overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-white p-3 shadow-xl outline-none"
+    onKeyDown={event => {
+      if (event.key === "Escape") { event.stopPropagation(); close(); }
+      if (event.key === "Tab") {
+        const controls = Array.from(panel.current?.querySelectorAll<HTMLElement>("button:not(:disabled), input:not(:disabled)") ?? []);
+        const first = controls[0]; const last = controls[controls.length - 1];
+        if (event.shiftKey && (document.activeElement === first || document.activeElement === panel.current)) { event.preventDefault(); last?.focus(); }
+        if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    }}>
+    <div className="mb-3 grid grid-cols-2 gap-2">
+      {([['Inicio', startInput, setStartInput], ['Fin (opcional)', endInput, setEndInput]] as const).map(([text, input, setInput], index) =>
+        <label key={text} className="text-xs font-medium text-slate-600">
+          {text}
+          <input type="text" inputMode="numeric" autoComplete="off" placeholder="DD/MM/AAAA" maxLength={10}
+            value={input} aria-invalid={Boolean(inputError)} aria-describedby={inputError ? `${id}-error` : undefined}
+            className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm outline-none focus:border-slate-600 focus:ring-1 focus:ring-slate-600"
+            onChange={event => {
+              setInput(formatDateInput(event.target.value)); setManualDirty(true); setInputError("");
+              if (index === 0) { setEndInput(""); setBase([]); }
+            }} onBlur={applyManual} onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); applyManual(); } }} />
+        </label>)}
+    </div>
+    {inputError && <p id={`${id}-error`} role="alert" className="mb-2 text-xs text-red-600">{inputError}</p>}
+    <div className="mb-2 flex items-center justify-between">
+      <button type="button" aria-label="Mes anterior" className="rounded px-3 py-1 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-slate-500" onClick={() => setView(new Date(view.getFullYear(), view.getMonth() - 1, 1))}>‹</button>
+      <span className="text-sm font-medium" aria-live="polite">{MONTHS_ES[view.getMonth()]} {view.getFullYear()}</span>
+      <button type="button" aria-label="Mes siguiente" className="rounded px-3 py-1 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-slate-500" onClick={() => setView(new Date(view.getFullYear(), view.getMonth() + 1, 1))}>›</button>
+    </div>
+    <div className="grid grid-cols-7 gap-y-1 text-center text-sm" onMouseLeave={() => setHovered(null)}>
+      {DAYS_ES.map((day, i) => <span key={`label-${i}`} aria-hidden="true" className="py-1 text-xs text-slate-500">{day}</span>)}
+      {/* Six weeks keep the popup and navigation controls still across months. */}
+      {Array.from({ length: 42 }, (_, i) => {
+        const number = i - padding + 1;
+        if (number < 1 || number > daysInMonth(view.getFullYear(), view.getMonth())) {
+          return <span key={`empty-${i}`} aria-hidden="true" className="h-9" />;
+        }
+        const day = new Date(view.getFullYear(), view.getMonth(), number, 12);
+        const key = dateKey(day);
+        const selected = selectedKeys.has(key);
+        const isPreview = preview.has(key);
+        return <button key={i} type="button" disabled={invalid(day)} aria-pressed={selected} aria-label={fmt(day)}
+          className={`h-9 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-slate-500 disabled:opacity-30 ${isPreview ? "bg-slate-200 text-slate-900" : selected ? "bg-slate-800 text-white" : "text-slate-700 hover:bg-slate-100"}`}
+          onMouseEnter={() => { if (anchor && !invalid(day)) setHovered(day); }}
+          onClick={() => selectDay(day)} onKeyDown={event => {
+            const offset = ({ ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 } as Record<string, number>)[event.key];
+            if (!offset) return;
+            event.preventDefault(); const next = new Date(day); next.setDate(day.getDate() + offset);
+            if (invalid(next)) return;
+            setView(next); if (anchor) setHovered(next);
+            requestAnimationFrame(() => panel.current?.querySelector<HTMLButtonElement>(`button[aria-label="${fmt(next)}"]`)?.focus());
+          }}>{number}</button>;
+      })}
+    </div>
+    <p className="mt-3 text-xs text-slate-600" aria-live="polite">
+      {anchor ? "Seleccione otra fecha para completar el rango, o confirme esta jornada." : appendNext ? "Seleccione una jornada o el inicio de otro rango." : "Seleccione una fecha o dos para marcar un rango."}
+    </p>
+    <div className="mt-2 flex items-center justify-between gap-2">
+      <span className="text-xs text-slate-600" role="status">{pending.length} {pending.length === 1 ? "jornada" : "jornadas"}</span>
+      {pending.length > 0 && <button type="button" className="rounded px-2 py-1 text-xs font-medium underline focus-visible:ring-2 focus-visible:ring-slate-500"
+        onClick={() => {
+          setAppendNext(true); setAnchor(null); setHovered(null); setBase(pending);
+          setStartInput(""); setEndInput(""); setInputError(""); setManualDirty(false);
+        }}>Añadir fechas</button>}
+    </div>
+    <p className="mt-1 max-h-12 overflow-y-auto text-xs text-slate-500">{summary}</p>
+    <div className="mt-3 flex justify-end gap-2 border-t border-slate-100 pt-3">
+      <button type="button" className="rounded px-2 py-2 text-sm hover:bg-slate-100" onClick={() => {
+        setPending([]); setBase([]); setAnchor(null); setHovered(null); setAppendNext(false);
+        setStartInput(""); setEndInput(""); setInputError(""); setManualDirty(false);
+      }}>Limpiar</button>
+      <button type="button" className="rounded px-2 py-2 text-sm hover:bg-slate-100" onClick={close}>Cancelar</button>
+      <button type="button" disabled={Boolean(inputError) || manualDirty} className="rounded-lg bg-slate-900 px-3 py-2 text-sm text-white disabled:opacity-50"
+        onClick={() => { onChange(pending); close(); }}>Confirmar</button>
+    </div>
+  </div>;
+
+  return <div className="relative w-full max-w-xs">
+    {label && <label htmlFor={id} className="mb-1 block text-sm font-medium">{label}</label>}
+    <button ref={trigger} id={id} type="button" disabled={disabled} role="combobox"
+      aria-label={label ?? "Fechas del evento"} aria-haspopup="dialog" aria-expanded={open}
+      aria-controls={`${id}-panel`} aria-describedby={`${id}-help`}
+      className={`${className || "input"} w-full text-left`} title={value.length ? formatEventDates(value.map(dateKey)) : undefined}
+      onClick={() => {
+        if (open) { close(); return; }
+        setPending(unique(value)); setBase([]); setAnchor(null); setHovered(null); setAppendNext(false);
+        setStartInput(""); setEndInput(""); setInputError(""); setManualDirty(false);
+        setView(value[0] ?? new Date()); setOpen(true);
+      }}>
+      <span className="block truncate">{value.length ? formatEventDates(value.map(dateKey)) : "Seleccionar fechas del evento"}</span>
+    </button>
+    <p id={`${id}-help`} className="mt-1 text-xs text-slate-500">{helperText ?? "Desde 01/01/2010. Seleccione una fecha o un rango."}</p>
+    {open && createPortal(dialog, document.body)}
+  </div>;
 }

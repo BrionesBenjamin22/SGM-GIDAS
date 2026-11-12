@@ -1,3 +1,4 @@
+from modules.produccion.services.trabajo_jornadas import fecha_exportacion
 from modules.memorias.services.memoria_excel_template import meeting_category, publication_category
 from modules.personal.services.nombre_service import nombre_para_memoria
 from types import SimpleNamespace
@@ -1146,7 +1147,7 @@ class ExportService:
             items = [trabajo for trabajo in trabajos_reunion if meeting_category({
                 "alcance": trabajo.alcance, "referato": trabajo.referato,
             }) == category]
-            rows = [[idx, trabajo.nombre_reunion, trabajo.procedencia, trabajo.fecha_presentacion,
+            rows = [[idx, trabajo.nombre_reunion, trabajo.procedencia, fecha_exportacion(trabajo),
                      cls._expositores_texto([a.serialize() for a in trabajo.expositores]),
                      trabajo.titulo_trabajo + ("\nEnlace: " + trabajo.enlace if trabajo.enlace else "")]
                     for idx, trabajo in enumerate(items, 1)]
@@ -1163,7 +1164,7 @@ class ExportService:
             cls._write_table(detalle, 1, "Trabajos en reuniones fuera de la sección 7",
                 ["Nro.", "Nombre reunión", "Procedencia", "Fecha de presentación", "Expositores",
                  "Título trabajo", "Referato", "Alcance"],
-                [[idx, trabajo.nombre_reunion, trabajo.procedencia, trabajo.fecha_presentacion,
+                [[idx, trabajo.nombre_reunion, trabajo.procedencia, fecha_exportacion(trabajo),
                   cls._expositores_texto([a.serialize() for a in trabajo.expositores]),
                   trabajo.titulo_trabajo + ("\nEnlace: " + trabajo.enlace if trabajo.enlace else ""),
                   "Sí" if trabajo.referato is True else "No" if trabajo.referato is False else "Sin informar",

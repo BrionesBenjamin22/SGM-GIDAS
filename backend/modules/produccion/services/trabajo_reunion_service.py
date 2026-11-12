@@ -1,9 +1,9 @@
+from modules.produccion.services.trabajo_jornadas import resolver_fechas, fechas_trabajo
 from modules.produccion.services.clasificacion_trabajo import validar_clasificacion
 from modules.memorias.services.memoria_periodo_service import (
     consultar_entidades_memoria, registro_puntual_en_memoria,
 )
 from modules.produccion.services.trabajo_enlace import validar_enlace
-from datetime import datetime
 
 from sqlalchemy import or_
 
@@ -13,14 +13,12 @@ from modules.produccion.services.trabajo_expositores_service import (
 )
 from modules.produccion.models.trabajo_expositor import TrabajoReunionExpositor
 from modules.produccion.models.trabajo_reunion import (
-    TrabajoReunionCientifica,
+    TrabajoReunionCientifica, TrabajoReunionJornada,
     TipoReunion,
     TrabajoReunionCientificaMemoriaVersion,
 )
 from modules.shared.services.auditoria_service import AuditoriaService
-from modules.memorias.services.memoria_periodo_service import esta_en_periodo_memoria
 from modules.shared.exceptions import ConflictError, NotFoundError, ValidationError
-from modules.shared.services.date_time import INSTITUTIONAL_MIN_DATE
 from extension import db
 from modules.shared.services.text_validation import has_letter
 
@@ -33,18 +31,6 @@ class TrabajoReunionCientificaService:
             error_expositores("Use expositores para informar quién presentó el trabajo.")
         if not isinstance(data, dict) or not data:
             raise ValidationError("Los datos no pueden estar vacios")
-
-    @staticmethod
-    def _normalizar_fecha_payload(data):
-        # Compatibilidad temporal con consumidores que aún envían fecha_inicio.
-        if "fecha_inicio" not in data:
-            return data
-        if "fecha_presentacion" in data and data["fecha_presentacion"] != data["fecha_inicio"]:
-            raise ValidationError("Las fechas enviadas no coinciden", details={"fields": {
-                "fecha_presentacion": "Envíe una única fecha de presentación."}})
-        resultado = dict(data)
-        resultado["fecha_presentacion"] = resultado.pop("fecha_inicio")
-        return resultado
 
     @staticmethod
     def _validar_id(valor, campo: str, permitir_none: bool = False):
@@ -76,17 +62,6 @@ class TrabajoReunionCientificaService:
             raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {campo: f"Use entre {min_len} y {max_len} caracteres para {label}."}})
 
         return valor
-
-    @staticmethod
-    def _validar_fecha(fecha_str: str):
-        try:
-            fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
-        except (TypeError, ValueError):
-            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_presentacion": "Ingrese una fecha válida."}})
-
-        if fecha < INSTITUTIONAL_MIN_DATE:
-            raise ValidationError("Revise los campos indicados e intente nuevamente.", details={"fields": {"fecha_presentacion": "Ingrese una fecha desde el 01/01/2010."}})
-        return fecha
 
     @staticmethod
     def _normalizar_activos(activos):
@@ -159,7 +134,7 @@ class TrabajoReunionCientificaService:
         titulo_trabajo: str,
         nombre_reunion: str,
         procedencia: str,
-        fecha_presentacion,
+        fechas,
         trabajo_id: int = None
     ):
         query = TrabajoReunionCientifica.query.filter(
@@ -167,13 +142,13 @@ class TrabajoReunionCientificaService:
             TrabajoReunionCientifica.titulo_trabajo == titulo_trabajo,
             TrabajoReunionCientifica.nombre_reunion == nombre_reunion,
             TrabajoReunionCientifica.procedencia == procedencia,
-            TrabajoReunionCientifica.fecha_presentacion == fecha_presentacion,
+            TrabajoReunionCientifica.fecha_presentacion == fechas[0],
         )
 
         if trabajo_id is not None:
             query = query.filter(TrabajoReunionCientifica.id != trabajo_id)
 
-        if query.first():
+        if any(fechas_trabajo(t) == fechas for t in query.all()):
             raise ConflictError(
                 "Ya existe un trabajo de reunión con los mismos datos. Revise el título, la reunión y la fecha antes de reintentar."
             )
@@ -258,12 +233,10 @@ class TrabajoReunionCientificaService:
     @staticmethod
     def create(data: dict, user_id: int):
         TrabajoReunionCientificaService._validar_payload(data)
-        data = TrabajoReunionCientificaService._normalizar_fecha_payload(data)
         TrabajoReunionCientificaService._validar_user_id(user_id)
 
-        fecha_presentacion = TrabajoReunionCientificaService._validar_fecha(
-            data.get("fecha_presentacion")
-        )
+        fechas = resolver_fechas(data)
+        fecha_presentacion = fechas[0]
         titulo = TrabajoReunionCientificaService._validar_texto(
             data.get("titulo_trabajo"), "titulo_trabajo", 5, 300
         )
@@ -284,7 +257,7 @@ class TrabajoReunionCientificaService:
             titulo,
             nombre_reunion,
             procedencia,
-            fecha_presentacion,
+            fechas,
         )
 
         clasificacion = validar_clasificacion(data, reunion=True)
@@ -296,6 +269,7 @@ class TrabajoReunionCientificaService:
             nombre_reunion=nombre_reunion,
             procedencia=procedencia,
             fecha_presentacion=fecha_presentacion,
+            jornadas=[TrabajoReunionJornada(fecha=fecha) for fecha in fechas],
             tipo_reunion_id=tipo_reunion_id,
             grupo_utn_id=grupo_utn_id,
             enlace=enlace,
@@ -317,18 +291,14 @@ class TrabajoReunionCientificaService:
     @staticmethod
     def update(trabajo_id: int, data: dict, user_id: int):
         TrabajoReunionCientificaService._validar_payload(data)
-        data = TrabajoReunionCientificaService._normalizar_fecha_payload(data)
         TrabajoReunionCientificaService._validar_user_id(user_id)
         trabajo = TrabajoReunionCientificaService._get_activo_or_404(trabajo_id)
         enlace = validar_enlace(data["enlace"]) if "enlace" in data else trabajo.enlace
         clasificacion = validar_clasificacion(data, reunion=True, actual=trabajo)
         cambios = {}
 
-        fecha_presentacion = trabajo.fecha_presentacion
-        if "fecha_presentacion" in data:
-            fecha_presentacion = TrabajoReunionCientificaService._validar_fecha(
-                data["fecha_presentacion"]
-            )
+        fechas = resolver_fechas(data, trabajo)
+        fecha_presentacion = fechas[0]
 
         titulo = trabajo.titulo_trabajo
         if "titulo_trabajo" in data:
@@ -364,7 +334,7 @@ class TrabajoReunionCientificaService:
             titulo,
             nombre_reunion,
             procedencia,
-            fecha_presentacion,
+            fechas,
             trabajo.id,
         )
         expositores = None
@@ -375,12 +345,13 @@ class TrabajoReunionCientificaService:
 
 
         try:
-            cambio = AuditoriaService.construir_cambio(
-                trabajo.fecha_presentacion,
-                fecha_presentacion
-            )
+            anteriores = [fecha.isoformat() for fecha in fechas_trabajo(trabajo)]
+            nuevas = [fecha.isoformat() for fecha in fechas]
+            cambio = AuditoriaService.construir_cambio(anteriores, nuevas)
             if cambio:
-                cambios["fecha_presentacion"] = cambio
+                cambios["fechas_presentacion"] = cambio
+                existentes = {j.fecha: j for j in trabajo.jornadas}
+                trabajo.jornadas = [existentes.get(fecha) or TrabajoReunionJornada(fecha=fecha) for fecha in fechas]
                 trabajo.fecha_presentacion = fecha_presentacion
 
             cambio = AuditoriaService.construir_cambio(
@@ -490,7 +461,7 @@ class TrabajoReunionCientificaService:
 
         snapshots = []
         for trabajo in trabajos:
-            if not registro_puntual_en_memoria(memoria_version, trabajo, trabajo.fecha_presentacion):
+            if not any(registro_puntual_en_memoria(memoria_version, trabajo, fecha) for fecha in fechas_trabajo(trabajo)):
                 continue
             autores = [autor.serialize() for autor in trabajo.autorias]
 
@@ -504,6 +475,7 @@ class TrabajoReunionCientificaService:
                 nombre_reunion=trabajo.nombre_reunion,
                 procedencia=trabajo.procedencia,
                 fecha_presentacion=trabajo.fecha_presentacion,
+                fechas_presentacion=[fecha.isoformat() for fecha in fechas_trabajo(trabajo)],
                 tipo_reunion_id=trabajo.tipo_reunion_id,
                 tipo_reunion_nombre=(
                     trabajo.tipo_reunion_cientifica.nombre

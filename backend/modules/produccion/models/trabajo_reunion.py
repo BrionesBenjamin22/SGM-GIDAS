@@ -19,6 +19,9 @@ class TrabajoReunionCientifica(db.Model, AuditMixin):
     procedencia = db.Column(db.Text, nullable=False)
     fecha_presentacion = db.Column(db.Date, nullable=False)
 
+    jornadas = db.relationship("TrabajoReunionJornada", cascade="all, delete-orphan",
+                               lazy="selectin", order_by="TrabajoReunionJornada.fecha")
+
     tipo_reunion_id = db.Column(
         db.Integer,
         db.ForeignKey('tipo_reunion_cientifica.id'),
@@ -58,6 +61,7 @@ class TrabajoReunionCientifica(db.Model, AuditMixin):
     def serialize(self):
         data = self.to_dict()
 
+        data["fechas_presentacion"] = [j.fecha.isoformat() for j in self.jornadas] or [self.fecha_presentacion.isoformat()]
         data.update({
             "tipo_reunion": {
                 "id": self.tipo_reunion_cientifica.id,
@@ -112,6 +116,7 @@ class TrabajoReunionCientificaMemoriaVersion(db.Model, AuditMixin):
         nullable=True
     )
     grupo_utn_nombre = db.Column(db.String(255), nullable=True)
+    fechas_presentacion = db.Column(db.JSON, nullable=False, default=list)
     autores = db.Column(db.JSON, nullable=False, default=list)
     expositores = db.Column(db.JSON, nullable=True)
 
@@ -131,6 +136,7 @@ class TrabajoReunionCientificaMemoriaVersion(db.Model, AuditMixin):
 
     def serialize(self):
         data = self.to_dict()
+        data["fechas_presentacion"] = self.fechas_presentacion or [self.fecha_presentacion.isoformat()]
         data.pop("autores", None)
         data["expositores"] = self.expositores or []
         return data
@@ -149,3 +155,11 @@ class TipoReunion(db.Model, AuditMixin):
     def serialize(self):
         return self.to_dict()
         
+
+
+class TrabajoReunionJornada(db.Model):
+    __tablename__ = "trabajo_reunion_jornada"
+
+    trabajo_reunion_id = db.Column(db.Integer, db.ForeignKey("trabajo_reunion_cientifica.id"), primary_key=True)
+    fecha = db.Column(db.Date, primary_key=True, index=True)
+    __table_args__ = (db.CheckConstraint("fecha >= '2010-01-01'", name="ck_reunion_jornada_min_fecha"),)

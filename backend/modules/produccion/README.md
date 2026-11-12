@@ -1,5 +1,54 @@
 # Producción
 
+## ISS-27: jornadas de trabajos en reuniones científicas
+
+Las rutas GET/POST/PUT de `/trabajos-reunion-cientifica` conservan sus destinos.
+POST y PUT aceptan `fechas_presentacion`, una lista no vacía de fechas civiles
+reales `YYYY-MM-DD`, desde `2010-01-01`, incluidas fechas futuras. Por ejemplo:
+
+```json
+{"fechas_presentacion": ["2026-03-20", "2026-03-21", "2026-03-23"]}
+```
+
+`trabajo_jornadas.py` valida, elimina duplicados y ordena la colección. Omitirla
+en PUT conserva las jornadas; enviarla reemplaza el conjunto completo. Las
+respuestas incluyen la lista y `fecha_presentacion` como primera jornada,
+utilizada por el orden cronológico y los filtros temporales de búsqueda.
+Se aceptan `fecha_presentacion` y el alias legado `fecha_inicio` para eventos
+de una jornada. Se rechazan escalares contradictorios, un escalar distinto de
+la primera fecha de la lista y la sustitución escalar de un evento multidía.
+Los errores de fechas identifican `error.details.fields.fechas_presentacion`.
+
+`TrabajoReunionJornada` se almacena en `trabajo_reunion_jornada`, con PK compuesta
+`(trabajo_reunion_id, fecha)`, FK al trabajo, índice por fecha y límite inferior
+institucional. La relación ORM usa `selectin` para cargar jornadas en bloque.
+La baja lógica y restauración del trabajo conservan sus jornadas.
+
+`TrabajoReunionCientificaService` persiste conjunto, primera fecha y auditoría
+en la misma transacción. Un cambio real genera un evento `fechas_presentacion`
+con listas anterior y nueva; orden y duplicados equivalentes no generan eventos.
+La detección de duplicados compara título, reunión, procedencia y conjunto
+completo. Se mantienen validación de expositores, referato, alcance, permisos
+ADMIN/GESTOR de escritura, lectura ADMIN/GESTOR/LECTURA y aislamiento por UCT.
+
+La migración reversible `c7a9e1f3b5d8`, dependiente de Expositores
+`c2e6a8b0d4f9`, crea jornadas desde la fecha de cada trabajo y completa el JSON
+de snapshots desde su propia fecha congelada. El downgrade conserva únicamente
+la primera jornada en la columna escalar. La unión local `d9b1f3a5c7e0` depende
+también de la rama pendiente de búsqueda `d6a0c4e8b2f7`; debe versionarse con
+ISS-95. La migración funcional de jornadas no depende de FTS.
+
+Memorias evalúa cada jornada, congela la colección completa y exporta rangos y
+días separados; su contrato se detalla en `../memorias/README.md`. La búsqueda
+actual incorpora la lista a `extra.fechas_presentacion` sin ampliar los filtros
+temporales globales ni cambiar la fecha representativa. El provider pendiente
+de Producción en ISS-95 conserva ese mismo dato al integrar el refactor FTS.
+
+Aceptado el 12/11/2026. Verificados 60 tests backend relacionados y 34 de
+aislamiento UCT, incluidos validación, compatibilidad, rollback, auditoría,
+duplicados, migración, carga agrupada, snapshots, búsqueda y exportaciones.
+
+
 ## ISS-26: expositores de reuniones científicas
 
 Reuniones usa `expositores`, separado de las autorías de revistas. Cada elemento

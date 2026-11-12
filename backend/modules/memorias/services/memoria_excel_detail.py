@@ -1,4 +1,5 @@
 """Detalle académico de snapshots, separado de la maquetación institucional."""
+from modules.produccion.services.trabajo_jornadas import fecha_exportacion
 from copy import copy
 from datetime import date, datetime
 from decimal import Decimal
@@ -144,7 +145,7 @@ def write_academic_detail(writer, sources, context, helpers, classifiers):
             if category is not None:
                 line("Clasificación para el formulario", category)
             for field in fields.split():
-                value = item.get(field)
+                value = fecha_exportacion(item) if key == "trabajos_reunion" and field == "fecha_presentacion" else item.get(field)
                 if field == "logros_obtenidos" and not value:
                     value = context.get("logros_proyectos", {}).get(str(item.get("proyecto_investigacion_id")))
                 if field.startswith("fecha"):

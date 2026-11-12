@@ -1,3 +1,4 @@
+import { eventDates, formatEventDates } from "@/utils/eventDates";
 import { referatoLabel, alcanceLabel } from "@/modules/produccion/utils/clasificacionTrabajo";
 import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
@@ -42,11 +43,6 @@ import { toTitleCase } from "@/utils/format";
 const ITEMS_PER_PAGE = 9;
 const HISTORY_PER_PAGE = 3;
 
-const formatFecha = (fecha?: string | null) => {
-  if (!fecha) return "—";
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fecha);
-  return match ? `${match[3]}/${match[2]}/${match[1]}` : fecha;
-};
 
 export default function TrabajosReunionLanding() {
   const navigate = useNavigate();
@@ -97,8 +93,7 @@ export default function TrabajosReunionLanding() {
       const procedencia = formatTrabajoReunionContractValue(trabajo.procedencia);
       if (procedencia) procedencias.add(toTitleCase(procedencia));
       trabajo.expositores.forEach((autor) => expositores.set(expositorClave(autor), autor));
-      const anio = getCivilYear(trabajo.fecha_presentacion);
-      if (anio) anios.add(anio);
+      eventDates(trabajo).forEach(fecha => { const anio = getCivilYear(fecha); if (anio) anios.add(anio); });
     });
 
     return {
@@ -118,7 +113,7 @@ export default function TrabajosReunionLanding() {
       const matchesTipo = !filters.tipo || String(trabajo.tipo_reunion?.id ?? "") === filters.tipo;
       const matchesProcedencia = !filters.procedencia || toTitleCase(procedencia) === filters.procedencia;
       const matchesAutor = !filters.expositor || trabajo.expositores.some((autor) => expositorClave(autor) === filters.expositor);
-      const matchesAnio = !filters.anio || getCivilYear(trabajo.fecha_presentacion) === Number(filters.anio);
+      const matchesAnio = !filters.anio || eventDates(trabajo).some(fecha => getCivilYear(fecha) === Number(filters.anio));
       return matchesSearch && matchesTipo && matchesProcedencia && matchesAutor && matchesAnio;
     });
   }, [filters, scopedList, searchQuery]);
@@ -199,7 +194,7 @@ export default function TrabajosReunionLanding() {
     { id: "referato", header: "Referato", priority: "tertiary", render: (trabajo) => referatoLabel(trabajo.referato) },
     { id: "alcance", header: "Alcance", priority: "secondary", render: (trabajo) => alcanceLabel(trabajo.alcance) },
     { id: "tipo", header: "Tipo de evento", priority: "tertiary", render: (trabajo) => toTitleCase(formatTrabajoReunionContractValue(trabajo.tipo_reunion)) || "—" },
-    { id: "fecha", header: "Fecha de presentación", priority: "tertiary", render: (trabajo) => formatFecha(trabajo.fecha_presentacion) },
+    { id: "fecha", header: "Fechas del evento", priority: "tertiary", render: (trabajo) => formatEventDates(eventDates(trabajo)) },
     { id: "estado", header: "Estado", render: (trabajo) => { const activo = !trabajo.deleted_at && trabajo.activo !== false; return <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${activo ? "text-emerald-700" : "text-rose-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${activo ? "bg-emerald-500" : "bg-rose-500"}`} />{activo ? "Activo" : "Inactivo"}</span>; } },
     { id: "acciones", header: "Acciones", align: "right", render: (trabajo) => { const activo = !trabajo.deleted_at && trabajo.activo !== false; const titulo = formatTrabajoReunionContractValue(trabajo.titulo_trabajo) || "trabajo"; return <TableActions><TableRowActionButton action="view" aria-label={`Ver detalle de ${titulo}`} onClick={() => navigate(`/trabajos-reunion/${trabajo.id}`, { state: buildMemoriaDetailState(location) })} />{activo && canEditRecords() && <TableRowActionButton action="edit" aria-label={`Editar ${titulo}`} onClick={() => navigate(`/trabajos-reunion/${trabajo.id}/editar`)} />}{activo && canDeleteRecords() && <TableRowActionButton action="delete" aria-label={`Eliminar ${titulo}`} onClick={() => setPendingDelete(trabajo)} />}</TableActions>; } },
   ];

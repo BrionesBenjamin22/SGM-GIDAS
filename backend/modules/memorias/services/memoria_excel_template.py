@@ -1,4 +1,5 @@
 """Completa la plantilla institucional sin reconstruir su maquetación."""
+from modules.produccion.services.trabajo_jornadas import fecha_exportacion
 from copy import copy
 from datetime import date, datetime
 from decimal import Decimal
@@ -453,7 +454,7 @@ def render_memoria(workbook, sources, context, helpers):
     for start, end, category in ((212, 217, "nacional"), (221, 222, "internacional")):
         items = [item for item in sources["trabajos_reunion"] if meeting_category(item) == category]
         w.table(start, end, ["A", "B", "C", "D", "E", "F"], [[i, item.get("nombre_reunion"), item.get("procedencia"),
-            civil_date(item.get("fecha_presentacion")), helpers._expositores_texto(item.get("expositores")),
+            fecha_exportacion(item), helpers._expositores_texto(item.get("expositores")),
             (item.get("titulo_trabajo") or "-") + ("\nEnlace: " + item["enlace"] if item.get("enlace") else "")]
             for i, item in enumerate(items, 1)])
     for header in (211, 220):

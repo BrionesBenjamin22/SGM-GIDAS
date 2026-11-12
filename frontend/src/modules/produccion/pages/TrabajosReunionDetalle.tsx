@@ -1,3 +1,4 @@
+import { eventDates, formatEventDates } from "@/utils/eventDates";
 import { referatoLabel, alcanceLabel, procedenciaLabel } from "@/modules/produccion/utils/clasificacionTrabajo";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { enlaceSeguro } from "@/modules/produccion/utils/trabajoEnlace";
@@ -22,7 +23,7 @@ import {
   navigateBackFromMemoriaContext,
   stripSuccessMessageState,
 } from "@/lib/memoriaNavigation";
-import { formatTrabajoReunionAuthorHistoryEntry } from "@/modules/produccion/utils/trabajoReunionHistory";
+import { formatTrabajoReunionHistoryEntry, presentTrabajoReunionHistoryItems } from "@/modules/produccion/utils/trabajoReunionHistory";
 
 export default function TrabajoReunionDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -51,9 +52,7 @@ export default function TrabajoReunionDetalle() {
     refetchOnMount: "always",
   });
 
-  const historialVisible = useMemo(() => historialCambios.map(item => ({ ...item,
-    campo: ["fecha_inicio", "fecha_presentacion"].includes(item.campo ?? "") ? "Fecha de presentación" : item.campo,
-  })), [historialCambios]);
+  const historialVisible = useMemo(() => presentTrabajoReunionHistoryItems(historialCambios), [historialCambios]);
 
   const auditoria = useAuditoria(data);
 
@@ -170,8 +169,8 @@ export default function TrabajoReunionDetalle() {
             </p>
 
             <p>
-              <span className="font-semibold text-slate-800">Fecha de presentación:</span>{" "}
-              {formatFecha(data.fecha_presentacion)}
+              <span className="font-semibold text-slate-800">Fechas del evento:</span>{" "}
+              {formatEventDates(eventDates(data))}
             </p>
 
             {enlace && <p className="break-words">
@@ -227,7 +226,7 @@ export default function TrabajoReunionDetalle() {
           formatItemValue={(item, value, kind) =>
             formatHistorialValue(item, value, kind)
           }
-          formatItemPresentation={formatTrabajoReunionAuthorHistoryEntry}
+          formatItemPresentation={item => formatTrabajoReunionHistoryEntry(item, Object.fromEntries(tipos.map(tipo => [tipo.id, tipo.nombre])))}
         />
 
         <div className="flex justify-start pt-4">

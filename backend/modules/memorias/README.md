@@ -1,5 +1,32 @@
 # Memorias
 
+## ISS-27: jornadas completas de reuniones y Excel
+
+Una reunión se incluye una sola vez en cada versión cuyo período contenga al
+menos una jornada válida según las reglas vigentes de baja lógica. Se evalúan
+las fechas efectivas: un período que solo coincida con un hueco entre jornadas
+no incluye el trabajo. Una reunión que cruce períodos puede aparecer en ambas
+memorias y conserva todas sus jornadas en cada foto.
+
+`TrabajoReunionCientificaMemoriaVersion.fechas_presentacion` congela la lista
+completa al generar el snapshot; ediciones posteriores del trabajo no la
+modifican. Las respuestas de snapshots, también paginadas, incluyen esa lista.
+La migración de jornadas completa los snapshots existentes desde su propia
+`fecha_presentacion`, sin consultar la fecha actual del trabajo.
+
+Excel de grupo, formulario institucional de la versión y Detalle académico
+comparten `fecha_exportacion` de Producción. Una jornada conserva una celda de
+fecha nativa; varias se muestran como texto, agrupando solo días consecutivos.
+Ejemplo: `20/03/2026 – 21/03/2026; 23/03/2026`. Los días separados no se convierten
+en un intervalo que invente jornadas. Las versiones existentes mantienen los
+datos congelados; exportar de nuevo no incorpora modificaciones posteriores.
+Referato, alcance, expositores y permisos de exportación conservan sus reglas.
+
+Aceptado el 12/11/2026. Pruebas de cruce de períodos, huecos, bajas lógicas,
+aparición única, inmutabilidad y presencia de jornadas completas en los Excel
+de grupo, formulario institucional y detalle.
+
+
 ## ISS-26: expositores congelados y exportaciones
 
 Los nuevos snapshots de reuniones guardan `expositores` con nombre, categoría,

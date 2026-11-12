@@ -1,5 +1,44 @@
 # Produccion
 
+## ISS-27: múltiples jornadas en reuniones científicas
+
+`TrabajosReunionForm` edita Fechas del evento como una colección de fechas
+civiles. `trabajosReunionServices.ts` normaliza `fechas_presentacion` y conserva
+la lectura de registros anteriores con `fecha_presentacion` o `fecha_inicio`.
+El borrador escalar anterior se recupera como una lista de un elemento.
+`eventDates.ts` reúne normalización, comparación por conjuntos, validación y
+presentación de rangos consecutivos y jornadas separadas, sin completar huecos.
+
+El Calendar global conserva el modo de fecha única y agrega el discriminante
+`mode="multiple"`, con `Date[]`. Primer clic selecciona una jornada, segundo
+completa el rango y tercero inicia otra selección. Añadir fechas permite
+conservar jornadas y rangos separados. La entrada manual admite Inicio y Fin
+opcional; se permiten fechas futuras y se mantiene el mínimo del 01/01/2010.
+Hover muestra una vista previa. Confirmar actualiza el formulario; Cancelar,
+Escape y clic fuera descartan lo pendiente, sin escrituras de dominio.
+
+El selector ocupa como máximo 320 px. Su panel usa portal y posición fija;
+`calendarPosition.ts` calcula apertura superior o inferior dentro de la ventana,
+con altura limitada y scroll interno. Se reservan seis filas de semanas para
+evitar saltos al cambiar de mes y no se actualizan coordenadas idénticas.
+Se mantienen teclado, foco, etiquetas y mensajes accesibles.
+
+El formulario reutiliza los hooks existentes de tipos, expositores y borradores.
+Envía fechas y demás diferencias en una sola solicitud; reordenar las jornadas
+no genera PUT. Los errores `fechas_presentacion` se asocian al control visible.
+Alta vuelve al home y edición al detalle con `successMessage`. Permisos y
+validación definitiva corresponden al backend: ADMIN/GESTOR para escrituras y
+ADMIN/GESTOR/LECTURA para consultas.
+
+Home y detalle muestran las fechas completas. El filtro de año considera todas
+las jornadas y el orden cronológico conserva la primera. El historial presenta
+el cambio del conjunto con valores anterior y nuevo. Continúan nueve registros
+por home y tres cambios por página de historial.
+
+Aceptado visual y funcionalmente el 12/11/2026. Validación: 288 pruebas frontend,
+TypeScript, build de producción y regresión de navegación por 14 meses.
+
+
 ## ISS-26: expositores y tipo de evento científico
 
 TrabajosReunionForm, Home y Detalle consumen `expositores`; revistas conserva

@@ -1,3 +1,4 @@
+import { eventDates } from "@/utils/eventDates";
 import type { AlcanceTrabajo } from "@/modules/produccion/utils/clasificacionTrabajo";
 import type { ExpositorReferencia, Expositor } from "@/modules/produccion/services/trabajoExpositoresServices";
 import { http } from "@/lib/http";
@@ -26,6 +27,7 @@ export interface TrabajoReunion {
   nombre_reunion: string;
   procedencia: string;
   fecha_presentacion: string;
+  fechas_presentacion?: string[];
   tipo_reunion: TipoReunion | null;
   expositores: Expositor[];
   grupo_utn: string | null;
@@ -49,7 +51,8 @@ export interface TrabajoReunionPayload {
   titulo_trabajo: string;
   nombre_reunion: string;
   procedencia: string;
-  fecha_presentacion: string;
+  fechas_presentacion: string[];
+  fecha_presentacion?: string;
   tipo_reunion_id: number;
   grupo_utn_id: number;
 }
@@ -81,6 +84,7 @@ const normalizeTrabajoReunion = (item: TrabajoReunionBackend): TrabajoReunion =>
   nombre_reunion: item.nombre_reunion ?? "",
   procedencia: item.procedencia ?? "",
   fecha_presentacion: item.fecha_presentacion ?? item.fecha_inicio ?? "",
+  fechas_presentacion: eventDates({ ...item, fecha_presentacion: item.fecha_presentacion ?? item.fecha_inicio }),
   tipo_reunion: item.tipo_reunion ?? null,
   expositores: Array.isArray(item.expositores) ? item.expositores : [],
   grupo_utn: item.grupo_utn ?? null,
@@ -169,6 +173,7 @@ export const updateTrabajoReunion = async (
   if ("titulo_trabajo" in data) body.titulo_trabajo = data.titulo_trabajo;
   if ("nombre_reunion" in data) body.nombre_reunion = data.nombre_reunion;
   if ("procedencia" in data) body.procedencia = data.procedencia;
+  if ("fechas_presentacion" in data) body.fechas_presentacion = data.fechas_presentacion;
   if ("fecha_presentacion" in data) body.fecha_presentacion = data.fecha_presentacion;
   if ("tipo_reunion_id" in data) body.tipo_reunion_id = data.tipo_reunion_id;
   if ("grupo_utn_id" in data) body.grupo_utn_id = data.grupo_utn_id;

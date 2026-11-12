@@ -1,5 +1,23 @@
 # Memorias
 
+## ISS-27: jornadas de reuniones al cierre
+
+`MemoriaVersionDetalle` presenta las fechas completas y expositores congelados
+de cada reunión. Consume `entry.fechas_presentacion`; para datos anteriores usa
+`entry.fecha_presentacion`. `eventDates` y `formatEventDates` muestran días,
+rangos consecutivos y jornadas separadas sin consultar el trabajo actual.
+
+Una reunión puede figurar en distintas memorias cuando alguna de sus jornadas
+pertenece al período; cada versión conserva la lista completa. El enlace al
+módulo mantiene su navegación contextual, mientras la información al cierre se
+muestra desde el snapshot. Las exportaciones de la versión utilizan esas mismas
+fechas congeladas y presentan los rangos en sus celdas de fecha.
+
+Se mantienen services de snapshots, permisos, estados de consulta y navegación
+existentes. Aceptado por el usuario el 12/11/2026; pruebas frontend, TypeScript y
+build de producción correctos.
+
+
 ## ISS-26: expositores al cierre
 
 MemoriaVersionDetalle muestra los nombres congelados de los expositores de cada

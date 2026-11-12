@@ -35,6 +35,7 @@ import {
   type PlanificacionGrupo,
 } from "@/modules/grupo/services/planificacionGrupoServices";
 import { formatFecha, getCivilYear } from "@/utils/dateTime";
+import { eventDates, formatEventDates } from "@/utils/eventDates";
 import PersonalSnapshotDialog from "@/modules/memorias/components/PersonalSnapshotDialog";
 
 type SnapshotSection = {
@@ -532,10 +533,14 @@ export default function MemoriaVersionDetalle() {
 
                 {section.key === "trabajos-reunion-cientifica" && section.items.length > 0 && (
                   <div className="mt-3 space-y-2 text-sm">
-                    <p className="font-medium">Expositores al cierre</p>
+                    <p className="font-medium">Jornadas y expositores al cierre</p>
                     <ul className="space-y-2">
                       {section.items.map((entry, index) => <li key={String(entry.id ?? index)}>
                         <span className="font-medium">{String(entry.titulo_trabajo ?? "Trabajo")}: </span>
+                        <span className="block">Fechas del evento: {formatEventDates(eventDates({
+                          fechas_presentacion: Array.isArray(entry.fechas_presentacion) ? entry.fechas_presentacion : undefined,
+                          fecha_presentacion: typeof entry.fecha_presentacion === "string" ? entry.fecha_presentacion : null,
+                        }))}</span>
                         {Array.isArray(entry.expositores) && entry.expositores.length
                           ? entry.expositores.map((persona: { nombre_apellido?: string }) => persona.nombre_apellido).join(", ") : "Sin informar"}
                       </li>)}
