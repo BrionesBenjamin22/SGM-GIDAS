@@ -102,6 +102,11 @@ semántico cuando se publica una entrega.
 
 ### ISS-97: estabilidad y recursos del entorno de desarrollo
 
+- La navegación autenticada muestra el skeleton del destino mientras carga su
+  código, sin retener la pantalla anterior. Suspense por pathname conserva menú,
+  cabecera y contexto del layout; filtros y consultas de cada módulo se mantienen.
+- Seguimiento aprobado visualmente el 07/11/2026: TypeScript, build y ocho pruebas
+  enfocadas aprobados. Suite ejecutada: 270/271, con una falla de mock ajena al layout.
 - Backend y Vite disponen de 2 CPU por defecto en el override de desarrollo;
   Vite dispone de 1 GiB de memoria. Los límites son configurables por entorno.
 - Flask evita recargas por edición de pruebas, herramientas y migraciones,

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { FileClock, Lock, LogOut, Shield, User } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -213,7 +214,9 @@ export default function AppLayout() {
               <button type="button" className="font-semibold underline underline-offset-2" onClick={() => { setIsDraftListOpen(true); void refetchDrafts(); }}>Consultar la lista</button>
             </div>
           )}
-          <Outlet />
+          <Suspense key={location.pathname} fallback={<LoadingSkeleton label="Cargando sección…" />}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
 

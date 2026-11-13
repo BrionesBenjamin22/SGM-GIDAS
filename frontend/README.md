@@ -46,6 +46,22 @@ Comprobar la interfaz en el puerto local configurado y la API en
 para investigar demoras de pantalla, medir también solicitudes y primera carga
 con sesión iniciada. Ver [desarrollo backend](../backend/DEVELOPMENT.md).
 
+## Feedback durante cambios de sección (ISS-97)
+
+`AppLayout` contiene un `Suspense` alrededor de `Outlet`, identificado por
+`location.pathname`. Al cambiar de destino, el skeleton existente puede mostrarse
+mientras se carga la página diferida, sin conservar la pantalla anterior.
+Menú, cabecera, breadcrumbs y borradores permanecen fuera de esa frontera.
+
+Los cambios de query o estado dentro del mismo pathname no reinician la frontera.
+Se conservan los imports diferidos del router y las consultas de cada módulo;
+el skeleton de datos del home sigue funcionando después de montar la página.
+El cambio mejora el feedback y no implica una reducción medida del tiempo HTTP.
+
+Aprobado visualmente por el usuario el 07/11/2026. TypeScript, build productivo
+y ocho pruebas enfocadas aprobados. En la suite ejecutada durante el ajuste
+pasaron 270 de 271 pruebas; falló un mock de `TrabajosReunionForm` ajeno al layout.
+
 ## Arquitectura frontend
 
 El alcance de datos por UCT de la sesion, los contratos y el comportamiento
