@@ -48,8 +48,8 @@ export default function BecasHome() {
   }, [location.pathname, location.state, navigate]);
 
   const columns: TableColumn<Beca>[] = [
-    { id: "nombre", header: "Beca", render: (item) => <div className="min-w-0"><span className="block font-semibold text-slate-900">{item.nombre_beca}</span><span className="mt-0.5 block max-w-sm truncate text-xs text-slate-500" title={item.descripcion || undefined}>{item.descripcion || "Sin descripción"}</span></div> },
-    { id: "fuente", header: "Fuente de financiamiento", priority: "secondary", render: (item) => <span className="text-slate-600">{item.fuente_financiamiento?.nombre ?? "Sin fuente asignada"}</span> },
+    { id: "nombre", textPreview: true, header: "Beca", render: (item) => <div className="min-w-0"><span className="block font-semibold text-slate-900">{item.nombre_beca}</span><span className="mt-0.5 block text-xs text-slate-500" title={item.descripcion || undefined}>{item.descripcion || "Sin descripción"}</span></div> },
+    { id: "fuente", textPreview: true, header: "Fuente de financiamiento", priority: "secondary", render: (item) => <span className="text-slate-600">{item.fuente_financiamiento?.nombre ?? "Sin fuente asignada"}</span> },
     { id: "becarios", header: "Becarios", priority: "tertiary", render: (item) => <span className="inline-flex min-w-7 justify-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-slate-700">{item.becarios?.length ?? 0}</span> },
     { id: "alta", header: "Alta en el grupo", priority: "tertiary", render: (item) => <span className="whitespace-nowrap text-slate-600">{formatFecha(item.fecha_alta_grupo)}</span> },
     { id: "estado", header: "Estado", render: (item) => { const active = !item.deleted_at; return <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${active ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}><span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${active ? "bg-emerald-500" : "bg-rose-500"}`} />{active ? "Activa" : "Inactiva"}</span>; } },

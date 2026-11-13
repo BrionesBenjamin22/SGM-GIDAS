@@ -1,3 +1,4 @@
+import { TextPreview } from "@/components/Table";
 import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -781,12 +782,12 @@ function CatalogPanel({
               ) : (
                 <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                   <div className="min-w-0">
-                    <p className="truncate text-base font-semibold text-slate-800">
+                    <TextPreview label="Nombre del catálogo" className="max-w-sm text-base font-semibold text-slate-800">
                       {getDisplayName(item)}
-                    </p>
+                    </TextPreview>
                     {(def.descField && typeof item[def.descField] === "string") ||
                     getFkDisplayName(item) ? (
-                      <p className="mt-0.5 truncate text-xs text-slate-400">
+                      <TextPreview label="Descripción y relación" className="mt-0.5 max-w-sm text-xs text-slate-500">
                         {def.descField && typeof item[def.descField] === "string" && (
                           <span>{item[def.descField] as string}</span>
                         )}
@@ -798,7 +799,7 @@ function CatalogPanel({
                             {fkLabel}: {getFkDisplayName(item)}
                           </span>
                         )}
-                      </p>
+                      </TextPreview>
                     ) : null}
 
                   </div>

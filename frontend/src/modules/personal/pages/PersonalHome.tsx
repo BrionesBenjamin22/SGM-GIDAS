@@ -131,10 +131,9 @@ export default function PersonalLanding() {
   };
 
   const columns = useMemo<TableColumn<PersonalItem>[]>(() => [
-    { id: "nombre", header: "Nombre y apellido", sortable: true, render: (item) => <span className="font-medium text-slate-900">{item.nombre_apellido}</span> },
+    { id: "nombre", textPreview: true, header: "Nombre y apellido", sortable: true, render: (item) => <span className="font-medium text-slate-900">{item.nombre_apellido}</span> },
     { id: "clase", header: "Clase", sortable: true, render: (item) => classLabels[item.rol] },
-    { id: "clasificacion", header: "Clasificación o función", sortable: true, priority: "secondary", render: (item) => item.clasificacion || "—" },
-    { id: "grupo", header: "Grupo", sortable: true, priority: "tertiary", render: (item) => item.grupo || "—" },
+    { id: "clasificacion", textPreview: true, header: "Clasificación o función", sortable: true, priority: "secondary", render: (item) => item.clasificacion || "—" },
     { id: "horas", header: "Horas", sortable: true, align: "right", priority: "secondary", render: (item) => `${item.horas_semanales} h` },
     { id: "estado", header: "Estado", sortable: true, render: (item) => <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${item.activo ? "text-emerald-700" : "text-rose-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${item.activo ? "bg-emerald-500" : "bg-rose-500"}`} />{item.activo ? "Activo" : "Inactivo"}</span> },
     { id: "acciones", header: "Acciones", align: "right", render: (item) => {

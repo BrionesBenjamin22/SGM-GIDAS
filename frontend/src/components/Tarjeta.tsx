@@ -51,7 +51,7 @@ const badgeClassName =
   return (
     <div
       className={[
-        "relative w-full rounded-xl border border-slate-200 bg-white/80 px-6 py-6",
+        "relative min-w-0 w-full rounded-xl border border-slate-200 bg-white/80 px-6 py-6",
         "shadow-sm transition-shadow",
         selectable && !selectDisabled ? "hover:shadow" : "",
         selectable ? "pr-16" : "",
@@ -81,7 +81,7 @@ const badgeClassName =
         ].join(" ")}
       >
         <div className="flex items-start justify-between gap-3">
-          <div className={["font-semibold text-lg", titleClassName].join(" ")}>
+          <div className={["min-w-0 max-w-full line-clamp-2 [overflow-wrap:anywhere] font-semibold text-lg", titleClassName].join(" ")}>
             {title(item)}
           </div>
 

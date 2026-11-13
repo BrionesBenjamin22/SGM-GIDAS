@@ -1,3 +1,4 @@
+import { TextPreview } from "@/components/Table";
 import { useHomeState, useHomeFilterEffect } from "@/modules/shared/hooks/useHomeState";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { useEffect, useMemo, useState } from "react";
@@ -158,7 +159,7 @@ export default function ErogacionesLanding() {
     { id: "numero", header: "Movimiento", sortable: true, render: (item) => <span className="font-medium text-slate-900">{item.numero_movimiento}</span> },
     { id: "fecha", header: "Fecha", sortable: true, render: (item) => formatFecha(item.fecha) },
     { id: "tipo", header: "Tipo", render: (item) => <span className={item.tipo_movimiento === "INGRESO" ? "font-medium text-emerald-700" : "font-medium text-rose-700"}>{item.tipo_movimiento === "INGRESO" ? "Ingreso" : "Egreso"}</span> },
-    { id: "fuente", header: "Fuente", render: (item) => item.fuente?.nombre ?? "—" },
+    { id: "fuente", textPreview: true, header: "Fuente", render: (item) => item.fuente?.nombre ?? "—" },
     { id: "monto", header: "Monto", sortable: true, align: "right", render: (item) => <span className="whitespace-nowrap font-medium">{formatMovimientoMoney(item.monto, item.moneda)}</span> },
     { id: "estado", header: "Estado", priority: "tertiary", render: (item) => <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${item.deleted_at ? "text-rose-700" : "text-emerald-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${item.deleted_at ? "bg-rose-500" : "bg-emerald-500"}`} />{item.deleted_at ? "Inactivo" : "Activo"}</span> },
     { id: "acciones", header: "Acciones", align: "right", render: (item) => <TableActions>
@@ -206,7 +207,7 @@ export default function ErogacionesLanding() {
         {saldosPorFuente.isSuccess && saldosPorFuente.data.length === 0 && <p className="mt-4 text-sm text-slate-500">Aún no hay movimientos registrados para este grupo.</p>}
         {saldosPorFuente.isSuccess && saldosPorFuente.data.length > 0 && <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {fuentesPaginadas.map((item) => <article key={item.fuente_id} className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <h4 className="truncate text-sm font-medium text-slate-600" title={item.fuente_nombre}>{item.fuente_nombre}</h4>
+            <TextPreview label="Fuente de financiamiento" className="text-sm font-medium text-slate-600">{item.fuente_nombre}</TextPreview>
             <p className="mt-2 break-words text-xl font-semibold text-slate-900">{formatMovimientoMoney(item.saldo_disponible)}</p>
             <p className="mt-2 text-xs text-slate-600">Ingresos: {formatMovimientoMoney(item.total_ingresos)}</p>
             <p className="mt-1 text-xs text-slate-600">Egresos: {formatMovimientoMoney(item.total_egresos)}</p>

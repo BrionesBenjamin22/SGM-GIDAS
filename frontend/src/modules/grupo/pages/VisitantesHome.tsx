@@ -9,6 +9,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import MemoriaFilterBanner from "@/components/MemoriaFilterBanner";
 import SuccessToast from "@/components/SuccessToast";
 import Table, {
+  TextPreview,
   TableActionButton,
   TableActions,
   TableRowActionButton,
@@ -303,6 +304,7 @@ export default function VisitantesHome() {
   const columns: TableColumn<Visitante>[] = [
     {
       id: "razon",
+      textPreview: true,
       header: "Razón de la visita",
       render: (visita) => (
         <span className="font-medium text-slate-900">{visita.razon || "-"}</span>
@@ -312,13 +314,16 @@ export default function VisitantesHome() {
       id: "tipo",
       header: "Tipo de visita",
       render: (visita) => (
-        <span className="inline-flex rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700">
-          {visita.tipo_visita?.nombre || "Sin tipo informado"}
-        </span>
+        <div className="inline-flex max-w-xs items-center justify-center rounded-full bg-sky-50 px-2.5 py-1 text-center text-xs font-medium text-sky-700">
+          <TextPreview label="Tipo de visita" className="text-center">
+            {visita.tipo_visita?.nombre || "Sin tipo informado"}
+          </TextPreview>
+        </div>
       ),
     },
     {
       id: "procedencia",
+      textPreview: true,
       header: "Procedencia u origen",
       priority: "secondary",
       render: (visita) => visita.procedencia || "-",

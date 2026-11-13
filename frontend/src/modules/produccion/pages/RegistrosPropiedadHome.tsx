@@ -298,6 +298,7 @@ export default function RegistrosPropiedadLanding() {
   const columns: TableColumn<RegistroPropiedad>[] = [
     {
       id: "nombre",
+      textPreview: true,
       header: "Registro de propiedad",
       render: (registro) => (
         <span className="font-medium text-slate-900">
@@ -308,6 +309,7 @@ export default function RegistrosPropiedadLanding() {
     },
     {
       id: "tipo",
+      textPreview: true,
       header: "Tipo",
       priority: "secondary",
       render: (registro) =>
@@ -317,6 +319,7 @@ export default function RegistrosPropiedadLanding() {
     },
     {
       id: "organismo",
+      textPreview: true,
       header: "Organismo registrante",
       priority: "secondary",
       render: (registro) =>

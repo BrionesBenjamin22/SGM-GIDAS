@@ -1,3 +1,4 @@
+import { TextPreview } from "@/components/Table";
 import { updateLiveValidationErrors } from "@/lib/liveValidation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -431,9 +432,9 @@ export default function UsuariosHome() {
                       <td className="px-6 py-4">
                         <div>
                           <div className="flex items-center gap-2">
-                            <p className="font-medium text-slate-900">
+                            <TextPreview label="Nombre de usuario" className="w-48 font-medium text-slate-900">
                               {usuarioItem.nombre_usuario}
-                            </p>
+                            </TextPreview>
 
                             {esUsuarioActual && (
                               <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
@@ -449,7 +450,7 @@ export default function UsuariosHome() {
                       </td>
 
                       <td className="px-6 py-4 text-slate-600">
-                        {usuarioItem.mail}
+                        <TextPreview label="Correo del usuario" className="w-56">{usuarioItem.mail}</TextPreview>
                       </td>
 
                       <td className="px-6 py-4">

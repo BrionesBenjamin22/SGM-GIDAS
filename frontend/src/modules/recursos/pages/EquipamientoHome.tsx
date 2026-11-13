@@ -141,7 +141,7 @@ export default function EquipamientoLanding() {
   };
 
   const columns: TableColumn<Equipamiento>[] = [
-    { id: "denominacion", header: "Equipamiento", render: (item) => <div><span className="block font-medium text-slate-900">{item.denominacion || "-"}</span><span className="mt-0.5 block text-xs text-slate-500">{item.descripcion_breve || "Sin descripción"}</span></div> },
+    { id: "denominacion", textPreview: true, header: "Equipamiento", render: (item) => <div><span className="block font-medium text-slate-900">{item.denominacion || "-"}</span><span className="mt-0.5 block text-xs text-slate-500">{item.descripcion_breve || "Sin descripción"}</span></div> },
     { id: "fecha", header: "Fecha de incorporación", priority: "secondary", render: (item) => formatDate(item.fecha_incorporacion) },
     { id: "monto", header: "Monto invertido", priority: "tertiary", render: (item) => formatImporte(item.monto_invertido, item.moneda) },
     { id: "estado", header: "Estado", render: (item) => { const active = !item.deleted_at; return <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${active ? "text-emerald-700" : "text-rose-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${active ? "bg-emerald-500" : "bg-rose-500"}`} />{active ? "Activo" : "Inactivo"}</span>; } },

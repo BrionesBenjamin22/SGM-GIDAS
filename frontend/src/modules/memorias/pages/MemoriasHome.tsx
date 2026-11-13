@@ -292,7 +292,7 @@ export default function MemoriasHome() {
         </div>
       ),
     },
-    { id: "uct", header: "UCT", priority: "secondary", render: (memoria) => memoria.grupo_utn_nombre || "Pendiente de asociar" },
+    { id: "uct", textPreview: true, header: "UCT", priority: "secondary", render: (memoria) => memoria.grupo_utn_nombre || "Pendiente de asociar" },
     {
       id: "version",
       header: "Versión actual",

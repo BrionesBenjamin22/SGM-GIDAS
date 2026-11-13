@@ -134,10 +134,9 @@ export default function ProyectosLanding() {
   };
 
   const columns = useMemo<TableColumn<Proyecto>[]>(() => [
-    { id: "codigo", header: "Código", sortable: true, render: (project) => <span className="font-medium text-slate-700">{project.codigoProyecto}</span> },
-    { id: "nombre", header: "Proyecto", sortable: true, render: (project) => <span className="font-medium text-slate-900">{project.nombreProyecto}</span> },
-    { id: "tipo", header: "Tipo", sortable: true, priority: "secondary", render: (project) => project.tipoProyectoNombre || "—" },
-    { id: "coordinador", header: "Coordinador", priority: "secondary", render: (project) => project.investigadores?.find((item) => item.es_coordinador)?.nombre_apellido || "—" },
+    { id: "codigo", textPreview: true, header: "Código", sortable: true, render: (project) => <span className="font-medium text-slate-700">{project.codigoProyecto}</span> },
+    { id: "nombre", textPreview: true, header: "Proyecto", sortable: true, render: (project) => <span className="font-medium text-slate-900">{project.nombreProyecto}</span> },
+    { id: "coordinador", textPreview: true, header: "Coordinador", priority: "secondary", render: (project) => project.investigadores?.find((item) => item.es_coordinador)?.nombre_apellido || "—" },
     { id: "fecha_inicio", header: "Inicio", sortable: true, priority: "tertiary", render: (project) => formatFecha(project.fechaInicio) },
     { id: "estado", header: "Estado", sortable: true, render: (project) => <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${project.cerrado ? "text-amber-700" : project.activo === false || project.deleted_at ? "text-slate-600" : "text-emerald-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${project.cerrado ? "bg-amber-500" : project.activo === false || project.deleted_at ? "bg-slate-400" : "bg-emerald-500"}`} />{project.cerrado ? "Cerrado" : project.activo === false || project.deleted_at ? "Inactivo" : "Activo"}{project.fechaFinProrrogada ? " · Prorrogado" : ""}</span> },
     { id: "acciones", header: "Acciones", align: "right", render: (project) => <TableActions>

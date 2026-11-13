@@ -168,9 +168,9 @@ export default function ParticipacionesHome() {
   };
 
   const columns: TableColumn<Participacion>[] = [
-    { id: "evento", header: "Evento", render: (item) => <span className="font-medium text-slate-900">{item.nombre_evento || "-"}</span> },
-    { id: "participante", header: "Participante", render: (item) => <span>{item.participante.nombre_apellido || "-"}<span className="block text-xs text-slate-500">{item.participante.tipo}</span></span> },
-    { id: "forma", header: "Forma de participación", priority: "secondary", render: (item) => FORMA_LABELS[item.forma_participacion] ?? item.forma_participacion ?? "-" },
+    { id: "evento", textPreview: true, header: "Evento", render: (item) => <span className="font-medium text-slate-900">{item.nombre_evento || "-"}</span> },
+    { id: "participante", textPreview: true, header: "Participante", render: (item) => <span>{item.participante.nombre_apellido || "-"}<span className="block text-xs text-slate-500">{item.participante.tipo}</span></span> },
+    { id: "forma", textPreview: true, header: "Forma de participación", priority: "secondary", render: (item) => FORMA_LABELS[item.forma_participacion] ?? item.forma_participacion ?? "-" },
     { id: "fecha", header: "Fecha", priority: "tertiary", render: (item) => formatDate(item.fecha) },
     { id: "estado", header: "Estado", render: (item) => { const active = !item.deleted_at; return <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${active ? "text-emerald-700" : "text-rose-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${active ? "bg-emerald-500" : "bg-rose-500"}`} />{active ? "Activo" : "Inactivo"}</span>; } },
     { id: "acciones", header: "Acciones", align: "right", render: (item) => { const active = !item.deleted_at; const label = item.nombre_evento || "participación"; return <TableActions><TableRowActionButton action="view" aria-label={`Ver detalle de ${label}`} onClick={() => navigate(`/participaciones/${item.id}`, { state: buildMemoriaDetailState(location) })} />{active && canEditRecords() && <TableRowActionButton action="edit" aria-label={`Editar ${label}`} onClick={() => navigate(`/participaciones/${item.id}/editar`)} />}{active && canDeleteRecords() && <TableRowActionButton action="delete" aria-label={`Eliminar ${label}`} onClick={() => setPendingDelete(item)} />}</TableActions>; } },

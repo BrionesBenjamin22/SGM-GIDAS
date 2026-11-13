@@ -56,9 +56,9 @@ export default function InformesHome() {
 
   if (!informeTipos.includes(rawTipo as InformeTipo)) return <p role="alert">Tipo de informe no disponible.</p>;
     const columns: TableColumn<InformeSummary>[] = [
-      { id: "titulo", header: "Título", align: "center", render: (item) => <span className="font-medium text-slate-900">{item.titulo}</span> },
+      { id: "titulo", textPreview: true, header: "Título", align: "center", render: (item) => <span className="font-medium text-slate-900">{item.titulo}</span> },
       { id: "fecha", header: "Fecha de realización", align: "center", render: (item) => formatFecha(item.fecha_realizacion) },
-      { id: "autor", header: "Autor", align: "center", priority: "secondary", render: (item) => item.autor ?? "-" },
+      { id: "autor", textPreview: true, header: "Autor", align: "center", priority: "secondary", render: (item) => item.autor ?? "-" },
       { id: "periodo", header: "Período", align: "center", priority: "secondary", render: (item) => <span className="whitespace-nowrap">{formatFecha(item.periodo_inicio)} – {formatFecha(item.periodo_fin)}</span> },
       { id: "acciones", header: "Acciones", align: "center", render: (item) => <div className="flex justify-center"><TableActions>
         <TableRowActionButton action="view" aria-label={`Ver detalle de ${item.titulo}`} onClick={() => navigate(`/informes/${tipo}/${item.id}`)} />

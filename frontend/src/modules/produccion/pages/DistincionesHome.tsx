@@ -280,6 +280,7 @@ export default function DistincionesHome() {
   const columns: TableColumn<Distincion>[] = [
     {
       id: "descripcion",
+      textPreview: true,
       header: "Distinción",
       render: (item) => (
         <span className="block font-medium text-slate-900">{item.descripcion || "-"}</span>
@@ -287,6 +288,7 @@ export default function DistincionesHome() {
     },
     {
       id: "proyecto",
+      textPreview: true,
       header: "Proyecto de investigación",
       priority: "secondary",
       render: projectLabel,

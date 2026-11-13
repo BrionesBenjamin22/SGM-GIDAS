@@ -1,4 +1,4 @@
-import { useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { ChevronRight, Eye, Pencil, RotateCcw, X } from "lucide-react";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 
@@ -14,6 +14,43 @@ export interface TableColumn<T> {
   sortKey?: string;
   headerClassName?: string;
   cellClassName?: string;
+  textPreview?: boolean;
+}
+
+/** Opt-in for text only. Full content stays available with keyboard and touch. */
+export function TextPreview({ children, label = "texto", className = "" }: {
+  children: ReactNode;
+  label?: string;
+  className?: string;
+}) {
+  const id = useId();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
+
+  useEffect(() => {
+    const node = contentRef.current;
+    if (!node || expanded) return;
+    const measure = () => setOverflowing(node.scrollHeight > node.clientHeight + 1);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [children, expanded]);
+
+  return (
+    <div className={`min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere] ${className}`}>
+      <div id={id} ref={contentRef} className={expanded ? "" : "line-clamp-2"}>{children}</div>
+      {(overflowing || expanded) && (
+        <button type="button" aria-expanded={expanded} aria-controls={id}
+          aria-label={`${expanded ? "Ver menos" : "Ver más"}: ${label}`}
+          onClick={(event) => { event.stopPropagation(); setExpanded(value => !value); }}
+          className="mt-1 rounded text-xs font-medium text-sky-800 underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-sky-700 focus-visible:ring-offset-2">
+          {expanded ? "Ver menos" : "Ver más"}
+        </button>
+      )}
+    </div>
+  );
 }
 
 export interface TableProps<T> {
@@ -161,7 +198,7 @@ export default function Table<T>({
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       {toolbar}
       {!status && <button type="button" onClick={focusFirstResult} className="sr-only focus:not-sr-only focus:block focus:w-full focus:bg-sky-50 focus:px-4 focus:py-2 focus:text-left focus:text-sm focus:font-medium focus:text-sky-800">Saltar los encabezados e ir al primer resultado</button>}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto [scrollbar-color:rgb(203_213_225)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-track]:bg-transparent">
         <table aria-busy={loading || refreshing} className="w-full min-w-[760px] border-collapse text-sm">
           <caption className="sr-only">{caption}</caption>
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
@@ -169,7 +206,7 @@ export default function Table<T>({
               {onToggleRow && <th scope="col" className={`w-10 ${padding}`}><span className="sr-only">Expandir fila</span></th>}
               {columns.map((column) => {
                 const active = column.sortable && sortKey === (column.sortKey ?? column.id);
-                const alignment = alignClasses[column.align ?? "left"];
+                const alignment = alignClasses[column.textPreview ? "left" : column.align ?? "left"];
                 return (
                   <th key={column.id} scope="col" aria-sort={active ? (sortDirection === "asc" ? "ascending" : "descending") : column.sortable ? "none" : undefined}
                     className={`${padding} ${alignment} ${priorityClasses[column.priority ?? "primary"]} ${column.headerClassName ?? ""}`}>
@@ -224,7 +261,11 @@ export default function Table<T>({
                       </button>
                     </td>
                   )}
-                  {columns.map((column) => <td key={column.id} className={`${padding} ${alignClasses[column.align ?? "left"]} ${priorityClasses[column.priority ?? "primary"]} ${column.cellClassName ?? ""}`}>{column.render(row)}</td>)}
+                  {columns.map((column) => <td key={column.id} className={`${padding} ${alignClasses[column.textPreview ? "left" : column.align ?? "left"]} ${priorityClasses[column.priority ?? "primary"]} ${column.cellClassName ?? ""}`}>
+                    {column.textPreview
+                      ? <TextPreview label={typeof column.header === "string" ? column.header : column.id} className="max-w-xs text-left">{column.render(row)}</TextPreview>
+                      : column.render(row)}
+                  </td>)}
                 </tr>,
                 expanded && renderExpanded ? <tr key={`${String(id)}-expanded`}><td colSpan={columns.length + (onToggleRow ? 1 : 0)} className="border-t border-slate-100 bg-slate-50/70 px-4 py-4">{renderExpanded(row)}</td></tr> : null,
               ];

@@ -88,8 +88,8 @@ export default function DocumentacionHome() {
   };
 
   const columns: TableColumn<Documentacion>[] = [
-    { id: "titulo", header: "Documento", sortable: true, render: (item) => <div><span className="block font-medium text-slate-900">{toTitleCase(item.titulo) || "-"}</span><span className="mt-0.5 block text-xs text-slate-500">{item.autores.length ? item.autores.map((entry) => entry.nombre_apellido).join(", ") : "Sin autores informados"}</span></div> },
-    { id: "editorial", header: "Editorial", priority: "secondary", render: (item) => toTitleCase(item.editorial) || "-" },
+    { id: "titulo", textPreview: true, header: "Documento", sortable: true, render: (item) => <div><span className="block font-medium text-slate-900">{toTitleCase(item.titulo) || "-"}</span><span className="mt-0.5 block text-xs text-slate-500">{item.autores.length ? item.autores.map((entry) => entry.nombre_apellido).join(", ") : "Sin autores informados"}</span></div> },
+    { id: "editorial", textPreview: true, header: "Editorial", priority: "secondary", render: (item) => toTitleCase(item.editorial) || "-" },
     { id: "anio", header: "Año", priority: "tertiary", render: (item) => item.anio || "-" },
     { id: "fecha", header: "Fecha", priority: "tertiary", render: (item) => formatFecha(item.fecha) },
     { id: "estado", header: "Estado", render: (item) => <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${item.deleted_at ? "text-rose-700" : "text-emerald-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${item.deleted_at ? "bg-rose-500" : "bg-emerald-500"}`} />{item.deleted_at ? "Inactivo" : "Activo"}</span> },

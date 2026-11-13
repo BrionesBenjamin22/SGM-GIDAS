@@ -223,14 +223,16 @@ export default function ArticulosDivulgacionHome() {
   const columns: TableColumn<ArticuloDivulgacion>[] = [
     {
       id: "titulo",
+      textPreview: true,
       header: "Título",
       render: (item) => <span className="block font-medium text-slate-900">{item.titulo || "-"}</span>,
     },
     {
       id: "descripcion",
+      textPreview: true,
       header: "Descripción",
       priority: "secondary",
-      render: (item) => <span className="line-clamp-2 max-w-lg">{item.descripcion || "-"}</span>,
+      render: (item) => <span className="">{item.descripcion || "-"}</span>,
     },
     {
       id: "fecha_publicacion",

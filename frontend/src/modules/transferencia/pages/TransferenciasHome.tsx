@@ -73,10 +73,9 @@ export default function TransferenciasHome() {
   };
   const columns: TableColumn<Transferencia>[] = [
     { id: "numero", header: "Número", render: item => `#${item.numeroTransferencia}` },
-    { id: "denominacion", header: "Transferencia", sortable: true, render: item => <div><span className="block font-medium text-slate-900">{item.denominacion || "—"}</span><span className="text-xs text-slate-500">{item.demandante || "—"}</span></div> },
-    { id: "tipo", header: "Tipo de contrato", priority: "secondary", render: item => item.tipoContrato || "—" },
+    { id: "denominacion", textPreview: true, header: "Transferencia", sortable: true, render: item => <div><span className="block font-medium text-slate-900">{item.denominacion || "—"}</span><span className="text-xs text-slate-500">{item.demandante || "—"}</span></div> },
+    { id: "tipo", textPreview: true, header: "Tipo de contrato", priority: "secondary", render: item => item.tipoContrato || "—" },
     { id: "monto", header: "Monto", render: item => formatImporte(item.monto, item.moneda) },
-    { id: "grupo", header: "Grupo UTN", priority: "tertiary", render: item => item.grupo || "—" },
     { id: "estado", header: "Estado", render: item => <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${isActive(item) ? "text-emerald-700" : "text-rose-700"}`}><span aria-hidden="true" className={`h-2 w-2 rounded-full ${isActive(item) ? "bg-emerald-500" : "bg-rose-500"}`} />{isActive(item) ? "Activo" : "Inactivo"}</span> },
     { id: "acciones", header: "Acciones", align: "right", render: item => <TableActions><TableRowActionButton action="view" aria-label={`Ver transferencia ${item.numeroTransferencia}`} onClick={() => navigate(`/transferencias/${item.id}`, { state: buildMemoriaDetailState(location) })} />{isActive(item) && canEditRecords() && <TableRowActionButton action="edit" aria-label={`Editar transferencia ${item.numeroTransferencia}`} onClick={() => navigate(`/transferencias/${item.id}/editar`)} />}{isActive(item) && canDeleteRecords() && <TableRowActionButton action="delete" aria-label={`Eliminar transferencia ${item.numeroTransferencia}`} onClick={() => setPendingDelete(item)} />}</TableActions> },
   ];
