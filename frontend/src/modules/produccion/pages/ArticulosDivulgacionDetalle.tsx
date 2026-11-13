@@ -110,12 +110,10 @@ export default function ArticulosDivulgacionDetalle() {
 
   return (
     <>
-      <section className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-2xl font-semibold leading-none md:text-3xl">
-              {data.titulo || "-"}
-            </h2>
+      <section className="min-w-0 [overflow-wrap:anywhere] flex flex-col gap-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <h2 className="text-2xl font-semibold leading-none md:text-3xl">{data.titulo || "Artículo de divulgación"}</h2>
 
             <span
               className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider ${
@@ -130,6 +128,7 @@ export default function ArticulosDivulgacionDetalle() {
 
           {puedeEditar && !isDeleted && (
             <Button
+              className="shrink-0"
               size="sm"
               onClick={() =>
                 navigate(`/articulos-divulgacion/${articuloId}/editar`)
@@ -142,10 +141,7 @@ export default function ArticulosDivulgacionDetalle() {
 
         <article className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
           <div className="space-y-2 text-sm text-slate-500 md:text-base">
-            <p>
-              <span className="font-semibold text-slate-800">Título:</span>{" "}
-              {data.titulo || "-"}
-            </p>
+
 
             <p>
               <span className="font-semibold text-slate-800">Descripción:</span>{" "}

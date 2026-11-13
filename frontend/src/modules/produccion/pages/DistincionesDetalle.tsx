@@ -121,12 +121,10 @@ export default function DistincionesDetalle() {
 
   return (
     <>
-      <section className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-2xl font-semibold leading-none md:text-3xl">
-              {data.descripcion || "-"}
-            </h2>
+      <section className="min-w-0 [overflow-wrap:anywhere] flex flex-col gap-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <h2 className="text-2xl font-semibold leading-none md:text-3xl">{data.descripcion || "Distinción"}</h2>
 
             <span
               className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider ${
@@ -141,6 +139,7 @@ export default function DistincionesDetalle() {
 
           {puedeEditar && !isDeleted && (
             <Button
+              className="shrink-0"
               size="sm"
               onClick={() => navigate(`/distinciones/${distincionId}/editar`)}
             >
@@ -156,10 +155,7 @@ export default function DistincionesDetalle() {
               {formatFecha(data.fecha)}
             </p>
 
-            <p>
-              <span className="font-semibold text-slate-800">Descripción:</span>{" "}
-              {data.descripcion || "-"}
-            </p>
+
 
             <p>
               <span className="font-semibold text-slate-800">

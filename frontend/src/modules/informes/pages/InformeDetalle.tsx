@@ -30,19 +30,20 @@ export default function InformeDetalle() {
   if (informe.isError || !informe.data) return <p role="alert" className="rounded-xl bg-rose-50 p-4 text-rose-700">Lo sentimos, no pudimos recuperar la información. <button type="button" className="underline" onClick={() => informe.refetch()}>Intente nuevamente</button>.</p>;
   const data = informe.data;
   const links = tipo === "pid" ? data.proyectos ?? [] : data.investigadores ?? [];
-  return <section className="flex flex-col gap-6">
+  return <section className="min-w-0 [overflow-wrap:anywhere] flex flex-col gap-6">
     <div className="flex flex-wrap items-start justify-between gap-4">
-      <div className="flex flex-col gap-2">
-        <h2 className="text-2xl font-semibold leading-none md:text-3xl">{data.titulo}</h2>
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <h2 className="text-2xl font-semibold leading-none md:text-3xl">{data.titulo || "Informe"}</h2>
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-fit rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600">Informe de {informeTipoLabel[tipo]}</span>
           <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${data.activo && !data.deleted_at ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>{data.activo && !data.deleted_at ? "ACTIVO" : "INACTIVO"}</span>
         </div>
       </div>
-      {data.activo && !data.deleted_at && <Button size="sm" onClick={() => navigate(`/informes/${tipo}/${data.id}/editar`)}>Editar</Button>}
+      {data.activo && !data.deleted_at && <Button className="shrink-0" size="sm" onClick={() => navigate(`/informes/${tipo}/${data.id}/editar`)}>Editar</Button>}
     </div>
     <article className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
-      <div className="space-y-3 text-sm text-slate-500 md:text-base">
+          <div className="space-y-3 text-sm text-slate-500 md:text-base">
+
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
           <div className="grid gap-3 sm:grid-cols-3">
             <p><span className="font-semibold text-slate-800">Período de Memoria:</span> {formatFecha(data.periodo_inicio)} – {formatFecha(data.periodo_fin)}</p>

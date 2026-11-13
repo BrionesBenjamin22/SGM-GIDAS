@@ -87,12 +87,10 @@ export default function TransferenciasDetalle() {
 
   return (
     <>
-      <section className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-2xl font-semibold leading-none md:text-3xl">
-              {titulo}
-            </h2>
+      <section className="min-w-0 [overflow-wrap:anywhere] flex flex-col gap-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <h2 className="text-2xl font-semibold leading-none md:text-3xl">{titulo}</h2>
 
             <span
               className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider ${
@@ -106,7 +104,7 @@ export default function TransferenciasDetalle() {
           </div>
 
           {puedeEditar && !isDeleted && (
-            <Button size="sm" onClick={() => navigate(`/transferencias/${data.id}/editar`)}>
+            <Button className="shrink-0" size="sm" onClick={() => navigate(`/transferencias/${data.id}/editar`)}>
               Editar
             </Button>
           )}
@@ -119,10 +117,7 @@ export default function TransferenciasDetalle() {
               {data.numeroTransferencia || "-"}
             </p>
 
-            <p>
-              <span className="font-semibold text-slate-800">Denominación:</span>{" "}
-              {data.denominacion || "-"}
-            </p>
+
 
             <p>
               <span className="font-semibold text-slate-800">Demandante:</span>{" "}

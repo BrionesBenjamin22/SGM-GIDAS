@@ -33,10 +33,10 @@ export default function BecasDetalle() {
   if (beca.isError || !beca.data) return <p role="alert">Lo sentimos, no pudimos recuperar la información. Intente nuevamente.</p>;
   const item = beca.data;
   return <>
-    <section className="flex flex-col gap-6">
+    <section className="min-w-0 [overflow-wrap:anywhere] flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><h2 className="text-2xl font-semibold md:text-3xl">{item.nombre_beca}</h2><span className="text-sm text-slate-600">{item.deleted_at ? "Inactiva" : "Activa"}</span></div>
-        {!item.deleted_at && canEditRecords() && <Button size="sm" onClick={() => navigate(`/becas/${item.id}/editar`, { state: navigationState })}>Editar</Button>}
+        <div className="min-w-0 flex-1"><h2 className="text-2xl font-semibold md:text-3xl">{item.nombre_beca || "Beca"}</h2><span className="text-sm text-slate-600">{item.deleted_at ? "Inactiva" : "Activa"}</span></div>
+        {!item.deleted_at && canEditRecords() && <Button className="shrink-0" size="sm" onClick={() => navigate(`/becas/${item.id}/editar`, { state: navigationState })}>Editar</Button>}
       </div>
       <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h3 className="mb-4 text-lg font-semibold text-slate-800">Datos de la beca</h3>
@@ -64,6 +64,7 @@ export default function BecasDetalle() {
       <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
         <h3 className="mb-4 text-lg font-semibold text-slate-800">Auditoría</h3>
         <dl className="grid gap-4 text-sm md:grid-cols-2">
+          <div><dt className="font-semibold text-slate-800">Nombre de la beca</dt><dd className="mt-1 text-slate-600">{item.nombre_beca}</dd></div>
           <div><dt className="font-semibold text-slate-800">Creado por</dt><dd>{item.created_by_nombre || auditoria.nombreCreador}</dd></div>
           <div><dt className="font-semibold text-slate-800">Fecha de creación</dt><dd>{formatFechaHora(item.created_at)}</dd></div>
           <div><dt className="font-semibold text-slate-800">Eliminado por</dt><dd>{item.deleted_by_nombre || auditoria.nombreEliminador}</dd></div>

@@ -156,12 +156,10 @@ export default function ProyectoDetalle() {
   };
 
   return (
-    <section className="flex flex-col gap-6">
+    <section className="min-w-0 [overflow-wrap:anywhere] flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-col gap-2">
-          <h2 className="text-2xl md:text-3xl font-semibold leading-none">
-            {data.nombreProyecto}
-          </h2>
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <h2 className="text-2xl md:text-3xl font-semibold leading-none">{data.nombreProyecto || "Proyecto"}</h2>
 
           <span
             className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider ${
@@ -175,7 +173,7 @@ export default function ProyectoDetalle() {
         </div>
 
         <div className="ml-auto flex flex-wrap justify-end gap-2">
-          {isGestor() && data.id && <Button size="sm" variant="secondary" onClick={() => navigate(`/informes/pid/nuevo?proyectoId=${data.id}`, { state: { projectName: data.nombreProyecto } })}>Registrar Informe</Button>}
+          {isGestor() && data.id && <Button className="shrink-0" size="sm" variant="secondary" onClick={() => navigate(`/informes/pid/nuevo?proyectoId=${data.id}`, { state: { projectName: data.nombreProyecto } })}>Registrar Informe</Button>}
           {puedeEditar && (estaCerrado || estaInactivo) && data.id && (!data.fechaFinProrrogada || data.fechaFinProrrogada > getLocalTodayIso()) ? (
             <Button
               size="sm"
@@ -200,7 +198,8 @@ export default function ProyectoDetalle() {
       </div>
 
       <article className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
-        <div className="space-y-3 text-sm text-slate-500 md:text-base">
+          <div className="space-y-3 text-sm text-slate-500 md:text-base">
+
           <p>
             <span className="font-semibold text-slate-800">Código del proyecto:</span>{" "}
             {data.codigoProyecto}
